@@ -18,7 +18,7 @@ import '../styles/global.css';
           var langs = navigator.languages || [navigator.language || 'en'];
           l = /^fr\b/i.test(langs[0] || '') ? 'fr' : 'en';
         }
-        location.replace('/' + l + '/');
+        location.replace(location.pathname.replace(/\/?$/, '/') + l + '/');
       })();
     </script>
     <noscript><meta http-equiv="refresh" content="0; url=/en/" /></noscript>

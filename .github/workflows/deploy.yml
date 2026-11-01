@@ -1,4 +1,4 @@
-# Mise en ligne sur GitHub Pages à chaque push sur main.
+# Mise en ligne sur GitHub Pages (icemigi.github.io/portfolio/) à chaque push sur main.
 # Réglage unique sur GitHub : Settings → Pages → Source : « GitHub Actions ».
 name: Mise en ligne
 
@@ -21,9 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: withastro/action@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+      - run: npm ci || npm install
+      # build:pages = astro build + tools/rebase.mjs (sert le site sous /portfolio/)
+      - run: npm run build:pages
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
 
   deploy:
     needs: build
