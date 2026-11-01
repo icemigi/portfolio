@@ -22,9 +22,9 @@ export const aboutIntro = {
   en: "Designer in Paris{m:and remote}, I always start from the letter, {0} from a logotype to a complete writing system {1}. When hands aren't enough{m:or can't be bothered}, I write code {2}. The rest comes from the things {door} I love{m:go on, open it}.",
 };
 export const aboutVigs: Vig[] = [
-  { src: '', label: { fr: 'logotype', en: 'logotype' } },
-  { src: '', label: { fr: 'glyphes', en: 'glyphs' } },
-  { src: '', label: { fr: 'code', en: 'code' } },
+  { src: '/vig/v-logo.webp', label: { fr: 'logotype', en: 'logotype' } },
+  { src: '/vig/v-lettre.webp', label: { fr: 'glyphes', en: 'glyphs' } },
+  { src: '/vig/v-code.webp', label: { fr: 'code', en: 'code' } },
 ];
 
 export const services = {
@@ -60,8 +60,8 @@ export const path = {
   en: 'Independent since 2020{m:2020 —}, for artists {v:0} and brands. Before that, designer at DOERS in Paris{m:2018 — 20} for PlayStation {l:playstation}, Nespresso {l:nespresso} and Chanel {l:chanel}. {v:1} Trained at HETIC{m:2018 — 21} and École 42{m:2015 — 17}.',
 };
 export const pathVigs: Vig[] = [
-  { src: '', label: { fr: 'pochette', en: 'cover' } },
-  { src: '', label: { fr: 'site', en: 'website' } },
+  { src: '/vig/v-pochette.webp', label: { fr: 'pochette', en: 'cover' } },
+  { src: '/vig/v-site.webp', label: { fr: 'site', en: 'website' } },
 ];
 
 export const aboutLabels = {
