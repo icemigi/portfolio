@@ -36,23 +36,7 @@ initHola();
 
 // Pages en écrans
 const host = document.querySelector<HTMLElement>('[data-screens]');
-// ESSAI : défilement libre (natif) à la place du défilement écran par écran. ?libre l'active, ?ecrans le coupe ;
-// le choix tient pendant la visite. Chaque écran apparaît quand il entre dans la fenêtre.
-let libre = false;
-try {
-  if (/[?&]libre\b/.test(location.search)) sessionStorage.setItem('kk-libre', '1');
-  if (/[?&]ecrans\b/.test(location.search)) sessionStorage.removeItem('kk-libre');
-  libre = sessionStorage.getItem('kk-libre') === '1';
-} catch { /* */ }
-if (host && libre) {
-  document.documentElement.classList.add('libre');
-  const io = new IntersectionObserver((es) => es.forEach((e) => {
-    if (!e.isIntersecting) return;
-    io.unobserve(e.target);
-    if (!(e.target as HTMLElement).hasAttribute('data-still')) window.kkReady!.then(() => reveal(e.target as HTMLElement, 80));
-  }), { threshold: 0.25 });
-  host.querySelectorAll<HTMLElement>(':scope > .scr').forEach((s) => io.observe(s));
-} else if (host) {
+if (host) {
   const api = initScreens(host);
   if (api.count < 2) document.querySelectorAll('[data-go="0"]').forEach((a) => a.remove());
   // arrivée par « Projet suivant » : l'étude gère elle-même son apparition

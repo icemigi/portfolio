@@ -48,7 +48,6 @@ ul, ol { list-style: none; }
 ::selection { background: var(--fg); color: var(--bg); }
 
 /* pages en écrans : rien ne défile au niveau du document */
-html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 /* ---------- typographie ---------- */
 .mono { font-family: var(--mono); font-size: 12px; line-height: 16px; text-transform: lowercase; letter-spacing: 0; font-weight: 400; }
@@ -130,25 +129,16 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .row .d { display: none; }
 }
 
-/* ---------- écrans ---------- */
-.screens-host { position: fixed; inset: 0; overflow: hidden; }
-.scr { position: absolute; inset: 0; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
-.scr::-webkit-scrollbar { display: none; }
-.scr:not(.on) { transform: translateY(100%); }
-.scr.on { transform: none; }
-.scr.before { transform: translateY(-100%); }
-.scr[data-peek] { top: auto; height: auto; overflow: visible; }
-.scr .in { min-height: 100%; display: grid; align-content: center; padding-top: calc(var(--head) + 24px); padding-bottom: 64px; }
-html:not(.js) .screens-host { position: static; }
-html:not(.js) .scr { position: relative; transform: none; min-height: 100vh; }
-/* essai défilement libre (?libre) */
-html.libre .screens-host { position: static; }
-html.libre .scr { position: relative; transform: none !important; min-height: 100vh; overflow-y: visible; }
-html.libre .scr[data-peek] { min-height: 0; }
-html.libre .more-arrow { display: none; }
-html.libre .scr .in { min-height: 100vh; }
-html.libre .site-header { background: var(--bg); }
-html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
+/* ---------- écrans (défilement libre, pile) ---------- */
+/* Chaque écran fait au moins la hauteur de la fenêtre ; ceux qui y tiennent restent collés en haut (.stk)
+   pendant que le suivant glisse par-dessus. Le recouvrement --cov (0 → 1) est posé par screens.ts. */
+.screens-host { position: relative; }
+.scr { position: relative; min-height: 100vh; min-height: 100svh; background: var(--bg); }
+.scr.stk { position: sticky; top: 0; }
+/* bord d'attaque de l'écran qui monte : un filet d'ombre très léger, comme une feuille posée sur une autre */
+.scr + .scr { box-shadow: 0 -1px 0 var(--ln), 0 -18px 40px -24px rgba(0, 0, 0, .18); }
+.scr[data-peek] { min-height: 0; }
+.scr .in { min-height: 100vh; min-height: 100svh; display: grid; align-content: center; padding-top: calc(var(--head) + 24px); padding-bottom: 64px; }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
