@@ -17,7 +17,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   <div class="likes" data-likes data-own-wheel>
     <p class="ttl mono mu"><a class="lk hit" href={`/${lang}/about/`}>← {t.nav.about}</a></p>
     <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
-    <h1 class="big" data-big><span class="t56">{fr ? 'Ce que j\'aime.' : 'Things I love.'}</span></h1>
+    <h1 class="big" data-big><span class="t56">{(fr ? 'Ce que j\'aime.' : 'Things I love.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w">{w}</span></Fragment>)}</span></h1>
     <div class="stage" data-stage>
       {data.map((d) => (
         <button class:list={['it', d.shape]} type="button" data-id={d.id} style={`width:${d.w / 4}px;height:${d.h / 4}px`} aria-label={d.title}>
@@ -44,7 +44,13 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .ttl { position: absolute; z-index: 5; left: var(--m); top: calc(var(--head) + 16px); }
   .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
-  .big span { display: inline-block; text-align: center; }
+  .big > span { display: inline-block; text-align: center; }
+  /* téléphone : le titre en colonne, un mot par ligne, en grand (moins large : les objets pleuvent autour, quelques-uns restent dessus) */
+  @media (max-width: 760px) {
+    .big { place-items: center start; }
+    .big > span { text-align: left; font-size: 23vw; line-height: .84; letter-spacing: -0.05em; }
+    .big .w { display: block; }
+  }
   .big[hidden] { display: none; }
   .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; }
   .stage:active { cursor: grabbing; }
@@ -113,13 +119,16 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const area = real.reduce((a, [w, h]) => a + w * h, 0);
   const K = Math.sqrt(((small ? 0.24 : 0.24) * innerWidth * innerHeight) / area);
   // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
+  // une étagère par mot (sur téléphone les mots sont en colonne : chacun retient ce qui tombe dessus)
   const tr = big.querySelector('span')!.getBoundingClientRect();
-  let titleBody: any = null;
+  let shelves: any[] = [];
   const buildShelf = () => {
-    if (titleBody) Composite.remove(engine.world, titleBody);
-    const r = big.querySelector('span')!.getBoundingClientRect();
-    titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 1, frictionStatic: 10, restitution: 0 });
-    Composite.add(engine.world, titleBody);
+    Composite.remove(engine.world, shelves);
+    shelves = [...big.querySelectorAll<HTMLElement>('.w')].map((w) => {
+      const r = w.getBoundingClientRect(), t = r.top + r.height * (small ? 0.24 : 0.12), b = r.bottom - r.height * (small ? 0.1 : 0.06);
+      return Bodies.rectangle(r.left + r.width / 2, (t + b) / 2, r.width, b - t, { isStatic: true, friction: 1, frictionStatic: 10, restitution: 0 });
+    });
+    Composite.add(engine.world, shelves);
   };
   buildShelf(); document.fonts.ready.then(() => { if (!big.hidden) buildShelf(); });
   const items = D.map((d, i) => {
@@ -127,7 +136,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     let [w, h] = real[i].map((v) => v * K);
     const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.34 : 0.4)) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
-    const x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, tr.left + tr.width * (0.5 + 0.8 * (((i * 0.37) % 1) - 0.5)))), y = -h - 20;
+    const u = (i * 0.37) % 1, x = small ? W * (0.12 + 0.76 * u) : Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, tr.left + tr.width * (0.5 + 0.8 * (u - 0.5)))), y = -h - 20;
     const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.25 };
     // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
     let body: any, ox = 0, oy = 0;
