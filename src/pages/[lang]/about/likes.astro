@@ -16,7 +16,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
   <div class="likes" data-likes data-own-wheel>
     <p class="ttl mono mu"><a class="lk hit" href={`/${lang}/about/`}>← {t.nav.about}</a></p>
-    <p class="hint mono mu">{fr ? 'Ce que j\'aime. Attrapez, lancez, cliquez.' : 'Things I love. Grab, throw, click.'}</p>
+    <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
     <h1 class="big" data-big><span class="t56">{fr ? 'Ce que j\'aime.' : 'Things I love.'}</span></h1>
     <div class="stage" data-stage>
       {data.map((d) => (
@@ -66,11 +66,21 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .card .x { margin-top: 24px; }
   .it.sel { z-index: 3; }
   .veil { position: fixed; inset: 0; z-index: 50; background: radial-gradient(circle at 50% 60%, #fff, #f3f3f3 70%); pointer-events: none; }
-  @media (max-width: 760px) { .card { align-content: end; padding-bottom: 48px; } .card .in { grid-column: 1 / -1; } }
+  .it { transition: opacity .35s; }
+  /* téléphone : le texte s'ouvre en feuille au bas de l'écran ; le monde se fige et s'efface derrière l'objet choisi */
+  @media (max-width: 760px) {
+    .hint { top: calc(var(--head) + 16px); bottom: auto; left: auto; right: var(--m); text-align: right; }
+    .likes.open .hint { opacity: 0; }
+    .likes.open .it:not(.sel) { opacity: .08; }
+    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 24px var(--m) calc(24px + env(safe-area-inset-bottom)); background: var(--bg); }
+    .card .in { grid-column: auto; }
+    .card .txt { max-width: none; }
+    .card .x { margin-top: 20px; }
+  }
 </style>
 
 <script>
-  import { letters, fadeMono } from '../../../scripts/motion';
+  import { letters } from '../../../scripts/motion';
   const M = (window as any).Matter;
   const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; cm: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
   const root = document.querySelector<HTMLElement>('[data-likes]')!;
@@ -87,10 +97,12 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
   const wallOpt = { isStatic: true, restitution: 0.2, friction: 0.6 };
   let walls: any[] = [], closed = false;
+  // plafond : sous l'en-tête et le lien retour sur téléphone (les objets ne recouvrent jamais la navigation)
+  const top = () => (small ? root.querySelector('.ttl')!.getBoundingClientRect().bottom + 12 : 0);
   const buildWalls = () => {
     Composite.remove(engine.world, walls);
     const T = 400; walls = [Bodies.rectangle(W / 2, H + T / 2, W + 2 * T, T, wallOpt), Bodies.rectangle(-T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt), Bodies.rectangle(W + T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt)];
-    if (closed) walls.push(Bodies.rectangle(W / 2, -T / 2, W + 2 * T, T, wallOpt));
+    if (closed) walls.push(Bodies.rectangle(W / 2, top() - T / 2, W + 2 * T, T, wallOpt));
     Composite.add(engine.world, walls);
   };
   buildWalls();
@@ -99,11 +111,11 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
   const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
   const area = real.reduce((a, [w, h]) => a + w * h, 0);
-  const K = Math.sqrt(((small ? 0.32 : 0.44) * innerWidth * innerHeight) / area);
+  const K = Math.sqrt(((small ? 0.22 : 0.44) * innerWidth * innerHeight) / area);
   const items = D.map((d, i) => {
     const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
     let [w, h] = real[i].map((v) => v * K);
-    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * 0.4) / w); w *= cap; h *= cap;
+    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.34 : 0.4)) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
     const x = W * (0.12 + 0.76 * ((i * 0.37) % 1)), y = -h - 20;
     const opt = { restitution: 0.25, friction: 0.6, frictionStatic: 0.8, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.6 };
@@ -131,8 +143,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     big.hidden = false;
     const r = titleRect();
     pushOut(r.left - 24, r.right + 24, r.top - 24, r.bottom + 24);
-    titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 0.8 });
-    Composite.add(engine.world, titleBody);
+    // sur ordinateur le titre sert d'étagère ; sur téléphone les objets tombent jusqu'au sol (pas de demi-écran vide)
+    if (!small) { titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 0.8 }); Composite.add(engine.world, titleBody); }
     letters(big, delay);
   };
   const hideTitle = () => {
@@ -144,7 +156,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // le plafond se ferme quand tous les objets sont entrés : ensuite, rien ne sort de la boîte
   Events.on(engine, 'afterUpdate', () => {
     if (closed) return;
-    if (items.every(({ body, h }) => Composite.get(engine.world, body.id, 'body') && body.position.y > h / 2 + 8)) { closed = true; buildWalls(); }
+    if (items.every(({ body, h }) => Composite.get(engine.world, body.id, 'body') && body.position.y > top() + h / 2 + 8)) { closed = true; buildWalls(); }
   });
   // vitesse plafonnée : un lancer violent ne traverse pas les murs
   Events.on(engine, 'beforeUpdate', () => items.forEach(({ body }) => { const v = body.velocity, s = Math.hypot(v.x, v.y); if (s > 32) Body.setVelocity(body, { x: (v.x / s) * 32, y: (v.y / s) * 32 }); }));
@@ -164,6 +176,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
     if (hit && sel && hit === sel.body) close(); // second clic sur l'objet ouvert : on referme
     else if (hit) open(hit.kk, true);
+    else if (small && sel) close(); // téléphone : toucher le vide referme
   });
   let hovered: string | null = null;
   stage.addEventListener('pointermove', (e) => {
@@ -190,6 +203,12 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     sel.el.classList.remove('sel'); Body.setStatic(sel.body, false); Body.setVelocity(sel.body, { x: 0, y: 2 });
     sel = null; selS = 1;
   };
+  // le titre s'écrit lettre à lettre ; le texte apparaît d'un bloc (découper un paragraphe en lettres le fait sauter de ligne)
+  const reveal = () => {
+    if (still) return;
+    letters(card.querySelector('[data-title]')!, 200);
+    card.querySelectorAll<HTMLElement>('.sub, .txt, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: 260 + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
+  };
   const open = (id: string, push: boolean) => {
     const d = D.find((x) => x.id === id); const it = items.find((x) => x.d.id === id); if (!d || !it) return;
     release();
@@ -204,22 +223,33 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     card.querySelector('[data-title]')!.textContent = d.title;
     card.querySelector('[data-text]')!.textContent = d.text;
     card.hidden = false;
-    const r = card.querySelector('.in')!.getBoundingClientRect();
-    // place de l'objet : colonnes 2 à 6 sur ordinateur, au-dessus du texte sur téléphone
-    const S = Math.min(d.embed ? 3.6 : 2.4, (small ? H * 0.28 : H * (d.embed ? 0.66 : 0.42)) / Math.max(it.w, it.h));
-    const tx = small ? W / 2 : W * 0.3, ty = small ? Math.max(r.top / 2 + 40, 140) : H / 2;
+    card.scrollTop = 0;
+    const r = (small ? card : card.querySelector('.in')!).getBoundingClientRect();
+    if (small) {
+      // téléphone : le monde se fige, les autres objets s'effacent ; l'objet se pose au centre de l'espace libre au-dessus de la feuille
+      engine.timing.timeScale = 0; root.classList.add('open');
+      const t0 = top(), room = r.top - t0 - 32;
+      const S = Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w);
+      sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true); tween(it, W / 2, t0 + 16 + room / 2, S);
+      reveal(); if (push) history.replaceState(null, '', `#${id}`);
+      return;
+    }
+    // place de l'objet : colonnes 2 à 6 sur ordinateur
+    const S = Math.min(d.embed ? 3.6 : 2.4, H * (d.embed ? 0.66 : 0.42) / Math.max(it.w, it.h));
+    const tx = W * 0.3, ty = H / 2;
     sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true); tween(it, tx, ty, S);
     const L = Math.min(r.left, tx - (it.w * S) / 2) - 32, R = r.right + 32, Tp = Math.min(r.top, ty - (it.h * S) / 2) - 32, B = Math.max(r.bottom, ty + (it.h * S) / 2) + 32;
     if (block) Composite.remove(engine.world, block);
     pushOut(L, R, Tp, B, it.body);
     block = Bodies.rectangle((L + R) / 2, (Tp + B) / 2, R - L, B - Tp, { isStatic: true });
     Composite.add(engine.world, block);
-    letters(card, 200); fadeMono(card, 200);
+    reveal();
     if (push) history.replaceState(null, '', `#${id}`);
     card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
   };
   const close = () => {
     card.hidden = true; history.replaceState(null, '', location.pathname);
+    engine.timing.timeScale = 1; root.classList.remove('open');
     if (block) { Composite.remove(engine.world, block); block = null; }
     release();
     showTitle(80);
