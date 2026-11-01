@@ -1,6 +1,7 @@
 // Archive : lettrages, logotypes, affiches, merch et concepts (source : _sources/ASSETS/ARCHIVE, sélection de Xavier du 01/11).
 // Pas de noms ni de titres en légende. src : /public/archive/ ; w × h : proportions réelles.
-// year : à compléter (vide = la légende n'affiche que la catégorie).
+// year : tirée des métadonnées des fichiers (EXIF, XMP, date d'ajout Photos, téléchargement, horodatage dans le nom) ;
+// vide quand le fichier n'en contient aucune.
 export type Piece = { src: string; w: number; h: number; year: string; cat: { fr: string; en: string } };
 
 const C = {
@@ -35,12 +36,12 @@ const raw: Piece[] = [
   { src: '/archive/20.webp', w: 1080, h: 1080, year: '', cat: C.poster },
   { src: '/archive/21.webp', w: 1400, h: 1400, year: '', cat: C.poster },
   { src: '/archive/22.webp', w: 1400, h: 1400, year: '', cat: C.poster },
-  { src: '/archive/23.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/23.webp', w: 1400, h: 1400, year: '2020', cat: C.cover },
   { src: '/archive/24.webp', w: 1400, h: 1400, year: '', cat: C.cover },
   { src: '/archive/25.webp', w: 838, h: 1400, year: '', cat: C.merch },
   { src: '/archive/26.webp', w: 1400, h: 1400, year: '', cat: C.logo },
-  { src: '/archive/27.webp', w: 1400, h: 1400, year: '', cat: C.illu },
-  { src: '/archive/28.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/27.webp', w: 1400, h: 1400, year: '2021', cat: C.illu },
+  { src: '/archive/28.webp', w: 1400, h: 1400, year: '2021', cat: C.logo },
   { src: '/archive/29.webp', w: 1400, h: 1400, year: '', cat: C.poster },
   { src: '/archive/30.webp', w: 1400, h: 783, year: '', cat: C.lettering },
   { src: '/archive/31.webp', w: 1400, h: 1400, year: '', cat: C.poster },
@@ -54,31 +55,31 @@ const raw: Piece[] = [
   { src: '/archive/39.webp', w: 1400, h: 1071, year: '', cat: C.logo },
   { src: '/archive/40.webp', w: 990, h: 1400, year: '', cat: C.poster },
   { src: '/archive/41.webp', w: 1400, h: 1400, year: '', cat: C.logo },
-  { src: '/archive/42.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/42.webp', w: 1400, h: 1400, year: '2021', cat: C.logo },
   { src: '/archive/43.webp', w: 1120, h: 1400, year: '', cat: C.merch },
   { src: '/archive/44.webp', w: 1400, h: 1400, year: '', cat: C.illu },
   { src: '/archive/45.webp', w: 1400, h: 700, year: '', cat: C.logo },
-  { src: '/archive/46.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/46.webp', w: 1400, h: 1400, year: '2021', cat: C.poster },
   { src: '/archive/47.webp', w: 1400, h: 1400, year: '', cat: C.poster },
   { src: '/archive/48.webp', w: 1400, h: 1400, year: '', cat: C.logo },
   { src: '/archive/49.webp', w: 1400, h: 1382, year: '', cat: C.logo },
   { src: '/archive/50.webp', w: 1400, h: 1400, year: '', cat: C.poster },
   { src: '/archive/51.webp', w: 1400, h: 1400, year: '', cat: C.logo },
-  { src: '/archive/52.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/52.webp', w: 1400, h: 1400, year: '2021', cat: C.logo },
   { src: '/archive/53.webp', w: 1400, h: 1400, year: '', cat: C.poster },
   { src: '/archive/54.webp', w: 1400, h: 1400, year: '', cat: C.poster },
-  { src: '/archive/55.webp', w: 1400, h: 1400, year: '', cat: C.cover },
-  { src: '/archive/56.webp', w: 1400, h: 1400, year: '', cat: C.cover },
-  { src: '/archive/57.webp', w: 1400, h: 1400, year: '', cat: C.cover },
-  { src: '/archive/58.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/55.webp', w: 1400, h: 1400, year: '2021', cat: C.cover },
+  { src: '/archive/56.webp', w: 1400, h: 1400, year: '2021', cat: C.cover },
+  { src: '/archive/57.webp', w: 1400, h: 1400, year: '2021', cat: C.cover },
+  { src: '/archive/58.webp', w: 1400, h: 1400, year: '2021', cat: C.cover },
   { src: '/archive/59.webp', w: 1400, h: 1246, year: '', cat: C.logo },
   { src: '/archive/60.webp', w: 1400, h: 1400, year: '', cat: C.poster },
-  { src: '/archive/61.webp', w: 1400, h: 1400, year: '', cat: C.logo },
-  { src: '/archive/62.webp', w: 1400, h: 1400, year: '', cat: C.logo },
-  { src: '/archive/63.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/61.webp', w: 1400, h: 1400, year: '2021', cat: C.logo },
+  { src: '/archive/62.webp', w: 1400, h: 1400, year: '2021', cat: C.logo },
+  { src: '/archive/63.webp', w: 1400, h: 1400, year: '2021', cat: C.cover },
   { src: '/archive/64.webp', w: 1400, h: 1400, year: '', cat: C.cover },
   { src: '/archive/65.webp', w: 1400, h: 1400, year: '', cat: C.poster },
-  { src: '/archive/66.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/66.webp', w: 1400, h: 1400, year: '2024', cat: C.logo },
 ];
 
 // tri par année, de la plus récente à la plus ancienne ; les pièces sans année restent à la fin, dans l'ordre de la liste

@@ -2,9 +2,9 @@
 // w × h : proportions de l'image ; cm : taille réelle (sert à garder une hiérarchie douce entre les objets) ;
 // hull : contour de collision (enveloppe convexe du PNG, coordonnées 0–1), pour que les objets se touchent vraiment.
 // Textes : écrits à partir des notes de Xavier (01/11), à relire.
-// À COMPLÉTER : LETTERBOXD (lien du DVD) et SPOTIFY (playlist de l'iPod), voir plus bas.
-const LETTERBOXD = ''; // ex. 'https://letterboxd.com/pseudo/'
-const SPOTIFY = '';    // ex. 'https://open.spotify.com/embed/playlist/<id>'
+// Liens : LETTERBOXD (sur le DVD) et SPOTIFY (lecteur dans l'écran de l'iPod, lien « embed »).
+const LETTERBOXD = 'https://letterboxd.com/icemigi/';
+const SPOTIFY = 'https://open.spotify.com/embed/playlist/5pJ0LEKT6sF4oUpoI8Hkme?utm_source=generator&theme=0'; // playlist de test, à remplacer
 export type Like = {
   id: string;
   src: string;
