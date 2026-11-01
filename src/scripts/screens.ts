@@ -1,7 +1,7 @@
 // Défilement forcé (règle site entier) : un geste = un écran entier.
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; le saut reprend à son bord.
-// Passage : glissement 700 ms, cubic-bezier(.7,0,.2,1). « Réduire les animations » : passage instantané.
-import { reduced, reveal, EASE_SLIDE } from './motion';
+// Passage : glissement 680 ms, cubic-bezier(.7,0,.2,1), interruptible sans à-coup. « Réduire les animations » : passage instantané.
+import { reduced, reveal } from './motion';
 
 export type Screens = {
   go: (to: number) => void;
@@ -42,13 +42,9 @@ export function initScreens(host: HTMLElement): Screens {
   const solid = () => header?.classList.toggle('solid', S[cur].scrollTop > 8);
   const place = () => {
     S.forEach((s, i) => {
-      s.getAnimations().forEach((a) => a.cancel());
       s.classList.toggle('on', i === cur);
       s.classList.toggle('before', i < cur);
-      s.style.transform = '';
     });
-    // écran « peek » (pied de page) : il ne monte que de sa propre hauteur, l'écran précédent recule d'autant
-    if (S[cur].hasAttribute('data-peek') && cur > 0) S[cur - 1].style.transform = `translateY(${-S[cur].offsetHeight}px)`;
     solid();
     document.documentElement.dataset.screen = String(cur);
     // flèche discrète : il reste au moins un écran après celui-ci
@@ -62,52 +58,91 @@ export function initScreens(host: HTMLElement): Screens {
   const canScroll = (s: HTMLElement, dir: number) =>
     dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2;
 
-  // passage d'écran interruptible : un nouveau geste pendant un glissement termine celui-ci aussitôt et enchaîne
-  // (on n'attend jamais la fin d'une animation pour continuer à défiler)
-  let tgt = 0, anims: Animation[] = [], done: (() => void) | null = null, timer = 0;
-  const DUR = 650;
-  const settle = () => { if (!done) return; anims.forEach((x) => x.finish()); clearTimeout(timer); const f = done; done = null; f(); };
+  // Bande continue : les écrans sont posés les uns sous les autres, une seule valeur « scroll » les fait tous défiler.
+  // T[i] = valeur de scroll où l'écran i est en place. Un nouveau geste en plein passage change seulement la cible :
+  // la course repart de la position et de la vitesse du moment (aucun saut, aucune animation qui se chevauche).
+  let T: number[] = [], H = 0, scroll = 0, tgt = cur, raf = 0, vel = 0, lastT = 0;
+  let mv: { p0: number; v0: number; t0: number; d: number } | null = null;
+  const PAR = '.im img, .cov, .vi, .door, .mimg, [data-par]';
+  const parEls = S.map((s) => [...s.querySelectorAll<HTMLElement>(PAR)].map((el) => ({ el, k: Number(el.dataset.par || 80) })));
+  const parOn = S.map(() => false);
+  const measure = () => {
+    H = host.clientHeight || innerHeight;
+    let y = 0; T = [];
+    S.forEach((s, i) => {
+      const peek = s.hasAttribute('data-peek');
+      // écran « peek » (pied de page) : calé en bas, il ne fait monter la bande que de sa propre hauteur
+      T.push(peek ? y - (H - s.offsetHeight) : y);
+      y += peek ? s.offsetHeight : H;
+    });
+  };
+  const render = () => {
+    S.forEach((s, i) => {
+      const d = T[i] - scroll;
+      const vis = d > -H - 2 && d < H + 2;
+      s.style.transform = `translate3d(0, ${Math.round(d * 100) / 100}px, 0)`;
+      s.style.visibility = vis ? '' : 'hidden';
+      // parallaxe : images (et data-par) décalées selon la distance de leur écran au cadre, nulles à l'arrêt
+      const live = vis && Math.abs(d) > 0.5;
+      if (live) { parEls[i].forEach(({ el, k }) => (el.style.translate = `0 ${((d / H) * k).toFixed(2)}px`)); parOn[i] = true; }
+      else if (parOn[i]) { parEls[i].forEach(({ el }) => (el.style.translate = '')); parOn[i] = false; }
+    });
+  };
+  // courbe du glissement (cubic-bezier .7,0,.2,1) ; la vitesse héritée s'éteint par u(1-u)^3
+  const bez = (x: number) => {
+    const X = (t: number) => 3 * (1 - t) * (1 - t) * t * 0.7 + 3 * (1 - t) * t * t * 0.2 + t * t * t;
+    const Y = (t: number) => 3 * (1 - t) * t * t + t * t * t;
+    let lo = 0, hi = 1, t = x;
+    for (let n = 0; n < 24; n++) { const v = X(t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
+    return Y(t);
+  };
+  const DUR = 680;
+  const arrive = () => {
+    mv = null; busy = false; vel = 0; scroll = T[tgt]; pend = null;
+    cur = tgt; place(); save();
+    emit('screens:enter', { index: cur });
+  };
+  const tick = (now: number) => {
+    raf = 0;
+    if (!mv) return;
+    const u = Math.min(1, (now - mv.t0) / mv.d);
+    const p1 = T[tgt];
+    const prev = scroll;
+    scroll = p1 + (mv.p0 - p1) * (1 - bez(u)) + mv.v0 * mv.d * u * (1 - u) ** 3;
+    scroll = Math.max(T[0], Math.min(T[T.length - 1], scroll));
+    if (lastT) vel = (scroll - prev) / Math.max(1, now - lastT);
+    lastT = now;
+    if (u >= 1) { arrive(); render(); return; }
+    render();
+    raf = requestAnimationFrame(tick);
+  };
+  const revealed = new Map<HTMLElement, number>();
+  let pend: HTMLElement | null = null;
   const step = (dir: number) => go((busy ? tgt : cur) + dir);
   function go(to: number) {
-    if (busy) settle();
-    if (to === cur) return;
+    const from = busy ? tgt : cur;
+    if (to === from) return;
     if (to < 0) return;
-    if (to >= S.length) { emit('screens:beyond', { from: cur }); return; }
-    const a = S[cur], b = S[to], dir = to > cur ? 1 : -1;
+    if (to >= S.length) { emit('screens:beyond', { from }); return; }
+    const b = S[to], dir = to > from ? 1 : -1;
     b.scrollTop = dir > 0 ? 0 : b.scrollHeight;
-    emit('screens:leave', { from: cur, to });
+    emit('screens:leave', { from, to });
     dispatchEvent(new CustomEvent('kk:sound', { detail: 'slide' }));
     if (!b.hasAttribute('data-still')) dispatchEvent(new CustomEvent('kk:sound', { detail: 'letters' }));
-    if (reduced()) { cur = to; place(); save(); emit('screens:enter', { index: cur }); return; }
-    busy = true; tgt = to;
-    a.style.zIndex = '2'; b.style.zIndex = '3';
-    b.classList.add('on'); b.classList.remove('before');
-    const peekIn = b.hasAttribute('data-peek'), peekOut = a.hasAttribute('data-peek');
-    const o = { duration: DUR, easing: EASE_SLIDE, fill: 'forwards' as FillMode };
-    if (peekIn) {
-      const h = b.offsetHeight;
-      anims = [b.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-h}px)` }], o)];
-    } else if (peekOut) {
-      const h = a.offsetHeight;
-      anims = [b.animate([{ transform: `translateY(${-h}px)` }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }], o)];
-    } else {
-      anims = [b.animate([{ transform: `translateY(${100 * dir}%)` }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-100 * dir}%)` }], o)];
-    }
-    // parallaxe : pendant le glissement, les images (et ce qui porte data-par) voyagent un peu plus loin que leur écran
-    // puis rattrapent leur place ; on lit une profondeur, sans rien ralentir (même durée que le glissement)
-    const PAR = '.im img, .cov, .vi, .door, .mimg, [data-par]';
-    const po = { duration: DUR, easing: 'cubic-bezier(.2,.75,.15,1)' };
-    b.querySelectorAll<HTMLElement>(PAR).forEach((el) => anims.push(el.animate([{ translate: `0 ${dir * Number(el.dataset.par || 90)}px` }, { translate: '0 0' }], po)));
-    const out = [...a.querySelectorAll<HTMLElement>(PAR)].map((el) => el.animate([{ translate: '0 0' }, { translate: `0 ${-dir * Number(el.dataset.par || 60)}px` }], { ...po, fill: 'forwards' as FillMode }));
-    anims.push(...out);
-    if (!b.hasAttribute('data-still')) reveal(b, 220);
-    done = () => {
-      out.forEach((x) => x.cancel()); // l'écran quitté reprend sa mise en place pour son prochain retour
-      a.style.zIndex = ''; b.style.zIndex = '';
-      cur = to; busy = false; place(); save();
-      emit('screens:enter', { index: cur });
-    };
-    timer = window.setTimeout(settle, DUR + 10);
+    tgt = to;
+    if (reduced()) { arrive(); render(); return; }
+    busy = true;
+    b.classList.add('on');
+    const now = performance.now();
+    const n = Math.abs(to - from);
+    mv = { p0: scroll, v0: mv ? vel : 0, t0: now, d: DUR * Math.min(1.6, 1 + 0.15 * (n - 1)) };
+    lastT = now;
+    if (!raf) raf = requestAnimationFrame(tick);
+    // apparition des lettres : elles sont masquées tout de suite mais ne montent que dans la fin du glissement
+    // (deux mouvements lourds ne se superposent pas) ; un écran simplement traversé est affiché d'un coup
+    if (pend && pend !== b) { pend.getAnimations({ subtree: true }).forEach((x) => x.finish()); revealed.delete(pend); }
+    pend = null;
+    if (!b.hasAttribute('data-still') && now - (revealed.get(b) || -1e4) > 1400) { revealed.set(b, now); reveal(b, Math.round(mv.d * 0.55)); pend = b; }
   }
 
   // molette / pavé tactile : un geste = un écran ; l'inertie du même geste est ignorée
@@ -172,7 +207,7 @@ export function initScreens(host: HTMLElement): Screens {
   // tabulation : le focus amène son écran
   host.addEventListener('focusin', (e) => {
     const i = S.findIndex((s) => s.contains(e.target as Node));
-    if (i >= 0 && i !== cur && !busy) { cur = i; place(); save(); emit('screens:enter', { index: cur }); }
+    if (i >= 0 && i !== cur && !busy) { host.scrollTop = 0; tgt = i; arrive(); render(); }
   });
 
   // liens « Haut ↑ » et ancres internes
@@ -185,9 +220,10 @@ export function initScreens(host: HTMLElement): Screens {
 
   addEventListener('pagehide', save);
   let rz = 0;
-  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(() => { if (!busy) place(); }); });
-  document.fonts?.ready.then(() => { if (!busy) place(); });
-  place();
+  const relayout = () => { measure(); if (!busy) scroll = T[cur]; render(); };
+  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(relayout); });
+  document.fonts?.ready.then(relayout);
+  measure(); scroll = T[cur]; tgt = cur; place(); render();
   document.documentElement.classList.add('screens');
   const api: Screens = { go, current: () => cur, count: S.length, el: (i) => S[i] };
   window.kkScreens = api;
