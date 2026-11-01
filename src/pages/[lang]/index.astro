@@ -72,6 +72,7 @@ const t = ui[lang];
 <script>
   // Le nom remplit la largeur (ligne du milieu), puis on le cale verticalement pour que le bas de l'écran
   // coupe « le » au premier tiers bas de l'œil du e : on reconnaît la lettre, la coupe reste franche.
+  const phrase = document.querySelector<HTMLElement>('.s1 .phrase')!;
   const n = document.getElementById('name')!, hero = n.closest<HTMLElement>('.hero')!, s1 = n.closest<HTMLElement>('.scr')!;
   const place = () => {
     const W = n.parentElement!.clientWidth;
@@ -80,9 +81,10 @@ const t = ui[lang];
     const fs = Math.floor(((100 * W) / w) * 100) / 100;
     n.style.fontSize = `${fs}px`;
     // ligne de base de « le » et hauteur d'x de la fonte, mesurées
-    const last = n.lastElementChild as HTMLElement;
+    const last = n.lastElementChild as HTMLElement, mid = n.children[1] as HTMLElement;
     const probe = document.createElement('i'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
     last.appendChild(probe);
+    const probe2 = probe.cloneNode() as HTMLElement; mid.appendChild(probe2);
     const ctx = document.createElement('canvas').getContext('2d')!;
     ctx.font = `500 ${fs}px Geist`;
     const xh = ctx.measureText('x').actualBoundingBoxAscent;
@@ -92,7 +94,16 @@ const t = ui[lang];
     const H = s1.clientHeight;
     const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 56;
     // bas de l'écran = ligne de base − tiers de la hauteur d'x ; jamais sous le menu
-    hero.style.paddingTop = `${Math.max(head + 8, H - (base - xh / 3))}px`;
+    const pad = Math.max(head + 8, H - (base - xh / 3));
+    hero.style.paddingTop = `${pad}px`;
+    // la phrase, calée à droite juste sous « kast » (ligne de base de la ligne du milieu)
+    const r1 = s1.getBoundingClientRect();
+    const b2 = probe2.getBoundingClientRect().top - r1.top + s1.scrollTop;
+    probe2.remove();
+    const right = r1.right - n.getBoundingClientRect().right;
+    phrase.style.top = `${Math.round(b2 + fs * 0.07)}px`;
+    phrase.style.right = `${Math.round(right + fs * 0.01)}px`;
+    phrase.style.bottom = 'auto';
   };
   document.fonts.ready.then(place);
   addEventListener('resize', place);

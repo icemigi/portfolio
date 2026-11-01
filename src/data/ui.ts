@@ -5,7 +5,7 @@ export type Lang = (typeof languages)[number];
 export const ui = {
   en: {
     tagline: 'Type designer & digital creative',
-    phrase: 'Type designer & digital creative — Paris & remote',
+    phrase: 'Type designer + digital creative — Paris & remote',
     nav: { work: 'Work', lab: 'Lab', archive: 'Archive', about: 'About' },
     home: 'kerningkastle — home',
     skip: 'Skip to content',
@@ -37,7 +37,7 @@ export const ui = {
   },
   fr: {
     tagline: 'Type designer & digital creative',
-    phrase: 'Type designer & digital creative — Paris & remote',
+    phrase: 'Type designer + digital creative — Paris & remote',
     nav: { work: 'Projets', lab: 'Lab', archive: 'Archive', about: 'À propos' },
     home: 'kerningkastle — accueil',
     skip: 'Aller au contenu',
