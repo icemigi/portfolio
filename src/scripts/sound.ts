@@ -1,9 +1,9 @@
 // Son (validé, palette v2) : synthétisé dans le navigateur, aucun fichier, très discret.
-// Coupé par défaut ; le bouton « Son » du menu l'active (choix mémorisé). Coupé quand l'onglet est caché.
+// Actif par défaut (il démarre au premier geste, règle des navigateurs) ; le bouton du menu le coupe (choix mémorisé). Coupé quand l'onglet est caché.
 // Les autres scripts demandent un son par : dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })).
 let ctx: AudioContext | null = null, master: GainNode | null = null, NB: AudioBuffer | null = null;
-let on = false;
-try { on = localStorage.getItem('kk-sound') === 'on'; } catch { /* */ }
+let on = true; // actif par défaut ; « off » seulement si le visiteur l'a coupé
+try { on = localStorage.getItem('kk-sound') !== 'off'; } catch { /* */ }
 
 const init = () => {
   if (ctx) return;

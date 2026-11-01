@@ -13,7 +13,6 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 ---
 <Base lang={lang} title="kerningkastle" description={`${t.phrase}. ${homeServices[lang].replace(/\{[^}]*\}\s?/g, '')}`} path="">
-  <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
   <div class="screens-host" data-screens>
     <section class="scr s1" aria-label="kerningkastle">
       <div class="hero g">
@@ -48,6 +47,7 @@ const t = ui[lang];
 <style>
   /* le nom coupé sur trois lignes, la ligne du milieu remplit la largeur, la dernière déborde en bas */
   .s1 { overflow: hidden; }
+  :global(html.libre) .s1 { height: 100vh; min-height: 0; }
   .hero { padding-top: calc(var(--head) + 9vh); } /* recalculé par le script : le « e » coupé au tiers bas */
   .nw { grid-column: 1 / -1; }
   .name { width: max-content; font-weight: 500; letter-spacing: -0.055em; line-height: .76; white-space: nowrap; font-size: 18vw; margin-left: -.04em; }

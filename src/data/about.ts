@@ -3,17 +3,17 @@
 
 export type Vig = { src: string; label: { en: string; fr: string }; logo?: boolean }; // logo : image contenue (logo de logiciel), pas recadrée
 
-// Accueil, écran 2 : 5 vignettes, chacune illustre le mot qui la précède.
+// Accueil, écran 2 : 5 vignettes animées, uniquement des travaux montrés en entier (jamais recadrés) ; régénérées par tools/vignettes.py.
 export const homeServices = {
   fr: 'Je dessine {0} des lettres{m:beaucoup}, {1} des identités {2} et des images, {3} à la main ou en code{m:selon l\'humeur}, {4} pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
   en: 'I draw {0} letters{m:a lot}, {1} identities {2} and images, {3} by hand or in code{m:depending on the mood}, {4} for artists, brands and studios{m:and myself, on Sundays}.',
 };
 export const homeVigs: Vig[] = [
-  { src: '/vig/v4.jpg', label: { fr: 'lettre', en: 'letter' } },
-  { src: '/vig/v1.jpg', label: { fr: 'identité', en: 'identity' } },
-  { src: '/vig/v3.jpg', label: { fr: 'affiche', en: 'poster' } },
-  { src: '/vig/v2.jpg', label: { fr: 'image', en: 'image' } },
-  { src: '/vig/v0.jpg', label: { fr: 'visuel', en: 'visual' } },
+  { src: '/vig/h-lettres.webp', label: { fr: 'lettre', en: 'letter' } },
+  { src: '/vig/h-identites.webp', label: { fr: 'identité', en: 'identity' } },
+  { src: '/vig/h-images.webp', label: { fr: 'image', en: 'image' } },
+  { src: '/vig/h-main-code.webp', label: { fr: 'main ou code', en: 'hand or code' } },
+  { src: '/vig/h-clients.webp', label: { fr: 'clients', en: 'clients' } },
 ];
 
 // À propos — 4 écrans
