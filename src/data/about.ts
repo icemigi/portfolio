@@ -43,12 +43,12 @@ export const services = {
 };
 
 // Stack technique, en texte d'affiche : chaque logiciel est suivi de sa vignette-logo.
-// Logos : déposer /public/stack/<nom>.svg (ou .png) ; tant qu'un fichier manque, la vignette affiche le nom.
+// Logos : /public/stack/<nom>.png (icônes d'app) ; tant qu'un fichier manque, la vignette affiche le nom.
 export const stack = {
   fr: "Je dessine mes lettres dans Glyphs {0}, je compose dans Illustrator {1}, Photoshop {2} et Figma {3}, je griffonne sur Procreate {4}, je code en TypeScript {5}, p5.js {6} et Python {7}, et je joue en direct avec TouchDesigner {8}.",
   en: "I draw my letters in Glyphs {0}, lay out in Illustrator {1}, Photoshop {2} and Figma {3}, sketch in Procreate {4}, code in TypeScript {5}, p5.js {6} and Python {7}, and play live with TouchDesigner {8}.",
 };
-const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.svg`, label: { fr: name, en: name }, logo: true });
+const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.png`, label: { fr: name, en: name }, logo: true });
 export const stackVigs: Vig[] = [
   tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),
   tool('typescript', 'TypeScript'), tool('p5js', 'p5.js'), tool('python', 'Python'), tool('touchdesigner', 'TouchDesigner'),
