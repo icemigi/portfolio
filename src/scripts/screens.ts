@@ -130,7 +130,6 @@ export function initScreens(host: HTMLElement): Screens {
     b.scrollTop = dir > 0 || getComputedStyle(b).overflowY === 'hidden' ? 0 : b.scrollHeight;
     emit('screens:leave', { from, to });
     dispatchEvent(new CustomEvent('kk:sound', { detail: 'slide' }));
-    if (!b.hasAttribute('data-still')) dispatchEvent(new CustomEvent('kk:sound', { detail: 'letters' }));
     tgt = to;
     if (reduced()) { arrive(); render(); return; }
     busy = true;

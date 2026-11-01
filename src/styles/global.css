@@ -81,7 +81,8 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
 .site-header .r { grid-column: 10 / 13; justify-self: end; display: flex; align-items: center; white-space: nowrap; }
 .site-header .r { gap: 24px; }
-.snd { font: inherit; text-transform: inherit; color: var(--mu); }
+.snd { font: inherit; text-transform: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
+.snd svg { display: block; }
 .snd[aria-pressed='true'] { color: var(--fg); }
 .lang { display: flex; gap: 4px; }
 .lang a { color: var(--mu); } .lang [aria-current='true'] { color: var(--fg); }

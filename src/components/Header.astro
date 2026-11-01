@@ -27,7 +27,7 @@ const items = [
     </ul>
   </nav>
   <div class="r">
-    <button class="snd hit" type="button" data-sound aria-pressed="false" data-on={lang === 'fr' ? 'Son on' : 'Sound on'} data-off={lang === 'fr' ? 'Son off' : 'Sound off'}>{lang === 'fr' ? 'Son off' : 'Sound off'}</button>
+    <button class="snd hit" type="button" data-sound aria-pressed="false" data-on={lang === 'fr' ? 'Son on' : 'Sound on'} data-off={lang === 'fr' ? 'Son off' : 'Sound off'} aria-label={lang === 'fr' ? 'Son off' : 'Sound off'}><svg viewBox="0 0 20 16" width="20" height="16" aria-hidden="true"><path d="M2 5.5h3.2L9.5 2v12L5.2 10.5H2Z" fill="currentColor"/><path d="m12.5 5.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
     <span class="lang">
       <a class="hit" href={`/en/${path}`} hreflang="en" lang="en" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>EN</a>
       <span aria-hidden="true">/</span>

@@ -41,6 +41,8 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
     n.replaceWith(f);
     groups.push({ text, first, last });
   }
+  // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
+  dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
   const end = delay + k * step + 440;
   setTimeout(() => {
     for (const { text, first, last } of groups) {
