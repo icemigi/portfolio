@@ -65,7 +65,5 @@ export function initHola() {
     el.addEventListener('pointerleave', () => { inside = false; });
     // l'écran glisse : on remesure au prochain passage
     addEventListener('resize', () => inside && measure());
-    // la page défile sous la souris : les positions de repos changent
-    addEventListener('scroll', () => inside && measure(), { passive: true });
   });
 }

@@ -48,6 +48,7 @@ ul, ol { list-style: none; }
 ::selection { background: var(--fg); color: var(--bg); }
 
 /* pages en écrans : rien ne défile au niveau du document */
+html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 
 /* ---------- typographie ---------- */
 .mono { font-family: var(--mono); font-size: 12px; line-height: 16px; text-transform: lowercase; letter-spacing: 0; font-weight: 400; }
@@ -129,16 +130,18 @@ ul, ol { list-style: none; }
   .row .d { display: none; }
 }
 
-/* ---------- page continue ---------- */
-/* Une seule page, sans séparation : les sections s'enchaînent avec un rythme vertical généreux. */
-.screens-host { position: relative; }
-.scr { position: relative; }
-.scr .in { display: grid; align-content: center; padding-top: 16vh; padding-bottom: 16vh; }
-.scr:first-child .in { min-height: 100vh; min-height: 100svh; padding-top: calc(var(--head) + 24px); }
-.scr.last { min-height: 100vh; min-height: 100svh; }
-.pre { opacity: 0; }
-.pre .vi, .pre .door, .pre img { opacity: 0; }
-.vi, .door { transition: opacity .6s var(--out); }
+/* ---------- écrans ---------- */
+.screens-host { position: fixed; inset: 0; overflow: hidden; }
+.scr { position: absolute; inset: 0; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.scr::-webkit-scrollbar { display: none; }
+.scr:not(.on) { transform: translateY(100%); }
+.scr.on { transform: none; }
+.scr.before { transform: translateY(-100%); }
+.scr[data-peek] { top: auto; height: auto; overflow: visible; }
+.scr .in { min-height: 100%; display: grid; align-content: center; padding-top: calc(var(--head) + 24px); padding-bottom: 64px; }
+html:not(.js) .screens-host { position: static; }
+html:not(.js) .scr { position: relative; transform: none; min-height: 100vh; }
+html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
