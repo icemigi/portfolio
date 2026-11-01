@@ -55,8 +55,9 @@ export function initScreens(host: HTMLElement): Screens {
   const emit = (name: string, detail: object) => host.dispatchEvent(new CustomEvent(name, { detail }));
   S.forEach((s) => s.addEventListener('scroll', solid, { passive: true }));
 
+  // un écran ne se lit à l'intérieur que s'il défile vraiment (overflow:hidden = débord voulu, ex. le nom de l'accueil)
   const canScroll = (s: HTMLElement, dir: number) =>
-    dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2;
+    getComputedStyle(s).overflowY !== 'hidden' && (dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2);
 
   // Bande continue : les écrans sont posés les uns sous les autres, une seule valeur « scroll » les fait tous défiler.
   // T[i] = valeur de scroll où l'écran i est en place. Un nouveau geste en plein passage change seulement la cible :
