@@ -59,7 +59,9 @@ raw.forEach((p, i) => {
     ) : p.kind === 'door' ? (
       <Door lang={lang} />
     ) : p.kind === 'vig' ? (
-      <span class="glue">{p.word}<span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `background-image:url(${p.vig.src})` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>{p.punct}</span>
+      <span class="glue">{p.word}{p.vig.logo
+        ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={p.vig.src} alt="" loading="lazy" onerror="this.remove()" /></span>
+        : <span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `background-image:url(${p.vig.src})` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>}{p.punct}</span>
     ) : p.kind === 'glue' ? (
       <span class="glue">{p.word}<span class="note mono mu">({p.note})</span>{p.punct}</span>
     ) : (

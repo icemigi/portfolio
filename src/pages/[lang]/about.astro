@@ -5,7 +5,7 @@ import Footer from '../../components/Footer.astro';
 import Affiche from '../../components/Affiche.astro';
 import Seal from '../../components/Seal.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
-import { aboutIntro, aboutVigs, services, stack, path, pathVigs, aboutLabels, contact } from '../../data/about';
+import { aboutIntro, aboutVigs, services, stack, stackVigs, path, pathVigs, aboutLabels, contact } from '../../data/about';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
@@ -33,7 +33,7 @@ const L = aboutLabels[lang];
     <section class="scr" aria-labelledby="ab-st">
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-st">{L.stack}</h2>
-        <div class="bd"><Affiche text={stack[lang]} vigs={[]} lang={lang} /></div>
+        <div class="bd"><Affiche text={stack[lang]} vigs={stackVigs} lang={lang} /></div>
       </div>
     </section>
 

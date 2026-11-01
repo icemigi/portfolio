@@ -1,7 +1,7 @@
 // Accueil et À propos — textes de travail (rédaction définitive plus tard, même longueur).
 // Dans les phrases d'affiche, {n} = vignette n° n (image dans /public/vig/, ou emplacement gris).
 
-export type Vig = { src: string; label: { en: string; fr: string } };
+export type Vig = { src: string; label: { en: string; fr: string }; logo?: boolean }; // logo : image contenue (logo de logiciel), pas recadrée
 
 // Accueil, écran 2 : 5 vignettes, chacune illustre le mot qui la précède.
 export const homeServices = {
@@ -42,11 +42,17 @@ export const services = {
   ],
 };
 
-// Stack technique, en texte d'affiche (même voix que l'intro) : les outils réellement utilisés, à corriger si besoin.
+// Stack technique, en texte d'affiche : chaque logiciel est suivi de sa vignette-logo.
+// Logos : déposer /public/stack/<nom>.svg (ou .png) ; tant qu'un fichier manque, la vignette affiche le nom.
 export const stack = {
-  fr: "Je dessine mes lettres dans Glyphs{m:la 4}, je compose dans Illustrator, Photoshop et Figma, je griffonne sur Procreate, je code en TypeScript, p5.js et Python{m:et un peu de C}, je joue en direct avec TouchDesigner, et le tout tourne sur un serveur maison{m:Docker, ZimaOS}.",
-  en: "I draw my letters in Glyphs{m:version 4}, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python{m:and a bit of C}, play live with TouchDesigner, and it all runs on a home server{m:Docker, ZimaOS}.",
+  fr: "Je dessine mes lettres dans Glyphs {0}, je compose dans Illustrator {1}, Photoshop {2} et Figma {3}, je griffonne sur Procreate {4}, je code en TypeScript {5}, p5.js {6} et Python {7}, et je joue en direct avec TouchDesigner {8}.",
+  en: "I draw my letters in Glyphs {0}, lay out in Illustrator {1}, Photoshop {2} and Figma {3}, sketch in Procreate {4}, code in TypeScript {5}, p5.js {6} and Python {7}, and play live with TouchDesigner {8}.",
 };
+const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.svg`, label: { fr: name, en: name }, logo: true });
+export const stackVigs: Vig[] = [
+  tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),
+  tool('typescript', 'TypeScript'), tool('p5js', 'p5.js'), tool('python', 'Python'), tool('touchdesigner', 'TouchDesigner'),
+];
 
 // Parcours : {m:…} = note datée accrochée au mot ; {v:n} = vignette.
 export const path = {

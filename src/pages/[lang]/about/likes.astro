@@ -50,7 +50,9 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .stage:active { cursor: grabbing; }
   .it { position: absolute; left: 0; top: 0; display: grid; place-items: center; padding: 8px; background: #c9c9c9; color: #fff; text-align: center; will-change: transform; pointer-events: none; }
   .it.circle { border-radius: 50%; }
-  .it img { width: 100%; height: 100%; object-fit: contain; }
+  /* une ombre qui suit la forme de l'objet (pas de rectangle) ; l'objet soulevé ou ouvert s'élève */
+  .it img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .16)); transition: filter .3s; }
+  .it.sel img { filter: drop-shadow(0 30px 34px rgba(0, 0, 0, .22)); }
   .it:has(img) { background: none; padding: 0; }
   /* écran de l'iPod : le lecteur Spotify y est posé (iframe 300 px réduite à la taille de l'écran) */
   .emb { position: absolute; left: 8.5%; top: 3.8%; width: 83%; height: 42%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
@@ -62,7 +64,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .card .tt { margin-top: 8px; font-weight: 500; }
   .card .txt { margin-top: 16px; max-width: 46ch; }
   .card .x { margin-top: 24px; }
-  .it.sel { z-index: 3; box-shadow: 0 40px 60px -30px rgba(0, 0, 0, .35); }
+  .it.sel { z-index: 3; }
   .veil { position: fixed; inset: 0; z-index: 50; background: radial-gradient(circle at 50% 60%, #fff, #f3f3f3 70%); pointer-events: none; }
   @media (max-width: 760px) { .card { align-content: end; padding-bottom: 48px; } .card .in { grid-column: 1 / -1; } }
 </style>
@@ -78,7 +80,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const small = matchMedia('(max-width: 760px)').matches;
   const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
-  const engine = Engine.create({ gravity: { y: 1.1 } });
+  // plus d'itérations du solveur : les objets empilés ne s'enfoncent plus les uns dans les autres
+  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: 14, velocityIterations: 10, constraintIterations: 4 });
   let W = innerWidth, H = innerHeight;
 
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
@@ -103,7 +106,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * 0.4) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
     const x = W * (0.12 + 0.76 * ((i * 0.37) % 1)), y = -h - 20;
-    const opt = { restitution: 0.35, friction: 0.5, frictionAir: 0.012, angle: (Math.random() - 0.5) * 0.6 };
+    const opt = { restitution: 0.25, friction: 0.6, frictionStatic: 0.8, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.6 };
     // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
     let body: any, ox = 0, oy = 0;
     if (d.shape === 'circle') body = Bodies.circle(x, y, w / 2, opt);
@@ -144,13 +147,13 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     if (items.every(({ body, h }) => Composite.get(engine.world, body.id, 'body') && body.position.y > h / 2 + 8)) { closed = true; buildWalls(); }
   });
   // vitesse plafonnée : un lancer violent ne traverse pas les murs
-  Events.on(engine, 'beforeUpdate', () => items.forEach(({ body }) => { const v = body.velocity, s = Math.hypot(v.x, v.y); if (s > 45) Body.setVelocity(body, { x: (v.x / s) * 45, y: (v.y / s) * 45 }); }));
+  Events.on(engine, 'beforeUpdate', () => items.forEach(({ body }) => { const v = body.velocity, s = Math.hypot(v.x, v.y); if (s > 32) Body.setVelocity(body, { x: (v.x / s) * 32, y: (v.y / s) * 32 }); }));
 
   // glisser, lancer
   const mouse = Mouse.create(stage);
   mouse.pixelRatio = 1;
   stage.removeEventListener('wheel', mouse.mousewheel); stage.removeEventListener('mousewheel', mouse.mousewheel); stage.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
+  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.12, damping: 0.12, render: { visible: false } } });
   Composite.add(engine.world, mc);
   let down = { x: 0, y: 0, t: 0 };
   Events.on(mc, 'startdrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })));

@@ -93,8 +93,16 @@ export function initScreens(host: HTMLElement): Screens {
     } else {
       anims = [b.animate([{ transform: `translateY(${100 * dir}%)` }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-100 * dir}%)` }], o)];
     }
+    // parallaxe : pendant le glissement, les images (et ce qui porte data-par) voyagent un peu plus loin que leur écran
+    // puis rattrapent leur place ; on lit une profondeur, sans rien ralentir (même durée que le glissement)
+    const PAR = '.im img, .cov, .vi, .door, .mimg, [data-par]';
+    const po = { duration: DUR, easing: 'cubic-bezier(.2,.75,.15,1)' };
+    b.querySelectorAll<HTMLElement>(PAR).forEach((el) => anims.push(el.animate([{ translate: `0 ${dir * Number(el.dataset.par || 90)}px` }, { translate: '0 0' }], po)));
+    const out = [...a.querySelectorAll<HTMLElement>(PAR)].map((el) => el.animate([{ translate: '0 0' }, { translate: `0 ${-dir * Number(el.dataset.par || 60)}px` }], { ...po, fill: 'forwards' as FillMode }));
+    anims.push(...out);
     if (!b.hasAttribute('data-still')) reveal(b, 220);
     done = () => {
+      out.forEach((x) => x.cancel()); // l'écran quitté reprend sa mise en place pour son prochain retour
       a.style.zIndex = ''; b.style.zIndex = '';
       cur = to; busy = false; place(); save();
       emit('screens:enter', { index: cur });

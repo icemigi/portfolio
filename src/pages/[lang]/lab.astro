@@ -1,5 +1,5 @@
 ---
-// /xx/lab/ : le Lab est un faux bureau macOS. Barre des menus (le cavalier remplace la pomme et sert de menu du site),
+// /xx/lab/ : le Lab est un faux bureau macOS, sous le menu du site. Fond blanc au cavalier (comme la pomme), barre des menus (le cavalier sert de menu),
 // widgets (météo de Paris en direct, calendrier, horloge, note), icônes déplaçables, Dock.
 // Chaque pièce du Lab est une app : double-clic (ou Entrée) sur l'icône, ou un clic dans le Dock, ouvre sa fenêtre.
 // Les fenêtres se déplacent, se redimensionnent, se réduisent dans le Dock et passent en plein écran.
@@ -23,14 +23,14 @@ const M = fr
   : { app: 'Finder', menus: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'], about: 'About kerningkastle', site: [['Home', ''], ['Work', 'work/'], ['Archive', 'archive/'], ['About', 'about/']], lang: 'Français', hint: 'Double-click an icon to open an experiment. Everything can be moved.', note: 'Lab', trash: 'Trash', trashEmpty: 'The trash is empty (for now).', weather: 'Paris', today: 'Today', close: 'Close', min: 'Minimise', zoom: 'Full screen' };
 const other = fr ? 'en' : 'fr';
 ---
-<Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab" bare>
+<Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
   <div class="boot" data-boot aria-hidden="true"><img src="/logo-kerningkastle.svg" alt="" width="84" height="84" /><span class="pb"><i data-pb></i></span></div>
   <div class="mac" data-mac>
     <!-- barre des menus -->
     <div class="bar">
       <div class="bl">
         <div class="kmenu">
-          <button class="mb logo" type="button" aria-haspopup="menu" aria-expanded="false" data-kmenu aria-label="kerningkastle"><img src="/logo-kerningkastle.svg" alt="" width="15" height="15" /></button>
+          <button class="mb logo" type="button" aria-haspopup="menu" aria-expanded="false" data-kmenu aria-label="kerningkastle"><img src="/logo-kerningkastle-dark.svg" alt="" width="15" height="15" /></button>
           <div class="dd" role="menu" data-kdd hidden>
             <a role="menuitem" href={`/${lang}/about/`}>{M.about}</a>
             <hr />
@@ -98,31 +98,25 @@ const other = fr ? 'en' : 'fr';
 
 <style>
   /* ---------- démarrage ---------- */
-  .boot { position: fixed; inset: 0; z-index: 200; background: #000; display: grid; place-items: center; align-content: center; row-gap: 56px; }
+  .boot { position: fixed; inset: var(--head) 0 0 0; z-index: 200; background: #000; display: grid; place-items: center; align-content: center; row-gap: 56px; }
   .boot img { width: 84px; height: 84px; }
   .boot .pb { width: 210px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .22); overflow: hidden; }
   .boot .pb i { display: block; height: 100%; width: 0; background: #fff; border-radius: 3px; }
   :global(.lab-booted) .boot { display: none; }
 
   /* ---------- bureau ---------- */
-  .mac { position: fixed; inset: 0; overflow: hidden; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
-    background:
-      radial-gradient(120% 80% at 15% 110%, #ff8a3d 0%, rgba(255, 138, 61, 0) 55%),
-      radial-gradient(90% 70% at 85% 95%, #ff4f7a 0%, rgba(255, 79, 122, 0) 55%),
-      radial-gradient(120% 90% at 70% 10%, #3a2d9e 0%, rgba(58, 45, 158, 0) 60%),
-      radial-gradient(100% 100% at 0% 0%, #1b3fbf 0%, rgba(27, 63, 191, 0) 60%),
-      linear-gradient(160deg, #10184a, #5b2a86 55%, #c94a6a); }
-  .mac::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 60% at 50% 45%, rgba(255, 255, 255, .08), transparent 70%); }
+  .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
+    background: #fff url(/logo-kerningkastle-dark.svg) center 46% / min(22vh, 220px) no-repeat; box-shadow: inset 0 1px 0 var(--ln); }
 
   /* barre des menus */
-  .bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; height: 24px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; background: rgba(20, 16, 50, .22); backdrop-filter: blur(50px) saturate(1.8); -webkit-backdrop-filter: blur(50px) saturate(1.8); text-shadow: 0 0 1px rgba(0,0,0,.15); }
+  .bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; height: 24px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; background: rgba(246, 246, 246, .72); backdrop-filter: blur(50px) saturate(1.8); -webkit-backdrop-filter: blur(50px) saturate(1.8); box-shadow: 0 .5px 0 rgba(0, 0, 0, .12); }
   .bl, .br { display: flex; align-items: center; gap: 2px; height: 100%; }
   .br { gap: 12px; padding-right: 4px; }
-  .mb { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 5px; color: #fff; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; }
+  .mb { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 5px; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; }
   .mb.b { font-weight: 700; }
   .mb.logo img { width: 15px; height: 15px; }
-  .mb.logo[aria-expanded='true'], .mb.logo:hover { background: rgba(255, 255, 255, .22); }
-  .ic { height: 13px; width: auto; color: #fff; }
+  .mb.logo[aria-expanded='true'], .mb.logo:hover { background: rgba(0, 0, 0, .1); }
+  .ic { height: 13px; width: auto; color: #1d1d1f; }
   .clock { padding: 0; font-variant-numeric: tabular-nums; }
   @media (max-width: 760px) { .dim, .br .ic:nth-child(3) { display: none; } }
   .kmenu { position: relative; }
@@ -160,11 +154,11 @@ const other = fr ? 'en' : 'fr';
   /* icônes du bureau */
   .icons { position: absolute; inset: 0; pointer-events: none; }
   .dicon { position: absolute; right: 22px; top: calc(18px + var(--i) * 104px); width: 92px; pointer-events: auto; touch-action: none; }
-  .dicon button { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; font: inherit; font-size: 12px; text-align: center; }
+  .dicon button { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #1d1d1f; font: inherit; font-size: 12px; text-align: center; }
   .dicon .ai { width: 60px; height: 60px; border-radius: 8px; padding: 3px; }
-  .dicon .lbl { padding: 1px 5px; border-radius: 4px; line-height: 1.25; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); max-width: 92px; }
-  .dicon.sel .ai { background: rgba(0, 0, 0, .25); box-shadow: 0 0 0 1px rgba(255, 255, 255, .35); }
-  .dicon.sel .lbl { background: #2b6ae6; text-shadow: none; }
+  .dicon .lbl { padding: 1px 5px; border-radius: 4px; line-height: 1.25; max-width: 92px; }
+  .dicon.sel .ai { background: rgba(0, 0, 0, .08); box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); }
+  .dicon.sel .lbl { background: #2b6ae6; color: #fff; }
   .dicon.drag { z-index: 30; opacity: .85; }
   @media (max-width: 760px) {
     .icons { position: static; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; padding: 22px 12px; pointer-events: auto; }
@@ -204,7 +198,7 @@ const other = fr ? 'en' : 'fr';
   .dk:hover .tip { opacity: 1; }
   .dk .run { position: absolute; left: 50%; bottom: -5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(0, 0, 0, .55); opacity: 0; }
   .dk.on .run { opacity: 1; }
-  .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(255, 255, 255, .35); }
+  .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(0, 0, 0, .15); }
   @media (max-width: 760px) { .dock { gap: 4px; padding: 5px 6px; max-width: calc(100vw - 16px); overflow-x: auto; } .dk { width: 44px; height: 44px; flex: none; } .dk .tip { display: none; } }
 </style>
 
@@ -222,7 +216,8 @@ const other = fr ? 'en' : 'fr';
   {
     const boot = document.querySelector<HTMLElement>('[data-boot]')!, pb = boot.querySelector<HTMLElement>('[data-pb]')!;
     let seen = false; try { seen = sessionStorage.getItem('kk-boot') === '1'; } catch { /* */ }
-    if (seen || reduced()) document.documentElement.classList.add('lab-booted');
+    // pas de démarrage si le chargement d'entrée du site vient de s'afficher (une seule intro à la fois)
+    if (seen || reduced() || !document.documentElement.classList.contains('ld-skip')) document.documentElement.classList.add('lab-booted');
     else {
       try { sessionStorage.setItem('kk-boot', '1'); } catch { /* */ }
       pb.animate([{ width: '0%' }, { width: '18%', offset: .25 }, { width: '62%', offset: .6 }, { width: '100%' }], { duration: 2200, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' })
@@ -242,7 +237,7 @@ const other = fr ? 'en' : 'fr';
     gravity: sq('url(#gg)', `<g font-family="Geist, sans-serif" font-weight="600" fill="#111"><text x="30" y="40" font-size="20" transform="rotate(-18 30 40)">A</text><text x="52" y="56" font-size="22" transform="rotate(12 52 56)">g</text><text x="34" y="78" font-size="22">k</text><text x="58" y="80" font-size="22" transform="rotate(-8 58 80)">s</text></g>`, `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#ffb84d"/></linearGradient>`),
     'free-font': sq('#fbf7ee', `<text x="50" y="66" text-anchor="middle" font-family="Georgia, serif" font-size="40" fill="#111">Aa</text><rect x="20" y="74" width="60" height="2" fill="#d33"/>`),
     heraldry: sq('#111', `<path d="M30 24h40v26c0 16-10 26-20 30-10-4-20-14-20-30Z" fill="#fff"/><path d="M50 24v56c-10-4-20-14-20-30V24Z" fill="#111" stroke="#fff" stroke-width="2"/><path d="M30 50h40" stroke="#111" stroke-width="2"/>`),
-    trash: `<svg viewBox="0 0 100 100"><path d="M24 26h52l-5 64c-.4 4-3 6-7 6H36c-4 0-6.6-2-7-6Z" fill="rgba(255,255,255,.55)" stroke="rgba(255,255,255,.9)" stroke-width="2"/><path d="M38 34v54M50 34v54M62 34v54" stroke="rgba(0,0,0,.18)" stroke-width="3"/><rect x="20" y="20" width="60" height="8" rx="3" fill="rgba(255,255,255,.85)"/></svg>`,
+    trash: `<svg viewBox="0 0 100 100"><path d="M24 26h52l-5 64c-.4 4-3 6-7 6H36c-4 0-6.6-2-7-6Z" fill="#e9e9ec" stroke="#b9b9be" stroke-width="2"/><path d="M38 34v54M50 34v54M62 34v54" stroke="#c9c9ce" stroke-width="3"/><rect x="20" y="20" width="60" height="8" rx="3" fill="#d5d5da"/></svg>`,
   };
   root.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });
 
