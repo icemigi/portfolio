@@ -84,7 +84,7 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 .snd { font: inherit; text-transform: inherit; color: var(--mu); }
 .snd[aria-pressed='true'] { color: var(--fg); }
 .lang { display: flex; gap: 4px; }
-.lang [aria-current='true'] { font-weight: 700; }
+.lang a { color: var(--mu); } .lang [aria-current='true'] { color: var(--fg); }
 /* cibles de 44 px autour des libellés de 12 px */
 .hit { position: relative; display: inline-block; }
 .hit::before { content: ''; position: absolute; left: -6px; right: -6px; top: 50%; height: 44px; transform: translateY(-50%); }
