@@ -162,15 +162,15 @@ const other = fr ? 'en' : 'fr';
   @media (max-width: 760px) { .wins :global(.win) { left: 0 !important; top: 0 !important; width: 100% !important; height: calc(100% - 84px) !important; border-radius: 0; } .wins :global(.rz) { display: none; } }
 
   /* Dock */
-  .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 7px 9px; border-radius: 28px; --glass: rgba(255, 255, 255, .18); }
-  .dk { position: relative; width: 52px; height: 52px; display: block; transition: width .18s, height .18s, margin .18s; }
+  .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 0 9px 7px; height: 66px; border-radius: 28px; --glass: rgba(255, 255, 255, .18); }
+  .dk { position: relative; width: 52px; height: 52px; display: block; flex: none; }
   .dk .ai { width: 100%; height: 100%; }
   .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(255, 255, 255, .55); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); box-shadow: var(--rim), 0 4px 14px rgba(0, 0, 0, .12); color: #1d1d1f; font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
   .dk:hover .tip { opacity: 1; }
   .dk .run { position: absolute; left: 50%; bottom: -5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(0, 0, 0, .55); opacity: 0; }
   .dk.on .run { opacity: 1; }
   .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(0, 0, 0, .1); }
-  @media (max-width: 760px) { .dock { gap: 4px; padding: 5px 6px; max-width: calc(100vw - 16px); overflow-x: auto; } .dk { width: 44px; height: 44px; flex: none; } .dk .tip { display: none; } }
+  @media (max-width: 760px) { .dock { gap: 4px; padding: 5px 6px; height: auto; max-width: calc(100vw - 16px); overflow-x: auto; } .dk { width: 44px; height: 44px; flex: none; } .dk .tip { display: none; } }
 </style>
 
 <script>
@@ -272,7 +272,7 @@ const other = fr ? 'en' : 'fr';
     if (ex) { if (ex.hidden) { ex.hidden = false; focus(ex); await anim(ex, originOf(id), 1); } else focus(ex); return; }
     const w = makeWin(id, a.title, a.w, a.h);
     w.querySelector('.wb')!.innerHTML = `<iframe src="${a.src}" title="${a.title}" loading="lazy"></iframe>`;
-    dockBtn(id)?.classList.add('on'); sound('pick');
+    dockBtn(id)?.classList.add('on'); sound('pick'); bounce(id);
     await anim(w, originOf(id), 1);
   };
   const openNote = async (id: string, title: string, text: string) => {
@@ -348,14 +348,46 @@ const other = fr ? 'en' : 'fr';
 
   // ---------- Dock : clic pour ouvrir, grossissement au survol ----------
   dock.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => openApp(b.dataset.open!)));
+  // Grossissement façon Dock macOS : la distance se mesure depuis la position des icônes au repos (pas de boucle
+  // qui tremble), profil en cloche (cosinus), les voisines s'écartent, la barre garde sa hauteur et les icônes la
+  // dépassent vers le haut ; tout est amorti dans une seule boucle d'animation.
   if (!small && !reduced()) {
     const items = [...dock.querySelectorAll<HTMLElement>('.dk')];
-    dock.addEventListener('pointermove', (e) => items.forEach((it) => {
-      const r = it.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2));
-      const s = 52 + 28 * Math.max(0, 1 - d / 140); it.style.width = it.style.height = `${s}px`;
-    }));
-    dock.addEventListener('pointerleave', () => items.forEach((it) => (it.style.width = it.style.height = '')));
+    const BASE = 52, MAX = 84, R = 170;
+    let rest: number[] = [], cur = items.map(() => BASE), tgt = items.map(() => BASE), raf = 0, mx: number | null = null;
+    const measure = () => {
+      items.forEach((it) => (it.style.width = it.style.height = `${BASE}px`));
+      const c = dock.getBoundingClientRect(); const mid = c.left + c.width / 2;
+      rest = items.map((it) => { const r = it.getBoundingClientRect(); return r.left + r.width / 2 - mid; });
+      items.forEach((it, i) => (it.style.width = it.style.height = `${cur[i]}px`));
+    };
+    const loop = () => {
+      const c = dock.getBoundingClientRect(), mid = c.left + c.width / 2;
+      let moving = false;
+      items.forEach((it, i) => {
+        const d = mx === null ? Infinity : Math.abs(mx - mid - rest[i]);
+        tgt[i] = d < R ? BASE + (MAX - BASE) * (Math.cos((Math.PI * d) / R) + 1) / 2 : BASE;
+        cur[i] += (tgt[i] - cur[i]) * 0.28;
+        if (Math.abs(tgt[i] - cur[i]) > 0.1) moving = true; else cur[i] = tgt[i];
+        it.style.width = it.style.height = `${cur[i].toFixed(2)}px`;
+      });
+      raf = moving || mx !== null ? requestAnimationFrame(loop) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    dock.addEventListener('pointerenter', () => { if (!rest.length) measure(); });
+    dock.addEventListener('pointermove', (e) => { mx = e.clientX; kick(); });
+    dock.addEventListener('pointerleave', () => { mx = null; kick(); });
+    addEventListener('resize', () => { rest = []; });
   }
+
+  // rebond au lancement d'une app, comme sur le Mac
+  const bounce = (id: string) => {
+    if (reduced()) return;
+    dockBtn(id)?.querySelector('.ai')?.animate(
+      [{ translate: '0 0' }, { translate: '0 -24px', offset: .22 }, { translate: '0 0', offset: .45 }, { translate: '0 -12px', offset: .65 }, { translate: '0 0', offset: .85 }, { translate: '0 0' }],
+      { duration: 900, easing: 'ease-in-out' },
+    );
+  };
 
   // ouvrir une app depuis l'adresse (/lab/#heraldry)
   const h0 = location.hash.slice(1); if (h0) setTimeout(() => openApp(h0), 400);
