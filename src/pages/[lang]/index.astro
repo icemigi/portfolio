@@ -96,14 +96,19 @@ const t = ui[lang];
     // bas de l'écran = ligne de base − tiers de la hauteur d'x ; jamais sous le menu
     const pad = Math.max(head + 8, H - (base - xh / 3));
     hero.style.paddingTop = `${pad}px`;
+    const b3 = base + pad; // ligne de base de « le » une fois calé
     // la phrase, calée à droite juste sous « kast » (ligne de base de la ligne du milieu)
     const r1 = s1.getBoundingClientRect();
     const b2 = probe2.getBoundingClientRect().top - r1.top + s1.scrollTop;
     probe2.remove();
     const right = r1.right - n.getBoundingClientRect().right;
-    phrase.style.top = `${Math.round(b2 + fs * 0.07)}px`;
+    // ligne de base de la phrase alignée sur le haut de l'œil du e (b3 − hauteur d'x) : un seul alignement
+    // horizontal relie la phrase et « le » ; jamais collée à « kast »
+    phrase.style.bottom = 'auto'; phrase.style.top = '0px';
+    const pp = probe.cloneNode() as HTMLElement; phrase.appendChild(pp);
+    const off = pp.getBoundingClientRect().top - phrase.getBoundingClientRect().top; pp.remove();
+    phrase.style.top = `${Math.round(Math.max(b2 + fs * 0.07, b3 - xh - off))}px`;
     phrase.style.right = `${Math.round(right + fs * 0.01)}px`;
-    phrase.style.bottom = 'auto';
   };
   document.fonts.ready.then(place);
   addEventListener('resize', place);
