@@ -1,5 +1,5 @@
 ---
-// Menu fixe : le nom « kerningkastle » (accueil), rubriques, son, EN / FR (garde la page en cours).
+// Menu fixe : le cavalier + « kerningkastle » (accueil), rubriques, son, EN / FR (garde la page en cours).
 import { ui, pad, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
 import { rooms } from '../data/lab';
@@ -14,7 +14,7 @@ const items = [
 ] as const;
 ---
 <header class="site-header g mono">
-  <a class="home" href={`/${lang}/`} aria-label={t.home}>kerningkastle</a>
+  <a class="home" href={`/${lang}/`} aria-label={t.home}><img src="/logo-kerningkastle-dark.svg" alt="" width="22" height="22" />kerningkastle</a>
   <nav aria-label={lang === 'fr' ? 'Menu principal' : 'Main menu'}>
     <ul>
       {items.map((i) => (

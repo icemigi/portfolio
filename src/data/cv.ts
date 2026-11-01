@@ -1,6 +1,6 @@
 // CV en ligne (page « terminal » cachée, accessible depuis le pied de page). Source : CV PDF FR / EN.
 // Règles du site : pas de nom d'employeur actuel, pas de noms d'artistes ni de labels, pas de téléphone.
-// TODO : noms, années et lien des fontes libres ; compte du média outdoor à lier dans contact.
+// TODO : années et lien de téléchargement de Farquaad et Himarë.
 import type { Lang } from './ui';
 import { contact } from './about';
 
@@ -55,10 +55,10 @@ export const cv: Record<Lang, Cv> = {
           'Ouvrage théorique inédit de 500 pages : direction artistique intégrale, mise en page générée en Python.',
           'Générateur p5.js : visuels uniques indexés par clé de hash parmi des milliards de combinaisons.',
         ] },
-        { what: 'Fontes libres', where: 'Type design', items: [
-          'Plusieurs familles de caractères classiques, terminées et diffusées gratuitement.',
+        { what: 'Farquaad & Himarë', where: 'Fontes libres', items: [
+          'Deux caractères dessinés de A à Z, diffusés gratuitement.',
         ] },
-        { when: '2023 — auj.', what: 'Média outdoor', where: 'Direction de création & production', items: [
+        { when: '2023 — auj.', what: 'kern.outdoor', where: 'Média outdoor · direction de création & production', items: [
           'Charte visuelle, production, captation, scripting et montage vidéo court format.',
           'Audience organique de plus de 20 000 abonnés (TikTok / Instagram), projet autoproduit et volontairement non monétisé.',
         ] },
@@ -91,6 +91,8 @@ export const cv: Record<Lang, Cv> = {
         ['email', contact.email, `mailto:${contact.email}`],
         ['instagram', '@kerningkastle', contact.instagram],
         ['behance', 'icemigi', 'https://www.behance.net/icemigi'],
+        ['tiktok', '@kern.outdoor', 'https://www.tiktok.com/@kern.outdoor'],
+        ['instagram', '@kern.outdoor', 'https://www.instagram.com/kern.outdoor/'],
         ['langues', 'français, espagnol (bilingue) · anglais (C1)'],
         ['dispo', 'à l’écoute — CDI ou missions, Paris & remote'],
       ] },
@@ -142,10 +144,10 @@ export const cv: Record<Lang, Cv> = {
           'Unpublished 500-page theoretical book: full art direction, layout generated in Python.',
           'p5.js generator: unique visuals indexed by hash key among billions of combinations.',
         ] },
-        { what: 'Free fonts', where: 'Type design', items: [
-          'Several classic type families, finished and released for free.',
+        { what: 'Farquaad & Himarë', where: 'Free fonts', items: [
+          'Two typefaces drawn from A to Z, released for free.',
         ] },
-        { when: '2023 — now', what: 'Outdoor media', where: 'Creative direction & production', items: [
+        { when: '2023 — now', what: 'kern.outdoor', where: 'Outdoor media · creative direction & production', items: [
           'Visual identity, production, filming, scripting and short-form editing.',
           'Organic audience of 20,000+ followers (TikTok / Instagram), self-produced and deliberately unmonetised.',
         ] },
@@ -178,6 +180,8 @@ export const cv: Record<Lang, Cv> = {
         ['email', contact.email, `mailto:${contact.email}`],
         ['instagram', '@kerningkastle', contact.instagram],
         ['behance', 'icemigi', 'https://www.behance.net/icemigi'],
+        ['tiktok', '@kern.outdoor', 'https://www.tiktok.com/@kern.outdoor'],
+        ['instagram', '@kern.outdoor', 'https://www.instagram.com/kern.outdoor/'],
         ['languages', 'French, Spanish (bilingual) · English (C1)'],
         ['status', 'open to full-time roles and freelance, Paris & remote'],
       ] },

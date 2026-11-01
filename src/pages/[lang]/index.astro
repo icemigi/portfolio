@@ -17,9 +17,9 @@ const t = ui[lang];
   <div class="screens-host" data-screens>
     <section class="scr s1" aria-label="kerningkastle">
       <div class="hero g">
-        <h1 class="name" id="name" data-hola="0.1 0.035 200" data-par="140"><span>kerning</span><span>kastle</span></h1>
-        <p class="phrase t28" data-par="60">{t.phrase}</p>
+        <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-fit data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span aria-hidden="true">—ingkast</span><span aria-hidden="true">le</span></h1></div>
       </div>
+      <p class="phrase t28" data-par="60">{t.phrase}</p>
     </section>
 
     <section class="scr" id="services" aria-labelledby="sv-l">
@@ -46,11 +46,14 @@ const t = ui[lang];
 </Base>
 
 <style>
-  .s1 { display: grid; align-content: center; }
-  .hero { row-gap: 32px; }
-  .name { grid-column: 1 / -1; font-weight: 500; letter-spacing: -0.05em; line-height: .8; white-space: nowrap; text-align: center; font-size: calc((100vw - 2 * var(--m)) * .1706); }
-  .name span { display: inline; }
-  .phrase { grid-column: 1 / -1; }
+  /* le nom coupé sur trois lignes, la ligne du milieu remplit la largeur, la dernière déborde en bas */
+  .s1 { overflow: hidden; }
+  .hero { padding-top: calc(var(--head) + 9vh); }
+  .nw { grid-column: 1 / -1; }
+  .name { width: max-content; font-weight: 700; letter-spacing: -0.055em; line-height: .8; white-space: nowrap; font-size: 18vw; margin-left: -.04em; }
+  .name span { display: block; }
+  .name span:nth-child(2) { margin-left: -.06em; }
+  .phrase { position: absolute; right: var(--m); bottom: 64px; text-align: right; }
 
   .big, .pj { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
   .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }
@@ -60,9 +63,8 @@ const t = ui[lang];
 
 
   @media (max-width: 760px) {
-    .name { text-align: left; font-size: calc((100vw - 2 * var(--m)) * .3005); line-height: .82; }
-    .name span { display: block; }
-    .hero { row-gap: 16px; margin-top: -8vh; }
+    .hero { padding-top: calc(var(--head) + 6vh); }
+    .phrase { left: var(--m); text-align: left; bottom: 72px; }
     .lab, .bt, .more, .list { grid-column: 1 / -1; }
   }
 </style>

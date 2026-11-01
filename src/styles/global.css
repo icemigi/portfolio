@@ -75,7 +75,8 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: var(--head); align-items: center; transition: background-color .2s; }
 .site-header.solid { background: var(--bg); }
 /* le nom en toutes lettres, en Geist (pas en mono) : c'est la signature */
-.site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: -0.02em; text-transform: none; }
+.site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: -0.02em; text-transform: none; gap: 10px; }
+.site-header .home img { width: 22px; height: 22px; flex: none; }
 .site-header nav { grid-column: 7 / 10; }
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
 .site-header .r { grid-column: 10 / 13; justify-self: end; display: flex; align-items: center; white-space: nowrap; }
@@ -206,10 +207,10 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .cu-text .cu { opacity: 0 !important; }
 
 /* ---------- indication de défilement ---------- */
-.more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--mu); transition: opacity .3s; }
+.more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }
 .more-arrow[hidden] { display: grid; opacity: 0; pointer-events: none; }
-.more-arrow span { display: block; animation: kk-bob 2.4s var(--out) infinite; }
-@keyframes kk-bob { 0%, 60%, 100% { transform: none; } 30% { transform: translateY(5px); } }
+.more-arrow span { display: block; font-size: 16px; animation: kk-bob 1.6s ease-in-out infinite; }
+@keyframes kk-bob { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(5px); } }
 @media (prefers-reduced-motion: reduce) { .more-arrow span { animation: none; } }
 
 /* ---------- nuage ascii (accueil) ---------- */
