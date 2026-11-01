@@ -1,5 +1,5 @@
 ---
-// /xx/lab/ : le Lab est un faux bureau macOS, sous le menu du site. Fond blanc au cavalier (comme la pomme), barre des menus (le cavalier sert de menu),
+// /xx/lab/ : le Lab est un faux bureau macOS, sous le menu du site. Fond blanc au cavalier (comme la pomme), sans barre des menus macOS (le menu du site suffit),
 // widgets (météo de Paris en direct, calendrier, horloge, note), icônes déplaçables, Dock.
 // Chaque pièce du Lab est une app : double-clic (ou Entrée) sur l'icône, ou un clic dans le Dock, ouvre sa fenêtre.
 // Les fenêtres se déplacent, se redimensionnent, se réduisent dans le Dock et passent en plein écran.
@@ -26,30 +26,6 @@ const other = fr ? 'en' : 'fr';
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
   <div class="boot" data-boot aria-hidden="true"><img src="/logo-kerningkastle.svg" alt="" width="84" height="84" /><span class="pb"><i data-pb></i></span></div>
   <div class="mac" data-mac>
-    <!-- barre des menus -->
-    <div class="bar">
-      <div class="bl">
-        <div class="kmenu">
-          <button class="mb logo" type="button" aria-haspopup="menu" aria-expanded="false" data-kmenu aria-label="kerningkastle"><img src="/logo-kerningkastle-dark.svg" alt="" width="15" height="15" /></button>
-          <div class="dd" role="menu" data-kdd hidden>
-            <a role="menuitem" href={`/${lang}/about/`}>{M.about}</a>
-            <hr />
-            {M.site.map(([l, h]) => <a role="menuitem" href={`/${lang}/${h}`}>{l}</a>)}
-            <hr />
-            <a role="menuitem" href={`/${other}/lab/`} hreflang={other}>{M.lang}</a>
-          </div>
-        </div>
-        <span class="mb b" data-front>{M.app}</span>
-        {M.menus.map((m) => <span class="mb dim">{m}</span>)}
-      </div>
-      <div class="br">
-        <svg class="ic" viewBox="0 0 20 14" aria-hidden="true"><path d="M10 13.2 7.4 10.4a3.7 3.7 0 0 1 5.2 0Zm-4.3-4.6a6.1 6.1 0 0 1 8.6 0l1.2-1.3a7.9 7.9 0 0 0-11 0Zm-2.9-2.9a10.2 10.2 0 0 1 14.4 0l1.2-1.3a12 12 0 0 0-16.8 0Z" fill="currentColor"/></svg>
-        <svg class="ic" viewBox="0 0 26 13" aria-hidden="true"><rect x=".6" y=".6" width="21.8" height="11.8" rx="3.2" fill="none" stroke="currentColor" stroke-opacity=".5"/><rect x="2.4" y="2.4" width="15.6" height="8.2" rx="1.7" fill="currentColor"/><path d="M24 4.6v3.8a2 2 0 0 0 0-3.8Z" fill="currentColor" fill-opacity=".5"/></svg>
-        <svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m10.5 10.5 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <span class="mb clock" data-clock></span>
-      </div>
-    </div>
-
     <!-- bureau -->
     <div class="desk" data-desk>
       <!-- widgets -->
@@ -108,25 +84,8 @@ const other = fr ? 'en' : 'fr';
   .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
     background: #fff url(/logo-kerningkastle-dark.svg) center 46% / min(22vh, 220px) no-repeat; box-shadow: inset 0 1px 0 var(--ln); }
 
-  /* barre des menus */
-  .bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; height: 24px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; background: rgba(246, 246, 246, .72); backdrop-filter: blur(50px) saturate(1.8); -webkit-backdrop-filter: blur(50px) saturate(1.8); box-shadow: 0 .5px 0 rgba(0, 0, 0, .12); }
-  .bl, .br { display: flex; align-items: center; gap: 2px; height: 100%; }
-  .br { gap: 12px; padding-right: 4px; }
-  .mb { display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 5px; color: #1d1d1f; font: inherit; font-size: 13px; font-weight: 500; white-space: nowrap; }
-  .mb.b { font-weight: 700; }
-  .mb.logo img { width: 15px; height: 15px; }
-  .mb.logo[aria-expanded='true'], .mb.logo:hover { background: rgba(0, 0, 0, .1); }
-  .ic { height: 13px; width: auto; color: #1d1d1f; }
-  .clock { padding: 0; font-variant-numeric: tabular-nums; }
-  @media (max-width: 760px) { .dim, .br .ic:nth-child(3) { display: none; } }
-  .kmenu { position: relative; }
-  .dd { position: absolute; left: 0; top: 24px; min-width: 230px; padding: 5px; border-radius: 9px; background: rgba(40, 40, 46, .72); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); box-shadow: 0 0 0 .5px rgba(255, 255, 255, .25) inset, 0 12px 40px rgba(0, 0, 0, .35); }
-  .dd a { display: block; padding: 3px 10px; border-radius: 5px; color: #fff; }
-  .dd a:hover, .dd a:focus-visible { background: #2f6fea; outline: none; }
-  .dd hr { border: 0; height: 1px; margin: 5px 10px; background: rgba(255, 255, 255, .15); }
-
   /* widgets */
-  .desk { position: absolute; inset: 24px 0 0 0; }
+  .desk { position: absolute; inset: 0; }
   .widgets { position: absolute; left: 22px; top: 18px; display: grid; grid-template-columns: 160px 160px; gap: 16px; }
   .wd { width: 160px; height: 160px; border-radius: 22px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); overflow: hidden; }
   .weather { background: linear-gradient(180deg, #2f7fd8, #5aa2ec); }
@@ -243,11 +202,9 @@ const other = fr ? 'en' : 'fr';
 
   // ---------- horloge, calendrier, météo ----------
   const loc = L.lang === 'fr' ? 'fr-FR' : 'en-GB';
-  const clock = root.querySelector<HTMLElement>('[data-clock]')!;
   const [hh, mm, ss] = ['h', 'm', 's'].map((k) => root.querySelector<SVGLineElement>(`[data-${k}]`)!);
   const tick = () => {
     const d = new Date();
-    clock.textContent = d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' }) + '  ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
     const s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
     hh.setAttribute('transform', `rotate(${h * 30} 50 50)`); mm.setAttribute('transform', `rotate(${m * 6} 50 50)`); ss.setAttribute('transform', `rotate(${s * 6} 50 50)`);
   };
@@ -272,20 +229,12 @@ const other = fr ? 'en' : 'fr';
       root.querySelector('[data-wr]')!.textContent = `${fr ? 'H' : 'H'}:${Math.round(j.daily.temperature_2m_max[0])}°  ${fr ? 'B' : 'L'}:${Math.round(j.daily.temperature_2m_min[0])}°`;
     }).catch(() => { root.querySelector('[data-wt]')!.textContent = '—'; });
 
-  // ---------- menu du cavalier ----------
-  const kb = root.querySelector<HTMLButtonElement>('[data-kmenu]')!, kd = root.querySelector<HTMLElement>('[data-kdd]')!;
-  const kset = (o: boolean) => { kd.hidden = !o; kb.setAttribute('aria-expanded', String(o)); };
-  kb.addEventListener('click', (e) => { e.stopPropagation(); kset(kd.hidden); });
-  document.addEventListener('click', () => kset(false));
-  addEventListener('keydown', (e) => { if (e.key === 'Escape') kset(false); });
-
   // ---------- fenêtres ----------
   let z = 10;
   const open = new Map<string, HTMLElement>();
-  const front = root.querySelector<HTMLElement>('[data-front]')!;
   const focus = (w: HTMLElement) => {
     wins.querySelectorAll('.win').forEach((x) => x.classList.toggle('blur', x !== w));
-    w.style.zIndex = String(++z); front.textContent = w.dataset.title!;
+    w.style.zIndex = String(++z);
   };
   const dockBtn = (id: string) => dock.querySelector<HTMLElement>(`[data-open="${id}"]`);
   const originOf = (id: string) => { const b = dockBtn(id)?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top } : { x: innerWidth / 2, y: innerHeight }; };
@@ -301,7 +250,7 @@ const other = fr ? 'en' : 'fr';
     sound('drop'); await anim(w, originOf(id), -1); w.remove(); open.delete(id);
     dockBtn(id)?.classList.remove('on');
     const last = [...wins.querySelectorAll<HTMLElement>('.win:not([hidden])')].pop();
-    if (last) focus(last); else front.textContent = 'Finder';
+    if (last) focus(last);
   };
   const minimise = async (id: string) => { const w = open.get(id)!; sound('drop'); await anim(w, originOf(id), -1); w.hidden = true; };
   const openApp = async (id: string) => {
