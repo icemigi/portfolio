@@ -15,7 +15,7 @@ interface Props {
 const { lang, title, description, path, active, bare = false } = Astro.props;
 const t = ui[lang];
 const fullTitle = title === 'kerningkastle' ? `kerningkastle — ${t.tagline}` : `${title} — kerningkastle`;
-const site = Astro.site ?? new URL('https://kerningkastle.com');
+const site = Astro.site ?? new URL('https://icemigi.github.io');
 const canonical = new URL(`/${lang}/${path}`, site).href;
 const alt = (l: Lang) => new URL(`/${l}/${path}`, site).href;
 // image d'aperçu au partage : /og/<langue>-<page>.png (générées, 1200 × 630)
