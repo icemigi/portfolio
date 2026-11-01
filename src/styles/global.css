@@ -214,8 +214,6 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 
 /* ---------- nuage ascii (accueil) ---------- */
 .ascii { position: fixed; inset: 0; z-index: 45; pointer-events: none; mix-blend-mode: multiply; }
-.ascii-logo { z-index: 44; transition: opacity .5s; }
-.ascii-logo.off { opacity: 0; }
 
 /* ---------- pièce du Lab ouverte dans une fenêtre du bureau (?embed) ---------- */
 .embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .cu, .embed .lab .dots, .embed .lab .arw { display: none !important; }
