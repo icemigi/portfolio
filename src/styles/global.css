@@ -146,6 +146,8 @@ html.libre .screens-host { position: static; }
 html.libre .scr { position: relative; transform: none !important; min-height: 100vh; overflow-y: visible; }
 html.libre .scr[data-peek] { min-height: 0; }
 html.libre .more-arrow { display: none; }
+html.libre .scr .in { min-height: 100vh; }
+html.libre .site-header { background: var(--bg); }
 html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
 
 /* lettres : restent dans le flux, crénage intact */
