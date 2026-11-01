@@ -68,6 +68,7 @@ const PS = 'xavier@kerningkastle ~ %';
   .out :global(.t-i) { color: #c9c6be; }
   .out :global(.t-p) { max-width: 72ch; }
   .out :global(.t-err) { color: #e0806a; }
+  .out :global(.t-wait) { visibility: hidden; }
   .out :global(a) { text-decoration: underline; text-underline-offset: 3px; }
   .ps { color: var(--mu); white-space: nowrap; }
   .in { display: flex; gap: 10px; align-items: baseline; padding: 6px 0 4px; flex: none; }
@@ -97,25 +98,50 @@ const PS = 'xavier@kerningkastle ~ %';
   const PS = 'xavier@kerningkastle ~ %';
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wait = (ms: number) => new Promise((r) => setTimeout(r, still ? 0 : ms));
-  const bottom = () => (out.scrollTop = out.scrollHeight);
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let busy = false;
   const hist: string[] = []; let hi = 0;
 
   // une sortie arrive ligne par ligne (bloc par bloc)
-  async function print(html: string, gap = 14) {
+  // on ne suit pas le texte jusqu'en bas : la commande reste en haut de l'écran et la réponse se lit depuis son début
+  let anchor: HTMLElement | null = null;
+  const follow = () => {
+    const a = anchor ? anchor.offsetTop - out.offsetTop - 12 : Infinity;
+    out.scrollTop = Math.min(out.scrollHeight - out.clientHeight, a);
+  };
+  // chaque ligne « s'écrit » (balayage de gauche à droite) ; ce qui tombe sous le bord de l'écran attend
+  // d'être atteint par le défilement pour s'écrire à son tour : on lit à son rythme, rien ne file sans nous
+  const write = (el: Element) => {
+    el.classList.remove('t-wait');
+    if (!still) el.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 260, easing: 'steps(18, end)' });
+  };
+  const queue: Element[] = []; let qt = 0;
+  const pump = () => { const el = queue.shift(); if (el) { write(el); qt = window.setTimeout(pump, 45); } else qt = 0; };
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (!e.isIntersecting) return;
+    io.unobserve(e.target); queue.push(e.target);
+    if (!qt) pump();
+  }), { root: out, rootMargin: '0px 0px -24px 0px' });
+  async function print(html: string, gap = 40) {
     const tmp = document.createElement('div'); tmp.innerHTML = html;
-    for (const el of [...tmp.children]) { out.appendChild(el); bottom(); await wait(gap); }
+    let held = false;
+    for (const el of [...tmp.children]) {
+      out.appendChild(el); follow();
+      if (!held && el.getBoundingClientRect().top < out.getBoundingClientRect().bottom - 24) { write(el); await wait(gap); }
+      else { held = true; el.classList.add('t-wait'); io.observe(el); }
+    }
   }
+  const pin = (p: HTMLElement) => { anchor = p; follow(); };
   async function typeCmd(cmd: string) {
     const p = document.createElement('p'); p.className = 't-cmd';
     p.innerHTML = `<span class="ps">${PS}</span> <span class="typing"></span>`;
-    out.appendChild(p); bottom();
+    out.appendChild(p); pin(p);
     const t = p.querySelector('.typing')!;
     for (const ch of cmd) { t.textContent += ch; await wait(38 + Math.random() * 40); }
     await wait(160); t.classList.remove('typing');
+    return p;
   }
-  const echo = (cmd: string) => { const p = document.createElement('p'); p.className = 't-cmd'; p.innerHTML = `<span class="ps">${PS}</span> ${esc(cmd)}`; out.appendChild(p); };
+  const echo = (cmd: string) => { const p = document.createElement('p'); p.className = 't-cmd'; p.innerHTML = `<span class="ps">${PS}</span> ${esc(cmd)}`; out.appendChild(p); return p; };
 
   const helpHtml = () => `<p class="t-h">## ${d.ui.help}</p>` + [
     ...d.sections.map((s) => [s.cmd[0], s.cmd.slice(1).join(', ')]),
@@ -125,16 +151,16 @@ const PS = 'xavier@kerningkastle ~ %';
   async function run(raw: string, typed = false) {
     const line = raw.trim(); if (busy) return;
     busy = true;
-    if (typed) await typeCmd(line); else echo(line);
+    pin(typed ? await typeCmd(line) : echo(line));
     const [cmd0, ...args] = line.split(/\s+/); const cmd = (cmd0 || '').toLowerCase().replace(/^\.\//, '');
     const file = (args[0] || '').toLowerCase().replace(/\.txt$/, '');
     const sec = d.sections.find((s) => s.cmd.includes(cmd) || (cmd === 'cat' && s.cmd.includes(file)));
     if (!cmd) { /* ligne vide */ }
     else if (sec) await print(sec.html);
     else if (cmd === 'help' || cmd === '?' || cmd === 'man') await print(helpHtml(), 8);
-    else if (cmd === 'cv' || (cmd === 'cat' && file === 'cv')) await print(d.full, 10);
+    else if (cmd === 'cv' || (cmd === 'cat' && file === 'cv')) await print(d.full);
     else if (cmd === 'ls') await print(`<p class="t-p">cv.txt  ${d.sections.map((s) => `${s.cmd[0]}.txt`).join('  ')}</p>`);
-    else if (cmd === 'clear') out.innerHTML = '';
+    else if (cmd === 'clear') { queue.length = 0; out.innerHTML = ''; }
     else if (cmd === 'pwd') await print('<p class="t-p">/home/xavier/kerningkastle</p>');
     else if (cmd === 'date') await print(`<p class="t-p">${new Date().toString()}</p>`);
     else if (cmd === 'echo') await print(`<p class="t-p">${esc(args.join(' '))}</p>`);
@@ -142,7 +168,7 @@ const PS = 'xavier@kerningkastle ~ %';
     else if (cmd === 'lang') { location.href = `/${d.other}/cv/`; return; }
     else if (cmd === 'exit' || cmd === 'quit' || cmd === 'logout') { await print(`<p class="t-p t-m">${d.ui.bye}</p>`); await wait(500); location.href = `/${d.lang}/`; return; }
     else await print(`<p class="t-p t-err">zsh: ${d.ui.unknown}: ${esc(cmd0)}</p>`);
-    bottom(); busy = false;
+    busy = false;
   }
 
   form.addEventListener('submit', (e) => {

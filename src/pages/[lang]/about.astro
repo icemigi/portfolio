@@ -39,7 +39,7 @@ const L = aboutLabels[lang];
     <section class="scr" aria-labelledby="ab-3">
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-3">{L.path}</h2>
-        <div class="bd"><Affiche text={path[lang]} vigs={pathVigs} lang={lang} /></div>
+        <div class="bd"><Affiche text={path[lang]} vigs={pathVigs} lang={lang} /><p class="cvl mono"><a class="lk" href={`/${lang}/cv/`}>{lang === 'fr' ? 'cv complet' : 'full cv'} &gt;_</a></p></div>
       </div>
     </section>
 
@@ -51,6 +51,7 @@ const L = aboutLabels[lang];
   .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
   .bd { grid-column: 4 / 12; }
   .svc li { display: grid; grid-template-columns: 5fr 3fr; column-gap: var(--gut); align-items: baseline; border-top: 1px solid var(--ln); padding: 14px 0 10px; }
+  .cvl { margin-top: 40px; }
   .svc li:last-child { border-bottom: 1px solid var(--ln); }
 
 
