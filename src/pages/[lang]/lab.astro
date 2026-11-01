@@ -19,8 +19,8 @@ const apps: App[] = [
   { id: 'heraldry', title: 'Algorithmic Heraldry', src: '/lab/heraldry/index.html', icon: 'heraldry', w: 980, h: 640 },
 ];
 const M = fr
-  ? { app: 'Finder', menus: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], about: 'À propos de kerningkastle', site: [['Accueil', ''], ['Projets', 'work/'], ['Archive', 'archive/'], ['À propos', 'about/']], lang: 'English', hint: 'Double-cliquez sur une icône pour ouvrir une expérience. Tout se déplace.', note: 'Lab', trash: 'Corbeille', trashEmpty: 'La corbeille est vide (pour l’instant).', weather: 'Paris', today: "Aujourd'hui", close: 'Fermer', min: 'Réduire', zoom: 'Plein écran' }
-  : { app: 'Finder', menus: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'], about: 'About kerningkastle', site: [['Home', ''], ['Work', 'work/'], ['Archive', 'archive/'], ['About', 'about/']], lang: 'Français', hint: 'Double-click an icon to open an experiment. Everything can be moved.', note: 'Lab', trash: 'Trash', trashEmpty: 'The trash is empty (for now).', weather: 'Paris', today: 'Today', close: 'Close', min: 'Minimise', zoom: 'Full screen' };
+  ? { app: 'Finder', menus: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], about: 'À propos de kerningkastle', site: [['Accueil', ''], ['Projets', 'work/'], ['Archive', 'archive/'], ['À propos', 'about/']], lang: 'English', hint: 'Double-cliquez sur une icône pour ouvrir une expérience. Tout se déplace.', note: 'Lab', trash: 'Corbeille', trashEmpty: 'Des brouillons, des essais ratés, des idées pas finies. On ne la vide jamais.', weather: 'Paris', today: "Aujourd'hui", close: 'Fermer', min: 'Réduire', zoom: 'Plein écran' }
+  : { app: 'Finder', menus: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'], about: 'About kerningkastle', site: [['Home', ''], ['Work', 'work/'], ['Archive', 'archive/'], ['About', 'about/']], lang: 'Français', hint: 'Double-click an icon to open an experiment. Everything can be moved.', note: 'Lab', trash: 'Trash', trashEmpty: 'Drafts, failed tests, unfinished ideas. We never empty it.', weather: 'Paris', today: 'Today', close: 'Close', min: 'Minimise', zoom: 'Full screen' };
 const other = fr ? 'en' : 'fr';
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
@@ -138,7 +138,8 @@ const other = fr ? 'en' : 'fr';
 
   /* icônes d'app (dessinées en CSS + SVG par le script) */
   .ai { display: block; }
-  .ai :global(svg) { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+  .ai :global(svg), .ai :global(img) { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+  .ai :global(img) { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .18)); }
 
   /* fenêtres */
   .wins { position: absolute; inset: 0; pointer-events: none; }
@@ -208,7 +209,7 @@ const other = fr ? 'en' : 'fr';
     gravity: sq('url(#gg)', `<g font-family="Geist, sans-serif" font-weight="600" fill="#111"><text x="30" y="40" font-size="20" transform="rotate(-18 30 40)">A</text><text x="52" y="56" font-size="22" transform="rotate(12 52 56)">g</text><text x="34" y="78" font-size="22">k</text><text x="58" y="80" font-size="22" transform="rotate(-8 58 80)">s</text></g>`, `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#ffb84d"/></linearGradient>`),
     'free-font': sq('#fbf7ee', `<text x="50" y="66" text-anchor="middle" font-family="Georgia, serif" font-size="40" fill="#111">Aa</text><rect x="20" y="74" width="60" height="2" fill="#d33"/>`),
     heraldry: sq('#111', `<path d="M30 24h40v26c0 16-10 26-20 30-10-4-20-14-20-30Z" fill="#fff"/><path d="M50 24v56c-10-4-20-14-20-30V24Z" fill="#111" stroke="#fff" stroke-width="2"/><path d="M30 50h40" stroke="#111" stroke-width="2"/>`),
-    trash: `<svg viewBox="0 0 100 100"><path d="M24 26h52l-5 64c-.4 4-3 6-7 6H36c-4 0-6.6-2-7-6Z" fill="#e9e9ec" stroke="#b9b9be" stroke-width="2"/><path d="M38 34v54M50 34v54M62 34v54" stroke="#c9c9ce" stroke-width="3"/><rect x="20" y="20" width="60" height="8" rx="3" fill="#d5d5da"/></svg>`,
+    trash: `<img src="/lab/trash.webp" alt="" width="256" height="256" />`,
   };
   root.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });
 
