@@ -1,0 +1,78 @@
+---
+// Silhouettes provisoires des 8 objets (à remplacer par les images 2D détourées, plans séparés).
+interface Props { kind: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'bottle' | 'compass' | 'feather' }
+const { kind } = Astro.props;
+const id = `g-${kind}`;
+---
+<svg class="shape" viewBox="0 0 200 200" aria-hidden="true">
+  <defs>
+    <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d4d4d4" /><stop offset="1" stop-color="#ababab" />
+    </linearGradient>
+  </defs>
+  {kind === 'book' && (
+    <g>
+      <rect x="40" y="22" width="122" height="156" rx="3" fill="#9d9d9d" />
+      <rect x="44" y="26" width="118" height="148" fill="#ececec" />
+      <rect x="34" y="18" width="124" height="158" rx="3" fill={`url(#${id})`} />
+      <rect x="34" y="18" width="12" height="158" fill="#a3a3a3" />
+      <rect x="66" y="58" width="64" height="2" fill="#8f8f8f" /><rect x="74" y="66" width="48" height="2" fill="#8f8f8f" />
+    </g>
+  )}
+  {kind === 'rock' && (
+    <g>
+      <path d="M30 150 L44 74 L86 34 L140 40 L176 92 L168 156 L112 176 L56 172 Z" fill={`url(#${id})`} />
+      <path d="M44 74 L86 34 L96 88 L56 120 Z" fill="#fff" opacity=".18" />
+      <path d="M96 70 L96 140 M96 92 L124 74 M96 112 L124 130" stroke="#7d7d7d" stroke-width="5" stroke-linecap="round" fill="none" />
+    </g>
+  )}
+  {kind === 'vinyl' && (
+    <g>
+      <circle cx="100" cy="100" r="84" fill="#2b2b2b" />
+      <circle cx="100" cy="100" r="74" fill="none" stroke="#3a3a3a" stroke-width="1" />
+      <circle cx="100" cy="100" r="62" fill="none" stroke="#3a3a3a" stroke-width="1" />
+      <circle cx="100" cy="100" r="50" fill="none" stroke="#3a3a3a" stroke-width="1" />
+      <circle cx="100" cy="100" r="28" fill={`url(#${id})`} />
+      <circle cx="100" cy="100" r="3" fill="#2b2b2b" />
+      <path d="M40 60 A 70 70 0 0 1 90 32" stroke="#fff" stroke-opacity=".12" stroke-width="6" fill="none" />
+    </g>
+  )}
+  {kind === 'rook' && (
+    <g fill={`url(#${id})`}>
+      <path d="M62 28 h16 v14 h14 v-14 h16 v14 h14 v-14 h16 v34 l-12 10 v62 l14 14 v16 h-92 v-16 l14 -14 v-62 l-12 -10 z" />
+      <rect x="54" y="168" width="92" height="12" rx="2" fill="#a3a3a3" />
+    </g>
+  )}
+  {kind === 'controller' && (
+    <g>
+      <path d="M52 66 h96 c22 0 36 18 40 44 l6 36 c3 20 -18 30 -32 14 l-20 -24 h-84 l-20 24 c-14 16 -35 6 -32 -14 l6 -36 c4 -26 18 -44 40 -44 z" fill={`url(#${id})`} />
+      <path d="M58 92 v24 M46 104 h24" stroke="#7d7d7d" stroke-width="7" stroke-linecap="round" />
+      <circle cx="140" cy="96" r="6" fill="#7d7d7d" /><circle cx="154" cy="110" r="6" fill="#7d7d7d" />
+    </g>
+  )}
+  {kind === 'bottle' && (
+    <g>
+      <rect x="86" y="16" width="28" height="22" rx="3" fill="#9d9d9d" />
+      <path d="M90 38 h20 v22 c0 8 26 18 26 44 v70 c0 6 -4 10 -10 10 h-52 c-6 0 -10 -4 -10 -10 v-70 c0 -26 26 -36 26 -44 z" fill={`url(#${id})`} />
+      <rect x="70" y="108" width="60" height="50" fill="#8f8f8f" opacity=".55" />
+      <path d="M78 52 c-4 30 -10 60 -10 110" stroke="#fff" stroke-opacity=".25" stroke-width="5" fill="none" />
+    </g>
+  )}
+  {kind === 'compass' && (
+    <g>
+      <rect x="92" y="14" width="16" height="16" rx="8" fill="none" stroke="#9d9d9d" stroke-width="6" />
+      <circle cx="100" cy="108" r="78" fill={`url(#${id})`} />
+      <circle cx="100" cy="108" r="62" fill="#ececec" />
+      <path d="M100 58 L112 108 L100 158 L88 108 Z" fill="#8f8f8f" />
+      <path d="M100 58 L112 108 L88 108 Z" fill="#5d5d5d" />
+      <circle cx="100" cy="108" r="5" fill="#ececec" />
+    </g>
+  )}
+  {kind === 'feather' && (
+    <g>
+      <path d="M150 24 C 96 34 54 84 46 160 L 58 162 C 72 104 104 66 150 24 Z" fill={`url(#${id})`} />
+      <path d="M150 24 C 160 80 120 140 58 162 C 92 120 122 76 150 24 Z" fill="#b9b9b9" />
+      <path d="M150 24 C 110 74 74 124 40 184" stroke="#8f8f8f" stroke-width="4" stroke-linecap="round" fill="none" />
+    </g>
+  )}
+</svg>

@@ -1,0 +1,134 @@
+---
+// Projets. Ordinateur : 8 objets en lévitation (composition libre, dérive lente, réaction à la souris).
+// Téléphone : liste classique, une image au-dessus de chaque projet. Pied de page sous la scène.
+// Mouvement des objets : provisoire, à régler (étape 6).
+import Base from '../../../layouts/Base.astro';
+import Footer from '../../../components/Footer.astro';
+import ObjectShape from '../../../components/ObjectShape.astro';
+import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
+import { projects } from '../../../data/projects';
+import { media } from '../../../data/media';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+// centre de l'objet en % de la scène, taille en % de la largeur, rotation, profondeur (parallaxe)
+const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [80, 28, 10, 8, 0.9], [27, 72, 14, -4, 0.7], [50, 66, 10, 4, 0.8], [70, 70, 12, -5, 0.45], [88, 60, 11, 6, 1]];
+---
+<Base lang={lang} title={t.nav.work} description={projects.map((p) => p[lang].title).join(' · ')} path="work/" active="work">
+  <div class="screens-host" data-screens>
+    <section class="scr" data-still aria-labelledby="pj-t">
+      <div class="page">
+        <h1 class="ttl mono mu par" id="pj-t">{t.work} {pad(projects.length)}</h1>
+        <div class="stage" data-stage>
+          <ol class="objs">
+            {projects.map((p, i) => {
+              const [x, y, w, r, z] = POS[i];
+              return (
+                <li class="obj" style={`--x:${x}%;--y:${y}%;--w:${w}vw;--r:${r}deg;--d:${7 + i * 1.3}s`} data-depth={z}>
+                  <a href={`/${lang}/work/${p.slug}/`}>
+                    <span class="float"><ObjectShape kind={p.object} /></span>
+                    <span class="lb mono"><span class="mu">{pad(i + 1)}</span> — {p[lang].title}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+        <ol class="mlist g">
+          {projects.map((p, i) => (
+            <li>
+              <a href={`/${lang}/work/${p.slug}/`}>
+                {media[p.slug] ? <img class="mimg" src={media[p.slug].cover.src} alt="" loading="lazy" /> : <span class="ph" aria-hidden="true"><i>{t.visual}</i></span>}
+                <span class="tl"><span class="t28">{p[lang].title}</span><span class="mono mu">{pad(i + 1)}</span></span>
+                <span class="mono mu">{p[lang].short} — {p.yearLabel}</span>
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+    <section class="scr" data-peek data-still aria-label={lang === 'fr' ? 'Pied de page' : 'Footer'}>
+      <Footer lang={lang} />
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page { position: relative; min-height: 100%; height: 100%; display: flex; flex-direction: column; }
+  .stage { position: relative; flex: 1; min-height: 560px; }
+  .ttl { position: absolute; z-index: 2; left: var(--m); top: calc(var(--head) + 16px); }
+  .obj { position: absolute; left: var(--x); top: var(--y); width: var(--w); transform: translate(-50%, -50%); touch-action: none; }
+  .obj a { display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: grab; -webkit-user-drag: none; user-select: none; }
+  .obj.drag a { cursor: grabbing; }
+  .obj .float { display: block; width: 100%; will-change: transform; }
+  .obj :global(.shape) { width: 100%; height: auto; transform: rotate(var(--r)); filter: drop-shadow(0 var(--sh, 26px) 22px rgba(0, 0, 0, .22)); pointer-events: none; }
+  .obj .lb { white-space: nowrap; transition: transform .35s var(--out); }
+  @media (hover: hover) { .obj a:hover .lb { transform: translateX(6px); } }
+  .mlist { display: none; }
+  .ft { margin-top: auto; }
+
+  @media (max-width: 760px) {
+    .stage { display: none; }
+    .ttl { position: static; padding: calc(var(--head) + 24px) var(--m) 24px; }
+    .mlist { display: grid; row-gap: 32px; padding-bottom: 48px; }
+    .mlist li { grid-column: 1 / -1; }
+    .mlist .ph, .mlist .mimg { display: block; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 10px; object-fit: cover; }
+    .tl { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .tl .t28 { font-weight: 500; }
+  }
+</style>
+
+<script>
+  // M1 Flottement : chaque objet monte et descend à son rythme ; la souris les décale selon leur profondeur ;
+  // survol = l'objet se soulève de 14 px. Les objets se prennent à la main (glisser-déposer) et restent où on les pose.
+  // Un clic sans déplacement ouvre l'étude.
+  const stage = document.querySelector<HTMLElement>('[data-stage]');
+  if (stage) {
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+    const O = [...stage.querySelectorAll<HTMLElement>('.obj')].map((el, i) => ({
+      el, a: el.querySelector('a')!, f: el.querySelector<HTMLElement>('.float')!, z: Number(el.dataset.depth),
+      ph: i * 1.7, sp: 0.55 + i * 0.09, dx: 0, dy: 0, px: 0, py: 0, lift: 0, hov: false,
+    }));
+    const m = { nx: 0, ny: 0, tx: 0, ty: 0 };
+    stage.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); m.tx = (e.clientX - r.left) / r.width - 0.5; m.ty = (e.clientY - r.top) / r.height - 0.5; });
+    stage.addEventListener('pointerleave', () => { m.tx = 0; m.ty = 0; });
+    let drag: (typeof O)[number] | null = null, sx = 0, sy = 0, ox = 0, oy = 0, moved = false, top = 10;
+    O.forEach((o) => {
+      o.a.addEventListener('pointerenter', () => (o.hov = true));
+      o.a.addEventListener('pointerleave', () => (o.hov = false));
+      o.a.addEventListener('dragstart', (e) => e.preventDefault());
+      o.a.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        drag = o; moved = false; sx = e.clientX; sy = e.clientY; ox = o.dx; oy = o.dy;
+        o.el.style.zIndex = String(++top); o.a.setPointerCapture(e.pointerId);
+      });
+      o.a.addEventListener('pointermove', (e) => {
+        if (drag !== o) return;
+        const ddx = e.clientX - sx, ddy = e.clientY - sy;
+        if (!moved && Math.hypot(ddx, ddy) > 5) { moved = true; o.el.classList.add('drag'); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); }
+        if (moved) { o.dx = ox + ddx; o.dy = oy + ddy; }
+      });
+      const end = () => { if (drag === o) { if (moved) dispatchEvent(new CustomEvent('kk:sound', { detail: 'drop' })); drag = null; o.el.classList.remove('drag'); } };
+      o.a.addEventListener('pointerup', end);
+      o.a.addEventListener('pointercancel', end);
+      o.a.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } });
+    });
+    const tick = (now: number) => {
+      const t = now / 1000;
+      m.nx = lerp(m.nx, m.tx, 0.06); m.ny = lerp(m.ny, m.ty, 0.06);
+      O.forEach((o) => {
+        const held = drag === o && moved;
+        const float = still ? 0 : Math.sin(t * o.sp + o.ph) * 7;
+        o.px = lerp(o.px, still ? 0 : -m.nx * 28 * o.z, 0.08); o.py = lerp(o.py, still ? 0 : -m.ny * 20 * o.z, 0.08);
+        o.lift = lerp(o.lift, o.hov || held ? -14 : 0, still ? 1 : 0.14);
+        o.a.style.transform = `translate(${o.dx}px, ${o.dy}px)`;
+        o.f.style.transform = `translate(${o.px}px, ${o.py + float + o.lift}px)`;
+        o.f.style.setProperty('--sh', `${26 - o.lift}px`);
+      });
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+</script>

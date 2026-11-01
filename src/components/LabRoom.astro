@@ -1,0 +1,89 @@
+---
+// Lab : une salle plein écran, sans défilement. L'interface flotte par-dessus en Geist Mono.
+// Changer de salle : boutons ← →, rangée 01…0n, flèches du clavier (sauf dans une fonte, où le clavier sert à taper).
+import Base from '../layouts/Base.astro';
+import TypeCanvas from './TypeCanvas.astro';
+import { ui, pad, type Lang } from '../data/ui';
+import { rooms } from '../data/lab';
+interface Props { lang: Lang; index: number }
+const { lang, index } = Astro.props;
+const t = ui[lang];
+const room = rooms[index];
+const r = room[lang];
+const N = rooms.length;
+const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
+---
+<Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
+  <div class="lab" data-room={room.kind}>
+    <div class:list={['room', room.kind]}>
+      {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} />}
+      {room.kind === 'slot' && <p class="mono mu">({r.note})</p>}
+      {room.kind === 'font' && (
+        <Fragment>
+          <p class="hint mono mu" id="hint">({t.typeHere})</p>
+          <p class="tester" contenteditable="plaintext-only" spellcheck="false" aria-describedby="hint" data-own-keys>Kerning</p>
+        </Fragment>
+      )}
+    </div>
+
+    <div class="bot g">
+      <div class="info mono">
+        <p>{pad(index + 1)} / {pad(N)} — {r.title}</p>
+        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i lk hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>(i)</button></Fragment>}</p>
+      </div>
+      <ol class="dots mono" aria-label="Lab">
+        {rooms.map((x, i) => <li><a class:list={['hit', { mu: i !== index }]} href={url(i)} aria-current={i === index ? 'page' : undefined} aria-label={x[lang].title}>{pad(i + 1)}</a></li>)}
+      </ol>
+      <div class="act">
+        {room.kind === 'font' && (room.file
+          ? <a class="btn mono" href={room.file} download>{t.download} <span class="ar"><i>↓</i></span></a>
+          : <span class="btn mono off">{t.fileSoon}</span>)}
+        <a class="arw mono" href={url(index - 1)} aria-label={t.prev} data-prev>←</a>
+        <a class="arw mono" href={url(index + 1)} aria-label={t.nextShort} data-nextroom>→</a>
+      </div>
+    </div>
+    {room.kind !== 'font' && <div class="note" id="note" hidden><p class="mono mu">{t.note}</p><p>{r.note}</p></div>}
+  </div>
+</Base>
+
+<style>
+  .lab { position: fixed; inset: 0; }
+  .room { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 var(--m); }
+  .room.slot { background: repeating-linear-gradient(45deg, #e6e6e6 0 10px, #dedede 10px 20px); }
+  .room.slot p { max-width: 520px; text-align: center; }
+  .room :global(.tc) { width: 100%; height: 100%; }
+  .tester { font-weight: 500; font-size: 160px; line-height: 160px; letter-spacing: -0.03em; text-align: center; outline: none; max-width: 100%; overflow-wrap: anywhere; caret-color: var(--fg); }
+  .hint { position: absolute; top: calc(var(--head) + 120px); left: 0; right: 0; text-align: center; }
+  .bot { position: absolute; left: 0; right: 0; bottom: 24px; align-items: end; z-index: 3; }
+  .info { grid-column: 1 / 5; }
+  .info p + p { margin-top: 4px; }
+  .i { font: inherit; }
+  .dots { grid-column: 5 / 9; display: flex; gap: 14px; justify-self: center; }
+  .act { grid-column: 9 / 13; justify-self: end; display: flex; gap: 8px; align-items: center; }
+  .arw { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--fg); background: var(--bg); }
+  .btn.off { background: var(--bg); color: var(--mu); box-shadow: inset 0 0 0 1px var(--ln); margin-right: 8px; }
+  .act .btn { margin-right: 8px; }
+  .note { position: absolute; z-index: 4; left: var(--m); bottom: 96px; width: 320px; background: var(--bg); padding: 16px; box-shadow: 0 0 0 1px var(--ln); }
+  .note p + p { margin-top: 8px; }
+  @media (max-width: 760px) {
+    .tester { font-size: 52px; line-height: 56px; }
+    .bot { row-gap: 14px; }
+    .info { grid-column: 1 / -1; }
+    .dots { grid-column: 1 / 3; justify-self: start; gap: 10px; }
+    .act { grid-column: 3 / 5; }
+    .note { left: var(--m); right: var(--m); width: auto; bottom: 150px; }
+  }
+</style>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('[data-note]');
+  const note = document.getElementById('note');
+  btn?.addEventListener('click', () => { const open = note!.hidden; note!.hidden = !open; btn.setAttribute('aria-expanded', String(open)); });
+  addEventListener('keydown', (e) => {
+    const t = e.target as Element;
+    if (t.closest('[contenteditable], input, textarea')) return;
+    if (e.key === 'ArrowRight') document.querySelector<HTMLAnchorElement>('[data-nextroom]')?.click();
+    if (e.key === 'ArrowLeft') document.querySelector<HTMLAnchorElement>('[data-prev]')?.click();
+    if (e.key === 'Escape' && note && !note.hidden) { note.hidden = true; btn?.setAttribute('aria-expanded', 'false'); }
+  });
+</script>

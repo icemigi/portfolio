@@ -1,0 +1,386 @@
+---
+// /xx/lab/ : le Lab est un faux bureau macOS. Barre des menus (le cavalier remplace la pomme et sert de menu du site),
+// widgets (météo de Paris en direct, calendrier, horloge, note), icônes déplaçables, Dock.
+// Chaque pièce du Lab est une app : double-clic (ou Entrée) sur l'icône, ou un clic dans le Dock, ouvre sa fenêtre.
+// Les fenêtres se déplacent, se redimensionnent, se réduisent dans le Dock et passent en plein écran.
+// Téléphone : écran d'accueil en grille, une app = une fenêtre plein écran.
+import Base from '../../layouts/Base.astro';
+import { ui, languages, getLangFromParam } from '../../data/ui';
+import { rooms } from '../../data/lab';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+const fr = lang === 'fr';
+
+type App = { id: string; title: string; src: string; icon: string; w: number; h: number };
+const apps: App[] = [
+  ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), src: `/${lang}/lab/${r.id}/?embed`, icon: r.id, w: 880, h: 580 })),
+  { id: 'heraldry', title: 'Algorithmic Heraldry', src: '/lab/heraldry/index.html', icon: 'heraldry', w: 980, h: 640 },
+];
+const M = fr
+  ? { app: 'Finder', menus: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], about: 'À propos de kerningkastle', site: [['Accueil', ''], ['Projets', 'work/'], ['Archive', 'archive/'], ['À propos', 'about/']], lang: 'English', hint: 'Double-cliquez sur une icône pour ouvrir une expérience. Tout se déplace.', note: 'Lab', trash: 'Corbeille', trashEmpty: 'La corbeille est vide (pour l’instant).', weather: 'Paris', today: "Aujourd'hui", close: 'Fermer', min: 'Réduire', zoom: 'Plein écran' }
+  : { app: 'Finder', menus: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'], about: 'About kerningkastle', site: [['Home', ''], ['Work', 'work/'], ['Archive', 'archive/'], ['About', 'about/']], lang: 'Français', hint: 'Double-click an icon to open an experiment. Everything can be moved.', note: 'Lab', trash: 'Trash', trashEmpty: 'The trash is empty (for now).', weather: 'Paris', today: 'Today', close: 'Close', min: 'Minimise', zoom: 'Full screen' };
+const other = fr ? 'en' : 'fr';
+---
+<Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab" bare>
+  <div class="mac" data-mac>
+    <!-- barre des menus -->
+    <div class="bar">
+      <div class="bl">
+        <div class="kmenu">
+          <button class="mb logo" type="button" aria-haspopup="menu" aria-expanded="false" data-kmenu aria-label="kerningkastle"><img src="/logo-kerningkastle.svg" alt="" width="15" height="15" /></button>
+          <div class="dd" role="menu" data-kdd hidden>
+            <a role="menuitem" href={`/${lang}/about/`}>{M.about}</a>
+            <hr />
+            {M.site.map(([l, h]) => <a role="menuitem" href={`/${lang}/${h}`}>{l}</a>)}
+            <hr />
+            <a role="menuitem" href={`/${other}/lab/`} hreflang={other}>{M.lang}</a>
+          </div>
+        </div>
+        <span class="mb b" data-front>{M.app}</span>
+        {M.menus.map((m) => <span class="mb dim">{m}</span>)}
+      </div>
+      <div class="br">
+        <svg class="ic" viewBox="0 0 20 14" aria-hidden="true"><path d="M10 13.2 7.4 10.4a3.7 3.7 0 0 1 5.2 0Zm-4.3-4.6a6.1 6.1 0 0 1 8.6 0l1.2-1.3a7.9 7.9 0 0 0-11 0Zm-2.9-2.9a10.2 10.2 0 0 1 14.4 0l1.2-1.3a12 12 0 0 0-16.8 0Z" fill="currentColor"/></svg>
+        <svg class="ic" viewBox="0 0 26 13" aria-hidden="true"><rect x=".6" y=".6" width="21.8" height="11.8" rx="3.2" fill="none" stroke="currentColor" stroke-opacity=".5"/><rect x="2.4" y="2.4" width="15.6" height="8.2" rx="1.7" fill="currentColor"/><path d="M24 4.6v3.8a2 2 0 0 0 0-3.8Z" fill="currentColor" fill-opacity=".5"/></svg>
+        <svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="6.8" cy="6.8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="m10.5 10.5 4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <span class="mb clock" data-clock></span>
+      </div>
+    </div>
+
+    <!-- bureau -->
+    <div class="desk" data-desk>
+      <!-- widgets -->
+      <div class="widgets">
+        <div class="wd weather" data-weather>
+          <p class="wc">{M.weather} <span aria-hidden="true">➤</span></p>
+          <p class="wt" data-wt>—°</p>
+          <p class="ws"><span data-wi>&nbsp;</span><br /><span data-wr>&nbsp;</span></p>
+        </div>
+        <div class="wd cal" data-cal></div>
+        <div class="wd clockw"><svg viewBox="0 0 100 100" aria-hidden="true" data-analog>
+          <circle cx="50" cy="50" r="48" fill="#fff" />
+          {Array.from({ length: 12 }, (_, i) => <text x={50 + 36 * Math.sin((i + 1) * Math.PI / 6)} y={50 - 36 * Math.cos((i + 1) * Math.PI / 6) + 4} text-anchor="middle">{i + 1}</text>)}
+          <line data-h x1="50" y1="50" x2="50" y2="28" />
+          <line data-m x1="50" y1="50" x2="50" y2="16" />
+          <line data-s x1="50" y1="58" x2="50" y2="12" />
+          <circle cx="50" cy="50" r="2.4" fill="#f60" />
+        </svg></div>
+        <div class="wd note"><p class="nt">{M.note}</p><p>{M.hint}</p></div>
+      </div>
+
+      <!-- icônes -->
+      <ul class="icons" data-icons>
+        {apps.map((a, i) => (
+          <li class="dicon" data-app={a.id} style={`--i:${i}`}>
+            <button type="button" aria-label={a.title}><span class="ai" data-icon={a.icon}></span><span class="lbl">{a.title}</span></button>
+          </li>
+        ))}
+      </ul>
+      <div class="wins" data-wins></div>
+    </div>
+
+    <!-- Dock -->
+    <nav class="dock" aria-label="Dock" data-dock>
+      <a class="dk" href={`/${lang}/`} aria-label="kerningkastle"><span class="ai" data-icon="finder"></span><i class="tip">kerningkastle</i></a>
+      {apps.map((a) => <button class="dk" type="button" data-open={a.id} aria-label={a.title}><span class="ai" data-icon={a.icon}></span><i class="tip">{a.title}</i><b class="run" aria-hidden="true"></b></button>)}
+      <span class="sep" aria-hidden="true"></span>
+      <button class="dk" type="button" data-open="trash" aria-label={M.trash}><span class="ai" data-icon="trash"></span><i class="tip">{M.trash}</i></button>
+    </nav>
+  </div>
+</Base>
+
+<script is:inline define:vars={{ apps, L: { lang, close: M.close, min: M.min, zoom: M.zoom, trash: M.trash, trashEmpty: M.trashEmpty, today: M.today } }}>
+  window.kkLab = { apps, L };
+</script>
+
+<style>
+  /* ---------- bureau ---------- */
+  .mac { position: fixed; inset: 0; overflow: hidden; color: #fff; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
+    background:
+      radial-gradient(120% 80% at 15% 110%, #ff8a3d 0%, rgba(255, 138, 61, 0) 55%),
+      radial-gradient(90% 70% at 85% 95%, #ff4f7a 0%, rgba(255, 79, 122, 0) 55%),
+      radial-gradient(120% 90% at 70% 10%, #3a2d9e 0%, rgba(58, 45, 158, 0) 60%),
+      radial-gradient(100% 100% at 0% 0%, #1b3fbf 0%, rgba(27, 63, 191, 0) 60%),
+      linear-gradient(160deg, #10184a, #5b2a86 55%, #c94a6a); }
+  .mac::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(70% 60% at 50% 45%, rgba(255, 255, 255, .08), transparent 70%); }
+
+  /* barre des menus */
+  .bar { position: absolute; z-index: 50; left: 0; right: 0; top: 0; height: 26px; display: flex; justify-content: space-between; align-items: center; padding: 0 10px; background: rgba(28, 22, 60, .28); backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6); }
+  .bl, .br { display: flex; align-items: center; gap: 2px; height: 100%; }
+  .br { gap: 12px; padding-right: 4px; }
+  .mb { display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 5px; color: #fff; font: inherit; font-weight: 400; white-space: nowrap; }
+  .mb.b { font-weight: 700; }
+  .mb.logo img { width: 15px; height: 15px; }
+  .mb.logo[aria-expanded='true'], .mb.logo:hover { background: rgba(255, 255, 255, .22); }
+  .ic { height: 13px; width: auto; color: #fff; }
+  .clock { padding: 0; font-variant-numeric: tabular-nums; }
+  @media (max-width: 760px) { .dim, .br .ic:nth-child(3) { display: none; } }
+  .kmenu { position: relative; }
+  .dd { position: absolute; left: 0; top: 24px; min-width: 230px; padding: 5px; border-radius: 9px; background: rgba(40, 40, 46, .72); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); box-shadow: 0 0 0 .5px rgba(255, 255, 255, .25) inset, 0 12px 40px rgba(0, 0, 0, .35); }
+  .dd a { display: block; padding: 3px 10px; border-radius: 5px; color: #fff; }
+  .dd a:hover, .dd a:focus-visible { background: #2f6fea; outline: none; }
+  .dd hr { border: 0; height: 1px; margin: 5px 10px; background: rgba(255, 255, 255, .15); }
+
+  /* widgets */
+  .desk { position: absolute; inset: 26px 0 0 0; }
+  .widgets { position: absolute; left: 22px; top: 18px; display: grid; grid-template-columns: 160px 160px; gap: 16px; }
+  .wd { width: 160px; height: 160px; border-radius: 22px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); overflow: hidden; }
+  .weather { background: linear-gradient(180deg, #2f7fd8, #5aa2ec); }
+  .wc { font-weight: 600; font-size: 14px; }
+  .wc span { font-size: 9px; opacity: .9; }
+  .wt { font-size: 44px; font-weight: 300; line-height: 1.05; letter-spacing: -0.03em; }
+  .ws { margin-top: 18px; font-size: 12px; font-weight: 600; line-height: 1.35; }
+  .cal { background: #fff; color: #111; padding: 12px 12px; }
+  .cal :global(.cm) { color: #f23b30; font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
+  .cal :global(.cg) { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 3px; text-align: center; font-size: 10px; font-weight: 600; }
+  .cal :global(.cg .h) { color: #999; font-weight: 600; }
+  .cal :global(.cg .o) { color: #ccc; }
+  .cal :global(.cg .t) { background: #f23b30; color: #fff; border-radius: 50%; width: 17px; height: 17px; line-height: 17px; margin: 0 auto; }
+  .clockw { background: #1c1c1e; padding: 10px; display: grid; place-items: center; }
+  .clockw svg { width: 140px; height: 140px; }
+  .clockw text { font: 600 9px -apple-system, sans-serif; fill: #111; }
+  .clockw line { stroke: #111; stroke-width: 3.2; stroke-linecap: round; }
+  .clockw line[data-m] { stroke-width: 2.4; }
+  .clockw line[data-s] { stroke: #f60; stroke-width: 1.2; }
+  .note { background: #fde68a; color: #3d3317; }
+  .nt { font-weight: 700; margin-bottom: 6px; }
+  @media (max-width: 900px) { .widgets { grid-template-columns: 160px; } .clockw, .note { display: none; } }
+  @media (max-width: 760px) { .desk { overflow-y: auto; padding-bottom: 90px; } .widgets { position: static; display: flex; gap: 12px; padding: 16px 16px 0; } .wd { width: calc(50vw - 22px); height: calc(50vw - 22px); max-width: 170px; max-height: 170px; } }
+
+  /* icônes du bureau */
+  .icons { position: absolute; inset: 0; pointer-events: none; }
+  .dicon { position: absolute; right: 22px; top: calc(18px + var(--i) * 104px); width: 92px; pointer-events: auto; touch-action: none; }
+  .dicon button { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; color: #fff; font: inherit; font-size: 12px; text-align: center; }
+  .dicon .ai { width: 60px; height: 60px; border-radius: 8px; padding: 3px; }
+  .dicon .lbl { padding: 1px 5px; border-radius: 4px; line-height: 1.25; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); max-width: 92px; }
+  .dicon.sel .ai { background: rgba(0, 0, 0, .25); box-shadow: 0 0 0 1px rgba(255, 255, 255, .35); }
+  .dicon.sel .lbl { background: #2f6fea; text-shadow: none; }
+  .dicon.drag { z-index: 30; opacity: .85; }
+  @media (max-width: 760px) {
+    .icons { position: static; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; padding: 22px 12px; pointer-events: auto; }
+    .dicon { position: static; width: auto; }
+  }
+
+  /* icônes d'app (dessinées en CSS + SVG par le script) */
+  .ai { display: block; }
+  .ai :global(svg) { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+
+  /* fenêtres */
+  .wins { position: absolute; inset: 0; pointer-events: none; }
+  .wins :global(.win) { position: absolute; display: flex; flex-direction: column; border-radius: 11px; overflow: hidden; background: #ececec; pointer-events: auto;
+    box-shadow: 0 0 0 .5px rgba(0, 0, 0, .35), 0 22px 70px rgba(0, 0, 0, .45); transform-origin: var(--ox, 50%) var(--oy, 100%); }
+  .wins :global(.win.blur) { box-shadow: 0 0 0 .5px rgba(0, 0, 0, .25), 0 12px 40px rgba(0, 0, 0, .3); }
+  .wins :global(.tb) { position: relative; flex: none; height: 30px; display: flex; align-items: center; justify-content: center; background: linear-gradient(#ebebeb, #dcdcdc); border-bottom: 1px solid #c8c8c8; color: #4a4a4a; font-weight: 600; font-size: 13px; touch-action: none; user-select: none; }
+  .wins :global(.win.blur .tb) { color: #999; background: #f0f0f0; }
+  .wins :global(.tl) { position: absolute; left: 12px; top: 9px; display: flex; gap: 8px; }
+  .wins :global(.tl button) { width: 12px; height: 12px; border-radius: 50%; display: grid; place-items: center; font: 700 9px/1 -apple-system, sans-serif; color: transparent; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .2); }
+  .wins :global(.tl .c) { background: #ff5f57; } .wins :global(.tl .m) { background: #febc2e; } .wins :global(.tl .z) { background: #28c840; }
+  .wins :global(.tl:hover button) { color: rgba(0, 0, 0, .55); }
+  .wins :global(.win.blur .tl button) { background: #d6d6d6; }
+  .wins :global(.wb) { position: relative; flex: 1; background: #fff; }
+  .wins :global(.wb iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .wins :global(.wb .msg) { position: absolute; inset: 0; display: grid; place-items: center; color: #666; padding: 24px; text-align: center; }
+  .wins :global(.win.moving .wb iframe) { pointer-events: none; }
+  .wins :global(.rz) { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; touch-action: none; }
+  .wins :global(.win.full) { border-radius: 0; }
+  @media (max-width: 760px) { .wins :global(.win) { left: 0 !important; top: 0 !important; width: 100% !important; height: calc(100% - 84px) !important; border-radius: 0; } .wins :global(.rz) { display: none; } }
+
+  /* Dock */
+  .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 6px 8px; border-radius: 20px;
+    background: rgba(255, 255, 255, .18); backdrop-filter: blur(30px) saturate(1.6); -webkit-backdrop-filter: blur(30px) saturate(1.6); box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .45), 0 10px 30px rgba(0, 0, 0, .25); }
+  .dk { position: relative; width: 52px; height: 52px; display: block; transition: width .18s, height .18s, margin .18s; }
+  .dk .ai { width: 100%; height: 100%; }
+  .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(40, 40, 46, .8); color: #fff; font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .dk:hover .tip { opacity: 1; }
+  .dk .run { position: absolute; left: 50%; bottom: -5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(255, 255, 255, .85); opacity: 0; }
+  .dk.on .run { opacity: 1; }
+  .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(255, 255, 255, .35); }
+  @media (max-width: 760px) { .dock { gap: 4px; padding: 5px 6px; max-width: calc(100vw - 16px); overflow-x: auto; } .dk { width: 44px; height: 44px; flex: none; } .dk .tip { display: none; } }
+</style>
+
+<script>
+  import { reduced } from '../../scripts/motion';
+  type App = { id: string; title: string; src: string; icon: string; w: number; h: number };
+  const { apps, L } = (window as any).kkLab as { apps: App[]; L: Record<string, string> };
+  const root = document.querySelector<HTMLElement>('[data-mac]')!;
+  const desk = root.querySelector<HTMLElement>('[data-desk]')!;
+  const wins = root.querySelector<HTMLElement>('[data-wins]')!;
+  const dock = root.querySelector<HTMLElement>('[data-dock]')!;
+  const small = matchMedia('(max-width: 760px)').matches;
+  const sound = (s: string) => dispatchEvent(new CustomEvent('kk:sound', { detail: s }));
+  const store = { get: (k: string) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } }, set: (k: string, v: unknown) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* */ } } };
+
+  // ---------- icônes d'app (SVG) ----------
+  const sq = (fill: string, body: string, defs = '') => `<svg viewBox="0 0 100 100"><defs>${defs}</defs><rect x="4" y="4" width="92" height="92" rx="21" fill="${fill}"/>${body}</svg>`;
+  const ICONS: Record<string, string> = {
+    finder: `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="21" fill="#f3f3f3"/><image href="/logo-kerningkastle-dark.svg" x="22" y="22" width="56" height="56"/></svg>`,
+    vexillology: sq('url(#gv)', `<rect x="24" y="26" width="52" height="36" fill="#fff"/><rect x="24" y="26" width="17.3" height="36" fill="#111"/><rect x="58.7" y="26" width="17.3" height="36" fill="#e43"/><rect x="22" y="24" width="3" height="54" rx="1.5" fill="#fff"/>`, `<linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b8def"/><stop offset="1" stop-color="#2a55c9"/></linearGradient>`),
+    ascii: sq('#141414', `<text x="50" y="44" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#8ef0a0">@#*+=</text><text x="50" y="60" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#5fbf73">:-=+*</text><text x="50" y="76" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#3c7f4a">. :-=</text>`),
+    'modular-type': sq('#f3f3f3', `<g fill="#111"><rect x="30" y="30" width="12" height="12"/><rect x="44" y="30" width="12" height="12"/><rect x="58" y="44" width="12" height="12"/><rect x="30" y="58" width="12" height="12"/><rect x="44" y="58" width="12" height="12" rx="6"/><rect x="58" y="58" width="12" height="12"/><rect x="30" y="44" width="12" height="12" rx="6"/></g>`),
+    gravity: sq('url(#gg)', `<g font-family="Geist, sans-serif" font-weight="600" fill="#111"><text x="30" y="40" font-size="20" transform="rotate(-18 30 40)">A</text><text x="52" y="56" font-size="22" transform="rotate(12 52 56)">g</text><text x="34" y="78" font-size="22">k</text><text x="58" y="80" font-size="22" transform="rotate(-8 58 80)">s</text></g>`, `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#ffb84d"/></linearGradient>`),
+    'free-font': sq('#fbf7ee', `<text x="50" y="66" text-anchor="middle" font-family="Georgia, serif" font-size="40" fill="#111">Aa</text><rect x="20" y="74" width="60" height="2" fill="#d33"/>`),
+    heraldry: sq('#111', `<path d="M30 24h40v26c0 16-10 26-20 30-10-4-20-14-20-30Z" fill="#fff"/><path d="M50 24v56c-10-4-20-14-20-30V24Z" fill="#111" stroke="#fff" stroke-width="2"/><path d="M30 50h40" stroke="#111" stroke-width="2"/>`),
+    trash: `<svg viewBox="0 0 100 100"><path d="M24 26h52l-5 64c-.4 4-3 6-7 6H36c-4 0-6.6-2-7-6Z" fill="rgba(255,255,255,.55)" stroke="rgba(255,255,255,.9)" stroke-width="2"/><path d="M38 34v54M50 34v54M62 34v54" stroke="rgba(0,0,0,.18)" stroke-width="3"/><rect x="20" y="20" width="60" height="8" rx="3" fill="rgba(255,255,255,.85)"/></svg>`,
+  };
+  root.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });
+
+  // ---------- horloge, calendrier, météo ----------
+  const loc = L.lang === 'fr' ? 'fr-FR' : 'en-GB';
+  const clock = root.querySelector<HTMLElement>('[data-clock]')!;
+  const [hh, mm, ss] = ['h', 'm', 's'].map((k) => root.querySelector<SVGLineElement>(`[data-${k}]`)!);
+  const tick = () => {
+    const d = new Date();
+    clock.textContent = d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' }) + '  ' + d.toLocaleTimeString(loc, { hour: '2-digit', minute: '2-digit' });
+    const s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
+    hh.setAttribute('transform', `rotate(${h * 30} 50 50)`); mm.setAttribute('transform', `rotate(${m * 6} 50 50)`); ss.setAttribute('transform', `rotate(${s * 6} 50 50)`);
+  };
+  tick(); setInterval(tick, 1000);
+  const cal = root.querySelector<HTMLElement>('[data-cal]')!;
+  {
+    const d = new Date(), y = d.getFullYear(), mo = d.getMonth(), first = (new Date(y, mo, 1).getDay() + 6) % 7, n = new Date(y, mo + 1, 0).getDate();
+    const heads = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i).toLocaleDateString(loc, { weekday: 'narrow' }));
+    let h = `<p class="cm">${d.toLocaleDateString(loc, { month: 'long' })}</p><div class="cg">` + heads.map((x) => `<span class="h">${x}</span>`).join('');
+    const prev = new Date(y, mo, 0).getDate();
+    for (let i = 0; i < first; i++) h += `<span class="o">${prev - first + 1 + i}</span>`;
+    for (let i = 1; i <= n; i++) h += `<span class="${i === d.getDate() ? 't' : ''}">${i}</span>`;
+    cal.innerHTML = h + '</div>';
+  }
+  // météo de Paris (Open-Meteo, sans clé) ; libellés selon le code WMO
+  const WMO: Record<number, [string, string]> = { 0: ['Ensoleillé', 'Sunny'], 1: ['Plutôt dégagé', 'Mostly clear'], 2: ['Partiellement nuageux', 'Partly cloudy'], 3: ['Couvert', 'Overcast'], 45: ['Brouillard', 'Fog'], 48: ['Brouillard', 'Fog'], 51: ['Bruine', 'Drizzle'], 53: ['Bruine', 'Drizzle'], 55: ['Bruine', 'Drizzle'], 61: ['Pluie', 'Rain'], 63: ['Pluie', 'Rain'], 65: ['Forte pluie', 'Heavy rain'], 71: ['Neige', 'Snow'], 73: ['Neige', 'Snow'], 75: ['Neige', 'Snow'], 80: ['Averses', 'Showers'], 81: ['Averses', 'Showers'], 82: ['Averses', 'Showers'], 95: ['Orage', 'Thunderstorm'] };
+  fetch('https://api.open-meteo.com/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=Europe%2FParis&forecast_days=1')
+    .then((r) => r.json()).then((j) => {
+      const fr = L.lang === 'fr';
+      root.querySelector('[data-wt]')!.textContent = `${Math.round(j.current.temperature_2m)}°`;
+      root.querySelector('[data-wi]')!.textContent = (WMO[j.current.weather_code] || ['', ''])[fr ? 0 : 1];
+      root.querySelector('[data-wr]')!.textContent = `${fr ? 'H' : 'H'}:${Math.round(j.daily.temperature_2m_max[0])}°  ${fr ? 'B' : 'L'}:${Math.round(j.daily.temperature_2m_min[0])}°`;
+    }).catch(() => { root.querySelector('[data-wt]')!.textContent = '—'; });
+
+  // ---------- menu du cavalier ----------
+  const kb = root.querySelector<HTMLButtonElement>('[data-kmenu]')!, kd = root.querySelector<HTMLElement>('[data-kdd]')!;
+  const kset = (o: boolean) => { kd.hidden = !o; kb.setAttribute('aria-expanded', String(o)); };
+  kb.addEventListener('click', (e) => { e.stopPropagation(); kset(kd.hidden); });
+  document.addEventListener('click', () => kset(false));
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') kset(false); });
+
+  // ---------- fenêtres ----------
+  let z = 10;
+  const open = new Map<string, HTMLElement>();
+  const front = root.querySelector<HTMLElement>('[data-front]')!;
+  const focus = (w: HTMLElement) => {
+    wins.querySelectorAll('.win').forEach((x) => x.classList.toggle('blur', x !== w));
+    w.style.zIndex = String(++z); front.textContent = w.dataset.title!;
+  };
+  const dockBtn = (id: string) => dock.querySelector<HTMLElement>(`[data-open="${id}"]`);
+  const originOf = (id: string) => { const b = dockBtn(id)?.getBoundingClientRect(); return b ? { x: b.left + b.width / 2, y: b.top } : { x: innerWidth / 2, y: innerHeight }; };
+  const anim = (w: HTMLElement, from: { x: number; y: number }, inOut: 1 | -1) => {
+    if (reduced()) return Promise.resolve();
+    const r = w.getBoundingClientRect();
+    w.style.setProperty('--ox', `${from.x - r.left}px`); w.style.setProperty('--oy', `${from.y - r.top}px`);
+    const k = [{ transform: 'scale(.06)', opacity: 0 }, { transform: 'none', opacity: 1 }];
+    return w.animate(inOut > 0 ? k : k.reverse(), { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'both' }).finished;
+  };
+  const closeWin = async (id: string) => {
+    const w = open.get(id); if (!w) return;
+    sound('drop'); await anim(w, originOf(id), -1); w.remove(); open.delete(id);
+    dockBtn(id)?.classList.remove('on');
+    const last = [...wins.querySelectorAll<HTMLElement>('.win:not([hidden])')].pop();
+    if (last) focus(last); else front.textContent = 'Finder';
+  };
+  const minimise = async (id: string) => { const w = open.get(id)!; sound('drop'); await anim(w, originOf(id), -1); w.hidden = true; };
+  const openApp = async (id: string) => {
+    if (id === 'trash') { return openNote('trash', L.trash, L.trashEmpty); }
+    const a = apps.find((x) => x.id === id); if (!a) return;
+    const ex = open.get(id);
+    if (ex) { if (ex.hidden) { ex.hidden = false; focus(ex); await anim(ex, originOf(id), 1); } else focus(ex); return; }
+    const w = makeWin(id, a.title, a.w, a.h);
+    w.querySelector('.wb')!.innerHTML = `<iframe src="${a.src}" title="${a.title}" loading="lazy"></iframe>`;
+    dockBtn(id)?.classList.add('on'); sound('pick');
+    await anim(w, originOf(id), 1);
+  };
+  const openNote = async (id: string, title: string, text: string) => {
+    if (open.get(id)) { focus(open.get(id)!); return; }
+    const w = makeWin(id, title, 420, 220);
+    w.querySelector('.wb')!.innerHTML = `<p class="msg">${text}</p>`;
+    await anim(w, originOf(id), 1);
+  };
+  const makeWin = (id: string, title: string, ww: number, wh: number) => {
+    const W = desk.clientWidth, H = desk.clientHeight - 80, n = open.size;
+    const w0 = Math.min(ww, W - 80), h0 = Math.min(wh, H - 40);
+    const w = document.createElement('section');
+    w.className = 'win'; w.dataset.title = title; w.setAttribute('aria-label', title);
+    w.style.cssText = `left:${Math.max(20, (W - w0) / 2 + n * 26 - 60)}px;top:${Math.max(16, (H - h0) / 2 + n * 22 - 20)}px;width:${w0}px;height:${h0}px`;
+    w.innerHTML = `<div class="tb"><div class="tl"><button class="c" type="button" aria-label="${L.close}">×</button><button class="m" type="button" aria-label="${L.min}">−</button><button class="z" type="button" aria-label="${L.zoom}">+</button></div><span>${title}</span></div><div class="wb"></div><span class="rz" aria-hidden="true"></span>`;
+    wins.appendChild(w); open.set(id, w); focus(w);
+    w.addEventListener('pointerdown', () => focus(w));
+    w.querySelector('.c')!.addEventListener('click', (e) => { e.stopPropagation(); closeWin(id); });
+    w.querySelector('.m')!.addEventListener('click', (e) => { e.stopPropagation(); minimise(id); });
+    w.querySelector('.z')!.addEventListener('click', (e) => { e.stopPropagation(); zoom(w); });
+    w.querySelector('.tb')!.addEventListener('dblclick', () => zoom(w));
+    drag(w.querySelector<HTMLElement>('.tb')!, w, 'move');
+    drag(w.querySelector<HTMLElement>('.rz')!, w, 'size');
+    return w;
+  };
+  const zoom = (w: HTMLElement) => {
+    if (w.classList.toggle('full')) { w.dataset.prev = w.style.cssText; w.style.left = '0px'; w.style.top = '0px'; w.style.width = desk.clientWidth + 'px'; w.style.height = desk.clientHeight - 76 + 'px'; }
+    else { w.style.cssText = w.dataset.prev || w.style.cssText; }
+    w.style.zIndex = String(++z);
+  };
+  const drag = (handle: HTMLElement, w: HTMLElement, mode: 'move' | 'size') => {
+    handle.addEventListener('pointerdown', (e) => {
+      if ((e.target as Element).closest('.tl button')) return;
+      e.preventDefault(); handle.setPointerCapture(e.pointerId); w.classList.add('moving');
+      const sx = e.clientX, sy = e.clientY, r = { l: w.offsetLeft, t: w.offsetTop, w: w.offsetWidth, h: w.offsetHeight };
+      const mv = (ev: PointerEvent) => {
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (mode === 'move') { w.style.left = `${r.l + dx}px`; w.style.top = `${Math.max(0, r.t + dy)}px`; }
+        else { w.style.width = `${Math.max(320, r.w + dx)}px`; w.style.height = `${Math.max(200, r.h + dy)}px`; }
+      };
+      const up = () => { w.classList.remove('moving'); handle.removeEventListener('pointermove', mv); handle.removeEventListener('pointerup', up); };
+      handle.addEventListener('pointermove', mv); handle.addEventListener('pointerup', up);
+    });
+  };
+
+  // ---------- icônes du bureau : sélection, déplacement (position mémorisée), double-clic ----------
+  const pos = store.get('kk-lab-icons') || {};
+  root.querySelectorAll<HTMLElement>('.dicon').forEach((li) => {
+    const id = li.dataset.app!, btn = li.querySelector('button')!;
+    if (!small && pos[id]) { li.style.left = pos[id][0] + 'px'; li.style.top = pos[id][1] + 'px'; li.style.right = 'auto'; }
+    btn.addEventListener('dblclick', () => openApp(id));
+    btn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); openApp(id); } });
+    if (small) { btn.addEventListener('click', () => openApp(id)); return; }
+    li.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      root.querySelectorAll('.dicon.sel').forEach((x) => x.classList.remove('sel')); li.classList.add('sel');
+      const sx = e.clientX, sy = e.clientY, ox = li.offsetLeft, oy = li.offsetTop; let moved = false;
+      li.setPointerCapture(e.pointerId);
+      const mv = (ev: PointerEvent) => {
+        const dx = ev.clientX - sx, dy = ev.clientY - sy;
+        if (!moved && Math.hypot(dx, dy) < 4) return;
+        if (!moved) { moved = true; li.classList.add('drag'); li.style.right = 'auto'; }
+        li.style.left = `${Math.min(desk.clientWidth - 92, Math.max(0, ox + dx))}px`; li.style.top = `${Math.min(desk.clientHeight - 150, Math.max(0, oy + dy))}px`;
+      };
+      const up = () => {
+        li.removeEventListener('pointermove', mv); li.removeEventListener('pointerup', up); li.classList.remove('drag');
+        if (moved) { pos[id] = [li.offsetLeft, li.offsetTop]; store.set('kk-lab-icons', pos); }
+      };
+      li.addEventListener('pointermove', mv); li.addEventListener('pointerup', up);
+    });
+  });
+  desk.addEventListener('pointerdown', (e) => { if (!(e.target as Element).closest('.dicon')) root.querySelectorAll('.dicon.sel').forEach((x) => x.classList.remove('sel')); });
+
+  // ---------- Dock : clic pour ouvrir, grossissement au survol ----------
+  dock.querySelectorAll<HTMLElement>('[data-open]').forEach((b) => b.addEventListener('click', () => openApp(b.dataset.open!)));
+  if (!small && !reduced()) {
+    const items = [...dock.querySelectorAll<HTMLElement>('.dk')];
+    dock.addEventListener('pointermove', (e) => items.forEach((it) => {
+      const r = it.getBoundingClientRect(), d = Math.abs(e.clientX - (r.left + r.width / 2));
+      const s = 52 + 28 * Math.max(0, 1 - d / 140); it.style.width = it.style.height = `${s}px`;
+    }));
+    dock.addEventListener('pointerleave', () => items.forEach((it) => (it.style.width = it.style.height = '')));
+  }
+
+  // ouvrir une app depuis l'adresse (/lab/#heraldry)
+  const h0 = location.hash.slice(1); if (h0) setTimeout(() => openApp(h0), 400);
+</script>

@@ -1,0 +1,247 @@
+---
+// « Ce que j'aime » (easter egg de la porte, page À propos). L'écran est vide, puis les objets tombent du ciel.
+// On les prend et on les lance ; un clic ouvre le texte au milieu de l'écran, qui repousse les objets.
+// Chaque objet a sa propre adresse (#id). Physique : matter.js (MIT), servi depuis /vendor/.
+import Base from '../../../layouts/Base.astro';
+import { ui, languages, getLangFromParam } from '../../../data/ui';
+import { likes } from '../../../data/likes';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+const fr = lang === 'fr';
+const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, cm: l.cm, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
+---
+<Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac.' : 'Things I love, in no particular order.'} path="about/likes/" active="about">
+  <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
+  <div class="likes" data-likes data-own-wheel>
+    <p class="ttl mono mu"><a class="lk hit" href={`/${lang}/about/`}>← {t.nav.about}</a></p>
+    <p class="hint mono mu">{fr ? 'Ce que j\'aime. Attrapez, lancez, cliquez.' : 'Things I love. Grab, throw, click.'}</p>
+    <h1 class="big" data-big><span class="t56">{fr ? 'Ce que j\'aime.' : 'Things I love.'}</span></h1>
+    <div class="stage" data-stage>
+      {data.map((d) => (
+        <button class:list={['it', d.shape]} type="button" data-id={d.id} style={`width:${d.w / 4}px;height:${d.h / 4}px`} aria-label={d.title}>
+          {d.src ? <img src={d.src} alt="" draggable="false" /> : <span class="mono">{d.sub}</span>}
+          {d.embed && <span class="emb" data-emb={d.embed} aria-hidden="true"></span>}
+        </button>
+      ))}
+    </div>
+    <div class="card g" data-card hidden role="dialog" aria-modal="false" aria-labelledby="like-t">
+      <div class="in">
+        <p class="sub mono mu"><span data-sub></span><a class="lk" data-link target="_blank" rel="noopener" hidden></a></p>
+        <h2 class="t28 tt" id="like-t" data-title></h2>
+        <p class="txt" data-text></p>
+        <button class="x mono lk hit" type="button" data-close>{t.close} ×</button>
+      </div>
+    </div>
+  </div>
+</Base>
+
+<script is:inline define:vars={{ data }}>window.kkLikes = data;</script>
+
+<style>
+  .likes { position: fixed; inset: 0; overflow: hidden; }
+  .ttl { position: absolute; z-index: 5; left: var(--m); top: calc(var(--head) + 16px); }
+  .hint { position: absolute; z-index: 1; left: 0; right: 0; bottom: 40px; text-align: center; pointer-events: none; }
+  .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
+  .big span { display: inline-block; text-align: center; }
+  .big[hidden] { display: none; }
+  .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; }
+  .stage:active { cursor: grabbing; }
+  .it { position: absolute; left: 0; top: 0; display: grid; place-items: center; padding: 8px; background: #c9c9c9; color: #fff; text-align: center; will-change: transform; pointer-events: none; }
+  .it.circle { border-radius: 50%; }
+  .it img { width: 100%; height: 100%; object-fit: contain; }
+  .it:has(img) { background: none; padding: 0; }
+  /* écran de l'iPod : le lecteur Spotify y est posé (iframe 300 px réduite à la taille de l'écran) */
+  .emb { position: absolute; left: 8.5%; top: 3.8%; width: 83%; height: 42%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
+  .it.sel .emb { opacity: 1; pointer-events: auto; }
+  .emb :global(iframe) { width: 300px; height: 380px; border: 0; transform-origin: 0 0; }
+  .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
+  .card[hidden] { display: none; }
+  .card .in { grid-column: 7 / 11; pointer-events: auto; }
+  .card .tt { margin-top: 8px; font-weight: 500; }
+  .card .txt { margin-top: 16px; max-width: 46ch; }
+  .card .x { margin-top: 24px; }
+  .it.sel { z-index: 3; box-shadow: 0 40px 60px -30px rgba(0, 0, 0, .35); }
+  .veil { position: fixed; inset: 0; z-index: 50; background: radial-gradient(circle at 50% 60%, #fff, #f3f3f3 70%); pointer-events: none; }
+  @media (max-width: 760px) { .card { align-content: end; padding-bottom: 48px; } .card .in { grid-column: 1 / -1; } }
+</style>
+
+<script>
+  import { letters, fadeMono } from '../../../scripts/motion';
+  const M = (window as any).Matter;
+  const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; cm: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
+  const root = document.querySelector<HTMLElement>('[data-likes]')!;
+  const stage = root.querySelector<HTMLElement>('[data-stage]')!;
+  const card = root.querySelector<HTMLElement>('[data-card]')!;
+  const big = root.querySelector<HTMLElement>('[data-big]')!;
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const small = matchMedia('(max-width: 760px)').matches;
+  const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
+  const engine = Engine.create({ gravity: { y: 1.1 } });
+  let W = innerWidth, H = innerHeight;
+
+  // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
+  const wallOpt = { isStatic: true, restitution: 0.2, friction: 0.6 };
+  let walls: any[] = [], closed = false;
+  const buildWalls = () => {
+    Composite.remove(engine.world, walls);
+    const T = 400; walls = [Bodies.rectangle(W / 2, H + T / 2, W + 2 * T, T, wallOpt), Bodies.rectangle(-T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt), Bodies.rectangle(W + T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt)];
+    if (closed) walls.push(Bodies.rectangle(W / 2, -T / 2, W + 2 * T, T, wallOpt));
+    Composite.add(engine.world, walls);
+  };
+  buildWalls();
+
+  // échelle commune : chaque objet à sa taille réelle, fortement rapprochées (les petits objets comme l'iPod restent lisibles, la roue et le sac ne grossissent pas),
+  // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
+  const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
+  const area = real.reduce((a, [w, h]) => a + w * h, 0);
+  const K = Math.sqrt(((small ? 0.32 : 0.44) * innerWidth * innerHeight) / area);
+  const items = D.map((d, i) => {
+    const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
+    let [w, h] = real[i].map((v) => v * K);
+    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * 0.4) / w); w *= cap; h *= cap;
+    el.style.width = `${w}px`; el.style.height = `${h}px`;
+    const x = W * (0.12 + 0.76 * ((i * 0.37) % 1)), y = -h - 20;
+    const opt = { restitution: 0.35, friction: 0.5, frictionAir: 0.012, angle: (Math.random() - 0.5) * 0.6 };
+    // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
+    let body: any, ox = 0, oy = 0;
+    if (d.shape === 'circle') body = Bodies.circle(x, y, w / 2, opt);
+    else {
+      const verts = d.hull.map(([u, v]) => ({ x: u * w, y: v * h }));
+      const c = Vertices.centre(verts); ox = w / 2 - c.x; oy = h / 2 - c.y;
+      body = Bodies.fromVertices(x, y, [verts], opt);
+    }
+    body.kk = d.id;
+    return { d, el, body, w, h, ox, oy };
+  });
+  // les objets entrent un par un par le haut de la boîte
+  // d'abord le titre s'écrit au centre ; puis les objets pleuvent dessus, depuis le haut de l'écran
+  let titleBody: any = null;
+  const titleRect = () => big.querySelector('span')!.getBoundingClientRect();
+  const pushOut = (L: number, R: number, Tp: number, B: number, except?: any) => items.forEach(({ body }) => {
+    if (body === except || !body.parts) return;
+    const p = body.position;
+    if (p.x > L && p.x < R && p.y > Tp && p.y < B) { const dir = p.x < (L + R) / 2 ? -1 : 1; Body.setVelocity(body, { x: dir * (16 + Math.random() * 8), y: -12 - Math.random() * 8 }); }
+  });
+  const showTitle = (delay: number) => {
+    big.hidden = false;
+    const r = titleRect();
+    pushOut(r.left - 24, r.right + 24, r.top - 24, r.bottom + 24);
+    titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 0.8 });
+    Composite.add(engine.world, titleBody);
+    letters(big, delay);
+  };
+  const hideTitle = () => {
+    if (titleBody) { Composite.remove(engine.world, titleBody); titleBody = null; }
+    big.hidden = true;
+  };
+  showTitle(150);
+  items.forEach((it, i) => setTimeout(() => Composite.add(engine.world, it.body), still ? 0 : 900 + i * 220));
+  // le plafond se ferme quand tous les objets sont entrés : ensuite, rien ne sort de la boîte
+  Events.on(engine, 'afterUpdate', () => {
+    if (closed) return;
+    if (items.every(({ body, h }) => Composite.get(engine.world, body.id, 'body') && body.position.y > h / 2 + 8)) { closed = true; buildWalls(); }
+  });
+  // vitesse plafonnée : un lancer violent ne traverse pas les murs
+  Events.on(engine, 'beforeUpdate', () => items.forEach(({ body }) => { const v = body.velocity, s = Math.hypot(v.x, v.y); if (s > 45) Body.setVelocity(body, { x: (v.x / s) * 45, y: (v.y / s) * 45 }); }));
+
+  // glisser, lancer
+  const mouse = Mouse.create(stage);
+  mouse.pixelRatio = 1;
+  stage.removeEventListener('wheel', mouse.mousewheel); stage.removeEventListener('mousewheel', mouse.mousewheel); stage.removeEventListener('DOMMouseScroll', mouse.mousewheel);
+  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
+  Composite.add(engine.world, mc);
+  let down = { x: 0, y: 0, t: 0 };
+  Events.on(mc, 'startdrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })));
+  Events.on(mc, 'enddrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'drop' })));
+  stage.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
+  stage.addEventListener('pointerup', (e) => {
+    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 400) return;
+    const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
+    if (hit && sel && hit === sel.body) close(); // second clic sur l'objet ouvert : on referme
+    else if (hit) open(hit.kk, true);
+  });
+  let hovered: string | null = null;
+  stage.addEventListener('pointermove', (e) => {
+    const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
+    const id = hit ? hit.kk : null;
+    if (id && id !== hovered) dispatchEvent(new CustomEvent('kk:sound', { detail: 'hover' }));
+    hovered = id; stage.style.cursor = id ? 'grab' : 'default';
+  });
+
+  // clic : l'objet vient au premier plan, agrandi, à gauche ; le texte apparaît à droite ; les autres objets sont chassés
+  let block: any = null, sel: (typeof items)[number] | null = null, selS = 1;
+  const tween = (it: (typeof items)[number], tx: number, ty: number, ts: number) => {
+    const b = it.body, x0 = b.position.x, y0 = b.position.y, a0 = b.angle, s0 = selS, t0 = performance.now(), dur = still ? 1 : 700;
+    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const step = (now: number) => {
+      const p = ease(Math.min(1, (now - t0) / dur));
+      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 * (1 - p)); selS = s0 + (ts - s0) * p;
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const release = () => {
+    if (!sel) return;
+    sel.el.classList.remove('sel'); Body.setStatic(sel.body, false); Body.setVelocity(sel.body, { x: 0, y: 2 });
+    sel = null; selS = 1;
+  };
+  const open = (id: string, push: boolean) => {
+    const d = D.find((x) => x.id === id); const it = items.find((x) => x.d.id === id); if (!d || !it) return;
+    release();
+    if (!big.hidden) hideTitle();
+    card.querySelector('[data-sub]')!.textContent = d.sub;
+    const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
+    lk.hidden = !d.link; if (d.link) { lk.href = d.link; lk.textContent = ' ↗'; lk.setAttribute('aria-label', 'Letterboxd'); }
+    // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
+    const emb = it.el.querySelector<HTMLElement>('[data-emb]');
+    if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+    if (emb?.firstElementChild) (emb.firstElementChild as HTMLElement).style.transform = `scale(${emb.clientWidth / 300})`;
+    card.querySelector('[data-title]')!.textContent = d.title;
+    card.querySelector('[data-text]')!.textContent = d.text;
+    card.hidden = false;
+    const r = card.querySelector('.in')!.getBoundingClientRect();
+    // place de l'objet : colonnes 2 à 6 sur ordinateur, au-dessus du texte sur téléphone
+    const S = Math.min(d.embed ? 3.6 : 2.4, (small ? H * 0.28 : H * (d.embed ? 0.66 : 0.42)) / Math.max(it.w, it.h));
+    const tx = small ? W / 2 : W * 0.3, ty = small ? Math.max(r.top / 2 + 40, 140) : H / 2;
+    sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true); tween(it, tx, ty, S);
+    const L = Math.min(r.left, tx - (it.w * S) / 2) - 32, R = r.right + 32, Tp = Math.min(r.top, ty - (it.h * S) / 2) - 32, B = Math.max(r.bottom, ty + (it.h * S) / 2) + 32;
+    if (block) Composite.remove(engine.world, block);
+    pushOut(L, R, Tp, B, it.body);
+    block = Bodies.rectangle((L + R) / 2, (Tp + B) / 2, R - L, B - Tp, { isStatic: true });
+    Composite.add(engine.world, block);
+    letters(card, 200); fadeMono(card, 200);
+    if (push) history.replaceState(null, '', `#${id}`);
+    card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
+  };
+  const close = () => {
+    card.hidden = true; history.replaceState(null, '', location.pathname);
+    if (block) { Composite.remove(engine.world, block); block = null; }
+    release();
+    showTitle(80);
+  };
+  card.querySelector('[data-close]')!.addEventListener('click', close);
+  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !card.hidden) close(); });
+  // clavier : chaque objet est un bouton (Tab puis Entrée)
+  items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true))); });
+
+  addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); });
+
+  const draw = () => items.forEach((it) => {
+    const { el, body, w, h, ox, oy } = it; const sc = it === sel ? selS : 1;
+    const ca = Math.cos(body.angle), sa = Math.sin(body.angle);
+    const cx = body.position.x + ox * ca - oy * sa, cy = body.position.y + ox * sa + oy * ca;
+    el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad) scale(${sc})`;
+  });
+  if (still) { setTimeout(() => { for (let i = 0; i < 600; i++) Engine.update(engine, 1000 / 60); }, 10); }
+  let last = performance.now();
+  const tick = (now: number) => {
+    const dt = Math.min(32, now - last); last = now;
+    if (!document.hidden) Engine.update(engine, dt);
+    draw(); requestAnimationFrame(tick);
+  };
+  draw(); requestAnimationFrame(tick);
+  const h0 = location.hash.slice(1);
+  if (h0) setTimeout(() => open(h0, false), still ? 0 : 1600);
+</script>

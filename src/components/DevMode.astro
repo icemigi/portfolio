@@ -1,0 +1,99 @@
+---
+// Dev mode caché : taper « dev » au clavier (ou ajouter ?dev à l'URL).
+// Affiche la grille + baseline, et des infos techniques. Échap pour quitter.
+const buildDate = new Date().toISOString().slice(0, 10);
+---
+<div class="dev-grid" aria-hidden="true">
+  <div class="g">
+    {Array.from({ length: 12 }, () => <span></span>)}
+  </div>
+</div>
+<aside class="dev-panel" aria-label="Dev mode" data-build={buildDate}>
+  <p class="dev-title">DEV MODE <button type="button" class="dev-close" aria-label="Close dev mode">×</button></p>
+  <dl>
+    <dt>Weight</dt><dd data-k="weight">—</dd>
+    <dt>Requests</dt><dd data-k="req">—</dd>
+    <dt>Load</dt><dd data-k="load">—</dd>
+    <dt>DOM</dt><dd data-k="dom">—</dd>
+    <dt>Viewport</dt><dd data-k="vp">—</dd>
+    <dt>Build</dt><dd data-k="build">—</dd>
+    <dt>Stack</dt><dd>Astro · HTML/CSS · Canvas 2D · 0 framework client</dd>
+  </dl>
+  <p class="dev-more">[More to come]</p>
+</aside>
+
+<style>
+  .dev-grid, .dev-panel { display: none; }
+  :global(html[data-dev]) .dev-grid {
+    display: block;
+    position: fixed; inset: 0; z-index: 90; pointer-events: none;
+    background-image: repeating-linear-gradient(to bottom, rgba(255, 136, 0, 0.2) 0 1px, transparent 1px 8px);
+  }
+  .dev-grid .g { height: 100%; }
+  .dev-grid span { background: rgba(255, 136, 0, 0.08); border-left: 1px solid rgba(255, 136, 0, 0.35); border-right: 1px solid rgba(255, 136, 0, 0.35); }
+  :global(html[data-dev]) .dev-panel {
+    display: block;
+    position: fixed; right: 12px; bottom: 12px; z-index: 100;
+    width: min(320px, calc(100vw - 24px));
+    background: #000; color: #fff;
+    font-family: var(--mono); font-size: 11px; line-height: 1.6;
+    padding: 12px 14px; border: 1px solid var(--accent);
+  }
+  .dev-title { color: var(--accent); display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .dev-close { background: none; border: 0; color: #fff; font: inherit; cursor: pointer; padding: 0 4px; }
+  dl { display: grid; grid-template-columns: 72px 1fr; gap: 2px 8px; margin: 0; }
+  dt { color: #9a9a9a; }
+  dd { margin: 0; }
+  .dev-more { color: #9a9a9a; margin-top: 8px; }
+</style>
+
+<script>
+  const html = document.documentElement;
+  const panel = document.querySelector<HTMLElement>('.dev-panel');
+
+  const store = {
+    get: () => { try { return sessionStorage.getItem('kk-dev') === '1'; } catch { return false; } },
+    set: (v: boolean) => { try { sessionStorage.setItem('kk-dev', v ? '1' : '0'); } catch { /* ignore */ } },
+  };
+
+  function fmtKB(bytes: number) { return `${(bytes / 1024).toFixed(1)} KB`; }
+
+  function fill() {
+    if (!panel) return;
+    const set = (k: string, v: string) => { const el = panel.querySelector(`[data-k="${k}"]`); if (el) el.textContent = v; };
+    const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const res = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
+    const bytes = (nav?.transferSize || nav?.encodedBodySize || 0) + res.reduce((s, r) => s + (r.transferSize || r.encodedBodySize || 0), 0);
+    set('weight', fmtKB(bytes));
+    set('req', String(res.length + 1));
+    set('load', nav && nav.loadEventEnd ? `${Math.round(nav.loadEventEnd)} ms` : '…');
+    set('dom', `${document.getElementsByTagName('*').length} nodes`);
+    set('vp', `${innerWidth} × ${innerHeight} @${devicePixelRatio}x`);
+    set('build', panel.dataset.build || '—');
+  }
+
+  function toggle(on: boolean) {
+    if (on) { html.setAttribute('data-dev', ''); fill(); }
+    else html.removeAttribute('data-dev');
+    store.set(on);
+  }
+
+  if (new URLSearchParams(location.search).has('dev') || store.get()) {
+    if (document.readyState === 'complete') toggle(true);
+    else addEventListener('load', () => toggle(true));
+  }
+
+  let buffer = '';
+  addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    if (target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName))) return;
+    if (e.key === 'Escape') { toggle(false); return; }
+    if (e.key.length !== 1) return;
+    buffer = (buffer + e.key.toLowerCase()).slice(-3);
+    if (buffer === 'dev') { toggle(!html.hasAttribute('data-dev')); buffer = ''; }
+  });
+  addEventListener('resize', () => { if (html.hasAttribute('data-dev')) fill(); });
+  panel?.querySelector('.dev-close')?.addEventListener('click', () => toggle(false));
+
+  console.log('%ckerningkastle', 'color:#ff8800;font-weight:bold', '— type « dev » anywhere.');
+</script>

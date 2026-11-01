@@ -1,0 +1,52 @@
+---
+// Porte de château glissée dans le texte d'affiche (easter egg vers « Ce que j'aime »).
+// Elle apparaît avec le texte, comme les vignettes. Survol : le battant droit s'entrebâille doucement.
+// Clic : lien simple, sans transition.
+import type { Lang } from '../data/ui';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const label = lang === 'fr' ? 'Une porte. Entrer dans ce que j\'aime' : 'A door. Step into the things I love';
+---
+<a class="door" href={`/${lang}/about/likes/`} aria-label={label} title={label}>
+  <svg viewBox="0 0 40 52" aria-hidden="true">
+    <defs>
+      <linearGradient id="kk-door-stone" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cdcdcd" /><stop offset="1" stop-color="#a8a8a8" /></linearGradient>
+      <radialGradient id="kk-door-light" cx=".5" cy=".75" r=".7"><stop offset="0" stop-color="#fff" /><stop offset="1" stop-color="#dcdcdc" /></radialGradient>
+      <linearGradient id="kk-door-wood" x1="0" x2="1"><stop offset="0" stop-color="#454545" /><stop offset="1" stop-color="#333" /></linearGradient>
+    </defs>
+    <!-- encadrement de pierre et claveaux -->
+    <path d="M0 52V20a20 20 0 0 1 40 0v32h-5V20a15 15 0 0 0-30 0v32z" fill="url(#kk-door-stone)" />
+    <g stroke="#8f8f8f" stroke-width=".6">
+      <path d="M5 20H0M35 20h5M7.2 12.5l-4.3-2.5M32.8 12.5l4.3-2.5M12.5 7.2 10 2.9M27.5 7.2 30 2.9M20 5V0" />
+    </g>
+    <!-- lumière derrière -->
+    <path d="M5 52V20a15 15 0 0 1 30 0v32z" fill="url(#kk-door-light)" />
+    <!-- battant gauche -->
+    <g class="lf">
+      <path d="M5 52V20A15 15 0 0 1 20 5v47z" fill="url(#kk-door-wood)" />
+      <path d="M10 52V10.6M15 52V6.3" stroke="#262626" stroke-width=".5" />
+      <path d="M5 22h15M5 42h15" stroke="#1a1a1a" stroke-width="1.6" />
+      <circle cx="17" cy="31" r="1.7" fill="none" stroke="#9a9a9a" stroke-width=".7" />
+    </g>
+    <!-- battant droit -->
+    <g class="rt">
+      <path d="M20 5a15 15 0 0 1 15 15v32H20z" fill="url(#kk-door-wood)" />
+      <path d="M25 52V6.3M30 52V10.6" stroke="#262626" stroke-width=".5" />
+      <path d="M20 22h15M20 42h15" stroke="#1a1a1a" stroke-width="1.6" />
+      <circle cx="23" cy="31" r="1.7" fill="none" stroke="#9a9a9a" stroke-width=".7" />
+    </g>
+  </svg>
+</a>
+
+<style>
+  .door { display: inline-block; position: relative; width: 52px; height: 60px; margin: 0 .08em; vertical-align: -0.12em; }
+  @media (max-width: 760px) { .door { width: 26px; height: 30px; } }
+  .door svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .lf, .rt { transform-box: fill-box; transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+  .lf { transform-origin: 0 50%; }
+  .rt { transform-origin: 100% 50%; }
+  @media (hover: hover) {
+    .door:hover .rt { transform: scaleX(.72); }
+    .door:hover .lf { transform: scaleX(.94); }
+  }
+</style>

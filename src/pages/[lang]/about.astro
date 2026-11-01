@@ -1,0 +1,105 @@
+---
+// À propos : quatre écrans plein cadre, libellé en colonne 1, contenu sur l'axe de la colonne 4.
+import Base from '../../layouts/Base.astro';
+import Footer from '../../components/Footer.astro';
+import Affiche from '../../components/Affiche.astro';
+import Seal from '../../components/Seal.astro';
+import { ui, languages, getLangFromParam } from '../../data/ui';
+import { aboutIntro, aboutVigs, services, stack, path, pathVigs, aboutLabels, contact } from '../../data/about';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+const L = aboutLabels[lang];
+---
+<Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">
+  <div class="screens-host" data-screens>
+    <section class="scr" aria-labelledby="ab-1">
+      <div class="in g">
+        <h1 class="lab mono mu par" id="ab-1">{L.about}</h1>
+        <div class="bd"><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} /></div>
+      </div>
+    </section>
+
+    <section class="scr" aria-labelledby="ab-2">
+      <div class="in g">
+        <h2 class="lab mono mu par" id="ab-2">{L.services}</h2>
+        <ul class="bd svc" data-hola>
+          {services[lang].map(([h, d]) => <li><h3 class="t56">{h}</h3><p class="mono mu">{d}</p></li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="scr" aria-labelledby="ab-st">
+      <div class="in g">
+        <h2 class="lab mono mu par" id="ab-st">{L.stack}</h2>
+        <ul class="bd svc stk">
+          {stack[lang].map(([h, d]) => <li><h3 class="t28">{h}</h3><p class="mono mu">{d}</p></li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="scr" aria-labelledby="ab-3">
+      <div class="in g">
+        <h2 class="lab mono mu par" id="ab-3">{L.path}</h2>
+        <div class="bd"><Affiche text={path[lang]} vigs={pathVigs} lang={lang} /></div>
+      </div>
+    </section>
+
+    <section class="scr last" aria-labelledby="ab-4">
+      <div class="ct g">
+        <h2 class="lab4 mono mu par" id="ab-4">{L.contact}</h2>
+        <p class="mailp"><a class="mail uline" href={`mailto:${contact.email}`} data-copy={contact.email} data-copied={t.copied} data-fit><span data-label>{contact.email}</span></a></p>
+        <div class="links mono">
+          <a class="lk hit" href={contact.instagram} rel="me noopener" target="_blank">Instagram ↗</a>
+          <a class="lk hit" href={contact.cv} target="_blank" rel="noopener">{t.cv} ↗</a>
+          <span class="mu">{t.available}</span>
+        </div>
+        <div class="seal-w" aria-hidden="false"><Seal label={lang === 'fr' ? 'Sceau de cire rouge au cavalier de kerningkastle' : 'Red wax seal with the kerningkastle knight'} /></div>
+      </div>
+      <Footer lang={lang} class="line" />
+    </section>
+  </div>
+</Base>
+
+<style>
+  .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
+  .bd { grid-column: 4 / 12; }
+  .svc li { display: grid; grid-template-columns: 5fr 3fr; column-gap: var(--gut); align-items: baseline; border-top: 1px solid var(--ln); padding: 14px 0 10px; }
+  .svc li:last-child { border-bottom: 1px solid var(--ln); }
+  .stk li { padding: 12px 0 10px; }
+
+  .last { display: flex; flex-direction: column; }
+  .ct { flex: 1; align-content: end; padding-bottom: 72px; padding-top: calc(var(--head) + 24px); position: relative; }
+  .lab4 { grid-column: 1 / -1; margin-bottom: 24px; }
+  .mailp { grid-column: 1 / -1; }
+  .mail { font-weight: 500; letter-spacing: -0.05em; white-space: nowrap; line-height: .85; font-size: calc((100vw - 2 * var(--m)) * .118); }
+  .mail::after { height: 3px; bottom: -6px; }
+  .links { grid-column: 1 / -1; display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap; }
+  .seal-w { position: absolute; right: calc(var(--m) + 2%); top: calc(var(--head) + 6%); width: 180px; }
+  .seal-w :global(.seal) { width: 100%; height: auto; }
+
+  @media (max-width: 760px) {
+    .lab, .bd { grid-column: 1 / -1; }
+    .lab { margin-bottom: 20px; padding-top: 0; }
+    .svc li { grid-template-columns: 1fr; }
+    .svc .mono { margin-top: 6px; }
+    .links { flex-direction: column; gap: 8px; }
+    .seal-w { width: 120px; top: calc(var(--head) + 24px); }
+    .ct { padding-bottom: 48px; }
+  }
+</style>
+
+<script>
+  // L'adresse remplit exactement la largeur des colonnes.
+  const fit = () => {
+    const a = document.querySelector<HTMLElement>('[data-fit]');
+    if (!a) return;
+    const W = a.parentElement!.clientWidth;
+    a.style.fontSize = '100px';
+    const w = a.getBoundingClientRect().width;
+    a.style.fontSize = `${Math.floor((100 * W) / w * 100) / 100}px`;
+  };
+  document.fonts.ready.then(fit);
+  addEventListener('resize', fit);
+</script>

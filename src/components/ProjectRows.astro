@@ -1,0 +1,18 @@
+---
+import { projects } from '../data/projects';
+import { tags, pad, type Lang } from '../data/ui';
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+---
+<ol class="rows">
+  {projects.map((p, i) => (
+    <li>
+      <a class="row" href={`/${lang}/work/${p.slug}/`}>
+        <span class="n mono mu">{pad(i + 1)}</span>
+        <span class="t t28">{p[lang].title}</span>
+        <span class="d mono mu">{p.tags.map((t) => tags[lang][t]).join(', ')}</span>
+        <span class="y mono mu">{p.yearLabel}</span>
+      </a>
+    </li>
+  ))}
+</ol>

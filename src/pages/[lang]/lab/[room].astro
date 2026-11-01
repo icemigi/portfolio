@@ -1,0 +1,12 @@
+---
+// /xx/lab/<id>/ : chaque salle a sa propre adresse.
+import LabRoom from '../../../components/LabRoom.astro';
+import { languages, getLangFromParam } from '../../../data/ui';
+import { rooms } from '../../../data/lab';
+export function getStaticPaths() {
+  return languages.flatMap((lang) => rooms.map((r) => ({ params: { lang, room: r.id } })));
+}
+const lang = getLangFromParam(Astro.params.lang);
+const index = rooms.findIndex((r) => r.id === Astro.params.room);
+---
+<LabRoom lang={lang} index={index} />

@@ -1,0 +1,76 @@
+---
+// Texte d'affiche 56 px entrecoupé de vignettes : {n} = vignette n ; {m:…} = aparté entre parenthèses ; {v:n} = vignette n ; {door} = porte ;
+// {l:nom} = logo grisé collé au mot qui le précède (fichier /public/logos/nom.svg).
+// Un aparté reste collé au mot qu'il commente et à la ponctuation qui le suit : ils ne se séparent jamais en fin de ligne.
+import type { Vig } from '../data/about';
+import type { Lang } from '../data/ui';
+import Door from './Door.astro';
+interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string }
+const { text, vigs, lang, tag = 'p', class: cls = '' } = Astro.props;
+const Tag = tag as any;
+type Part = { kind: 'logo'; name: string; word?: string; punct?: string } | { kind: 'door' } | { kind: 'vig'; vig: Vig; punct?: string; word?: string } | { kind: 'text'; text: string } | { kind: 'glue'; word: string; note: string; punct: string };
+const raw: Part[] = text.split(/(\{(?:v:|m:|l:)?[^}]+\})/).filter(Boolean).map((p): Part => {
+  if (p === '{door}') return { kind: 'door' };
+  const lg = p.match(/^\{l:([a-z0-9-]+)\}$/);
+  if (lg) return { kind: 'logo', name: lg[1] };
+  const v = p.match(/^\{(?:v:)?(\d+)\}$/);
+  if (v) return { kind: 'vig', vig: vigs[Number(v[1])] };
+  const m = p.match(/^\{m:([^}]+)\}$/);
+  if (m) return { kind: 'glue', word: '', note: m[1], punct: '' };
+  return { kind: 'text', text: p };
+});
+// colle le dernier mot avant l'aparté et la ponctuation après
+const parts: Part[] = [];
+raw.forEach((p, i) => {
+  if (p.kind === 'logo') {
+    // le logo reste collé au nom qu'il illustre et à la ponctuation qui suit
+    const prev = parts[parts.length - 1];
+    if (prev && prev.kind === 'text') { const mm = prev.text.match(/^([\s\S]*?)(\S+)\s?$/); if (mm) { prev.text = mm[1]; p.word = mm[2]; } }
+    const next = raw[i + 1];
+    if (next && next.kind === 'text') { const pm = next.text.match(/^([.,;:!?…)]+)/); if (pm) { p.punct = pm[1]; next.text = next.text.slice(pm[1].length); } }
+    parts.push(p); return;
+  }
+  if (p.kind === 'vig') {
+    // une vignette garde avec elle la ponctuation qui la suit
+    const next = raw[i + 1];
+    if (next && next.kind === 'text') { const pm = next.text.match(/^([.,;:!?…)]+)/); if (pm) { p.punct = pm[1]; next.text = next.text.slice(pm[1].length); } }
+    // et reste avec le mot qu'elle illustre
+    const prev = parts[parts.length - 1];
+    if (prev && prev.kind === 'text') { const mm = prev.text.match(/^([\s\S]*?)(\S+)\s$/); if (mm) { prev.text = mm[1]; p.word = mm[2] + ' '; } }
+  }
+  if (p.kind !== 'glue') { parts.push(p); return; }
+  const prev = parts[parts.length - 1];
+  if (prev && prev.kind === 'text') {
+    const mm = prev.text.match(/^([\s\S]*?)(\S+)$/);
+    if (mm) { prev.text = mm[1]; p.word = mm[2]; }
+  }
+  const next = raw[i + 1];
+  if (next && next.kind === 'text') {
+    const pm = next.text.match(/^([.,;:!?…)]+)/);
+    if (pm) { p.punct = pm[1]; next.text = next.text.slice(pm[1].length); }
+  }
+  parts.push(p);
+});
+---
+<Tag class:list={['t56 affiche', cls]} data-hola>
+  {parts.map((p) =>
+    p.kind === 'logo' ? (
+      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.svg`} alt="" aria-hidden="true" onerror="this.remove()" />{p.punct}</span>
+    ) : p.kind === 'door' ? (
+      <Door lang={lang} />
+    ) : p.kind === 'vig' ? (
+      <span class="glue">{p.word}<span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `background-image:url(${p.vig.src})` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>{p.punct}</span>
+    ) : p.kind === 'glue' ? (
+      <span class="glue">{p.word}<span class="note mono mu">({p.note})</span>{p.punct}</span>
+    ) : (
+      <Fragment>{p.text}</Fragment>
+    ),
+  )}
+</Tag>
+
+<style>
+  .glue { white-space: nowrap; }
+  /* logo client : grisé, à la hauteur d'une capitale, juste après le nom */
+  .logo { display: inline-block; height: .5em; width: auto; margin-left: .18em; vertical-align: .05em; filter: grayscale(1) brightness(0); opacity: .32; }
+  .note { font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
+</style>

@@ -1,0 +1,52 @@
+---
+// Mentions légales (obligatoires en France, loi pour la confiance dans l'économie numérique).
+// Les éléments entre crochets sont à compléter.
+import Base from '../../layouts/Base.astro';
+import Footer from '../../components/Footer.astro';
+import { languages, getLangFromParam } from '../../data/ui';
+import { contact } from '../../data/about';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const fr = lang === 'fr';
+const S = fr
+  ? [
+      ['Éditeur', `[Prénom Nom], entrepreneur individuel (kerningkastle) · SIRET [numéro] · [adresse ou domiciliation] · ${contact.email}`],
+      ['Directeur de la publication', '[Prénom Nom]'],
+      ['Hébergeur', '[Nom de l\'hébergeur] · [adresse] · [téléphone]'],
+      ['Propriété intellectuelle', 'Les textes, images, caractères et codes présentés sur ce site sont la propriété de kerningkastle ou de leurs ayants droit. Toute reproduction sans accord écrit est interdite.'],
+      ['Données personnelles', 'Ce site ne dépose aucun cookie et ne mesure pas l\'audience. Seuls deux réglages (langue, son) sont gardés dans votre navigateur et ne sont transmis à personne. Les messages envoyés par email ne servent qu\'à vous répondre.'],
+      ['Crédits', 'Conception, design et code : kerningkastle. Caractère Geist (licence SIL Open Font License).'],
+    ]
+  : [
+      ['Publisher', `[First name Last name], sole trader (kerningkastle) · SIRET [number] · [address] · ${contact.email}`],
+      ['Publication director', '[First name Last name]'],
+      ['Hosting', '[Host name] · [address] · [phone]'],
+      ['Intellectual property', 'Texts, images, typefaces and code shown on this site belong to kerningkastle or their rights holders. Any reproduction without written consent is prohibited.'],
+      ['Personal data', 'This site sets no cookies and runs no analytics. Only two settings (language, sound) are kept in your browser and shared with no one. Emails you send are only used to reply to you.'],
+      ['Credits', 'Concept, design and code: kerningkastle. Geist typeface (SIL Open Font License).'],
+    ];
+---
+<Base lang={lang} title={fr ? 'Mentions légales' : 'Legal notice'} description={fr ? 'Mentions légales de kerningkastle.' : 'kerningkastle legal notice.'} path="legal/">
+  <div class="screens-host" data-screens>
+    <section class="scr">
+      <div class="page">
+        <div class="g body">
+          <h1 class="k mono mu par">{fr ? 'Mentions légales' : 'Legal notice'}</h1>
+          <dl class="v">{S.map(([k, v]) => <div><dt class="mono mu">{k}</dt><dd>{v}</dd></div>)}</dl>
+        </div>
+        <Footer lang={lang} />
+      </div>
+    </section>
+  </div>
+</Base>
+
+<style>
+  .page { min-height: 100%; display: flex; flex-direction: column; }
+  .body { flex: 1; padding-top: calc(var(--head) + 72px); padding-bottom: 96px; align-content: start; row-gap: 24px; }
+  .k { grid-column: 1 / 4; padding-top: 4px; }
+  .v { grid-column: 4 / 10; }
+  .v div + div { margin-top: 24px; }
+  .v dd { margin-top: 4px; }
+  @media (max-width: 760px) { .k, .v { grid-column: 1 / -1; } }
+</style>

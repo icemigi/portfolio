@@ -1,16 +1,29 @@
 ---
+// Racine : langue mémorisée, sinon langue du navigateur (français → /fr/, sinon /en/).
+import '../styles/global.css';
 ---
-
+<!doctype html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>kerningkastle — Type designer & digital creative</title>
+    <link rel="canonical" href="https://kerningkastle.com/en/" />
+    <link rel="icon" href="/logo-kerningkastle-dark.svg" type="image/svg+xml" />
+    <script is:inline>
+      (function () {
+        var l = null;
+        try { l = localStorage.getItem('kk-lang'); } catch (e) {}
+        if (l !== 'fr' && l !== 'en') {
+          var langs = navigator.languages || [navigator.language || 'en'];
+          l = /^fr\b/i.test(langs[0] || '') ? 'fr' : 'en';
+        }
+        location.replace('/' + l + '/');
+      })();
+    </script>
+    <noscript><meta http-equiv="refresh" content="0; url=/en/" /></noscript>
+  </head>
+  <body>
+    <p class="mono" style="padding: 40px"><a href="/en/">English</a> · <a href="/fr/" lang="fr">Français</a></p>
+  </body>
 </html>

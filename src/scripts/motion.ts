@@ -1,0 +1,82 @@
+// Mouvement validé (étape 6) : lettres et vignettes.
+export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
+export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
+
+// Texte non animé : libellés Geist Mono, vignettes, menus, médias, champs.
+const SKIP = '.mono, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
+
+function textNodes(root: Element, extraSkip?: string) {
+  const skip = extraSkip ? `${SKIP}, ${extraSkip}` : SKIP;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode: (n) => (n.nodeValue && n.nodeValue.trim() && !n.parentElement?.closest(skip) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT),
+  });
+  const out: Text[] = [];
+  while (w.nextNode()) out.push(w.currentNode as Text);
+  return out;
+}
+
+// Lettre par lettre : chaque lettre reste un span en ligne (crénage exact), monte de .35em.
+// 10 ms d'écart, 420 ms par lettre ; sur un long texte, l'écart se resserre pour finir en ~0,7 s.
+// Renvoie la fin de l'animation (ms). À la fin, le texte est rassemblé en nœuds de texte.
+export function letters(root: Element, delay = 300, extraSkip?: string): number {
+  if (reduced()) return 0;
+  const nodes = textNodes(root, extraSkip);
+  const total = nodes.reduce((n, t) => n + t.nodeValue!.replace(/\s/g, '').length, 0);
+  if (!total) return 0;
+  const step = Math.min(10, 700 / total);
+  const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
+  let k = 0;
+  for (const n of nodes) {
+    const text = n.nodeValue!;
+    const f = document.createDocumentFragment();
+    for (const c of text) {
+      if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); continue; }
+      const sp = document.createElement('span');
+      sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
+      f.appendChild(sp);
+      sp.animate([{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }], { duration: 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
+    }
+    const first = f.firstChild!, last = f.lastChild!;
+    n.replaceWith(f);
+    groups.push({ text, first, last });
+  }
+  const end = delay + k * step + 440;
+  setTimeout(() => {
+    for (const { text, first, last } of groups) {
+      if (!first.parentNode) continue;
+      first.before(document.createTextNode(text));
+      let el: ChildNode | null = first;
+      while (el) { const nx: ChildNode | null = el === last ? null : el.nextSibling; el.remove(); el = nx; }
+    }
+  }, end);
+  return end;
+}
+
+// Libellés Geist Mono : pas de fondu (validé) — ils sont là d'emblée.
+export function fadeMono(_root: Element, _delay = 300) {}
+
+// Vignettes : empilées et agrandies au centre de l'écran, elles rejoignent leur place l'une après l'autre
+// (900 ms, 80 ms d'écart). `frame` = l'écran qui glisse (ses coordonnées servent de repère).
+export function vignettes(frame: Element, delay = 300): number {
+  const vis = [...frame.querySelectorAll<HTMLElement>('.vi, .door')];
+  if (!vis.length || reduced()) return delay;
+  const cx = innerWidth / 2, cy = innerHeight / 2, fr = frame.getBoundingClientRect();
+  vis.forEach((v, i) => {
+    const r = v.getBoundingClientRect();
+    const dx = cx - (r.left - fr.left + r.width / 2), dy = cy - (r.top - fr.top + r.height / 2);
+    v.animate([
+      { opacity: 0, transform: `translate(${dx}px, ${dy + 24}px) scale(1.6)` },
+      { opacity: 1, transform: `translate(${dx}px, ${dy}px) scale(1.6)`, offset: 0.3 },
+      { opacity: 1, transform: 'translate(0, 0) scale(1)' },
+    ], { duration: 900, delay: delay + i * 80, easing: EASE_SLIDE, fill: 'backwards' });
+  });
+  return delay + 900 + (vis.length - 1) * 80 - 150;
+}
+
+// Apparition d'un écran : vignettes d'abord s'il y en a, puis les lettres.
+export function reveal(frame: Element, delay = 300, extraSkip?: string) {
+  const start = vignettes(frame, delay);
+  fadeMono(frame, delay);
+  return letters(frame, start, extraSkip);
+}

@@ -1,0 +1,255 @@
+---
+// Étude de cas, en écrans : 1 titrage · 2 image d'ouverture plein cadre · rubriques et images · projet suivant.
+// Pas de pied de page. Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (titre continu).
+import Base from '../../../layouts/Base.astro';
+import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
+import { projects } from '../../../data/projects';
+import { media, type Img } from '../../../data/media';
+
+export function getStaticPaths() {
+  return languages.flatMap((lang) => projects.map((p) => ({ params: { lang, slug: p.slug } })));
+}
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+const index = projects.findIndex((p) => p.slug === Astro.params.slug);
+const project = projects[index];
+const c = project[lang];
+const next = projects[(index + 1) % projects.length];
+const nc = next[lang];
+const N = pad(projects.length);
+
+// écrans de contenu : rubriques, avec des images intercalées (vraies images si présentes, sinon emplacements)
+type Block =
+  | { kind: 'rub'; k: string; paras: { t?: string; p: string }[] }
+  | { kind: 'list'; k: string; items: { k: string; v: string }[] }
+  | { kind: 'gal'; layout: 'full' | 'pair'; labels: string[] }
+  | { kind: 'img'; imgs: Img[] }
+  | { kind: 'gen'; src: string };
+const M = media[project.slug];
+const gals = M?.gal ?? [];
+let gi = 0;
+const gallery = (layout: 'full' | 'pair'): Block | null =>
+  gals.length ? (gi < gals.length ? { kind: 'img', imgs: gals[gi++] } : null) : { kind: 'gal', layout, labels: [t.visual, t.visual] };
+const blocks: Block[] = [];
+const push = (b: Block | null) => { if (b) blocks.push(b); };
+if (c.text) blocks.push({ kind: 'rub', k: lang === 'fr' ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) });
+if (c.blocks?.length) blocks.push({ kind: 'list', k: lang === 'fr' ? 'En bref' : 'In short', items: c.blocks });
+c.sections.forEach((s, i) => {
+  blocks.push({ kind: 'rub', k: s.h, paras: s.paras });
+  const last = i === c.sections.length - 1;
+  if (!last && (gals.length || i % 2 === 0)) push(gallery(i % 4 === 0 ? 'full' : 'pair'));
+  if (project.generator && i === c.sections.length - 2) blocks.push({ kind: 'gen', src: project.generator });
+});
+if (!c.sections.length && !gals.length) push(gallery('pair'));
+while (gi < gals.length) push(gallery('full'));
+const tall = (i: Img) => i.h > i.w * 2;
+---
+<Base lang={lang} title={c.title} description={c.lead} path={`work/${project.slug}/`} active="work">
+  <Fragment slot="head">
+    <script is:inline>
+      // arrivée par « Projet suivant » : drapeau lu tout de suite, puis effacé
+      try { window.kkArriving = sessionStorage.getItem('kk-next') === '1'; sessionStorage.removeItem('kk-next'); } catch (e) { window.kkArriving = false; }
+      // titre continu (transition entre documents) : seulement pour l'ouverture du projet suivant
+      addEventListener('pageswap', (e) => {
+        if (!e.viewTransition) return;
+        if (!window.kkLeavingNext) { e.viewTransition.skipTransition(); return; }
+        const h = document.querySelector('.next-title .vt'); if (h) h.style.viewTransitionName = 'case-title';
+      });
+      addEventListener('pagereveal', (e) => {
+        if (!e.viewTransition) return;
+        if (!window.kkArriving) { e.viewTransition.skipTransition(); return; }
+        const h = document.querySelector('.case-h1 .vt'); if (h) h.style.viewTransitionName = 'case-title';
+      });
+    </script>
+  </Fragment>
+
+  <div class="screens-host" data-screens>
+    <section class="scr s1" aria-labelledby="case-title">
+      <div class="head g">
+        <p class="no mono mu par">{pad(index + 1)} / {N}</p>
+        <h1 class="case-h1 t56" id="case-title"><span class="vt">{c.title}</span></h1>
+        <p class="lead t28">{c.lead}</p>
+        <dl class="fiche mono">
+          <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
+          <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
+          <div><dt class="mu">{t.meta.role}</dt><dd>{c.meta.role}</dd></div>
+          <div><dt class="mu">{t.meta.tools}</dt><dd>{c.meta.tools}</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="scr open" data-still aria-label={t.opening}>
+      {M ? <img class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />
+         : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
+    </section>
+
+    {blocks.map((b) =>
+      b.kind === 'rub' ? (
+        <section class="scr">
+          <div class="in g rub">
+            <h2 class="k mono mu par">{b.k}</h2>
+            <div class="v">{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+          </div>
+        </section>
+      ) : b.kind === 'list' ? (
+        <section class="scr">
+          <div class="in g rub">
+            <h2 class="k mono mu par">{b.k}</h2>
+            <dl class="v blk">{b.items.map((it) => <div><dt class="mono mu">{it.k}</dt><dd>{it.v}</dd></div>)}</dl>
+          </div>
+        </section>
+      ) : b.kind === 'img' ? (
+        <section class="scr" data-still={b.imgs.some(tall) ? undefined : ''}>
+          <div class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
+            {b.imgs.map((im) => <img src={im.src} width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
+          </div>
+        </section>
+      ) : b.kind === 'gen' ? (
+        <section class="scr">
+          <div class="in g gen">
+            <p class="k mono mu par">{lang === 'fr' ? 'Générateur — entrez une clé, obtenez son blason' : 'Generator — enter a key, get its coat of arms'}</p>
+            <iframe src={b.src} title={lang === 'fr' ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+          </div>
+        </section>
+      ) : (
+        <section class="scr" data-still>
+          <div class:list={['in g gal', b.layout]}>
+            {b.layout === 'full'
+              ? <div class="ph f" role="img" aria-label={b.labels[0]}><i aria-hidden="true">{b.labels[0]}</i></div>
+              : b.labels.map((l) => <div class="ph h" role="img" aria-label={l}><i aria-hidden="true">{l}</i></div>)}
+          </div>
+        </section>
+      ),
+    )}
+
+    <section class="scr nx" aria-labelledby="next-l">
+      <div class="in g">
+        <p class="k mono mu par" id="next-l">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
+        <div class="tt"><h2 class="next-title t56"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
+        <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
+          <span class="mono" aria-hidden="true">{t.nextShort}</span>
+        </a>
+      </div>
+    </section>
+  </div>
+</Base>
+
+<style is:global>
+  @view-transition { navigation: auto; }
+  /* Titre continu : le titre du projet suivant glisse jusqu'à sa place de titre, sans fondu ni déformation
+     (même texte, même taille, une seule ligne : seul le déplacement est animé). L'ancienne page disparaît net,
+     la nouvelle arrive une fois le titre posé. */
+  .vt { display: inline-block; white-space: nowrap; }
+  ::view-transition-group(case-title) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
+  ::view-transition-old(case-title) { animation: none; opacity: 0; }
+  ::view-transition-new(case-title) { animation: none; }
+  ::view-transition { background: #f3f3f3; }
+  ::view-transition-old(root) { animation: none; opacity: 0; }
+  ::view-transition-new(root) { animation: kk-vt-in .9s both; }
+  @keyframes kk-vt-in { 0%, 70% { opacity: 0; } 100% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+</style>
+
+<style>
+  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 32px; padding-top: calc(var(--head) + 32px); padding-bottom: 40px; }
+  .no, .case-h1 { grid-column: 1 / -1; }
+  .case-h1 { align-self: end; }
+  .lead { grid-column: 1 / 8; }
+  .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
+  .fiche dd { margin-top: 4px; }
+
+  .bleed { position: absolute; inset: 0; }
+
+  .rub { row-gap: 24px; }
+  .rub .k { grid-column: 1 / 4; align-self: start; padding-top: 4px; }
+  .rub .v { grid-column: 4 / 10; }
+  .rub .v p + p { margin-top: 16px; }
+  .rub b { font-weight: 500; }
+  .blk div { display: grid; grid-template-columns: 2fr 4fr; column-gap: var(--gut); border-top: 1px solid var(--ln); padding: 12px 0; }
+  .blk div:last-child { border-bottom: 1px solid var(--ln); }
+
+  .gal { row-gap: var(--gut); }
+  .gal .f { grid-column: 1 / -1; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 88px); }
+  .gal .h { grid-column: span 6; aspect-ratio: 4 / 3; }
+
+  .cov { top: var(--head); width: 100%; height: calc(100% - var(--head)); object-fit: cover; }
+  .im { align-items: center; }
+  .im img { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; }
+  .im.n1 img { grid-column: 1 / -1; }
+  .im.n2 img { grid-column: span 6; }
+  .im.tall img { max-height: none; }
+  .im.n1.tall img { grid-column: 3 / 11; }
+
+  .gen { row-gap: 16px; }
+  .gen .k { grid-column: 1 / -1; }
+  .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
+
+  .nx .in { align-items: center; row-gap: 32px; }
+  .nx .k { grid-column: 1 / 4; align-self: start; padding-top: 22px; }
+  .nx .tt { grid-column: 4 / 10; }
+  .nx .tt .mono { margin-top: 12px; }
+  .ring { grid-column: 10 / 13; justify-self: end; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ring circle { fill: none; stroke-width: 1.5; }
+  .ring .track { stroke: var(--ln); }
+  .ring .arc { stroke: var(--fg); stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
+
+  @media (max-width: 760px) {
+    .s1 .head { padding-top: calc(var(--head) + 24px); }
+    .lead { grid-column: 1 / -1; }
+    .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .rub .k, .rub .v { grid-column: 1 / -1; }
+    .blk div { grid-template-columns: 1fr; row-gap: 4px; }
+    .gal .h { grid-column: 1 / -1; }
+    .im.n2 img, .im.n1.tall img { grid-column: 1 / -1; }
+    .nx .k, .nx .tt { grid-column: 1 / -1; }
+    .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
+  }
+</style>
+
+<script>
+  import { letters, fadeMono, reduced } from '../../../scripts/motion';
+  const run = () => {
+    const api = window.kkScreens!;
+    const host = document.querySelector<HTMLElement>('[data-screens]')!;
+    const last = api.count - 1;
+    const ring = document.querySelector<HTMLAnchorElement>('[data-next]')!;
+    const arc = document.querySelector<SVGCircleElement>('[data-arc]')!;
+    const RING = 3500;
+    let fill: Animation | null = null;
+
+    // arrivée par « Projet suivant » : le titre arrive par la transition, le reste lettre par lettre
+    if ((window as any).kkArriving) {
+      const s1 = api.el(0);
+      letters(s1, 650, '.case-h1');
+      fadeMono(s1, 650);
+    }
+
+    const open = () => {
+      if ((window as any).kkLeavingNext) return;
+      (window as any).kkLeavingNext = !reduced();
+      try { if (!reduced()) sessionStorage.setItem('kk-next', '1'); } catch { /* */ }
+      location.href = ring.href;
+    };
+    const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } };
+    const start = () => {
+      stop();
+      if (reduced()) return; // pas d'ouverture automatique : l'anneau s'ouvre au clic
+      fill = arc.animate([{ strokeDashoffset: 339.3 }, { strokeDashoffset: 0 }], { duration: RING, easing: 'linear', fill: 'forwards' });
+      if (document.hidden) fill.pause();
+      dispatchEvent(new CustomEvent('kk:sound', { detail: 'ring' }));
+      fill.onfinish = open;
+    };
+    host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
+    host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
+    host.addEventListener('screens:beyond', open);
+    ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
+    document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); });
+    // un clic ailleurs (menu…) annule le minuteur
+    document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
+    addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
+    if (api.current() === last) start();
+  };
+  if (window.kkScreens) run(); else document.addEventListener('kk:screens', run, { once: true });
+</script>

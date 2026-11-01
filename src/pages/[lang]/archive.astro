@@ -1,0 +1,195 @@
+---
+// Archive. Ordinateur : une bande horizontale, pièces à leurs vraies proportions, « année — catégorie » dessous ;
+// la molette (et le pavé, les flèches) fait avancer la bande ; barre de progression cliquable + compteur ;
+// au bout de la bande, le geste suivant découvre le pied de page. Pièce ouverte en grand, adresse propre (#01).
+// Téléphone : colonne verticale puis pied de page.
+import Base from '../../layouts/Base.astro';
+import Footer from '../../components/Footer.astro';
+import { ui, languages, getLangFromParam, pad } from '../../data/ui';
+import { pieces } from '../../data/archive';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+const cap = (i: number) => [pieces[i].year, pieces[i].cat[lang]].filter(Boolean).join(' — ');
+---
+<Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? 'Direction artistique musicale, projets concepts, lettrages et logos.' : 'Music art direction, concept projects, lettering and logos.'} path="archive/" active="archive">
+  <div class="arc" data-arc data-own-wheel>
+    <section class="band">
+      <h1 class="ttl mono mu par">{t.archiveCount} {pad(pieces.length)}</h1>
+      <ol class="track" data-track>
+        {pieces.map((p, i) => (
+          <li class="pc" id={pad(i + 1)}>
+            <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
+              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src} alt="" loading="lazy" />}</span>
+              <span class="mono mu c">{cap(i)}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+      <div class="edge" aria-hidden="true"></div>
+      <span class="hint-r mono" data-hint aria-hidden="true"><span>→</span></span>
+      <div class="prog" data-prog role="slider" tabindex="0" aria-label={t.archiveCount} aria-valuemin="1" aria-valuemax={pieces.length} aria-valuenow="1">
+        <span class="bar" data-bar></span><em class="mono mu" data-count>01 / {pad(pieces.length)}</em>
+      </div>
+    </section>
+    <Footer lang={lang} top={false} />
+  </div>
+
+  <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={t.archiveCount}>
+    <button class="x mono lk hit" type="button" data-close>{t.close} ×</button>
+    <figure><span class="ph big" data-big></span><figcaption class="mono mu" data-cap></figcaption></figure>
+    <button class="arw mono" type="button" data-step="-1" aria-label={t.prev}>←</button>
+    <button class="arw mono" type="button" data-step="1" aria-label={t.nextShort}>→</button>
+  </div>
+</Base>
+
+<script is:inline define:vars={{ caps: pieces.map((p) => [p.year, p.cat[lang]].filter(Boolean).join(' — ')), ratios: pieces.map((p) => p.w / p.h), srcs: pieces.map((p) => p.src) }}>
+  window.kkArchive = { caps, ratios, srcs };
+</script>
+<script>
+  const hint = document.querySelector('[data-hint]');
+  const gone = () => hint?.classList.add('gone');
+  ['wheel', 'keydown', 'pointerdown', 'touchstart'].forEach((e) => addEventListener(e, gone, { once: true, passive: true }));
+</script>
+
+<style>
+  .arc { position: fixed; inset: 0; overflow: hidden; }
+  .band { position: relative; height: 100dvh; }
+  .ttl { position: absolute; left: var(--m); top: calc(var(--head) + 16px); }
+  .track { position: absolute; left: var(--m); top: calc(var(--head) + 72px); bottom: 96px; display: flex; gap: 40px; align-items: flex-end; will-change: transform; }
+  .pc { height: 100%; display: flex; align-items: flex-end; }
+  .pc a { display: block; }
+  .im { display: block; height: min(560px, calc(100dvh - var(--head) - 200px)); aspect-ratio: var(--r); }
+  .im img { width: 100%; height: 100%; object-fit: cover; }
+  .c { display: block; margin-top: 10px; white-space: nowrap; }
+  /* flèche discrète : la bande se fait défiler ; disparaît au premier geste */
+  .hint-r { position: absolute; right: var(--m); bottom: 26px; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--mu); transition: opacity .3s; pointer-events: none; }
+  .hint-r.gone { opacity: 0; }
+  .hint-r span { animation: kk-nudge 2.4s var(--out) infinite; }
+  @keyframes kk-nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateX(5px); } }
+  @media (max-width: 760px) { .hint-r { display: none; } }
+  .edge { position: absolute; top: 0; bottom: 0; right: 0; width: 120px; background: linear-gradient(90deg, rgba(243, 243, 243, 0), var(--bg)); pointer-events: none; }
+  .prog { position: absolute; left: var(--m); right: var(--m); bottom: 40px; height: 24px; cursor: pointer; }
+  .prog::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ln); }
+  .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--fg); transform-origin: 0 50%; transform: scaleX(0); }
+  .prog em { position: absolute; right: 0; top: -8px; font-style: normal; }
+  .arc :global(.ft) { position: absolute; left: 0; right: 0; top: 100dvh; }
+
+  .lb { position: fixed; inset: 0; z-index: 80; background: var(--bg); display: grid; place-items: center; }
+  .lb[hidden] { display: none; }
+  .lb figure { display: grid; justify-items: start; gap: 10px; }
+  .big { display: block; height: min(72dvh, 720px); max-width: calc(100vw - 2 * var(--m) - 120px); }
+  .x { position: absolute; right: var(--m); top: calc(var(--head) + 8px); }
+  .arw { position: absolute; bottom: 40px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--fg); background: var(--bg); }
+  [data-step='-1'] { right: calc(var(--m) + 52px); } [data-step='1'] { right: var(--m); }
+
+  @media (max-width: 760px) {
+    .arc { position: static; overflow: visible; }
+    .band { height: auto; padding: calc(var(--head) + 24px) var(--m) 48px; }
+    .ttl { position: static; margin-bottom: 24px; }
+    .track { position: static; flex-direction: column; align-items: stretch; gap: 32px; transform: none !important; }
+    .pc { height: auto; }
+    .im { width: 100%; height: auto; }
+    .edge, .prog { display: none; }
+    .arc :global(.ft) { position: static; }
+    .big { height: auto; width: calc(100vw - 2 * var(--m)); max-width: none; }
+  }
+</style>
+
+<script>
+  const root = document.querySelector<HTMLElement>('[data-arc]')!;
+  const track = document.querySelector<HTMLElement>('[data-track]')!;
+  const bar = document.querySelector<HTMLElement>('[data-bar]')!;
+  const prog = document.querySelector<HTMLElement>('[data-prog]')!;
+  const count = document.querySelector<HTMLElement>('[data-count]')!;
+  const ft = root.querySelector<HTMLElement>('.ft')!;
+  const items = [...track.querySelectorAll<HTMLElement>('.pc')];
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const desktop = () => matchMedia('(min-width: 761px)').matches;
+  const P = (n: number) => String(n).padStart(2, '0');
+  let x = 0, target = 0, foot = 0, footTarget = 0, raf = 0;
+
+  const max = () => Math.max(0, track.scrollWidth - (innerWidth - 2 * parseFloat(getComputedStyle(track).left)));
+  const index = () => { let k = 0; items.forEach((it, i) => { if (it.offsetLeft - x < innerWidth * 0.5) k = i; }); return k; };
+  const render = () => {
+    track.style.transform = `translateX(${-x}px)`;
+    root.style.transform = `translateY(${-foot}px)`;
+    const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
+    const k = index() + 1; count.textContent = `${P(k)} / ${P(items.length)}`; prog.setAttribute('aria-valuenow', String(k));
+  };
+  const loop = () => {
+    const ease = reduced() ? 1 : 0.14;
+    x += (target - x) * ease; foot += (footTarget - foot) * ease;
+    if (Math.abs(target - x) < 0.5) x = target;
+    if (Math.abs(footTarget - foot) < 0.5) foot = footTarget;
+    render();
+    raf = x !== target || foot !== footTarget ? requestAnimationFrame(loop) : 0;
+  };
+  const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+  const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
+
+  // molette : avance la bande ; au bout, un nouveau geste découvre le pied de page
+  let last = 0, atEndAtStart = false, atStartFoot = false;
+  addEventListener('wheel', (e) => {
+    if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
+    const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    const now = performance.now();
+    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; }
+    last = now;
+    if (d > 0 && atEndAtStart) { footTarget = ft.offsetHeight; kick(); return; }
+    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; kick(); } return; }
+    seek(target + d);
+  }, { passive: true });
+  addEventListener('keydown', (e) => {
+    if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
+    const step = items[0]?.offsetWidth || 400;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); target >= max() - 1 ? (footTarget = ft.offsetHeight, kick()) : seek(target + step); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); footTarget > 0 ? (footTarget = 0, kick()) : seek(target - step); }
+    if (e.key === 'Home') seek(0);
+    if (e.key === 'End') seek(max());
+  });
+  // pavé tactile / doigt horizontal sur ordinateur tactile
+  let tx = 0;
+  root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
+  root.addEventListener('touchmove', (e) => { if (!desktop()) return; const nx = e.touches[0].clientX; seek(target + (tx - nx)); tx = nx; }, { passive: true });
+  prog.addEventListener('click', (e) => { const r = prog.getBoundingClientRect(); seek(((e.clientX - r.left) / r.width) * max()); });
+  addEventListener('resize', () => { seek(target); });
+  document.querySelector('.ft [data-go]')?.remove();
+
+  // pièce ouverte
+  const A = (window as any).kkArchive as { caps: string[]; ratios: number[]; srcs: string[] };
+  const lb = document.querySelector<HTMLElement>('[data-lb]')!;
+  const big = lb.querySelector<HTMLElement>('[data-big]')!;
+  const cap = lb.querySelector<HTMLElement>('[data-cap]')!;
+  let cur = -1, opener: HTMLElement | null = null;
+  const show = (i: number, push = true) => {
+    cur = (i + A.caps.length) % A.caps.length;
+    big.style.aspectRatio = String(A.ratios[cur]);
+    big.innerHTML = A.srcs[cur] ? `<img src="${A.srcs[cur]}" alt="" style="width:100%;height:100%;object-fit:contain">` : '';
+    cap.textContent = `${P(cur + 1)} — ${A.caps[cur]}`;
+    lb.hidden = false;
+    if (push) history.replaceState(null, '', `#${P(cur + 1)}`);
+    lb.querySelector<HTMLElement>('[data-close]')!.focus();
+  };
+  const close = () => { lb.hidden = true; cur = -1; history.replaceState(null, '', location.pathname); opener?.focus(); };
+  track.addEventListener('click', (e) => {
+    const a = (e.target as Element).closest<HTMLElement>('[data-open]');
+    if (!a) return;
+    e.preventDefault(); opener = a; show(Number(a.dataset.open));
+  });
+  lb.addEventListener('click', (e) => {
+    const el = e.target as Element;
+    if (el.closest('[data-close]') || el === lb) close();
+    const s = el.closest<HTMLElement>('[data-step]'); if (s) show(cur + Number(s.dataset.step));
+  });
+  addEventListener('keydown', (e) => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowRight') show(cur + 1);
+    if (e.key === 'ArrowLeft') show(cur - 1);
+  });
+  const h = Number(location.hash.slice(1));
+  if (h >= 1 && h <= A.caps.length) show(h - 1, false);
+  render();
+</script>

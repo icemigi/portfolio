@@ -22,3 +22,8 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# sources lourdes du portfolio (images originales, restent en local)
+_sources/
+_to_delete/
+._*

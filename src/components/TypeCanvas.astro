@@ -1,0 +1,207 @@
+---
+// Canvas de type modulaire : les lettres sont faites de modules (cellules 5×7)
+// qui changent de forme à l'approche du curseur. Sans curseur, un point fantôme
+// se promène. Respecte prefers-reduced-motion (rendu statique).
+interface Props { text?: string; label: string; class?: string; cols?: number; align?: 'left' | 'center' | 'right' }
+const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'center' } = Astro.props;
+---
+<canvas class:list={['type-canvas', cls]} data-text={text} data-cols={cols} data-align={align} role="img" aria-label={label}></canvas>
+
+<script>
+  // Glyphes 5 × 7 (1 = module plein)
+  const GLYPHS: Record<string, string[]> = {
+    K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+    E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+    R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
+    N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
+    I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+    G: ['01111', '10000', '10000', '10011', '10001', '10001', '01111'],
+    A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+    S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
+    T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
+    L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+    ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
+  };
+
+  type Cell = { x: number; y: number; on: boolean; seed: number; t: number };
+
+  function hash(n: number) {
+    let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+    x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); x ^= x >>> 16;
+    return x >>> 0;
+  }
+
+  function init(canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const text = (canvas.dataset.text || 'KERNINGKASTLE').toUpperCase();
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let W = 0, H = 0, s = 0;
+    let cells: Cell[] = [];
+    let colors = { bg: '#fff', fg: '#000', accent: '#ff8800' };
+    const pointer = { x: -9999, y: -9999, active: false };
+    let visible = true;
+    let running = false;
+    let t0 = performance.now();
+
+    function readColors() {
+      const cs = getComputedStyle(document.documentElement);
+      colors = {
+        bg: cs.getPropertyValue('--bg').trim() || '#fff',
+        fg: cs.getPropertyValue('--fg').trim() || '#000',
+        accent: cs.getPropertyValue('--accent').trim() || '#ff8800',
+      };
+    }
+
+    function layout() {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      W = rect.width; H = rect.height;
+      canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Une ligne si le format est large, sinon coupure KERNING / KASTLE
+      const lines = W / H > 2.2 || text.length < 9 ? [text] : splitText(text);
+      // data-cols : force une largeur commune (aligner KERNING et KASTLE sur la même grille)
+      const maxLen = Math.max(Number(canvas.dataset.cols) || 0, ...lines.map((l) => l.length));
+      const align = canvas.dataset.align || 'center';
+      const cols = maxLen * 6 - 1;
+      const rows = lines.length * 8 - 1;
+      const pad = Math.min(W, H) * (Number(canvas.dataset.cols) ? 0.02 : 0.08);
+      s = Math.floor(Math.min((W - pad * 2) / cols, (H - pad * 2) / rows));
+      const lineW = (l: string) => (l.length * 6 - 1) * s;
+      const left = Math.round((W - cols * s) / 2);
+      const oy = Math.round((H - rows * s) / 2);
+
+      cells = [];
+      let id = 0;
+      lines.forEach((line, li) => {
+        const ox = align === 'left' ? left : align === 'right' ? left + cols * s - lineW(line) : Math.round((W - lineW(line)) / 2);
+        [...line].forEach((ch, ci) => {
+          const g = GLYPHS[ch] || GLYPHS[' '];
+          for (let r = 0; r < 7; r++) {
+            for (let c = 0; c < 5; c++) {
+              cells.push({
+                x: ox + (ci * 6 + c) * s,
+                y: oy + (li * 8 + r) * s,
+                on: g[r][c] === '1',
+                seed: hash(++id),
+                t: 0,
+              });
+            }
+          }
+        });
+      });
+      readColors();
+      draw();
+    }
+
+    function splitText(str: string) {
+      if (str === 'KERNINGKASTLE') return ['KERNING', 'KASTLE'];
+      const mid = Math.ceil(str.length / 2);
+      return [str.slice(0, mid), str.slice(mid)];
+    }
+
+    function ghost(now: number) {
+      // Point fantôme : courbe de Lissajous lente
+      const k = (now - t0) / 1000;
+      pointer.x = W * (0.5 + 0.38 * Math.sin(k * 0.45));
+      pointer.y = H * (0.5 + 0.3 * Math.sin(k * 0.71 + 1.3));
+    }
+
+    function step(now: number) {
+      if (!pointer.active && !reduced) ghost(now);
+      const R = s * 5.5;
+      let moving = false;
+      for (const cell of cells) {
+        if (!cell.on) continue;
+        const dx = cell.x + s / 2 - pointer.x;
+        const dy = cell.y + s / 2 - pointer.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        const target = reduced && !pointer.active ? 0 : Math.max(0, 1 - d / R);
+        const next = cell.t + (target - cell.t) * 0.14;
+        if (Math.abs(next - cell.t) > 0.0005) moving = true;
+        cell.t = next;
+      }
+      return moving;
+    }
+
+    function drawModule(cell: Cell) {
+      const { x, y, t, seed } = cell;
+      const c = ctx!;
+      c.fillStyle = t > 0.55 ? colors.accent : colors.fg;
+      if (t < 0.08) { c.fillRect(x, y, s, s); return; }
+      const rot = (seed % 4) * (Math.PI / 2);
+      c.save();
+      c.translate(x + s / 2, y + s / 2);
+      c.rotate(rot);
+      switch ((seed >>> 3) % 4) {
+        case 0: { // quart de cercle
+          c.beginPath();
+          c.moveTo(-s / 2, -s / 2);
+          c.arc(-s / 2, -s / 2, s * (1 - t * 0.25), 0, Math.PI / 2);
+          c.closePath(); c.fill(); break;
+        }
+        case 1: { // cercle qui se resserre
+          c.beginPath();
+          c.arc(0, 0, (s / 2) * (1 - t * 0.55), 0, Math.PI * 2);
+          c.fill(); break;
+        }
+        case 2: { // demi-carré diagonal
+          c.beginPath();
+          c.moveTo(-s / 2, -s / 2); c.lineTo(s / 2, -s / 2); c.lineTo(-s / 2, s / 2);
+          c.closePath(); c.fill(); break;
+        }
+        default: { // carré qui pivote et rétrécit
+          const k = s * (1 - t * 0.5);
+          c.rotate(t * Math.PI / 4);
+          c.fillRect(-k / 2, -k / 2, k, k);
+        }
+      }
+      c.restore();
+    }
+
+    function draw() {
+      const c = ctx!;
+      c.fillStyle = colors.bg;
+      c.fillRect(0, 0, W, H);
+      // trame de points sur les cellules vides
+      c.fillStyle = colors.fg;
+      c.globalAlpha = 0.18;
+      const dot = Math.max(1, s * 0.06);
+      for (const cell of cells) if (!cell.on) c.fillRect(cell.x + s / 2 - dot / 2, cell.y + s / 2 - dot / 2, dot, dot);
+      c.globalAlpha = 1;
+      for (const cell of cells) if (cell.on) drawModule(cell);
+    }
+
+    function loop(now: number) {
+      const moving = step(now);
+      draw();
+      if (visible && (moving || (!pointer.active && !reduced))) requestAnimationFrame(loop);
+      else running = false;
+    }
+    function kick() {
+      if (!running && visible) { running = true; requestAnimationFrame(loop); }
+    }
+
+    canvas.addEventListener('pointermove', (e) => {
+      const r = canvas.getBoundingClientRect();
+      pointer.x = e.clientX - r.left; pointer.y = e.clientY - r.top; pointer.active = true;
+      kick();
+    });
+    canvas.addEventListener('pointerleave', () => { pointer.active = false; t0 = performance.now(); kick(); });
+
+    new ResizeObserver(() => { layout(); kick(); }).observe(canvas);
+    new IntersectionObserver((entries) => {
+      visible = entries[0].isIntersecting;
+      if (visible) kick();
+    }).observe(canvas);
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); draw(); });
+
+    layout();
+    kick();
+  }
+
+  document.querySelectorAll<HTMLCanvasElement>('canvas.type-canvas').forEach(init);
+</script>

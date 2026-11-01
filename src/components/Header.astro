@@ -1,0 +1,37 @@
+---
+// Menu fixe : le nom « kerningkastle » (accueil), rubriques, son, EN / FR (garde la page en cours).
+import { ui, pad, type Lang } from '../data/ui';
+import { projects } from '../data/projects';
+import { rooms } from '../data/lab';
+interface Props { lang: Lang; path: string; active?: string }
+const { lang, path, active } = Astro.props;
+const t = ui[lang];
+const items = [
+  { key: 'work', href: `/${lang}/work/`, count: pad(projects.length) },
+  { key: 'lab', href: `/${lang}/lab/`, count: pad(rooms.length) },
+  { key: 'archive', href: `/${lang}/archive/`, count: '' },
+  { key: 'about', href: `/${lang}/about/`, count: '' },
+] as const;
+---
+<header class="site-header g mono">
+  <a class="home" href={`/${lang}/`} aria-label={t.home}>kerningkastle</a>
+  <nav aria-label={lang === 'fr' ? 'Menu principal' : 'Main menu'}>
+    <ul>
+      {items.map((i) => (
+        <li>
+          <a class="lk" href={i.href} aria-current={active === i.key ? 'page' : undefined}>
+            {t.nav[i.key]}{i.count && <span class="count mu"> {i.count}</span>}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <div class="r">
+    <button class="snd hit" type="button" data-sound aria-pressed="false" data-on={lang === 'fr' ? 'Son on' : 'Sound on'} data-off={lang === 'fr' ? 'Son off' : 'Sound off'}>{lang === 'fr' ? 'Son off' : 'Sound off'}</button>
+    <span class="lang">
+      <a class="hit" href={`/en/${path}`} hreflang="en" lang="en" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>EN</a>
+      <span aria-hidden="true">/</span>
+      <a class="hit" href={`/fr/${path}`} hreflang="fr" lang="fr" data-lang="fr" aria-current={lang === 'fr' ? 'true' : undefined}>FR</a>
+    </span>
+  </div>
+</header>

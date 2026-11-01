@@ -1,0 +1,69 @@
+---
+// Accueil : trois écrans plein cadre (défilement forcé).
+import Base from '../../layouts/Base.astro';
+import Footer from '../../components/Footer.astro';
+import Affiche from '../../components/Affiche.astro';
+import ProjectRows from '../../components/ProjectRows.astro';
+import { ui, languages, getLangFromParam, pad } from '../../data/ui';
+import { projects } from '../../data/projects';
+import { homeServices, homeVigs } from '../../data/about';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+---
+<Base lang={lang} title="kerningkastle" description={`${t.phrase}. ${homeServices[lang].replace(/\{[^}]*\}\s?/g, '')}`} path="">
+  <canvas class="ascii" data-ascii aria-hidden="true"></canvas>
+  <div class="screens-host" data-screens>
+    <section class="scr s1" aria-label="kerningkastle">
+      <div class="hero g">
+        <h1 class="name" id="name" data-hola="0.1 0.035 200"><span>kerning</span><span>kastle</span></h1>
+        <p class="phrase t28">{t.phrase}</p>
+      </div>
+    </section>
+
+    <section class="scr" id="services" aria-labelledby="sv-l">
+      <div class="in g">
+        <div class="big">
+          <h2 class="mono mu lab par" id="sv-l">{t.services}</h2>
+          <div class="bt"><Affiche text={homeServices[lang]} vigs={homeVigs} lang={lang} /></div>
+          <p class="more mono"><a class="lk hit" href={`/${lang}/about/`}>{t.more} <span class="plus">+</span></a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="scr s3" id="work" aria-labelledby="pj-l">
+      <div class="in g">
+        <div class="pj">
+          <h2 class="mono mu lab par" id="pj-l">{t.work} {pad(projects.length)}</h2>
+          <div class="list"><ProjectRows lang={lang} /></div>
+        </div>
+      </div>
+      <Footer lang={lang} />
+    </section>
+  </div>
+</Base>
+
+<style>
+  .s1 { display: grid; align-content: center; }
+  .hero { row-gap: 32px; }
+  .name { grid-column: 1 / -1; font-weight: 500; letter-spacing: -0.05em; line-height: .8; white-space: nowrap; text-align: center; font-size: calc((100vw - 2 * var(--m)) * .1706); }
+  .name span { display: inline; }
+  .phrase { grid-column: 1 / -1; }
+
+  .big, .pj { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+  .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }
+  .bt, .more { grid-column: 4 / 12; }
+  .more { margin-top: 32px; }
+  .list { grid-column: 4 / 13; }
+
+  .s3 { display: flex; flex-direction: column; }
+  .s3 .in { flex: 1; min-height: 0; }
+
+  @media (max-width: 760px) {
+    .name { text-align: left; font-size: calc((100vw - 2 * var(--m)) * .3005); line-height: .82; }
+    .name span { display: block; }
+    .hero { row-gap: 16px; margin-top: -8vh; }
+    .lab, .bt, .more, .list { grid-column: 1 / -1; }
+  }
+</style>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Générateur Héraldique Binaire</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Conteneur principal du blason SVG -->
+  <main id="container" role="main" aria-label="Zone d'affichage du blason vectoriel"></main>
+
+  <!-- Interface minimale centrée -->
+  <footer id="ui">
+    <div class="seed-line">
+    [ <span id="seed-display">--------</span> ]
+    </div>
+    <div class="input-line">
+      <input type="text" id="seed-input" spellcheck="false" autocomplete="off" placeholder="" aria-label="Saisir ou coller une seed">
+      <button id="seed-submit" aria-label="Valider">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M9 1V5H2M2 5L5 2M2 5L5 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </footer>
+
+  <!-- Chargement des modules JavaScript -->
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

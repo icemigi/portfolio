@@ -1,0 +1,21 @@
+---
+// Pied de page : email (clic = copie), Instagram, CV, année, retour en haut.
+import { ui, type Lang } from '../data/ui';
+import { contact } from '../data/about';
+interface Props { lang: Lang; class?: string; top?: boolean }
+const { lang, class: cls = '', top = true } = Astro.props;
+const t = ui[lang];
+---
+<footer class:list={['ft g', cls]}>
+  <div class="a">
+    <p class="mono mu par">{t.contact}</p>
+    <p><a class="lk" href={`mailto:${contact.email}`} data-copy={contact.email} data-copied={t.copied}><span data-label>{contact.email}</span></a></p>
+  </div>
+  <div class="b">
+    <p class="mono mu par">{t.elsewhere}</p>
+    <a class="lk" href={contact.instagram} rel="me noopener" target="_blank">Instagram ↗</a>
+    <a class="lk" href={contact.cv} target="_blank" rel="noopener">{t.cv} ↗</a>
+  </div>
+  <div class="c"><p class="mono mu">© {new Date().getFullYear()}</p><a class="lk mu" href={`/${lang}/legal/`}>{lang === 'fr' ? 'Mentions légales' : 'Legal notice'}</a></div>
+  {top && <a class="top mono lk hit" href="#main" data-go="0">{t.top} ↑</a>}
+</footer>

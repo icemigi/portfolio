@@ -1,0 +1,69 @@
+// Archive : lettrages, logotypes, affiches, merch et concepts (source : _sources/ASSETS/ARCHIVE ; tri validé le 29/10, sans web design).
+// Pas de noms ni de titres en légende. src : /public/archive/ ; w × h : proportions réelles.
+// year : à compléter (vide = la légende n'affiche que la catégorie).
+export type Piece = { src: string; w: number; h: number; year: string; cat: { fr: string; en: string } };
+
+const C = {
+  cover: { fr: 'Pochette', en: 'Cover' },
+  poster: { fr: 'Affiche', en: 'Poster' },
+  logo: { fr: 'Logotype', en: 'Logotype' },
+  lettering: { fr: 'Lettrage', en: 'Lettering' },
+  illu: { fr: 'Illustration', en: 'Illustration' },
+  merch: { fr: 'Merch', en: 'Merch' },
+};
+
+const raw: Piece[] = [
+  { src: '/archive/01.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/02.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/03.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/04.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/05.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/06.webp', w: 1400, h: 1382, year: '', cat: C.logo },
+  { src: '/archive/07.webp', w: 1400, h: 761, year: '', cat: C.logo },
+  { src: '/archive/09.webp', w: 1400, h: 718, year: '', cat: C.logo },
+  { src: '/archive/11.webp', w: 1400, h: 593, year: '', cat: C.lettering },
+  { src: '/archive/12.webp', w: 1076, h: 752, year: '', cat: C.lettering },
+  { src: '/archive/13.webp', w: 1368, h: 556, year: '', cat: C.logo },
+  { src: '/archive/14.webp', w: 1400, h: 343, year: '', cat: C.lettering },
+  { src: '/archive/15.webp', w: 1400, h: 835, year: '', cat: C.logo },
+  { src: '/archive/16.webp', w: 1400, h: 536, year: '', cat: C.logo },
+  { src: '/archive/17.webp', w: 1400, h: 624, year: '', cat: C.lettering },
+  { src: '/archive/18.webp', w: 1400, h: 1120, year: '', cat: C.lettering },
+  { src: '/archive/20.webp', w: 1400, h: 428, year: '', cat: C.logo },
+  { src: '/archive/23.webp', w: 1400, h: 346, year: '', cat: C.logo },
+  { src: '/archive/25.webp', w: 1400, h: 493, year: '', cat: C.lettering },
+  { src: '/archive/26.webp', w: 1261, h: 1400, year: '', cat: C.illu },
+  { src: '/archive/27.webp', w: 1400, h: 1071, year: '', cat: C.logo },
+  { src: '/archive/29.webp', w: 1120, h: 1400, year: '', cat: C.lettering },
+  { src: '/archive/30.webp', w: 990, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/31.webp', w: 1400, h: 1400, year: '', cat: C.illu },
+  { src: '/archive/32.webp', w: 990, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/33.webp', w: 990, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/34.webp', w: 990, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/35.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/36.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/37.webp', w: 1400, h: 1400, year: '', cat: C.cover },
+  { src: '/archive/38.webp', w: 1400, h: 1400, year: '', cat: C.logo },
+  { src: '/archive/39.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/40.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/42.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/43.webp', w: 838, h: 1400, year: '', cat: C.merch },
+  { src: '/archive/44.webp', w: 1050, h: 1400, year: '', cat: C.merch },
+  { src: '/archive/47.webp', w: 1400, h: 1400, year: '', cat: C.poster },
+  { src: '/archive/48.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/49.webp', w: 1400, h: 875, year: '', cat: C.logo },
+  { src: '/archive/50.webp', w: 1400, h: 875, year: '', cat: C.lettering },
+  { src: '/archive/51.webp', w: 1080, h: 1350, year: '', cat: C.logo },
+  { src: '/archive/52.webp', w: 1080, h: 1350, year: '', cat: C.logo },
+  { src: '/archive/53.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/54.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/55.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/56.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/57.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/58.webp', w: 1080, h: 1350, year: '', cat: C.poster },
+  { src: '/archive/59.webp', w: 1400, h: 875, year: '', cat: C.poster },
+];
+
+// tri par année, de la plus récente à la plus ancienne ; les pièces sans année restent à la fin, dans l'ordre de la liste
+const yr = (p: Piece) => Number(p.year.match(/\d{4}/)?.[0] ?? 0);
+export const pieces: Piece[] = raw.map((p, i) => ({ p, i })).sort((a, b) => yr(b.p) - yr(a.p) || a.i - b.i).map(({ p }) => p);

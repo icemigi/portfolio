@@ -1,0 +1,70 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import DevMode from '../components/DevMode.astro';
+import { ui, type Lang } from '../data/ui';
+
+interface Props {
+  lang: Lang;
+  title: string;
+  description: string;
+  path: string;            // chemin sans la langue, ex. 'about/' ou '' pour l'accueil
+  active?: 'work' | 'lab' | 'archive' | 'about';
+  bare?: boolean;          // page plein cadre sans menu du site (bureau du Lab)
+}
+const { lang, title, description, path, active, bare = false } = Astro.props;
+const t = ui[lang];
+const fullTitle = title === 'kerningkastle' ? `kerningkastle — ${t.tagline}` : `${title} — kerningkastle`;
+const site = Astro.site ?? new URL('https://kerningkastle.com');
+const canonical = new URL(`/${lang}/${path}`, site).href;
+const alt = (l: Lang) => new URL(`/${l}/${path}`, site).href;
+// image d'aperçu au partage : /og/<langue>-<page>.png (générées, 1200 × 630)
+const seg = path.split('/').filter(Boolean);
+const ogRaw = !seg.length ? 'home' : seg[0] === 'work' && seg[1] ? `work-${seg[1]}` : seg[0];
+const ogKey = ['home', 'work', 'lab', 'archive', 'about'].includes(ogRaw) || ogRaw.startsWith('work-') ? ogRaw : 'home';
+const ogImage = new URL(`/og/${lang}-${ogKey}.png`, site).href;
+---
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <script is:inline>document.documentElement.classList.add('js');if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed','ld-skip');try{if(sessionStorage.getItem('kk-ld'))document.documentElement.classList.add('ld-skip')}catch(e){}</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={alt('en')} />
+    <link rel="alternate" hreflang="fr" href={alt('fr')} />
+    <link rel="alternate" hreflang="x-default" href={alt('en')} />
+    <link rel="icon" href="/logo-kerningkastle-dark.svg" type="image/svg+xml" />
+    <link rel="preload" href="/logo-kerningkastle-dark.svg" as="image" />
+    <link rel="preload" href="/fonts/Geist-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/Geist-Medium.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/GeistMono-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#f3f3f3" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={lang === 'fr' ? 'fr_FR' : 'en_GB'} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
+  </head>
+  <body>
+    <div class="ld" data-ld aria-hidden="true">
+      <span class="ld-logo"><img src="/logo-kerningkastle-dark.svg" alt="" width="64" height="64" /><img class="ld-fill" data-ld-fill src="/logo-kerningkastle-dark.svg" alt="" width="64" height="64" /></span>
+      <span class="ld-n mono mu" data-ld-n>000</span>
+    </div>
+    <a class="skip mono" href="#main">{t.skip}</a>
+    {!bare && <Header lang={lang} path={path} active={active} />}
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+    <p id="live" class="sr" aria-live="polite"></p>
+    <DevMode />
+    <script>import '../scripts/site';</script>
+  </body>
+</html>
