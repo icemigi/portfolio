@@ -1,0 +1,180 @@
+---
+// CV en terminal : page cachée (lien dans le pied de page seulement, hors plan du site, noindex).
+// Le CV complet est écrit dans la page (lisible sans JavaScript) ; le script le rejoue comme une session
+// puis attend des commandes : help, profil, xp, projets, formation, outils, interets, contact, cv, clear, lang, exit.
+import Base from '../../layouts/Base.astro';
+import { languages, getLangFromParam } from '../../data/ui';
+import { cv, sectionHtml, headHtml } from '../../data/cv';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const c = cv[lang];
+const other = lang === 'fr' ? 'en' : 'fr';
+const full = headHtml(c) + c.sections.map(sectionHtml).join('');
+const data = {
+  lang, other, full,
+  ui: c.ui,
+  sections: c.sections.map((s) => ({ id: s.id, cmd: s.cmd, html: sectionHtml(s) })),
+};
+const PS = 'xavier@kerningkastle ~ %';
+---
+<Base lang={lang} title="CV — Xavier M. Diez" description={c.role} path="cv/" bare>
+  <meta slot="head" name="robots" content="noindex" />
+  <div class="term" data-term data-cv={JSON.stringify(data)}>
+    <div class="bar">
+      <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="ttl mu">xavier — cv — zsh</span>
+      <span class="act">
+        <a href={`/${other}/cv/`} data-lang={other}>{c.ui.lang}</a>
+        <a href={`/${lang}/`}>exit</a>
+      </span>
+    </div>
+    <div class="out" data-out aria-live="polite">
+      <p class="t-cmd"><span class="ps">{PS}</span> cat cv.txt</p>
+      <Fragment set:html={full} />
+    </div>
+    <form class="in" data-form autocomplete="off">
+      <label class="ps" for="cv-in">{PS}</label>
+      <input id="cv-in" data-in type="text" spellcheck="false" autocapitalize="off" aria-label={c.ui.hint} />
+    </form>
+    <nav class="chips" aria-label={c.ui.help}>
+      {['help', ...c.sections.map((s) => s.cmd[0]), 'clear', 'exit'].map((k) => <button type="button" data-cmd={k}>{k}</button>)}
+    </nav>
+  </div>
+</Base>
+
+<style>
+  :global(html:has(.term)) { --bg: #0e0e0d; --fg: #e9e7e0; --mu: #8b8880; --ln: rgba(255, 255, 255, .12); color-scheme: dark; }
+  :global(html:has(.term) body) { background: var(--bg); color: var(--fg); }
+  .term { position: fixed; inset: 0; display: flex; flex-direction: column; font-family: var(--mono); font-size: 14px; line-height: 22px; padding: 0 var(--m); }
+  .bar { display: flex; align-items: center; gap: 16px; height: var(--head); flex: none; border-bottom: 1px solid var(--ln); }
+  .dots { display: flex; gap: 8px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; background: var(--ln); }
+  .ttl { flex: 1; text-align: center; }
+  .act { display: flex; gap: 20px; }
+  .act a:hover, .chips button:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
+  .act a { color: var(--mu); }
+  .out { flex: 1; overflow-y: auto; padding: 28px 0 8px; scrollbar-width: none; max-width: 980px; }
+  .out::-webkit-scrollbar { display: none; }
+  .out :global(p) { margin: 0; }
+  .out :global(.t-cmd) { margin-top: 18px; }
+  .out :global(.t-cmd:first-child) { margin-top: 0; }
+  .out :global(.t-name) { font-family: var(--sans); font-weight: 500; font-size: clamp(40px, 7vw, 88px); line-height: 1; letter-spacing: -0.04em; margin: 20px 0 14px; text-transform: none; }
+  .out :global(.t-h) { margin-top: 26px; margin-bottom: 6px; color: var(--mu); }
+  .out :global(.t-e), .out :global(.t-i) { display: grid; grid-template-columns: 150px 1fr; gap: 0 20px; }
+  .out :global(.t-e) { margin-top: 10px; }
+  .out :global(.t-e b) { font-weight: 400; color: var(--fg); }
+  .out :global(.t-d), .out :global(.t-m) { color: var(--mu); }
+  .out :global(.t-i) { color: #c9c6be; }
+  .out :global(.t-p) { max-width: 72ch; }
+  .out :global(.t-err) { color: #e0806a; }
+  .out :global(a) { text-decoration: underline; text-underline-offset: 3px; }
+  .ps { color: var(--mu); white-space: nowrap; }
+  .in { display: flex; gap: 10px; align-items: baseline; padding: 6px 0 4px; flex: none; }
+  .in input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--fg); font: inherit; caret-color: var(--fg); padding: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 0 22px; border-top: 1px solid var(--ln); flex: none; }
+  .chips button { color: var(--mu); padding: 4px 0; }
+  .term :global(.typing)::after { content: '▍'; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  @media (max-width: 760px) {
+    .term { font-size: 13px; line-height: 20px; }
+    .ttl { display: none; }
+    .bar { justify-content: space-between; }
+    .out :global(.t-e), .out :global(.t-i) { grid-template-columns: 1fr; }
+    .out :global(.t-i .t-d) { display: none; }
+    .ps { display: none; }
+    .in::before { content: '%'; color: var(--mu); }
+  }
+</style>
+
+<script>
+  type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
+  const root = document.querySelector<HTMLElement>('[data-term]')!;
+  const d: D = JSON.parse(root.dataset.cv!);
+  const out = root.querySelector<HTMLElement>('[data-out]')!;
+  const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+  const input = root.querySelector<HTMLInputElement>('[data-in]')!;
+  const PS = 'xavier@kerningkastle ~ %';
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = (ms: number) => new Promise((r) => setTimeout(r, still ? 0 : ms));
+  const bottom = () => (out.scrollTop = out.scrollHeight);
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let busy = false;
+  const hist: string[] = []; let hi = 0;
+
+  // une sortie arrive ligne par ligne (bloc par bloc)
+  async function print(html: string, gap = 14) {
+    const tmp = document.createElement('div'); tmp.innerHTML = html;
+    for (const el of [...tmp.children]) { out.appendChild(el); bottom(); await wait(gap); }
+  }
+  async function typeCmd(cmd: string) {
+    const p = document.createElement('p'); p.className = 't-cmd';
+    p.innerHTML = `<span class="ps">${PS}</span> <span class="typing"></span>`;
+    out.appendChild(p); bottom();
+    const t = p.querySelector('.typing')!;
+    for (const ch of cmd) { t.textContent += ch; await wait(38 + Math.random() * 40); }
+    await wait(160); t.classList.remove('typing');
+  }
+  const echo = (cmd: string) => { const p = document.createElement('p'); p.className = 't-cmd'; p.innerHTML = `<span class="ps">${PS}</span> ${esc(cmd)}`; out.appendChild(p); };
+
+  const helpHtml = () => `<p class="t-h">## ${d.ui.help}</p>` + [
+    ...d.sections.map((s) => [s.cmd[0], s.cmd.slice(1).join(', ')]),
+    ['cv', 'cat cv.txt'], ['ls', ''], ['lang', d.ui.lang], ['clear', ''], ['exit', d.ui.back],
+  ].map(([k, v]) => `<p class="t-e"><span class="t-d">${k}</span><span class="t-m">${v}</span></p>`).join('');
+
+  async function run(raw: string, typed = false) {
+    const line = raw.trim(); if (busy) return;
+    busy = true;
+    if (typed) await typeCmd(line); else echo(line);
+    const [cmd0, ...args] = line.split(/\s+/); const cmd = (cmd0 || '').toLowerCase().replace(/^\.\//, '');
+    const file = (args[0] || '').toLowerCase().replace(/\.txt$/, '');
+    const sec = d.sections.find((s) => s.cmd.includes(cmd) || (cmd === 'cat' && s.cmd.includes(file)));
+    if (!cmd) { /* ligne vide */ }
+    else if (sec) await print(sec.html);
+    else if (cmd === 'help' || cmd === '?' || cmd === 'man') await print(helpHtml(), 8);
+    else if (cmd === 'cv' || (cmd === 'cat' && file === 'cv')) await print(d.full, 10);
+    else if (cmd === 'ls') await print(`<p class="t-p">cv.txt  ${d.sections.map((s) => `${s.cmd[0]}.txt`).join('  ')}</p>`);
+    else if (cmd === 'clear') out.innerHTML = '';
+    else if (cmd === 'pwd') await print('<p class="t-p">/home/xavier/kerningkastle</p>');
+    else if (cmd === 'date') await print(`<p class="t-p">${new Date().toString()}</p>`);
+    else if (cmd === 'echo') await print(`<p class="t-p">${esc(args.join(' '))}</p>`);
+    else if (cmd === 'sudo') await print(`<p class="t-p t-err">${d.ui.sudo}</p>`);
+    else if (cmd === 'lang') { location.href = `/${d.other}/cv/`; return; }
+    else if (cmd === 'exit' || cmd === 'quit' || cmd === 'logout') { await print(`<p class="t-p t-m">${d.ui.bye}</p>`); await wait(500); location.href = `/${d.lang}/`; return; }
+    else await print(`<p class="t-p t-err">zsh: ${d.ui.unknown}: ${esc(cmd0)}</p>`);
+    bottom(); busy = false;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = input.value; input.value = '';
+    if (v.trim()) { hist.push(v); hi = hist.length; }
+    run(v);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' && hi > 0) { e.preventDefault(); input.value = hist[--hi]; }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); hi = Math.min(hist.length, hi + 1); input.value = hist[hi] ?? ''; }
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      const all = ['help', 'cv', 'ls', 'clear', 'lang', 'exit', ...d.sections.flatMap((s) => s.cmd)];
+      const m = all.filter((k) => k.startsWith(input.value.toLowerCase()));
+      if (m.length === 1) input.value = m[0];
+      else if (m.length > 1 && input.value) print(`<p class="t-p t-m">${m.join('  ')}</p>`);
+    } else if (e.key === 'l' && e.ctrlKey) { e.preventDefault(); out.innerHTML = ''; }
+  });
+  root.querySelectorAll<HTMLButtonElement>('[data-cmd]').forEach((b) => b.addEventListener('click', () => { run(b.dataset.cmd!, true); input.focus({ preventScroll: true }); }));
+  // un clic dans le terminal (hors lien / sélection) redonne la main au clavier
+  out.addEventListener('click', (e) => { if (!(e.target as Element).closest('a') && !String(getSelection())) input.focus({ preventScroll: true }); });
+
+  // ouverture : la session se rejoue (le CV écrit dans la page est remplacé par la même chose, tapée)
+  (async () => {
+    if (still) { input.focus({ preventScroll: true }); return; }
+    busy = true; out.innerHTML = '';
+    const now = new Date();
+    await print(`<p class="t-p t-m">${d.ui.boot}: ${now.toDateString()} ${now.toTimeString().slice(0, 8)} on ttys001</p>`, 0);
+    await wait(380);
+    busy = false; await run('cat cv.txt', true);
+    await print(`<p class="t-p t-m" style="margin-top:22px">— ${d.ui.hint}</p>`, 0);
+    input.focus({ preventScroll: true });
+  })();
+</script>

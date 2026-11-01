@@ -73,5 +73,4 @@ export const aboutLabels = {
 export const contact = {
   email: 'hello@kerningkastle.com', // TODO : adresse réelle
   instagram: 'https://www.instagram.com/kerningkastle/',
-  cv: '/cv-xavier-m-diez.pdf', // TODO : déposer le PDF (< 1 Mo) dans /public
 };
