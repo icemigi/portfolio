@@ -126,7 +126,8 @@ export function initScreens(host: HTMLElement): Screens {
     if (to < 0) return;
     if (to >= S.length) { emit('screens:beyond', { from }); return; }
     const b = S[to], dir = to > from ? 1 : -1;
-    b.scrollTop = dir > 0 ? 0 : b.scrollHeight;
+    // on arrive par le haut ou par le bas de l'écran ; un écran à débord masqué garde son cadrage (le « le » de l'accueil déborde)
+    b.scrollTop = dir > 0 || getComputedStyle(b).overflowY === 'hidden' ? 0 : b.scrollHeight;
     emit('screens:leave', { from, to });
     dispatchEvent(new CustomEvent('kk:sound', { detail: 'slide' }));
     if (!b.hasAttribute('data-still')) dispatchEvent(new CustomEvent('kk:sound', { detail: 'letters' }));
