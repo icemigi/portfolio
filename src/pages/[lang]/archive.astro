@@ -11,7 +11,7 @@ import { pieces } from '../../data/archive';
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
-const cap = (i: number) => pieces[i].cat[lang]; // l'année est posée sur l'image
+const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i].year})` : ''); // catégorie (année)
 ---
 <Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? 'Direction artistique musicale, projets concepts, lettrages et logos.' : 'Music art direction, concept projects, lettering and logos.'} path="archive/" active="archive">
   <div class="arc" data-arc data-own-wheel>
@@ -21,7 +21,7 @@ const cap = (i: number) => pieces[i].cat[lang]; // l'année est posée sur l'ima
         {pieces.map((p, i) => (
           <li class="pc" id={pad(i + 1)}>
             <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
-              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src} alt="" loading="lazy" />}{p.year && <span class="yr mono">{p.year}</span>}</span>
+              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src} alt="" loading="lazy" />}</span>
               <span class="mono mu c">{cap(i)}</span>
             </a>
           </li>
@@ -44,7 +44,7 @@ const cap = (i: number) => pieces[i].cat[lang]; // l'année est posée sur l'ima
   </div>
 </Base>
 
-<script is:inline define:vars={{ caps: pieces.map((p) => [p.year, p.cat[lang]].filter(Boolean).join(' — ')), ratios: pieces.map((p) => p.w / p.h), srcs: pieces.map((p) => p.src) }}>
+<script is:inline define:vars={{ caps: pieces.map((p) => p.cat[lang] + (p.year ? ` (${p.year})` : '')), ratios: pieces.map((p) => p.w / p.h), srcs: pieces.map((p) => p.src) }}>
   window.kkArchive = { caps, ratios, srcs };
 </script>
 <script>
@@ -63,7 +63,6 @@ const cap = (i: number) => pieces[i].cat[lang]; // l'année est posée sur l'ima
   .im { display: block; height: min(560px, calc(100dvh - var(--head) - 200px)); aspect-ratio: var(--r); }
   .im img { width: 100%; height: 100%; object-fit: cover; }
   /* année de création, en bas à droite de l'image */
-  .yr { position: absolute; right: 8px; bottom: 8px; padding: 2px 6px; background: rgba(243, 243, 243, .9); color: var(--fg); font-style: normal; }
   .c { display: block; margin-top: 10px; white-space: nowrap; }
   /* flèche discrète : la bande se fait défiler ; disparaît au premier geste */
   .hint-r { position: absolute; right: var(--m); bottom: 26px; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--mu); transition: opacity .3s; pointer-events: none; }
@@ -83,8 +82,10 @@ const cap = (i: number) => pieces[i].cat[lang]; // l'année est posée sur l'ima
   .lb figure { display: grid; justify-items: start; gap: 10px; }
   .big { display: block; height: min(72dvh, 720px); max-width: calc(100vw - 2 * var(--m) - 120px); }
   .x { position: absolute; right: var(--m); top: calc(var(--head) + 8px); }
-  .arw { position: absolute; bottom: 40px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid var(--fg); background: var(--bg); }
-  [data-step='-1'] { right: calc(var(--m) + 52px); } [data-step='1'] { right: var(--m); }
+  /* flèches nues : un signe, rien autour */
+  .arw { position: absolute; bottom: 32px; width: 44px; height: 44px; display: grid; place-items: center; font-size: 16px; color: var(--mu); transition: color .2s, translate .25s var(--out); }
+  @media (hover: hover) { .arw:hover { color: var(--fg); } [data-step='-1']:hover { translate: -3px 0; } [data-step='1']:hover { translate: 3px 0; } }
+  [data-step='-1'] { right: calc(var(--m) + 40px); } [data-step='1'] { right: calc(var(--m) - 12px); }
 
   @media (max-width: 760px) {
     .arc { position: static; overflow: visible; }
