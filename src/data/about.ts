@@ -3,17 +3,15 @@
 
 export type Vig = { src: string; label: { en: string; fr: string }; logo?: boolean }; // logo : image contenue (logo de logiciel), pas recadrée
 
-// Accueil, écran 2 : 5 vignettes animées, uniquement des travaux montrés en entier (jamais recadrés) ; régénérées par tools/vignettes.py.
+// Accueil, écran 2 : 3 vignettes (lettres, identités, images), animées, uniquement des travaux montrés en entier (jamais recadrés) ; régénérées par tools/vignettes.py.
 export const homeServices = {
-  fr: 'Je dessine {0} des lettres{m:beaucoup}, {1} des identités {2} et des images, {3} à la main ou en code{m:selon l\'humeur}, {4} pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
-  en: 'I draw {0} letters{m:a lot}, {1} identities {2} and images, {3} by hand or in code{m:depending on the mood}, {4} for artists, brands and studios{m:and myself, on Sundays}.',
+  fr: 'Je dessine {0} des lettres{m:beaucoup}, {1} des identités {2} et des images, à la main ou en code{m:selon l\'humeur}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
+  en: 'I draw {0} letters{m:a lot}, {1} identities {2} and images, by hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
 };
 export const homeVigs: Vig[] = [
   { src: '', label: { fr: 'lettre', en: 'letter' } },
   { src: '', label: { fr: 'identité', en: 'identity' } },
   { src: '', label: { fr: 'image', en: 'image' } },
-  { src: '', label: { fr: 'main ou code', en: 'hand or code' } },
-  { src: '', label: { fr: 'clients', en: 'clients' } },
 ];
 
 // À propos — 4 écrans
@@ -56,12 +54,11 @@ export const stackVigs: Vig[] = [
 
 // Parcours : {m:…} = note datée accrochée au mot ; {v:n} = vignette.
 export const path = {
-  fr: "Indépendant depuis 2020{m:2020 —}, pour des artistes {v:0} et des marques. Avant, designer chez DOERS à Paris{m:2018 — 20} pour PlayStation {l:playstation}, Nespresso {l:nespresso} et Chanel {l:chanel}. {v:1} Formé à HETIC{m:2018 — 21} et à l'École 42{m:2015 — 17}.",
-  en: 'Independent since 2020{m:2020 —}, for artists {v:0} and brands. Before that, designer at DOERS in Paris{m:2018 — 20} for PlayStation {l:playstation}, Nespresso {l:nespresso} and Chanel {l:chanel}. {v:1} Trained at HETIC{m:2018 — 21} and École 42{m:2015 — 17}.',
+  fr: "Indépendant depuis 2020{m:2020 —}, pour des artistes {v:0} et des marques. Avant, designer chez DOERS à Paris{m:2018 — 20} pour PlayStation {l:playstation}, Nespresso {l:nespresso} et Chanel {l:chanel}. Formé à HETIC{m:2018 — 21} et à l'École 42{m:2015 — 17}.",
+  en: 'Independent since 2020{m:2020 —}, for artists {v:0} and brands. Before that, designer at DOERS in Paris{m:2018 — 20} for PlayStation {l:playstation}, Nespresso {l:nespresso} and Chanel {l:chanel}. Trained at HETIC{m:2018 — 21} and École 42{m:2015 — 17}.',
 };
 export const pathVigs: Vig[] = [
   { src: '', label: { fr: 'pochette', en: 'cover' } },
-  { src: '', label: { fr: 'site', en: 'website' } },
 ];
 
 export const aboutLabels = {
