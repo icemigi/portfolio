@@ -30,13 +30,13 @@ const other = fr ? 'en' : 'fr';
     <div class="desk" data-desk>
       <!-- widgets -->
       <div class="widgets">
-        <div class="wd weather" data-weather>
+        <div class="wd glass weather" data-weather>
           <p class="wc">{M.weather} <span aria-hidden="true">➤</span></p>
           <p class="wt" data-wt>—°</p>
           <p class="ws"><span data-wi>&nbsp;</span><br /><span data-wr>&nbsp;</span></p>
         </div>
-        <div class="wd cal" data-cal></div>
-        <div class="wd clockw"><svg viewBox="0 0 100 100" aria-hidden="true" data-analog>
+        <div class="wd glass cal" data-cal></div>
+        <div class="wd glass clockw"><svg viewBox="0 0 100 100" aria-hidden="true" data-analog>
           <circle cx="50" cy="50" r="48" fill="#fff" />
           {Array.from({ length: 12 }, (_, i) => <text x={50 + 36 * Math.sin((i + 1) * Math.PI / 6)} y={50 - 36 * Math.cos((i + 1) * Math.PI / 6) + 4} text-anchor="middle">{i + 1}</text>)}
           <line data-h x1="50" y1="50" x2="50" y2="28" />
@@ -44,7 +44,7 @@ const other = fr ? 'en' : 'fr';
           <line data-s x1="50" y1="58" x2="50" y2="12" />
           <circle cx="50" cy="50" r="2.4" fill="#f60" />
         </svg></div>
-        <div class="wd note"><p class="nt">{M.note}</p><p>{M.hint}</p></div>
+        <div class="wd glass note"><p class="nt">{M.note}</p><p>{M.hint}</p></div>
       </div>
 
       <!-- icônes -->
@@ -59,7 +59,7 @@ const other = fr ? 'en' : 'fr';
     </div>
 
     <!-- Dock -->
-    <nav class="dock" aria-label="Dock" data-dock>
+    <nav class="dock glass" aria-label="Dock" data-dock>
       <a class="dk" href={`/${lang}/`} aria-label="kerningkastle"><span class="ai" data-icon="finder"></span><i class="tip">kerningkastle</i></a>
       {apps.map((a) => <button class="dk" type="button" data-open={a.id} aria-label={a.title}><span class="ai" data-icon={a.icon}></span><i class="tip">{a.title}</i><b class="run" aria-hidden="true"></b></button>)}
       <span class="sep" aria-hidden="true"></span>
@@ -82,30 +82,42 @@ const other = fr ? 'en' : 'fr';
 
   /* ---------- bureau ---------- */
   .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
-    background: #fff url(/logo-kerningkastle-dark.svg) center 46% / min(22vh, 220px) no-repeat; box-shadow: inset 0 1px 0 var(--ln); }
+    background: var(--bg) url(/logo-kerningkastle-dark.svg) center 46% / min(22vh, 220px) no-repeat; } /* même fond que le menu du site : aucune limite entre les deux */
 
   /* widgets */
+  /* Liquid Glass (macOS 26) : verre clair très transparent, flou + saturation du fond, liseré spéculaire
+     (reflet net en haut, plus doux en bas) et ombre portée large. Une seule recette pour Dock, widgets, fenêtres, bulles. */
+  .mac {
+    --glass: rgba(255, 255, 255, .22);
+    --glass-fx: blur(16px) saturate(1.9) brightness(1.04);
+    --rim: inset 0 1px 0 rgba(255, 255, 255, .85), inset 0 -1px 0 rgba(255, 255, 255, .35), inset 0 0 0 .5px rgba(255, 255, 255, .55), 0 0 0 .5px rgba(0, 0, 0, .08);
+    --lift: 0 12px 34px rgba(0, 0, 0, .16), 0 2px 6px rgba(0, 0, 0, .06);
+  }
+  .glass { position: relative; background: var(--glass); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); box-shadow: var(--rim), var(--lift); }
+  /* reflet de lentille : un dégradé clair en diagonale, posé par-dessus sans gêner les clics */
+  .glass::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .45) 0%, rgba(255, 255, 255, 0) 38%, rgba(255, 255, 255, 0) 70%, rgba(255, 255, 255, .18) 100%); mix-blend-mode: soft-light; }
   .desk { position: absolute; inset: 0; }
   .widgets { position: absolute; left: 22px; top: 18px; display: grid; grid-template-columns: 160px 160px; gap: 16px; }
-  .wd { width: 160px; height: 160px; border-radius: 22px; padding: 14px 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, .25); overflow: hidden; }
-  .weather { background: linear-gradient(180deg, #2f7fd8, #5aa2ec); }
+  .wd { width: 160px; height: 160px; border-radius: 26px; padding: 14px 16px; overflow: hidden; }
+  .weather { --glass: linear-gradient(180deg, rgba(47, 127, 216, .78), rgba(90, 162, 236, .62)); color: #fff; }
   .wc { font-weight: 600; font-size: 14px; }
   .wc span { font-size: 9px; opacity: .9; }
   .wt { font-size: 44px; font-weight: 300; line-height: 1.05; letter-spacing: -0.03em; }
   .ws { margin-top: 18px; font-size: 12px; font-weight: 600; line-height: 1.35; }
-  .cal { background: #fff; color: #111; padding: 12px 12px; }
+  .cal { --glass: rgba(255, 255, 255, .5); color: #111; padding: 12px 12px; }
   .cal :global(.cm) { color: #f23b30; font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
   .cal :global(.cg) { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 3px; text-align: center; font-size: 10px; font-weight: 600; }
   .cal :global(.cg .h) { color: #999; font-weight: 600; }
   .cal :global(.cg .o) { color: #ccc; }
   .cal :global(.cg .t) { background: #f23b30; color: #fff; border-radius: 50%; width: 17px; height: 17px; line-height: 17px; margin: 0 auto; }
-  .clockw { background: #1c1c1e; padding: 10px; display: grid; place-items: center; }
+  .clockw { --glass: rgba(28, 28, 30, .55); padding: 10px; display: grid; place-items: center; }
   .clockw svg { width: 140px; height: 140px; }
   .clockw text { font: 600 9px -apple-system, sans-serif; fill: #111; }
   .clockw line { stroke: #111; stroke-width: 3.2; stroke-linecap: round; }
   .clockw line[data-m] { stroke-width: 2.4; }
   .clockw line[data-s] { stroke: #f60; stroke-width: 1.2; }
-  .note { background: #fde68a; color: #3d3317; }
+  .note { --glass: rgba(253, 230, 138, .62); color: #3d3317; }
   .nt { font-weight: 700; margin-bottom: 6px; }
   @media (max-width: 900px) { .widgets { grid-template-columns: 160px; } .clockw, .note { display: none; } }
   @media (max-width: 760px) { .desk { overflow-y: auto; padding-bottom: 90px; } .widgets { position: static; display: flex; gap: 12px; padding: 16px 16px 0; } .wd { width: calc(50vw - 22px); height: calc(50vw - 22px); max-width: 170px; max-height: 170px; } }
@@ -130,34 +142,34 @@ const other = fr ? 'en' : 'fr';
 
   /* fenêtres */
   .wins { position: absolute; inset: 0; pointer-events: none; }
-  .wins :global(.win) { position: absolute; display: flex; flex-direction: column; border-radius: 12px; overflow: hidden; background: #ececec; pointer-events: auto;
-    box-shadow: 0 0 0 .5px rgba(0, 0, 0, .35), 0 22px 70px rgba(0, 0, 0, .45); transform-origin: var(--ox, 50%) var(--oy, 100%); }
-  .wins :global(.win.blur) { box-shadow: 0 0 0 .5px rgba(0, 0, 0, .25), 0 12px 40px rgba(0, 0, 0, .3); }
-  .wins :global(.tb) { position: relative; flex: none; height: 32px; display: flex; align-items: center; justify-content: center; background: #f6f6f6; border-bottom: 1px solid rgba(0, 0, 0, .1); color: #3c3c3c; font-weight: 600; font-size: 13px; touch-action: none; user-select: none; }
+  .wins :global(.win) { position: absolute; display: flex; flex-direction: column; border-radius: 18px; overflow: hidden; background: rgba(246, 246, 246, .72); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); pointer-events: auto;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 0 0 .5px rgba(0, 0, 0, .18), 0 24px 70px rgba(0, 0, 0, .28); transform-origin: var(--ox, 50%) var(--oy, 100%); }
+  .wins :global(.win.blur) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7), 0 0 0 .5px rgba(0, 0, 0, .12), 0 12px 40px rgba(0, 0, 0, .16); }
+  .wins :global(.tb) { position: relative; flex: none; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; color: #3c3c3c; font-weight: 600; font-size: 13px; touch-action: none; user-select: none; }
   .wins :global(.win.blur .tb) { color: #a5a5a5; }
   .wins :global(.tl) { position: absolute; left: 13px; top: 10px; display: flex; gap: 8px; }
   .wins :global(.tl button) { width: 12px; height: 12px; border-radius: 50%; display: grid; place-items: center; font: 700 9px/1 -apple-system, sans-serif; color: transparent; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .2); }
   .wins :global(.tl .c) { background: #ff5f57; } .wins :global(.tl .m) { background: #febc2e; } .wins :global(.tl .z) { background: #28c840; }
   .wins :global(.tl:hover button) { color: rgba(0, 0, 0, .55); }
   .wins :global(.win.blur .tl button) { background: #d6d6d6; }
-  .wins :global(.wb) { position: relative; flex: 1; background: #fff; }
+  .wins :global(.wb) { position: relative; flex: 1; margin: 0 6px 6px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .08); }
   .wins :global(.wb iframe) { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .wins :global(.wb .msg) { position: absolute; inset: 0; display: grid; place-items: center; color: #666; padding: 24px; text-align: center; }
   .wins :global(.win.moving .wb iframe) { pointer-events: none; }
   .wins :global(.rz) { position: absolute; right: 0; bottom: 0; width: 18px; height: 18px; cursor: nwse-resize; touch-action: none; }
   .wins :global(.win.full) { border-radius: 0; }
+  .wins :global(.win.full .wb) { margin: 0; border-radius: 0; }
   @media (max-width: 760px) { .wins :global(.win) { left: 0 !important; top: 0 !important; width: 100% !important; height: calc(100% - 84px) !important; border-radius: 0; } .wins :global(.rz) { display: none; } }
 
   /* Dock */
-  .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 6px 8px; border-radius: 20px;
-    background: rgba(246, 246, 246, .3); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); box-shadow: inset 0 0 0 .5px rgba(255, 255, 255, .5), 0 0 0 .5px rgba(0, 0, 0, .15), 0 10px 30px rgba(0, 0, 0, .2); }
+  .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 7px 9px; border-radius: 28px; --glass: rgba(255, 255, 255, .18); }
   .dk { position: relative; width: 52px; height: 52px; display: block; transition: width .18s, height .18s, margin .18s; }
   .dk .ai { width: 100%; height: 100%; }
-  .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(40, 40, 46, .8); color: #fff; font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(255, 255, 255, .55); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); box-shadow: var(--rim), 0 4px 14px rgba(0, 0, 0, .12); color: #1d1d1f; font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
   .dk:hover .tip { opacity: 1; }
   .dk .run { position: absolute; left: 50%; bottom: -5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(0, 0, 0, .55); opacity: 0; }
   .dk.on .run { opacity: 1; }
-  .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(0, 0, 0, .15); }
+  .sep { width: 1px; height: 46px; margin: 0 4px 3px; background: rgba(0, 0, 0, .1); }
   @media (max-width: 760px) { .dock { gap: 4px; padding: 5px 6px; max-width: calc(100vw - 16px); overflow-x: auto; } .dk { width: 44px; height: 44px; flex: none; } .dk .tip { display: none; } }
 </style>
 
