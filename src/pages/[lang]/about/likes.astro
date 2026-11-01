@@ -72,7 +72,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     .hint { top: calc(var(--head) + 16px); bottom: auto; left: auto; right: var(--m); text-align: right; }
     .likes.open .hint { opacity: 0; }
     .likes.open .it:not(.sel) { opacity: .08; }
-    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 24px var(--m) calc(24px + env(safe-area-inset-bottom)); background: var(--bg); }
+    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
     .card .in { grid-column: auto; }
     .card .txt { max-width: none; }
     .card .x { margin-top: 20px; }
@@ -111,7 +111,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
   const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
   const area = real.reduce((a, [w, h]) => a + w * h, 0);
-  const K = Math.sqrt(((small ? 0.22 : 0.44) * innerWidth * innerHeight) / area);
+  const K = Math.sqrt(((small ? 0.26 : 0.44) * innerWidth * innerHeight) / area);
   const items = D.map((d, i) => {
     const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
     let [w, h] = real[i].map((v) => v * K);
