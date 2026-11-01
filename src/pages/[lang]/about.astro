@@ -33,9 +33,7 @@ const L = aboutLabels[lang];
     <section class="scr" aria-labelledby="ab-st">
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-st">{L.stack}</h2>
-        <ul class="bd svc stk">
-          {stack[lang].map(([h, d]) => <li><h3 class="t28">{h}</h3><p class="mono mu">{d}</p></li>)}
-        </ul>
+        <div class="bd"><Affiche text={stack[lang]} vigs={[]} lang={lang} /></div>
       </div>
     </section>
 
@@ -67,7 +65,6 @@ const L = aboutLabels[lang];
   .bd { grid-column: 4 / 12; }
   .svc li { display: grid; grid-template-columns: 5fr 3fr; column-gap: var(--gut); align-items: baseline; border-top: 1px solid var(--ln); padding: 14px 0 10px; }
   .svc li:last-child { border-bottom: 1px solid var(--ln); }
-  .stk li { padding: 12px 0 10px; }
 
   .last { display: flex; flex-direction: column; }
   .ct { flex: 1; align-content: end; padding-bottom: 72px; padding-top: calc(var(--head) + 24px); position: relative; }

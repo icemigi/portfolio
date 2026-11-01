@@ -42,22 +42,10 @@ export const services = {
   ],
 };
 
-// Stack technique : les outils réellement utilisés (à corriger si besoin)
+// Stack technique, en texte d'affiche (même voix que l'intro) : les outils réellement utilisés, à corriger si besoin.
 export const stack = {
-  fr: [
-    ['Dessin de caractères', 'Glyphs 4'],
-    ['Design', 'Illustrator · Photoshop · Figma · Procreate'],
-    ['Code', 'TypeScript · Astro · p5.js · Python · C/C++'],
-    ['Temps réel', 'TouchDesigner'],
-    ['Machines', 'Serveur maison · Docker · ZimaOS · Tailscale'],
-  ],
-  en: [
-    ['Type design', 'Glyphs 4'],
-    ['Design', 'Illustrator · Photoshop · Figma · Procreate'],
-    ['Code', 'TypeScript · Astro · p5.js · Python · C/C++'],
-    ['Real-time', 'TouchDesigner'],
-    ['Machines', 'Home server · Docker · ZimaOS · Tailscale'],
-  ],
+  fr: "Je dessine mes lettres dans Glyphs{m:la 4}, je compose dans Illustrator, Photoshop et Figma, je griffonne sur Procreate, je code en TypeScript, p5.js et Python{m:et un peu de C}, je joue en direct avec TouchDesigner, et le tout tourne sur un serveur maison{m:Docker, ZimaOS}.",
+  en: "I draw my letters in Glyphs{m:version 4}, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python{m:and a bit of C}, play live with TouchDesigner, and it all runs on a home server{m:Docker, ZimaOS}.",
 };
 
 // Parcours : {m:…} = note datée accrochée au mot ; {v:n} = vignette.

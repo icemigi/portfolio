@@ -191,18 +191,15 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .ld-fill { clip-path: inset(100% 0 0 0); }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
 
-/* ---------- curseur ---------- */
+/* ---------- curseur (sobre) ---------- */
 .has-cursor, .has-cursor * { cursor: none !important; }
 .has-cursor :is(input, textarea, [contenteditable], select) { cursor: text !important; }
-.cu-dot, .cu-ring { position: fixed; left: 0; top: 0; z-index: 400; pointer-events: none; mix-blend-mode: difference; opacity: 0; transition: opacity .2s; }
-.cu-on .cu-dot, .cu-on .cu-ring { opacity: 1; }
-.cu-dot { width: 6px; height: 6px; margin: -3px 0 0 -3px; border-radius: 50%; background: #fff; transition: opacity .2s, scale .2s var(--out); }
-.cu-ring { width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 1px solid #fff; transition: opacity .2s, scale .35s var(--out), background-color .25s; }
-.cu-link .cu-ring { scale: 1.7; background-color: rgba(255, 255, 255, .12); }
-.cu-link .cu-dot { scale: 0; }
-.cu-grab .cu-ring { scale: 1.35; border-style: dashed; }
-.cu-down .cu-ring { scale: .7; }
-.cu-text .cu-dot, .cu-text .cu-ring { opacity: 0 !important; }
+.has-cursor iframe { cursor: auto !important; }
+.cu { position: fixed; left: 0; top: 0; z-index: 400; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; pointer-events: none;
+  background: var(--fg); box-shadow: 0 0 0 1.5px rgba(243, 243, 243, .85); opacity: 0; transition: opacity .2s, background-color .2s, box-shadow .2s; will-change: transform; }
+.cu-on .cu { opacity: 1; }
+.cu-link .cu { background: rgba(17, 17, 17, .06); box-shadow: inset 0 0 0 1px var(--fg), 0 0 0 1px rgba(243, 243, 243, .6); }
+.cu-text .cu { opacity: 0 !important; }
 
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--mu); transition: opacity .3s; }
@@ -213,6 +210,8 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 
 /* ---------- nuage ascii (accueil) ---------- */
 .ascii { position: fixed; inset: 0; z-index: 45; pointer-events: none; mix-blend-mode: multiply; }
+.ascii-logo { z-index: 44; transition: opacity .5s; }
+.ascii-logo.off { opacity: 0; }
 
 /* ---------- pièce du Lab ouverte dans une fenêtre du bureau (?embed) ---------- */
-.embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .cu-dot, .embed .cu-ring, .embed .lab .dots, .embed .lab .arw { display: none !important; }
+.embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .cu, .embed .lab .dots, .embed .lab .arw { display: none !important; }

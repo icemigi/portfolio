@@ -35,7 +35,7 @@ export function initScreens(host: HTMLElement): Screens {
     arrow.type = 'button'; arrow.className = 'more-arrow mono';
     arrow.setAttribute('aria-label', document.documentElement.lang === 'fr' ? 'Écran suivant' : 'Next screen');
     arrow.innerHTML = '<span aria-hidden="true">↓</span>';
-    arrow.addEventListener('click', () => go(cur + 1));
+    arrow.addEventListener('click', () => step(1));
     document.body.appendChild(arrow);
   }
   const save = () => { try { sessionStorage.setItem(key, String(cur)); } catch { /* */ } };
@@ -62,43 +62,48 @@ export function initScreens(host: HTMLElement): Screens {
   const canScroll = (s: HTMLElement, dir: number) =>
     dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2;
 
+  // passage d'écran interruptible : un nouveau geste pendant un glissement termine celui-ci aussitôt et enchaîne
+  // (on n'attend jamais la fin d'une animation pour continuer à défiler)
+  let tgt = 0, anims: Animation[] = [], done: (() => void) | null = null, timer = 0;
+  const DUR = 650;
+  const settle = () => { if (!done) return; anims.forEach((x) => x.finish()); clearTimeout(timer); const f = done; done = null; f(); };
+  const step = (dir: number) => go((busy ? tgt : cur) + dir);
   function go(to: number) {
+    if (busy) settle();
     if (to === cur) return;
     if (to < 0) return;
     if (to >= S.length) { emit('screens:beyond', { from: cur }); return; }
-    if (busy) return;
     const a = S[cur], b = S[to], dir = to > cur ? 1 : -1;
     b.scrollTop = dir > 0 ? 0 : b.scrollHeight;
     emit('screens:leave', { from: cur, to });
     dispatchEvent(new CustomEvent('kk:sound', { detail: 'slide' }));
     if (!b.hasAttribute('data-still')) dispatchEvent(new CustomEvent('kk:sound', { detail: 'letters' }));
     if (reduced()) { cur = to; place(); save(); emit('screens:enter', { index: cur }); return; }
-    busy = true;
+    busy = true; tgt = to;
     a.style.zIndex = '2'; b.style.zIndex = '3';
     b.classList.add('on'); b.classList.remove('before');
     const peekIn = b.hasAttribute('data-peek'), peekOut = a.hasAttribute('data-peek');
+    const o = { duration: DUR, easing: EASE_SLIDE, fill: 'forwards' as FillMode };
     if (peekIn) {
       const h = b.offsetHeight;
-      b.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
-      a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-h}px)` }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
+      anims = [b.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-h}px)` }], o)];
     } else if (peekOut) {
       const h = a.offsetHeight;
-      b.animate([{ transform: `translateY(${-h}px)` }, { transform: 'translateY(0)' }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
-      a.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
+      anims = [b.animate([{ transform: `translateY(${-h}px)` }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(100%)' }], o)];
     } else {
-      b.animate([{ transform: `translateY(${100 * dir}%)` }, { transform: 'translateY(0)' }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
-      a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-100 * dir}%)` }], { duration: 700, easing: EASE_SLIDE, fill: 'forwards' });
+      anims = [b.animate([{ transform: `translateY(${100 * dir}%)` }, { transform: 'translateY(0)' }], o), a.animate([{ transform: 'translateY(0)' }, { transform: `translateY(${-100 * dir}%)` }], o)];
     }
-    if (!b.hasAttribute('data-still')) reveal(b, 300);
-    setTimeout(() => {
+    if (!b.hasAttribute('data-still')) reveal(b, 220);
+    done = () => {
       a.style.zIndex = ''; b.style.zIndex = '';
       cur = to; busy = false; place(); save();
       emit('screens:enter', { index: cur });
-    }, 720);
+    };
+    timer = window.setTimeout(settle, DUR + 10);
   }
 
   // molette / pavé tactile : un geste = un écran ; l'inertie du même geste est ignorée
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0;
+  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastAbs = 0, lastGo = 0;
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
@@ -106,12 +111,13 @@ export function initScreens(host: HTMLElement): Screens {
     const now = performance.now();
     const dir = Math.sign(e.deltaY);
     if (!dir) return;
-    if (now - last > 200 || dir !== gdir) { acc = 0; used = false; gdir = dir; edge = !canScroll(S[cur], dir); }
-    last = now;
-    if (busy) { used = true; return; }
+    const abs = Math.abs(e.deltaY);
+    const fresh = now - last > 160 || dir !== gdir || (abs > lastAbs * 1.6 && abs >= 10 && now - lastGo > 260);
+    if (fresh) { acc = 0; used = false; gdir = dir; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
+    last = now; lastAbs = abs;
     if (used || !edge) return;
     acc += e.deltaY;
-    if (Math.abs(acc) > 40) { used = true; go(cur + dir); }
+    if (Math.abs(acc) > 30) { used = true; lastGo = now; step(dir); }
   };
   addEventListener('wheel', onWheel, { passive: true });
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : on écoute aussi sa molette
@@ -135,8 +141,8 @@ export function initScreens(host: HTMLElement): Screens {
     if (e.key === ' ' && t?.closest?.('a, button')) return;
     e.preventDefault();
     const s = S[cur];
-    if (canScroll(s, dir)) s.scrollBy({ top: dir * (page ? s.clientHeight * 0.85 : 64), behavior: reduced() ? 'auto' : 'smooth' });
-    else go(cur + dir);
+    if (!busy && canScroll(s, dir)) s.scrollBy({ top: dir * (page ? s.clientHeight * 0.85 : 64), behavior: reduced() ? 'auto' : 'smooth' });
+    else step(dir);
   });
 
   // doigt : le glissement fait passer d'écran quand l'écran courant est déjà à son bord
@@ -151,8 +157,8 @@ export function initScreens(host: HTMLElement): Screens {
     if (Number.isNaN(y0)) return;
     const d = y0 - e.changedTouches[0].clientY;
     if (Math.abs(d) < 50 || performance.now() - t0 > 900) return;
-    if (d > 0 && down) go(cur + 1);
-    if (d < 0 && up) go(cur - 1);
+    if (d > 0 && (down || busy)) step(1);
+    if (d < 0 && (up || busy)) step(-1);
   }, { passive: true });
 
   // tabulation : le focus amène son écran
