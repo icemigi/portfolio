@@ -129,16 +129,16 @@ ul, ol { list-style: none; }
   .row .d { display: none; }
 }
 
-/* ---------- écrans (défilement libre, pile) ---------- */
-/* Chaque écran fait au moins la hauteur de la fenêtre ; ceux qui y tiennent restent collés en haut (.stk)
-   pendant que le suivant glisse par-dessus. Le recouvrement --cov (0 → 1) est posé par screens.ts. */
+/* ---------- page continue ---------- */
+/* Une seule page, sans séparation : les sections s'enchaînent avec un rythme vertical généreux. */
 .screens-host { position: relative; }
-.scr { position: relative; min-height: 100vh; min-height: 100svh; background: var(--bg); }
-.scr.stk { position: sticky; top: 0; }
-/* bord d'attaque de l'écran qui monte : un filet d'ombre très léger, comme une feuille posée sur une autre */
-.scr + .scr { box-shadow: 0 -1px 0 var(--ln), 0 -18px 40px -24px rgba(0, 0, 0, .18); }
-.scr[data-peek] { min-height: 0; }
-.scr .in { min-height: 100vh; min-height: 100svh; display: grid; align-content: center; padding-top: calc(var(--head) + 24px); padding-bottom: 64px; }
+.scr { position: relative; }
+.scr .in { display: grid; align-content: center; padding-top: 16vh; padding-bottom: 16vh; }
+.scr:first-child .in { min-height: 100vh; min-height: 100svh; padding-top: calc(var(--head) + 24px); }
+.scr.last { min-height: 100vh; min-height: 100svh; }
+.pre { opacity: 0; }
+.pre .vi, .pre .door, .pre img { opacity: 0; }
+.vi, .door { transition: opacity .6s var(--out); }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
