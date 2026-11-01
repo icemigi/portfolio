@@ -42,7 +42,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
 <style>
   .likes { position: fixed; inset: 0; overflow: hidden; }
   .ttl { position: absolute; z-index: 5; left: var(--m); top: calc(var(--head) + 16px); }
-  .hint { position: absolute; z-index: 1; left: 0; right: 0; bottom: 40px; text-align: center; pointer-events: none; }
+  .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
   .big span { display: inline-block; text-align: center; }
   .big[hidden] { display: none; }
@@ -67,11 +67,11 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .it.sel { z-index: 3; }
   .veil { position: fixed; inset: 0; z-index: 50; background: radial-gradient(circle at 50% 60%, #fff, #f3f3f3 70%); pointer-events: none; }
   .it { transition: opacity .35s; }
-  /* téléphone : le texte s'ouvre en feuille au bas de l'écran ; le monde se fige et s'efface derrière l'objet choisi */
+  /* objet ouvert : le monde se fige et s'efface derrière l'objet choisi */
+  .likes.open .hint { opacity: 0; }
+  .likes.open .it:not(.sel) { opacity: .08; }
+  /* téléphone : le texte s'ouvre en feuille au bas de l'écran */
   @media (max-width: 760px) {
-    .hint { top: calc(var(--head) + 16px); bottom: auto; left: auto; right: var(--m); text-align: right; }
-    .likes.open .hint { opacity: 0; }
-    .likes.open .it:not(.sel) { opacity: .08; }
     .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
     .card .in { grid-column: auto; }
     .card .txt { max-width: none; }
@@ -97,8 +97,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
   const wallOpt = { isStatic: true, restitution: 0.2, friction: 0.6 };
   let walls: any[] = [], closed = false;
-  // plafond : sous l'en-tête et le lien retour sur téléphone (les objets ne recouvrent jamais la navigation)
-  const top = () => (small ? root.querySelector('.ttl')!.getBoundingClientRect().bottom + 12 : 0);
+  // plafond : sous l'en-tête et le lien retour (les objets ne recouvrent jamais la navigation)
+  const top = () => root.querySelector('.ttl')!.getBoundingClientRect().bottom + 12;
   const buildWalls = () => {
     Composite.remove(engine.world, walls);
     const T = 400; walls = [Bodies.rectangle(W / 2, H + T / 2, W + 2 * T, T, wallOpt), Bodies.rectangle(-T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt), Bodies.rectangle(W + T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt)];
@@ -111,14 +111,24 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
   const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
   const area = real.reduce((a, [w, h]) => a + w * h, 0);
-  const K = Math.sqrt(((small ? 0.26 : 0.44) * innerWidth * innerHeight) / area);
+  const K = Math.sqrt(((small ? 0.24 : 0.24) * innerWidth * innerHeight) / area);
+  // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
+  const tr = big.querySelector('span')!.getBoundingClientRect();
+  let titleBody: any = null;
+  const buildShelf = () => {
+    if (titleBody) Composite.remove(engine.world, titleBody);
+    const r = big.querySelector('span')!.getBoundingClientRect();
+    titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 1, frictionStatic: 10, restitution: 0 });
+    Composite.add(engine.world, titleBody);
+  };
+  buildShelf(); document.fonts.ready.then(() => { if (!big.hidden) buildShelf(); });
   const items = D.map((d, i) => {
     const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
     let [w, h] = real[i].map((v) => v * K);
     const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.34 : 0.4)) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
-    const x = W * (0.12 + 0.76 * ((i * 0.37) % 1)), y = -h - 20;
-    const opt = { restitution: 0.25, friction: 0.6, frictionStatic: 0.8, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.6 };
+    const x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, tr.left + tr.width * (0.5 + 0.8 * (((i * 0.37) % 1) - 0.5)))), y = -h - 20;
+    const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.25 };
     // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
     let body: any, ox = 0, oy = 0;
     if (d.shape === 'circle') body = Bodies.circle(x, y, w / 2, opt);
@@ -128,27 +138,14 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
       body = Bodies.fromVertices(x, y, [verts], opt);
     }
     body.kk = d.id;
-    return { d, el, body, w, h, ox, oy };
+    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, home: null as null | { x: number; y: number; a: number } };
   });
-  // les objets entrent un par un par le haut de la boîte
-  // d'abord le titre s'écrit au centre ; puis les objets pleuvent dessus, depuis le haut de l'écran
-  let titleBody: any = null;
-  const titleRect = () => big.querySelector('span')!.getBoundingClientRect();
-  const pushOut = (L: number, R: number, Tp: number, B: number, except?: any) => items.forEach(({ body }) => {
-    if (body === except || !body.parts) return;
-    const p = body.position;
-    if (p.x > L && p.x < R && p.y > Tp && p.y < B) { const dir = p.x < (L + R) / 2 ? -1 : 1; Body.setVelocity(body, { x: dir * (16 + Math.random() * 8), y: -12 - Math.random() * 8 }); }
-  });
+  // le titre s'écrit au centre, puis les objets pleuvent dessus ; il s'efface quand un objet est ouvert, mais l'étagère reste (rien ne tombe)
   const showTitle = (delay: number) => {
     big.hidden = false;
-    const r = titleRect();
-    pushOut(r.left - 24, r.right + 24, r.top - 24, r.bottom + 24);
-    // sur ordinateur le titre sert d'étagère ; sur téléphone les objets tombent jusqu'au sol (pas de demi-écran vide)
-    if (!small) { titleBody = Bodies.rectangle(r.left + r.width / 2, r.top + r.height / 2, r.width, r.height * 0.82, { isStatic: true, friction: 0.8 }); Composite.add(engine.world, titleBody); }
     letters(big, delay);
   };
   const hideTitle = () => {
-    if (titleBody) { Composite.remove(engine.world, titleBody); titleBody = null; }
     big.hidden = true;
   };
   showTitle(150);
@@ -176,7 +173,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
     if (hit && sel && hit === sel.body) close(); // second clic sur l'objet ouvert : on referme
     else if (hit) open(hit.kk, true);
-    else if (small && sel) close(); // téléphone : toucher le vide referme
+    else if (sel) close(); // toucher le vide referme
   });
   let hovered: string | null = null;
   stage.addEventListener('pointermove', (e) => {
@@ -187,21 +184,28 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   });
 
   // clic : l'objet vient au premier plan, agrandi, à gauche ; le texte apparaît à droite ; les autres objets sont chassés
-  let block: any = null, sel: (typeof items)[number] | null = null, selS = 1;
-  const tween = (it: (typeof items)[number], tx: number, ty: number, ts: number) => {
-    const b = it.body, x0 = b.position.x, y0 = b.position.y, a0 = b.angle, s0 = selS, t0 = performance.now(), dur = still ? 1 : 700;
+  let sel: (typeof items)[number] | null = null;
+  // objet ouvert : la physique est suspendue (rien ne bouge, rien n'est poussé) jusqu'à ce que l'objet soit revenu à sa place
+  let paused = false;
+  const tween = (it: (typeof items)[number], tx: number, ty: number, ts: number, ta = 0, done?: () => void) => {
+    const b = it.body, x0 = b.position.x, y0 = b.position.y, a0 = b.angle, s0 = it.s, t0 = performance.now(), dur = still ? 1 : 700, tok = ++it.tw;
     const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const step = (now: number) => {
+      if (tok !== it.tw) return; // un nouveau mouvement a pris le relais
       const p = ease(Math.min(1, (now - t0) / dur));
-      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 * (1 - p)); selS = s0 + (ts - s0) * p;
-      if (p < 1) requestAnimationFrame(step);
+      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 + (ta - a0) * p); it.s = s0 + (ts - s0) * p;
+      if (p < 1) requestAnimationFrame(step); else done?.();
     };
     requestAnimationFrame(step);
   };
+  // l'objet refermé retourne exactement là où on l'a pris (sur l'étagère, dans le tas), puis la physique le reprend
   const release = () => {
     if (!sel) return;
-    sel.el.classList.remove('sel'); Body.setStatic(sel.body, false); Body.setVelocity(sel.body, { x: 0, y: 2 });
-    sel = null; selS = 1;
+    const it = sel, h = it.home!; sel = null;
+    it.el.classList.remove('sel');
+    const land = () => { if (sel === it || !it.body.isStatic) return; Body.setPosition(it.body, { x: h.x, y: h.y }); Body.setAngle(it.body, h.a); it.s = 1; Body.setStatic(it.body, false); Body.setVelocity(it.body, { x: 0, y: 0 }); if (!sel) paused = false; };
+    tween(it, h.x, h.y, 1, h.a, land);
+    setTimeout(land, still ? 0 : 760); // filet de sécurité si l'animation est suspendue (onglet en arrière-plan)
   };
   // le titre s'écrit lettre à lettre ; le texte apparaît d'un bloc (découper un paragraphe en lettres le fait sauter de ligne)
   const reveal = () => {
@@ -225,32 +229,26 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     card.hidden = false;
     card.scrollTop = 0;
     const r = (small ? card : card.querySelector('.in')!).getBoundingClientRect();
+    // le monde se fige, les autres objets s'effacent (rien n'est chassé, tout reste à sa place)
+    paused = true; root.classList.add('open');
+    if (!it.body.isStatic) it.home = { x: it.body.position.x, y: it.body.position.y, a: it.body.angle };
+    sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true);
     if (small) {
-      // téléphone : le monde se fige, les autres objets s'effacent ; l'objet se pose au centre de l'espace libre au-dessus de la feuille
-      engine.timing.timeScale = 0; root.classList.add('open');
+      // téléphone : l'objet se pose au centre de l'espace libre au-dessus de la feuille
       const t0 = top(), room = r.top - t0 - 32;
-      const S = Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w);
-      sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true); tween(it, W / 2, t0 + 16 + room / 2, S);
-      reveal(); if (push) history.replaceState(null, '', `#${id}`);
-      return;
+      tween(it, W / 2, t0 + 16 + room / 2, Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w));
+    } else {
+      // ordinateur : l'objet au centre de la moitié gauche, le texte à droite (colonnes 7 à 10)
+      const room = Math.min(r.left - 2 * 48, H - 2 * 140);
+      tween(it, r.left / 2, H / 2, Math.min(d.embed ? 3.6 : 2.6, room / Math.max(it.w, it.h) * (d.embed ? 1.15 : 1)));
     }
-    // place de l'objet : colonnes 2 à 6 sur ordinateur
-    const S = Math.min(d.embed ? 3.6 : 2.4, H * (d.embed ? 0.66 : 0.42) / Math.max(it.w, it.h));
-    const tx = W * 0.3, ty = H / 2;
-    sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true); tween(it, tx, ty, S);
-    const L = Math.min(r.left, tx - (it.w * S) / 2) - 32, R = r.right + 32, Tp = Math.min(r.top, ty - (it.h * S) / 2) - 32, B = Math.max(r.bottom, ty + (it.h * S) / 2) + 32;
-    if (block) Composite.remove(engine.world, block);
-    pushOut(L, R, Tp, B, it.body);
-    block = Bodies.rectangle((L + R) / 2, (Tp + B) / 2, R - L, B - Tp, { isStatic: true });
-    Composite.add(engine.world, block);
     reveal();
     if (push) history.replaceState(null, '', `#${id}`);
     card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
   };
   const close = () => {
     card.hidden = true; history.replaceState(null, '', location.pathname);
-    engine.timing.timeScale = 1; root.classList.remove('open');
-    if (block) { Composite.remove(engine.world, block); block = null; }
+    root.classList.remove('open');
     release();
     showTitle(80);
   };
@@ -259,10 +257,10 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // clavier : chaque objet est un bouton (Tab puis Entrée)
   items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true))); });
 
-  addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); });
+  addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); if (!big.hidden) buildShelf(); });
 
   const draw = () => items.forEach((it) => {
-    const { el, body, w, h, ox, oy } = it; const sc = it === sel ? selS : 1;
+    const { el, body, w, h, ox, oy } = it; const sc = it.s;
     const ca = Math.cos(body.angle), sa = Math.sin(body.angle);
     const cx = body.position.x + ox * ca - oy * sa, cy = body.position.y + ox * sa + oy * ca;
     el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad) scale(${sc})`;
@@ -271,7 +269,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   let last = performance.now();
   const tick = (now: number) => {
     const dt = Math.min(32, now - last); last = now;
-    if (!document.hidden) Engine.update(engine, dt);
+    if (!document.hidden && !paused) Engine.update(engine, dt);
     draw(); requestAnimationFrame(tick);
   };
   draw(); requestAnimationFrame(tick);
