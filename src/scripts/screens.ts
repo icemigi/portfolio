@@ -146,8 +146,11 @@ export function initScreens(host: HTMLElement): Screens {
     if (!b.hasAttribute('data-still') && now - (revealed.get(b) || -1e4) > 1400) { revealed.set(b, now); reveal(b, Math.round(mv.d * 0.55)); pend = b; }
   }
 
-  // molette / pavé tactile : un geste = un écran ; l'inertie du même geste est ignorée
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastAbs = 0, lastGo = 0;
+  // molette / pavé tactile : un geste = un écran.
+  // L'inertie du trackpad envoie encore des dizaines d'événements après le geste : on n'accepte un nouveau passage
+  // que si (a) le flux s'est interrompu (> 180 ms sans événement), ou (b) l'inertie est presque retombée (< 6)
+  // puis repart franchement (un vrai nouveau coup de doigt). Jamais deux passages à moins de 450 ms.
+  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, low = Infinity, armed = true;
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
@@ -156,12 +159,17 @@ export function initScreens(host: HTMLElement): Screens {
     const dir = Math.sign(e.deltaY);
     if (!dir) return;
     const abs = Math.abs(e.deltaY);
-    const fresh = now - last > 160 || dir !== gdir || (abs > lastAbs * 1.6 && abs >= 10 && now - lastGo > 260);
+    const pause = now - last > 180;
+    last = now;
+    if (used) {
+      low = Math.min(low, abs);
+      if (low < 6 && abs > 24) armed = true; // l'inertie était retombée, un nouveau geste arrive
+    }
+    const fresh = pause || dir !== gdir || (used && armed && now - lastGo > 450);
     if (fresh) { acc = 0; used = false; gdir = dir; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
-    last = now; lastAbs = abs;
     if (used || !edge) return;
     acc += e.deltaY;
-    if (Math.abs(acc) > 30) { used = true; lastGo = now; step(dir); }
+    if (Math.abs(acc) > 30) { used = true; armed = false; low = Infinity; lastGo = now; step(dir); }
   };
   addEventListener('wheel', onWheel, { passive: true });
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : on écoute aussi sa molette

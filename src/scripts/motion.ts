@@ -58,11 +58,17 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
 // Libellés Geist Mono : pas de fondu (validé) — ils sont là d'emblée.
 export function fadeMono(_root: Element, _delay = 300) {}
 
-// Vignettes : empilées et agrandies au centre de l'écran, elles rejoignent leur place l'une après l'autre
+// Vignettes-images : empilées et agrandies au centre de l'écran, elles rejoignent leur place l'une après l'autre
 // (900 ms, 80 ms d'écart). `frame` = l'écran qui glisse (ses coordonnées servent de repère).
+// Icônes (.vi.lg, logos de la Stack) : simple éclosion rapide (380 ms, 35 ms d'écart), en même temps que les lettres.
 export function vignettes(frame: Element, delay = 300): number {
-  const vis = [...frame.querySelectorAll<HTMLElement>('.vi, .door')];
-  if (!vis.length || reduced()) return delay;
+  if (reduced()) return delay;
+  frame.querySelectorAll<HTMLElement>('.vi.lg').forEach((v, i) => v.animate(
+    [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1.08)', offset: 0.7 }, { opacity: 1, transform: 'scale(1)' }],
+    { duration: 380, delay: delay + 120 + i * 35, easing: EASE_OUT, fill: 'backwards' },
+  ));
+  const vis = [...frame.querySelectorAll<HTMLElement>('.vi:not(.lg), .door')];
+  if (!vis.length) return delay;
   const cx = innerWidth / 2, cy = innerHeight / 2, fr = frame.getBoundingClientRect();
   vis.forEach((v, i) => {
     const r = v.getBoundingClientRect();
