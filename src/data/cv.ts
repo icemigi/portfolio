@@ -1,17 +1,18 @@
 // CV en ligne (page « terminal » cachée, accessible depuis le pied de page). Source : CV PDF FR / EN.
 // Règles du site : pas de nom d'employeur actuel, pas de noms d'artistes ni de labels, pas de téléphone.
+// TODO : noms, années et lien des fontes libres ; compte du média outdoor à lier dans contact.
 import type { Lang } from './ui';
 import { contact } from './about';
 
 export type Entry = { when?: string; what: string; where?: string; items?: string[] };
-export type Section = { id: string; cmd: string[]; title: string; intro?: string; entries?: Entry[]; list?: [string, string][] };
+export type Section = { id: string; cmd: string[]; title: string; intro?: string; entries?: Entry[]; list?: [string, string, string?][] };
 export type Cv = { name: string; role: string; meta: string; sections: Section[]; ui: Record<string, string> };
 
 export const cv: Record<Lang, Cv> = {
   fr: {
     name: 'Xavier M. Diez',
-    role: 'Designer graphique — identité · typographie · systèmes génératifs',
-    meta: 'Bordeaux → Paris · remote',
+    role: 'Type designer & digital creative',
+    meta: 'Bordeaux → Paris · remote · à l’écoute',
     ui: {
       boot: 'Dernière connexion',
       help: 'commandes',
@@ -24,13 +25,14 @@ export const cv: Record<Lang, Cv> = {
     },
     sections: [
       { id: 'profil', cmd: ['profil', 'profile', 'whoami'], title: 'profil',
-        intro: 'Designer graphique et typographe, avec une pratique de code créatif. Fil rouge : la maîtrise des systèmes et des grilles, qu’ils soient typographiques, génératifs ou éditoriaux.' },
+        intro: 'Designer graphique et typographe, avec un bagage de code. Je pars toujours de la lettre, et je passe au code quand la main ne suffit plus (rarement l’inverse). Fil rouge : les systèmes et les grilles, qu’ils soient typographiques, génératifs ou éditoriaux.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'expériences', entries: [
-        { when: '2020 — 2026', what: 'Designer graphique indépendant', where: 'Paris, Bordeaux & remote · 5 à 9 clients par an', items: [
-          'Branding musical & scénographie (360°) : direction artistique et exécution en autonomie complète — logotypes, typographies sur mesure, pochettes CD/vinyle, univers de tournée, merchandising textile, fichiers d’exécution print (sérigraphie, héliogravure), pour des artistes de labels majors et indépendants.',
-          'Création visuelle scénique : assets, boucles vidéo et contenus temps réel sous TouchDesigner pour la scène (prestations d’artistes à la Gaîté Lyrique).',
+        { when: '2020 — 2026', what: 'Designer indépendant — Mechka® Studio', where: 'Paris, Bordeaux & remote · 5 à 9 clients par an · réouverture sous (ChâteauStudio)®', items: [
+          'Identités musicales, seul de bout en bout, pour des artistes de rap underground, d’électro et d’hyperpop : logotypes et lettrages toujours dessinés à la main, pochettes CD et vinyle (relief et découpe réellement produits), univers de tournée, merchandising, fichiers d’exécution print (sérigraphie, héliogravure).',
+          'Méthode : le projet écouté en boucle, brief et références, puis deux pistes radicalement différentes ; l’objet physique est pensé en premier.',
+          'Visuels live ponctuels : boucles et contenus temps réel sous TouchDesigner, dont des prestations d’artistes à la Gaîté Lyrique.',
           'Identités de marque : direction artistique, logos, identités visuelles et chartes pour le commerce, la culture et l’associatif.',
-          'Digital & social media : direction d’image, déclinaisons réseaux sociaux, contenus visuels et éditoriaux, intégration web (HTML/CSS/JS).',
+          'Web & digital : direction artistique et UX/UI de sites, déclinaisons réseaux sociaux, intégration (HTML/CSS/JS).',
         ] },
         { when: '2025 — auj.', what: 'Conseiller spécialisé randonnée & matériel technique', where: 'Commerce de sport · Bordeaux', items: [
           'Expertise produit et conseil technique sur l’équipement outdoor (randonnée, bivouac, textile technique).',
@@ -42,7 +44,7 @@ export const cv: Record<Lang, Cv> = {
       ] },
       { id: 'projets', cmd: ['projets', 'projects', 'rnd'], title: 'projets, r&d & autoproduction', entries: [
         { when: '2026 — en cours', what: 'ASAPHR', where: 'Type design, système d’écriture & objet', items: [
-          'Système d’écriture complet à glyphes de type runique ; 60 glyphes en finalisation sous Glyphs 4.',
+          'Écriture inventée pour comprendre ce qui fait une écriture : grammaire, sens de lecture (du centre vers l’extérieur), tracé, supports. 60 glyphes de type runique en finalisation sous Glyphs 4.',
           'Prototypage d’un objet-livre à révélation mécanique (découpe papier, impression 3D).',
         ] },
         { when: '2026', what: 'Systemic Vexillology', where: 'Grammaire des drapeaux & outillage génératif', items: [
@@ -50,12 +52,15 @@ export const cv: Record<Lang, Cv> = {
           'Interfaces web interactives et générateurs de formes en JavaScript / Canvas.',
         ] },
         { when: '2025', what: 'Algorithmic Heraldry', where: 'Direction artistique, édition & génératif', items: [
-          'Manifeste théorique de 500 pages : direction artistique et mise en page intégrales.',
-          'Générateur p5.js : visuels uniques indexés par clé de hash parmi des milliards de combinaisons ; grilles InDesign automatisées.',
+          'Ouvrage théorique inédit de 500 pages : direction artistique intégrale, mise en page générée en Python.',
+          'Générateur p5.js : visuels uniques indexés par clé de hash parmi des milliards de combinaisons.',
+        ] },
+        { what: 'Fontes libres', where: 'Type design', items: [
+          'Plusieurs familles de caractères classiques, terminées et diffusées gratuitement.',
         ] },
         { when: '2023 — auj.', what: 'Média outdoor', where: 'Direction de création & production', items: [
           'Charte visuelle, production, captation, scripting et montage vidéo court format.',
-          'Audience organique de plus de 20 000 abonnés (TikTok / Instagram), projet autoproduit et non commercial.',
+          'Audience organique de plus de 20 000 abonnés (TikTok / Instagram), projet autoproduit et volontairement non monétisé.',
         ] },
       ] },
       { id: 'formation', cmd: ['formation', 'education', 'edu'], title: 'formation', entries: [
@@ -69,26 +74,32 @@ export const cv: Record<Lang, Cv> = {
         ['print', 'profils ICC, imposition, BAT, tracés de découpe, façonnage'],
         ['3d / live', 'Blender, TouchDesigner — interactif, audio-réactif, caméra, LIDAR'],
         ['ui', 'Figma, responsive, ergonomie web'],
-        ['code', 'HTML, CSS, JavaScript (ES6+), p5.js, Canvas 2D, Git'],
+        ['dessin', 'Procreate, papier'],
+        ['code', 'HTML, CSS, JavaScript (ES6+), p5.js, Canvas 2D, Python, Git'],
         ['ia', 'outil de production (textures, vectorisation, prototypes de scripts), jamais à la place de la direction artistique'],
         ['méthodes', 'DA modulaire, génération algorithmique de formes, grilles complexes, sémiotique visuelle'],
       ] },
       { id: 'interets', cmd: ['interets', 'interests', 'hobbies'], title: 'intérêts', list: [
-        ['outdoor', 'randonnée, bivouac, escalade, course à pied'],
+        ['montagne', 'randonnée, bivouac, escalade ; préparation du diplôme d’accompagnateur en moyenne montagne (AMM)'],
+        ['endurance', 'course à pied, vélo à pignon fixe'],
+        ['écrans', 'jeu vidéo, speedrun, films d’horreur'],
+        ['son', 'MAO'],
         ['code', 'sites et petits outils web pour expérimenter et s’amuser entre amis'],
         ['serveur', 'serveur maison ZimaOS / Docker — Jellyfin, Tailscale'],
       ] },
       { id: 'contact', cmd: ['contact', 'mail', 'email'], title: 'contact', list: [
-        ['email', contact.email],
-        ['instagram', '@kerningkastle'],
+        ['email', contact.email, `mailto:${contact.email}`],
+        ['instagram', '@kerningkastle', contact.instagram],
+        ['behance', 'icemigi', 'https://www.behance.net/icemigi'],
         ['langues', 'français, espagnol (bilingue) · anglais (C1)'],
+        ['dispo', 'à l’écoute — CDI ou missions, Paris & remote'],
       ] },
     ],
   },
   en: {
     name: 'Xavier M. Diez',
-    role: 'Graphic designer — identity · typography · generative systems',
-    meta: 'Bordeaux → Paris · remote',
+    role: 'Type designer & digital creative',
+    meta: 'Bordeaux → Paris · remote · open to offers',
     ui: {
       boot: 'Last login',
       help: 'commands',
@@ -101,13 +112,14 @@ export const cv: Record<Lang, Cv> = {
     },
     sections: [
       { id: 'profil', cmd: ['profile', 'profil', 'whoami'], title: 'profile',
-        intro: 'Graphic designer and typographer with a creative-coding practice. Common thread: mastery of systems and grids, whether typographic, generative or editorial.' },
+        intro: 'Graphic designer and typographer with a coding background. I always start from the letter, and switch to code when the hand isn’t enough (rarely the other way round). Common thread: systems and grids, whether typographic, generative or editorial.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'experience', entries: [
-        { when: '2020 — 2026', what: 'Independent graphic designer', where: 'Paris, Bordeaux & remote · 5 to 9 clients a year', items: [
-          'Music branding & scenography (360°): art direction and full solo execution — logotypes, custom typefaces, CD/vinyl sleeves, tour universes, apparel merchandise, print production files (screen printing, photogravure), for artists of major and independent labels.',
-          'Stage visuals: assets, video loops and real-time content in TouchDesigner for live shows (artists’ performances at La Gaîté Lyrique).',
+        { when: '2020 — 2026', what: 'Independent designer — Mechka® Studio', where: 'Paris, Bordeaux & remote · 5 to 9 clients a year · reopening as (ChâteauStudio)®', items: [
+          'Music identities, solo from start to finish, for underground rap, electronic and hyperpop artists: logotypes and lettering always hand-drawn, CD and vinyl sleeves (embossing and die-cuts actually produced), tour universes, merchandise, print production files (screen printing, photogravure).',
+          'Method: the record on repeat, brief and references, then two radically different directions; the physical object comes first.',
+          'Occasional live visuals: loops and real-time content in TouchDesigner, including artists’ shows at La Gaîté Lyrique.',
           'Brand identities: art direction, logos, visual identities and guidelines for retail, culture and nonprofits.',
-          'Digital & social media: image direction, social adaptations, visual and editorial content, web integration (HTML/CSS/JS).',
+          'Web & digital: website art direction and UX/UI, social adaptations, integration (HTML/CSS/JS).',
         ] },
         { when: '2025 — now', what: 'Hiking & technical gear specialist advisor', where: 'Sports retail · Bordeaux', items: [
           'Product expertise and technical advice on outdoor equipment (hiking, bivouac, technical apparel).',
@@ -119,7 +131,7 @@ export const cv: Record<Lang, Cv> = {
       ] },
       { id: 'projets', cmd: ['projects', 'projets', 'rnd'], title: 'projects, r&d & self-production', entries: [
         { when: '2026 — ongoing', what: 'ASAPHR', where: 'Type design, writing system & object', items: [
-          'Complete writing system with rune-like glyphs; 60 glyphs being finalised in Glyphs 4.',
+          'An invented script to understand what makes a script: grammar, reading direction (from the centre outwards), stroke, media. 60 rune-like glyphs being finalised in Glyphs 4.',
           'Prototype of a book-object with a mechanical reveal (paper cutting, 3D printing).',
         ] },
         { when: '2026', what: 'Systemic Vexillology', where: 'Flag grammar & generative tooling', items: [
@@ -127,12 +139,15 @@ export const cv: Record<Lang, Cv> = {
           'Interactive web interfaces and shape generators in JavaScript / Canvas.',
         ] },
         { when: '2025', what: 'Algorithmic Heraldry', where: 'Art direction, publishing & generative', items: [
-          '500-page theoretical manifesto: full art direction and layout.',
-          'p5.js generator: unique visuals indexed by hash key among billions of combinations; automated InDesign grids.',
+          'Unpublished 500-page theoretical book: full art direction, layout generated in Python.',
+          'p5.js generator: unique visuals indexed by hash key among billions of combinations.',
+        ] },
+        { what: 'Free fonts', where: 'Type design', items: [
+          'Several classic type families, finished and released for free.',
         ] },
         { when: '2023 — now', what: 'Outdoor media', where: 'Creative direction & production', items: [
           'Visual identity, production, filming, scripting and short-form editing.',
-          'Organic audience of 20,000+ followers (TikTok / Instagram), self-produced and non-commercial.',
+          'Organic audience of 20,000+ followers (TikTok / Instagram), self-produced and deliberately unmonetised.',
         ] },
       ] },
       { id: 'formation', cmd: ['education', 'formation', 'edu'], title: 'education', entries: [
@@ -146,19 +161,25 @@ export const cv: Record<Lang, Cv> = {
         ['print', 'ICC profiles, imposition, proofs, die-cut paths, finishing'],
         ['3d / live', 'Blender, TouchDesigner — interactive, audio-reactive, camera, LIDAR'],
         ['ui', 'Figma, responsive, web ergonomics'],
-        ['code', 'HTML, CSS, JavaScript (ES6+), p5.js, Canvas 2D, Git'],
+        ['drawing', 'Procreate, paper'],
+        ['code', 'HTML, CSS, JavaScript (ES6+), p5.js, Canvas 2D, Python, Git'],
         ['ai', 'production tool (textures, vectorisation, script prototypes), never a substitute for art direction'],
         ['methods', 'modular art direction, algorithmic form generation, complex grids, visual semiotics'],
       ] },
       { id: 'interets', cmd: ['interests', 'interets', 'hobbies'], title: 'interests', list: [
-        ['outdoor', 'hiking, bivouac, climbing, running'],
+        ['mountains', 'hiking, bivouac, climbing; training for the French mountain leader diploma (AMM)'],
+        ['endurance', 'running, fixed-gear cycling'],
+        ['screens', 'video games, speedrunning, horror films'],
+        ['sound', 'music production'],
         ['code', 'websites and small web tools to experiment and have fun with friends'],
         ['server', 'home server on ZimaOS / Docker — Jellyfin, Tailscale'],
       ] },
       { id: 'contact', cmd: ['contact', 'mail', 'email'], title: 'contact', list: [
-        ['email', contact.email],
-        ['instagram', '@kerningkastle'],
+        ['email', contact.email, `mailto:${contact.email}`],
+        ['instagram', '@kerningkastle', contact.instagram],
+        ['behance', 'icemigi', 'https://www.behance.net/icemigi'],
         ['languages', 'French, Spanish (bilingual) · English (C1)'],
+        ['status', 'open to full-time roles and freelance, Paris & remote'],
       ] },
     ],
   },
@@ -174,8 +195,8 @@ export function sectionHtml(s: Section): string {
     out.push(`<p class="t-e"><span class="t-d">${esc(e.when || '')}</span><span><b>${esc(e.what)}</b>${e.where ? `<span class="t-m"> — ${esc(e.where)}</span>` : ''}</span></p>`);
     e.items?.forEach((it) => out.push(`<p class="t-i"><span class="t-d"></span><span>+ ${esc(it)}</span></p>`));
   });
-  s.list?.forEach(([k, v]) => {
-    const val = k === 'email' ? `<a href="mailto:${esc(v)}">${esc(v)}</a>` : k === 'instagram' ? `<a href="${contact.instagram}" target="_blank" rel="noopener">${esc(v)}</a>` : esc(v);
+  s.list?.forEach(([k, v, href]) => {
+    const val = href ? `<a href="${esc(href)}"${href.startsWith('http') ? ' target="_blank" rel="noopener"' : ''}>${esc(v)}</a>` : esc(v);
     out.push(`<p class="t-e"><span class="t-d">${esc(k)}</span><span>${val}</span></p>`);
   });
   return out.join('');

@@ -79,7 +79,7 @@ export const projects: Project[] = [
             { p: 'Le générateur est jouable plus bas : entrez une clé, obtenez son blason.' },
           ],
         },
-        { h: 'Statut', paras: [{ p: "Livre achevé, en recherche d'éditeur." }] },
+        { h: 'Statut', paras: [{ p: "Livre achevé, inédit." }] },
       ],
     },
     en: {
@@ -124,7 +124,7 @@ export const projects: Project[] = [
             { p: 'The generator is playable below: enter a key, get its coat of arms.' },
           ],
         },
-        { h: 'Status', paras: [{ p: 'Book completed, seeking a publisher.' }] },
+        { h: 'Status', paras: [{ p: 'Book completed, unpublished.' }] },
       ],
     },
   },
