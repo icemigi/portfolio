@@ -27,7 +27,7 @@
   color-scheme: light;
 }
 @media (max-width: 760px) {
-  :root { --m: 16px; --gut: 12px; --cols: 4; --head: 72px; }
+  :root { --m: 16px; --gut: 12px; --cols: 4; --head: 60px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -75,9 +75,11 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 /* ---------- menu ---------- */
 .site-header { position: fixed; top: 0; left: 0; right: 0; z-index: 50; height: var(--head); align-items: center; transition: background-color .2s; }
 .site-header.solid { background: var(--bg); }
-/* le nom en toutes lettres, en Geist (pas en mono) : c'est la signature */
-.site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; font-family: var(--sans); font-weight: 500; font-size: 16px; letter-spacing: -0.02em; text-transform: none; gap: 10px; }
-.site-header .home img { width: 22px; height: 22px; flex: none; }
+/* le cavalier seul : c'est la signature */
+.site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; }
+.site-header .home img { width: 34px; height: 34px; flex: none; transition: rotate .5s var(--out); }
+@media (hover: hover) { .site-header .home:hover img { rotate: -10deg; } }
+.site-header .nn, .site-header .lang-m, .site-header .burger { display: none; }
 .site-header nav { grid-column: 7 / 10; }
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
 .site-header .r { grid-column: 10 / 13; justify-self: end; display: flex; align-items: center; white-space: nowrap; }
@@ -91,14 +93,29 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 .hit { position: relative; display: inline-block; }
 .hit::before { content: ''; position: absolute; left: -6px; right: -6px; top: 50%; height: 44px; transform: translateY(-50%); }
 @media (max-width: 760px) {
-  .site-header { grid-template-rows: 36px 28px; align-content: center; row-gap: 0; }
+  /* une seule ligne : cavalier à gauche, son et « (menu) » à droite */
   .site-header .home { grid-column: 1 / 3; }
-  .site-header .r { grid-column: 3 / 5; justify-content: flex-end; }
-  .site-header .home, .site-header .r { grid-row: 1; }
-  .site-header nav { grid-column: 1 / -1; grid-row: 2; }
-  .site-header nav ul { gap: 14px; }
-  .site-header nav .count { display: none; }
+  .site-header .home img { width: 30px; height: 30px; }
+  .site-header .r { grid-column: 3 / 5; justify-content: flex-end; gap: 20px; }
+  .site-header .r .lang { display: none; }
+  .site-header .burger { display: inline-block; font: inherit; text-transform: inherit; color: var(--fg); }
+  /* plein écran : rubriques en grand, numérotées ; la langue en bas */
+  .site-header nav { position: fixed; inset: 0; z-index: -1; display: flex; flex-direction: column; justify-content: flex-end; gap: 28px;
+    padding: calc(var(--head) + 24px) var(--m) 32px; background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
+  .menu-open .site-header nav { visibility: visible; opacity: 1; transition: opacity .25s; }
+  .site-header nav ul { flex-direction: column; gap: 4px; }
+  .site-header nav li { overflow: hidden; padding-bottom: .06em; }
+  .site-header nav ul a { display: flex; align-items: flex-start; gap: 10px; font-family: var(--sans); font-weight: 500; font-size: 15vw; line-height: 1; letter-spacing: -0.045em;
+    translate: 0 105%; transition: translate .5s var(--out) calc(var(--k) * 45ms); }
+  .menu-open .site-header nav ul a { translate: 0 0; }
+  .site-header nav ul a[aria-current='page'] { color: var(--mu); }
+  .site-header nav ul a[aria-current='page']::before, .site-header nav ul a[aria-current='page']::after { content: none; }
+  .site-header .nn { display: inline; min-width: 22px; padding-top: 2.2vw; font: 12px/1 var(--mono); letter-spacing: 0; }
+  .site-header nav .count { padding-top: 2.2vw; font: 12px/1 var(--mono); letter-spacing: 0; }
+  .site-header .lang-m { display: flex; gap: 20px; border-top: 1px solid var(--ln); padding-top: 14px; font: 12px/1 var(--mono); }
+  .menu-open .more-arrow { opacity: 0; pointer-events: none; }
 }
+
 
 /* ---------- survols validés ---------- */
 @media (hover: hover) {
