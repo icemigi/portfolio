@@ -17,7 +17,7 @@ const t = ui[lang];
   <div class="screens-host" data-screens>
     <section class="scr s1" aria-label="kerningkastle">
       <div class="hero g">
-        <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-fit data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span aria-hidden="true">—ingkast</span><span aria-hidden="true">le</span></h1></div>
+        <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span aria-hidden="true">—ingkast</span><span aria-hidden="true">le</span></h1></div>
       </div>
       <p class="phrase t28" data-par="60">{t.phrase}</p>
     </section>
@@ -48,9 +48,9 @@ const t = ui[lang];
 <style>
   /* le nom coupé sur trois lignes, la ligne du milieu remplit la largeur, la dernière déborde en bas */
   .s1 { overflow: hidden; }
-  .hero { padding-top: calc(var(--head) + 9vh); }
+  .hero { padding-top: calc(var(--head) + 9vh); } /* recalculé par le script : le « e » coupé au tiers bas */
   .nw { grid-column: 1 / -1; }
-  .name { width: max-content; font-weight: 500; letter-spacing: -0.055em; line-height: .74; white-space: nowrap; font-size: 18vw; margin-left: -.04em; }
+  .name { width: max-content; font-weight: 500; letter-spacing: -0.055em; line-height: .76; white-space: nowrap; font-size: 18vw; margin-left: -.04em; }
   .name span { display: block; }
   .name span:nth-child(2) { margin-left: -.06em; }
   .phrase { position: absolute; right: var(--m); bottom: 64px; text-align: right; }
@@ -68,3 +68,32 @@ const t = ui[lang];
     .lab, .bt, .more, .list { grid-column: 1 / -1; }
   }
 </style>
+
+<script>
+  // Le nom remplit la largeur (ligne du milieu), puis on le cale verticalement pour que le bas de l'écran
+  // coupe « le » au premier tiers bas de l'œil du e : on reconnaît la lettre, la coupe reste franche.
+  const n = document.getElementById('name')!, hero = n.closest<HTMLElement>('.hero')!, s1 = n.closest<HTMLElement>('.scr')!;
+  const place = () => {
+    const W = n.parentElement!.clientWidth;
+    n.style.fontSize = '100px';
+    const w = n.getBoundingClientRect().width;
+    const fs = Math.floor(((100 * W) / w) * 100) / 100;
+    n.style.fontSize = `${fs}px`;
+    // ligne de base de « le » et hauteur d'x de la fonte, mesurées
+    const last = n.lastElementChild as HTMLElement;
+    const probe = document.createElement('i'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
+    last.appendChild(probe);
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    ctx.font = `500 ${fs}px Geist`;
+    const xh = ctx.measureText('x').actualBoundingBoxAscent;
+    hero.style.paddingTop = '0px';
+    const base = probe.getBoundingClientRect().top - s1.getBoundingClientRect().top + s1.scrollTop;
+    probe.remove();
+    const H = s1.clientHeight;
+    const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 56;
+    // bas de l'écran = ligne de base − tiers de la hauteur d'x ; jamais sous le menu
+    hero.style.paddingTop = `${Math.max(head + 8, H - (base - xh / 3))}px`;
+  };
+  document.fonts.ready.then(place);
+  addEventListener('resize', place);
+</script>
