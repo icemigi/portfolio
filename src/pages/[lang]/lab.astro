@@ -324,7 +324,8 @@ const other = fr ? 'en' : 'fr';
   root.querySelectorAll<HTMLElement>('.dicon').forEach((li) => {
     const id = li.dataset.app!, btn = li.querySelector('button')!;
     if (!small && pos[id]) { li.style.left = pos[id][0] + 'px'; li.style.top = pos[id][1] + 'px'; li.style.right = 'auto'; }
-    btn.addEventListener('dblclick', () => openApp(id));
+    // double-clic compté à la main : la capture du pointeur (pour le glisser) détourne le dblclick du bouton
+    let lastUp = 0;
     btn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); openApp(id); } });
     if (small) { btn.addEventListener('click', () => openApp(id)); return; }
     li.addEventListener('pointerdown', (e) => {
@@ -340,7 +341,9 @@ const other = fr ? 'en' : 'fr';
       };
       const up = () => {
         li.removeEventListener('pointermove', mv); li.removeEventListener('pointerup', up); li.classList.remove('drag');
-        if (moved) { pos[id] = [li.offsetLeft, li.offsetTop]; store.set('kk-lab-icons', pos); }
+        if (moved) { pos[id] = [li.offsetLeft, li.offsetTop]; store.set('kk-lab-icons', pos); lastUp = 0; return; }
+        const now = performance.now();
+        if (now - lastUp < 450) { lastUp = 0; openApp(id); } else lastUp = now;
       };
       li.addEventListener('pointermove', mv); li.addEventListener('pointerup', up);
     });
