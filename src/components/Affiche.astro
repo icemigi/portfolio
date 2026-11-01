@@ -1,6 +1,6 @@
 ---
 // Texte d'affiche 56 px entrecoupé de vignettes : {n} = vignette n ; {m:…} = aparté entre parenthèses ; {v:n} = vignette n ; {door} = porte ;
-// {l:nom} = logo grisé collé au mot qui le précède (fichier /public/logos/nom.svg).
+// {l:nom} = logo grisé collé au mot qui le précède (fichier /public/logos/nom.webp : carré 256 px, gris, même surface optique).
 // Un aparté reste collé au mot qu'il commente et à la ponctuation qui le suit : ils ne se séparent jamais en fin de ligne.
 import type { Vig } from '../data/about';
 import type { Lang } from '../data/ui';
@@ -55,7 +55,7 @@ raw.forEach((p, i) => {
 <Tag class:list={['t56 affiche', cls]} data-hola>
   {parts.map((p) =>
     p.kind === 'logo' ? (
-      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.svg`} alt="" aria-hidden="true" onerror="this.remove()" />{p.punct}</span>
+      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
       <Door lang={lang} />
     ) : p.kind === 'vig' ? (
@@ -73,6 +73,6 @@ raw.forEach((p, i) => {
 <style>
   .glue { white-space: nowrap; }
   /* logo client : grisé, à la hauteur d'une capitale, juste après le nom */
-  .logo { display: inline-block; height: .5em; width: auto; margin-left: .18em; vertical-align: .05em; filter: grayscale(1) brightness(0); opacity: .32; }
+  .logo { display: inline-block; width: .8em; height: .8em; margin: 0 -.06em 0 .04em; vertical-align: -0.12em; opacity: .55; }
   .note { font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
 </style>
