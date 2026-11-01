@@ -45,10 +45,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
   .big > span { display: inline-block; text-align: center; }
-  /* téléphone : le titre en colonne, un mot par ligne, en grand (moins large : les objets pleuvent autour, quelques-uns restent dessus) */
+  /* téléphone : le titre en colonne, un mot par ligne, centré, même taille (moins large : les objets pleuvent autour, quelques-uns restent dessus) */
   @media (max-width: 760px) {
-    .big { place-items: center start; }
-    .big > span { text-align: left; font-size: 23vw; line-height: .84; letter-spacing: -0.05em; }
     .big .w { display: block; }
   }
   .big[hidden] { display: none; }
