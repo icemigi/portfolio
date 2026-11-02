@@ -1,0 +1,710 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letteroastd 🍿</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #14181c;
+            --accent: #00e054;
+            --text-main: #9ab;
+            --text-white: #ffffff;
+            --border-color: #2c3440;
+        }
+
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color); color: var(--text-white);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- VIGNETTE D'AFFICHE FLOTTANTE AU HOVER --- */
+        #hover-poster {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            width: 140px;
+            height: 205px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 224, 84, 0.4);
+            border: 2px solid var(--accent);
+            object-fit: cover;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.15s ease-in-out;
+            top: 0;
+            left: 0;
+        }
+
+        .word-fade { display: inline-block; opacity: 0; animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; margin-right: 6px; }
+        .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .highlight {
+            color: var(--accent);
+            font-weight: 900;
+            text-shadow: 0 0 12px rgba(0, 224, 84, 0.3);
+        }
+
+        /* --- SECTION ACCUEIL --- */
+        .stage-fullscreen { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; position: relative; }
+        .home-title { font-size: 52px; font-weight: 900; letter-spacing: -2px; margin: 0 0 10px 0; text-align: center; }
+        .home-subtitle { font-size: 17px; color: var(--text-main); margin-bottom: 35px; text-align: center; }
+        
+        .forms-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .input-fullscreen { width: 100%; padding: 16px 20px; background: #1c2228; border: 1px solid var(--border-color); border-radius: 12px; color: white; font-size: 15px; outline: none; transition: border 0.2s; }
+        .input-fullscreen:focus { border-color: var(--accent); }
+        .btn-fullscreen { width: 100%; padding: 16px; background: var(--accent); color: #14181c; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; }
+
+        .option-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .option-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-main); }
+        .badge-fast { font-size: 11px; font-weight: 800; color: #ffb703; background: rgba(255, 183, 3, 0.15); padding: 3px 8px; border-radius: 6px; }
+        .badge-full { font-size: 11px; font-weight: 800; color: var(--accent); background: rgba(0, 224, 84, 0.15); padding: 3px 8px; border-radius: 6px; }
+
+        .zip-button-wrapper { position: relative; width: 100%; }
+        .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #2c3440; color: #9ab; font-size: 11px; font-weight: 900; margin-left: 6px; cursor: help; }
+        
+        .tooltip-box {
+            visibility: hidden;
+            opacity: 0;
+            width: 360px;
+            background: rgba(17, 21, 24, 0.96);
+            backdrop-filter: blur(12px);
+            color: #d1d8e0;
+            text-align: left;
+            border-radius: 14px;
+            padding: 18px;
+            position: absolute;
+            z-index: 20;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            border: 1px solid rgba(0, 224, 84, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .tooltip-box::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: rgba(0, 224, 84, 0.3) transparent transparent transparent;
+        }
+
+        .zip-button-wrapper:hover .tooltip-box,
+        .help-icon:hover + .tooltip-box {
+            visibility: visible;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .tooltip-header { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .tooltip-steps-container { display: flex; flex-direction: column; gap: 10px; }
+        .step-pill { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #b0c0d0; line-height: 1.35; }
+        .step-pill strong { color: #ffffff; }
+        .step-num { width: 20px; height: 20px; border-radius: 50%; background: #2c3440; color: var(--accent); font-weight: 900; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+        .footer-credit { position: absolute; bottom: 25px; font-size: 12px; font-weight: 600; color: #456; letter-spacing: 0.5px; opacity: 0.7; }
+
+        /* --- SECTION INTERACTIVE / QUESTIONS --- */
+        #interactive-stage { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); flex-direction: column; justify-content: center; align-items: center; padding: 0 10%; z-index: 100; text-align: center; }
+        .text-container { max-width: 800px; margin-bottom: 35px; min-height: 90px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
+        .main-dialogue-text { font-size: 26px; font-weight: 700; line-height: 1.45; color: var(--text-white); }
+        .action-area { min-height: 280px; display: flex; justify-content: center; align-items: center; width: 100%; max-width: 700px; opacity: 0; transition: opacity 0.3s ease; gap: 15px; flex-wrap: wrap; flex-direction: column; }
+
+        .progress-box { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+        .progress-bar-bg { width: 100%; height: 8px; background: #1c2228; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
+        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease-in-out; }
+        .progress-status-text { font-size: 13px; font-weight: 700; color: var(--text-main); }
+
+        .micro-loader { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
+        .dot-pulse { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 0.6s infinite alternate; }
+        @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
+
+        .btn-choice-large { width: 100%; max-width: 520px; padding: 18px 24px; background: #1c2228; border: 1px solid var(--border-color); color: #c5d0d8; font-size: 15px; font-weight: 500; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; text-align: center; line-height: 1.35; }
+        .btn-choice-large strong { color: #ffffff; font-weight: 900; }
+        .btn-choice-large:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
+        .btn-choice-large:hover strong { color: var(--accent); }
+
+        .slider-container-raw { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 25px; align-items: center; background: transparent; padding: 10px 0; }
+        .slider-value-display { font-size: 42px; font-weight: 900; color: var(--accent); text-shadow: 0 0 15px rgba(0, 224, 84, 0.3); }
+        
+        .slider-input-large { -webkit-appearance: none; width: 100%; height: 10px; background: #1c2228; border-radius: 10px; border: 1px solid var(--border-color); outline: none; cursor: pointer; }
+        .slider-input-large::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 12px rgba(0, 224, 84, 0.5); transition: transform 0.1s ease; }
+        .slider-input-large::-webkit-slider-thumb:hover { transform: scale(1.2); }
+        
+        .btn-slider-validate { padding: 14px 32px; background: var(--accent); color: #14181c; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-size: 15px; margin-top: 10px; transition: transform 0.2s ease; }
+        .btn-slider-validate:hover { transform: translateY(-2px); }
+
+        .poster-duel-container { display: flex; gap: 24px; justify-content: center; width: 100%; }
+        .poster-card { background: #1c2228; border: 2px solid var(--border-color); border-radius: 16px; overflow: hidden; width: 170px; cursor: pointer; transition: all 0.25s ease; text-align: center; }
+        .poster-card:hover { border-color: var(--accent); transform: scale(1.05); box-shadow: 0 10px 30px rgba(0,224,84,0.2); }
+        .poster-img { width: 100%; height: 245px; object-fit: cover; background: #0c0f12; display: block; }
+        .poster-fallback { width: 100%; height: 245px; background: #182026; display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--accent); font-weight: 800; font-size: 13px; text-align: center; line-height: 1.3; }
+        .poster-title { font-size: 13px; font-weight: 700; padding: 10px 8px; color: white; line-height: 1.25; }
+        .hint-text { color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; opacity: 0.85; }
+
+        /* --- SECTION RÉSULTAT FINAL --- */
+        #final-stage { display: none; width: 100vw; min-height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; }
+        .export-wrapper { background: var(--bg-color); padding: 35px; border-radius: 20px; text-align: center; max-width: 580px; width: 100%; position: relative; }
+        .chart-container { width: 100%; max-width: 320px; margin: 0 auto 20px auto; display: flex; justify-content: center; }
+        
+        .final-badge { color: var(--accent); font-size: 12px; font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 15px; }
+        .final-username { font-size: 28px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
+        .final-score { font-size: 96px; font-weight: 900; line-height: 1; color: var(--accent); margin-bottom: 8px; letter-spacing: -3px; }
+        .final-rank { font-size: 22px; font-weight: 800; color: white; margin-bottom: 25px; }
+        
+        .final-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px; }
+        .stat-card { background: #1c2228; border: 1px solid var(--border-color); padding: 15px 8px; border-radius: 12px; }
+        .stat-value { font-size: 18px; font-weight: 800; color: white; }
+        .stat-label { font-size: 10px; color: var(--text-main); text-transform: uppercase; margin-top: 4px; font-weight: 700; }
+        
+        .wrapped-banner { background: #1c2228; border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center; }
+        .wrapped-item { display: flex; flex-direction: column; align-items: center; }
+        .wrapped-title { font-size: 10px; color: var(--text-main); text-transform: uppercase; font-weight: 700; }
+        .wrapped-val { font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 3px; }
+
+        .final-quote { font-size: 14px; font-style: italic; color: #b0d8be; border-left: 3px solid var(--accent); padding-left: 15px; text-align: left; margin-top: 15px; line-height: 1.45; }
+
+        .action-buttons-row { display: flex; gap: 12px; margin-top: 25px; width: 100%; max-width: 580px; justify-content: center; }
+        
+        .btn-action-secondary {
+            flex: 1;
+            padding: 15px 20px;
+            background: #1c2228;
+            border: 1px solid var(--border-color);
+            color: #c5d0d8;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-action-secondary:hover { border-color: var(--accent); color: white; transform: translateY(-2px); }
+
+        .btn-action-primary {
+            flex: 1;
+            padding: 15px 20px;
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            color: #14181c;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-action-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 224, 84, 0.25); }
+        
+        .icon-placeholder { display: inline-flex; align-items: center; justify-content: center; opacity: 0.7; }
+    </style>
+<style>#hover-poster{display:none!important}</style>
+</head>
+<body>
+
+    <!-- Élément DOM pour la miniature d'affiche flottante -->
+    <img id="hover-poster" src="" alt="Affiche" />
+
+    <!-- Étape 1 : Page d'accueil et formulaires d'import -->
+    <div class="stage-fullscreen" id="stage-home">
+        <h1 class="home-title">Letteroastd 🍿</h1>
+        <div class="home-subtitle">L'évaluation de cinéphilie sans filtre.</div>
+
+        <div class="forms-container">
+            <form id="fast-form" hidden><input id="username-input"></form>
+
+            <div>
+                <div class="option-header">
+                    <span class="option-label">Ton export Letterboxd</span>
+                    <span class="badge-full">🎯 Profil 100% complet</span>
+                </div>
+                <form id="file-form">
+                    <input type="file" id="file-input" class="input-fullscreen" accept=".zip,.csv" style="display:none;">
+                    
+                    <div class="zip-button-wrapper">
+                        <button type="button" class="btn-fullscreen" style="background:#1c2228; color:white; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('file-input').click()">
+                            <span>Charger mon fichier export (.zip)</span>
+                            <span class="help-icon">?</span>
+                        </button>
+
+                        <div class="tooltip-box">
+                            <div class="tooltip-header">🛠️ Comment exporter en 15 secondes ?</div>
+                            <div class="tooltip-steps-container">
+                                <div class="step-pill"><span class="step-num">1</span><span>Connecte-toi sur <strong>Letterboxd.com</strong> (web ou mobile).</span></div>
+                                <div class="step-pill"><span class="step-num">2</span><span>Ouvre ton profil → clique sur <strong>Settings</strong>.</span></div>
+                                <div class="step-pill"><span class="step-num">3</span><span>Vas dans l'onglet <strong>Data</strong> tout à droite.</span></div>
+                                <div class="step-pill"><span class="step-num">4</span><span>Clique sur le bouton vert <strong>Export Your Data</strong> puis glisse le `.zip` ici.</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="footer-credit">Fait avec 🧡💚💙 par Kern · tout se passe dans ton navigateur, rien n'est envoyé</div>
+    </div>
+
+    <!-- Étape 2 : Séquence interactive des questions/roasts -->
+    <div id="interactive-stage">
+        <div class="text-container">
+            <div class="main-dialogue-text" id="dialogue-text"></div>
+        </div>
+        <div class="action-area" id="action-area"></div>
+    </div>
+
+    <!-- Étape 3 : Fiche de score finale et partage -->
+    <div id="final-stage">
+        <div class="export-wrapper" id="capture-target">
+            <div class="final-hero">
+                <div class="final-badge">Fiche Cinéphile Officielle</div>
+                <div class="final-username" id="res-user">@Cinéphile</div>
+                <div class="final-score" id="res-score">77.5</div>
+                <div class="final-rank" id="res-rank">CINÉASTE AVISÉ ⚔️</div>
+
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+
+                <div class="final-stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="res-diary">237</div>
+                        <div class="stat-label">Visionnages</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="res-wl">92</div>
+                        <div class="stat-label">Watchlist</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="res-vo">VOSTFR</div>
+                        <div class="stat-label">Format</div>
+                    </div>
+                </div>
+
+                <div class="wrapped-banner">
+                    <div class="wrapped-item">
+                        <span class="wrapped-title">Top 100 Vus</span>
+                        <span class="wrapped-val" id="res-top100">0%</span>
+                    </div>
+                    <div class="wrapped-item">
+                        <span class="wrapped-title">Décennie Reine</span>
+                        <span class="wrapped-val" id="res-decade">-</span>
+                    </div>
+                    <div class="wrapped-item">
+                        <span class="wrapped-title">Moyenne</span>
+                        <span class="wrapped-val" id="res-avg">0.0★</span>
+                    </div>
+                </div>
+
+                <div class="final-quote" id="res-roast">"Aucune critique rédigée disponible."</div>
+            </div>
+        </div>
+
+        <div class="action-buttons-row">
+            <button class="btn-action-secondary" onclick="restartApp()">
+                <span class="icon-placeholder">⟲</span>
+                <span>Recommencer</span>
+            </button>
+            <button class="btn-action-primary" onclick="downloadCardPNG()">
+                <span class="icon-placeholder">⤓</span>
+                <span>Partager</span>
+            </button>
+        </div>
+    </div>
+
+    <script src="jszip.min.js"></script>
+    <script src="api.js"></script>
+    <script>
+        let currentData = null;
+        let scriptSteps = [];
+        let currentStepIndex = 0;
+        let userChoices = { vo: true, foreign_ratio: 3, pacing: 'slow', habit: 'spontaneous', time: 'classic' };
+
+        // Gestion du mouvement de la souris pour l'affiche flottante au survol
+        const hoverPoster = document.getElementById('hover-poster');
+        document.addEventListener('mousemove', function(e) {
+            if (hoverPoster.style.display === 'block') {
+                hoverPoster.style.left = (e.clientX + 15) + 'px';
+                hoverPoster.style.top = (e.clientY + 15) + 'px';
+            }
+        });
+
+        // Association des événements de survol (hover) pour afficher l'affiche du film
+        function attachHoverPoster(elem, filmTitle, filmYear, filmUri) {
+            if (!filmTitle) return;
+            const posterUrl = `/api/poster?title=${encodeURIComponent(filmTitle)}&year=${encodeURIComponent(filmYear || '')}&uri=${encodeURIComponent(filmUri || '')}`;
+
+            elem.addEventListener('mouseenter', function() {
+                hoverPoster.src = posterUrl;
+                hoverPoster.style.display = 'block';
+                setTimeout(() => { hoverPoster.style.opacity = '1'; }, 10);
+            });
+
+            elem.addEventListener('mouseleave', function() {
+                hoverPoster.style.opacity = '0';
+                setTimeout(() => { hoverPoster.style.display = 'none'; }, 150);
+            });
+        }
+
+        // Écouteur pour l'upload d'un fichier ZIP complet
+        document.getElementById('file-input').addEventListener('change', function() {
+            if (this.files.length > 0) {
+                const formData = new FormData();
+                formData.append('file', this.files[0]);
+                fetchData('/api/complete', formData);
+            }
+        });
+
+        // Écouteur pour la soumission du formulaire d'analyse rapide par pseudo
+        document.getElementById('fast-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username-input').value;
+            const formData = new FormData();
+            formData.append('username', username);
+            fetchData('/api/fast', formData);
+        });
+
+        // Fonction principale pour récupérer les données de l'API avec barre de progression
+        async function fetchData(url, formData) {
+            document.getElementById('stage-home').style.display = 'none';
+            document.getElementById('interactive-stage').style.display = 'flex';
+
+            const area = document.getElementById('action-area');
+            area.innerHTML = `
+                <div class="progress-box">
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="pbar"></div></div>
+                    <div class="progress-status-text" id="ptext">Initialisation de l'analyse...</div>
+                </div>
+            `;
+            area.style.opacity = '1';
+
+            const apiPromise = fetch(url, { method: 'POST', body: formData }).then(res => res.json());
+
+            const steps = [
+                { pct: 15, msg: "Analyse de la structure des données...", delay: 400 },
+                { pct: 35, msg: "Extraction du Diary & historique des visionnages...", delay: 1000 },
+                { pct: 60, msg: "Calcul des distributions par décennies et notes...", delay: 1800 },
+                { pct: 82, msg: "Détection des hot takes et pépites du profil...", delay: 2600 },
+                { pct: 95, msg: "Génération du parcours de questions...", delay: 3200 }
+            ];
+
+            steps.forEach(s => {
+                setTimeout(() => {
+                    updateProgress(s.pct, s.msg);
+                }, s.delay);
+            });
+
+            const minWaitPromise = new Promise(resolve => setTimeout(resolve, 3600));
+
+            const [dataResult] = await Promise.all([apiPromise, minWaitPromise]);
+            currentData = dataResult;
+
+            updateProgress(100, "Profil analysé avec succès !");
+
+            setTimeout(() => {
+                buildScript();
+                runNextStep();
+            }, 500);
+        }
+
+        function updateProgress(pct, status) {
+            const pbar = document.getElementById('pbar');
+            const ptext = document.getElementById('ptext');
+            if (pbar) pbar.style.width = pct + "%";
+            if (ptext) ptext.textContent = status;
+        }
+
+        function buildScript() {
+            scriptSteps = currentData.script_steps || [];
+        }
+
+        // Affichage progressif du texte (mot par mot) avec animation
+        function showTextWithFadeUp(text, callback) {
+            const elem = document.getElementById('dialogue-text');
+            elem.innerHTML = "";
+
+            const words = text.split(" ");
+            const wordDelay = 45;
+
+            words.forEach((word, index) => {
+                const span = document.createElement('span');
+                span.className = 'word-fade';
+                
+                if (/\d/.test(word) || word.includes('★') || word.includes('½')) {
+                    span.classList.add('highlight');
+                }
+
+                span.textContent = word;
+                span.style.animationDelay = `${index * wordDelay}ms`;
+                elem.appendChild(span);
+            });
+
+            const totalDuration = (words.length * wordDelay) + 80;
+
+            setTimeout(() => {
+                if (callback) callback();
+            }, totalDuration);
+        }
+
+        // Micro-loader affiché entre les étapes pour donner du rythme
+        function triggerMicroLoading(callback) {
+            hoverPoster.style.opacity = '0';
+            hoverPoster.style.display = 'none';
+
+            const area = document.getElementById('action-area');
+            area.style.opacity = '0';
+
+            const loaderTexts = [
+                "Enregistrement du choix...",
+                "Calcul de l'axe RISQ...",
+                "Ajustement de la sévérité...",
+                "Recalibrage du radar...",
+                "Pondération culturelle..."
+            ];
+            const randomMsg = loaderTexts[Math.floor(Math.random() * loaderTexts.length)];
+
+            setTimeout(() => {
+                area.innerHTML = `
+                    <div class="micro-loader">
+                        <div class="dot-pulse"></div>
+                        <span>${randomMsg}</span>
+                    </div>
+                `;
+                area.style.opacity = '1';
+
+                const randomDelay = Math.floor(Math.random() * 300) + 450;
+
+                setTimeout(() => {
+                    area.style.opacity = '0';
+                    setTimeout(() => {
+                        if (callback) callback();
+                    }, 150);
+                }, randomDelay);
+            }, 100);
+        }
+
+        // Gestion de l'affichage séquentiel des étapes du script
+        function runNextStep() {
+            if (currentStepIndex >= scriptSteps.length) {
+                renderFinalStage();
+                return;
+            }
+
+            const step = scriptSteps[currentStepIndex];
+            const area = document.getElementById('action-area');
+            area.innerHTML = "";
+
+            showTextWithFadeUp(step.text, () => {
+                setTimeout(() => {
+                    if (step.type === 'dialogue') {
+                        area.innerHTML = `<div class="hint-text fade-in-up" onclick="directNextStep()">APPUIE SUR [ENTRÉE] OU CLIQUE POUR CONTINUER ▶</div>`;
+                        document.addEventListener('keydown', handleEnterKey);
+                    } else if (step.type === 'question_roast') {
+                        const btn1 = document.createElement('button');
+                        btn1.className = 'btn-choice-large fade-in-up';
+                        btn1.innerHTML = step.btn1;
+                        btn1.onclick = actionNextStep;
+                        if (step.btn1_film) {
+                            attachHoverPoster(btn1, step.btn1_film, step.btn1_year, step.btn1_uri);
+                        }
+                        area.appendChild(btn1);
+
+                        if (step.btn2) {
+                            const btn2 = document.createElement('button');
+                            btn2.className = 'btn-choice-large fade-in-up';
+                            btn2.innerHTML = step.btn2;
+                            btn2.onclick = actionNextStep;
+                            area.appendChild(btn2);
+                        }
+                    } else if (step.type === 'question_vo') {
+                        area.innerHTML = `
+                            <button class="btn-choice-large fade-in-up" onclick="selectVO(true)">Langue Originale (VOSTFR)</button>
+                            <button class="btn-choice-large fade-in-up" onclick="selectVO(false)">Doublage Français (VF)</button>
+                        `;
+                    } else if (step.type === 'question_foreign_slider') {
+                        area.innerHTML = `
+                            <div class="slider-container-raw fade-in-up">
+                                <div class="slider-value-display" id="slider-val">3 / 10</div>
+                                <input type="range" min="0" max="10" value="3" class="slider-input-large" id="foreign-range" oninput="updateSliderText(this.value)">
+                                <button class="btn-slider-validate" onclick="submitSlider()">Valider</button>
+                            </div>
+                        `;
+                    } else if (step.type === 'question_duel') {
+                        const img1 = `/api/poster?title=${encodeURIComponent(step.f1)}&year=${encodeURIComponent(step.y1 || '')}&uri=${encodeURIComponent(step.u1 || '')}`;
+                        const img2 = `/api/poster?title=${encodeURIComponent(step.f2)}&year=${encodeURIComponent(step.y2 || '')}&uri=${encodeURIComponent(step.u2 || '')}`;
+
+                        area.innerHTML = `
+                            <div class="poster-duel-container fade-in-up">
+                                <div class="poster-card" onclick="actionNextStep()">
+                                    <img src="${img1}" class="poster-img" alt="${step.f1}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>🎬<br>${step.f1}</div>';">
+                                    <div class="poster-title">${step.f1}</div>
+                                </div>
+                                <div class="poster-card" onclick="actionNextStep()">
+                                    <img src="${img2}" class="poster-img" alt="${step.f2}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>🎬<br>${step.f2}</div>';">
+                                    <div class="poster-title">${step.f2}</div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    area.style.opacity = '1';
+                }, 80);
+            });
+        }
+
+        function updateSliderText(val) {
+            document.getElementById('slider-val').textContent = val + " / 10";
+            userChoices.foreign_ratio = parseInt(val);
+        }
+
+        function submitSlider() {
+            const val = parseInt(document.getElementById('foreign-range').value);
+            userChoices.foreign_ratio = val;
+            actionNextStep();
+        }
+
+        function handleEnterKey(e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                document.removeEventListener('keydown', handleEnterKey);
+                directNextStep();
+            }
+        }
+
+        function directNextStep() {
+            document.removeEventListener('keydown', handleEnterKey);
+            currentStepIndex++;
+            runNextStep();
+        }
+
+        function actionNextStep() {
+            document.removeEventListener('keydown', handleEnterKey);
+            triggerMicroLoading(() => {
+                currentStepIndex++;
+                runNextStep();
+            });
+        }
+
+        function selectVO(isVo) { 
+            userChoices.vo = isVo; 
+            actionNextStep(); 
+        }
+
+        // Rendu final de l'étape de résultats avec calcul du score et graphique Radar
+        async function renderFinalStage() {
+            document.getElementById('interactive-stage').style.display = 'none';
+
+            const res = await fetch('/api/calculate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(userChoices)
+            });
+            const finalScoreData = await res.json();
+
+            const usernameDisplay = currentData.username !== "Cinéphile" ? "@" + currentData.username : "Fiche Cinéphile";
+            document.getElementById('res-user').textContent = usernameDisplay;
+            
+            document.getElementById('res-score').textContent = finalScoreData.score;
+            document.getElementById('res-rank').textContent = finalScoreData.rank;
+            document.getElementById('res-diary').textContent = currentData.diary_count;
+            document.getElementById('res-wl').textContent = currentData.wl_count;
+            document.getElementById('res-vo').textContent = userChoices.vo ? "VOSTFR" : "VF";
+
+            if (finalScoreData.advanced_stats) {
+                document.getElementById('res-top100').textContent = (finalScoreData.advanced_stats.top_100_pct || 0) + "%";
+                document.getElementById('res-decade').textContent = finalScoreData.advanced_stats.top_decade || "-";
+                document.getElementById('res-avg').textContent = (finalScoreData.advanced_stats.avg_rating || 0) + "★";
+            }
+
+            if (currentData.hot_take && currentData.hot_take.review && currentData.hot_take.review !== "Pas de review") {
+                document.getElementById('res-roast').textContent = `"${currentData.hot_take.review}" — ${currentData.hot_take.title}`;
+            } else {
+                document.getElementById('res-roast').textContent = `"Aucune critique rédigée disponible sur ce profil."`;
+            }
+
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['VOL', 'ENG', 'SEV', 'RISQ', 'VNTG', 'DIV'],
+                    datasets: [{
+                        data: [
+                            finalScoreData.details.VOL,
+                            finalScoreData.details.ENG,
+                            finalScoreData.details.SEV,
+                            finalScoreData.details.RISQ,
+                            finalScoreData.details.VNTG,
+                            finalScoreData.details.DIV
+                        ],
+                        backgroundColor: 'rgba(0, 224, 84, 0.3)',
+                        borderColor: '#00e054',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#00e054',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00e054',
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    animation: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { display: false, stepSize: 20 },
+                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            pointLabels: { color: '#9ab', font: { size: 10, weight: 'bold', family: 'sans-serif' } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const finalStage = document.getElementById('final-stage');
+            finalStage.style.display = 'flex';
+            finalStage.classList.add('fade-in-up');
+        }
+
+        // Fonction pour télécharger la fiche finale sous forme d'image PNG
+        function downloadCardPNG() {
+            const target = document.getElementById('capture-target');
+            html2canvas(target, { backgroundColor: "#14181c", scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Letteroastd_${currentData.username}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            });
+        }
+
+        function restartApp() {
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

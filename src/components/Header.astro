@@ -10,7 +10,7 @@ const { lang, path, active } = Astro.props;
 const t = ui[lang];
 const items = [
   { key: 'work', href: `/${lang}/work/`, count: pad(projects.length) },
-  { key: 'lab', href: `/${lang}/lab/`, count: pad(rooms.length + 2) },
+  { key: 'lab', href: `/${lang}/lab/`, count: pad(rooms.length + 3) },
   { key: 'archive', href: `/${lang}/archive/`, count: String(pieces.length) },
   { key: 'about', href: `/${lang}/about/`, count: '' },
 ] as const;
