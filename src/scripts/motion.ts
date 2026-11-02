@@ -19,8 +19,17 @@ function textNodes(root: Element, extraSkip?: string) {
 // Lettre par lettre : chaque lettre reste un span en ligne (crénage exact), monte de .35em.
 // 10 ms d'écart, 420 ms par lettre ; sur un long texte, l'écart se resserre pour finir en ~0,7 s.
 // Renvoie la fin de l'animation (ms). À la fin, le texte est rassemblé en nœuds de texte.
+// Rassemblement différé : sur Safari (WebKit), un texte découpé en spans perd son crénage ; le recoller à la fin
+// de l'animation ferait sauter les lettres d'un coup. On garde donc les spans tant que le texte est à l'écran,
+// et on ne recolle qu'une fois l'écran sorti du cadre (settle), ou juste avant une nouvelle apparition.
+const pending = new Map<Element, () => void>();
+export function settle(root: Element) {
+  for (const [el, fn] of pending) if (root === el || root.contains(el)) { fn(); pending.delete(el); }
+}
+
 export function letters(root: Element, delay = 300, extraSkip?: string): number {
   if (reduced()) return 0;
+  settle(root);
   const nodes = textNodes(root, extraSkip);
   const total = nodes.reduce((n, t) => n + t.nodeValue!.replace(/\s/g, '').length, 0);
   if (!total) return 0;
@@ -44,14 +53,15 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
   const end = delay + k * step + 440;
-  setTimeout(() => {
+  pending.set(root, () => {
+    root.getAnimations({ subtree: true }).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
       if (!first.parentNode) continue;
       first.before(document.createTextNode(text));
       let el: ChildNode | null = first;
       while (el) { const nx: ChildNode | null = el === last ? null : el.nextSibling; el.remove(); el = nx; }
     }
-  }, end);
+  });
   return end;
 }
 

@@ -63,6 +63,7 @@ const t = ui[lang];
   .list { grid-column: 4 / 13; }
 
 
+  :global(html.js) .s1:not(.placed) .name, :global(html.js) .s1:not(.placed) .phrase { visibility: hidden; }
   @media (max-width: 760px) {
     .hero { padding-top: calc(var(--head) + 6vh); }
     /* téléphone : quatre lignes (kern / —ing / kast / le), le nom remplit l'écran */
@@ -108,6 +109,12 @@ const t = ui[lang];
     if (phone || pad - head > ph.offsetHeight + 140) { ph.style.top = `${Math.round(pad - ph.offsetHeight - 24)}px`; ph.style.bottom = 'auto'; }
     else { ph.style.top = ''; ph.style.bottom = ''; }
   };
-  document.fonts.ready.then(() => place());
-  addEventListener('resize', () => place());
+  // placé tout de suite (polices préchargées), puis recalé une fois les polices prêtes ; le nom reste caché
+  // tant qu'il n'est pas à sa place (aucun saut visible au chargement)
+  place();
+  document.fonts.ready.then(() => { place(); s1.classList.add('placed'); });
+  // téléphone : la barre d'adresse qui se replie change la hauteur de quelques px → on ne recale que si la largeur change
+  // ou si la hauteur bouge vraiment (rotation, fenêtre redimensionnée)
+  let lw = innerWidth, lh = innerHeight;
+  addEventListener('resize', () => { if (innerWidth === lw && Math.abs(innerHeight - lh) < 140) return; lw = innerWidth; lh = innerHeight; place(); });
 </script>

@@ -98,10 +98,13 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .site-header .home img { width: 30px; height: 30px; }
   .site-header .r { grid-column: 3 / 5; justify-content: flex-end; gap: 20px; }
   .site-header .r .lang { display: none; }
-  .site-header .burger { display: inline-block; font: inherit; text-transform: inherit; color: var(--fg); }
+  /* « (menu) » en bas, au centre, sous le pouce ; il devient « (fermer) » au même endroit */
+  .site-header .burger { display: inline-block; position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); translate: -50% 0; z-index: 2;
+    padding: 11px 18px; border-radius: 999px; background: var(--bg); box-shadow: 0 0 0 1px var(--ln), 0 6px 18px rgba(0, 0, 0, .06);
+    font: inherit; text-transform: inherit; color: var(--fg); }
   /* plein écran : rubriques en grand, numérotées ; la langue en bas */
   .site-header nav { position: fixed; inset: 0; z-index: -1; display: flex; flex-direction: column; justify-content: flex-end; gap: 28px;
-    padding: calc(var(--head) + 24px) var(--m) 32px; background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
+    padding: calc(var(--head) + 24px) var(--m) calc(88px + env(safe-area-inset-bottom)); background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
   .menu-open .site-header nav { visibility: visible; opacity: 1; transition: opacity .25s; }
   .site-header nav ul { flex-direction: column; gap: 4px; }
   .site-header nav li { overflow: hidden; padding-bottom: .06em; }
@@ -152,6 +155,10 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 /* ---------- écrans ---------- */
 .screens-host { position: fixed; inset: 0; overflow: hidden; }
 .scr { position: absolute; inset: 0; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+/* fluidité : chaque écran a son propre calque (le glissement ne repeint rien) ; les éléments en parallaxe et les vignettes
+   animées aussi (leur mouvement et leurs images ne font plus repeindre le paragraphe qui les contient) */
+html.js .screens-host > .scr { will-change: transform; }
+html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host .vi, html.js .screens-host .door, html.js .screens-host .mimg, html.js .screens-host [data-par] { will-change: translate; }
 .scr::-webkit-scrollbar { display: none; }
 .scr:not(.on) { transform: translateY(100%); }
 .scr.on { transform: none; }

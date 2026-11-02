@@ -1,7 +1,7 @@
 // Défilement forcé (règle site entier) : un geste = un écran entier.
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; le saut reprend à son bord.
 // Passage : glissement 680 ms, cubic-bezier(.7,0,.2,1), interruptible sans à-coup. « Réduire les animations » : passage instantané.
-import { reduced, reveal } from './motion';
+import { reduced, reveal, settle } from './motion';
 
 export type Screens = {
   go: (to: number) => void;
@@ -77,10 +77,14 @@ export function initScreens(host: HTMLElement): Screens {
       y += peek ? s.offsetHeight : H;
     });
   };
+  const wasVis: boolean[] = [];
   const render = () => {
     S.forEach((s, i) => {
       const d = T[i] - scroll;
       const vis = d > -H - 2 && d < H + 2;
+      // écran sorti du cadre : son texte animé est recollé hors de la vue (aucun saut perceptible)
+      if (wasVis[i] && !vis) settle(s);
+      wasVis[i] = vis;
       s.style.transform = `translate3d(0, ${Math.round(d * 100) / 100}px, 0)`;
       s.style.visibility = vis ? '' : 'hidden';
       // parallaxe : images (et data-par) décalées selon la distance de leur écran au cadre, nulles à l'arrêt
