@@ -147,7 +147,7 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .row:hover .t { transform: translateX(12px); }
 }
 @media (max-width: 760px) {
-  .row { grid-template-columns: 28px 1fr auto; column-gap: 10px; padding: 10px 0; border-top: 1px solid var(--ln); }
+  .row { grid-template-columns: 28px 1fr auto; column-gap: 10px; padding: 8px 0; } /* sans filet */
   .row .t { font-size: 8vw; line-height: 1.05; letter-spacing: -0.03em; }
   .row .d { display: none; }
 }
