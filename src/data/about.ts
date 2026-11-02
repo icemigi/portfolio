@@ -9,9 +9,9 @@ export const homeServices = {
   en: 'I draw {0} letters{m:a lot}, {1} identities {2} and images, by hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
 };
 export const homeVigs: Vig[] = [
-  { src: '/vig/h-typewriter.webp', label: { fr: 'lettre', en: 'letter' } }, // le mot se tape à la machine
-  { src: '/vig/h-identites.webp', label: { fr: 'identité', en: 'identity' } },
-  { src: '/vig/h-images.webp', label: { fr: 'image', en: 'image' } },
+  { src: '', label: { fr: 'lettre', en: 'letter' } },
+  { src: '', label: { fr: 'identité', en: 'identity' } },
+  { src: '', label: { fr: 'image', en: 'image' } },
 ];
 
 // À propos — 4 écrans
@@ -20,8 +20,8 @@ export const aboutIntro = {
   en: "Designer in Paris{m:and remote}, I always start from the letter, {0} from a logotype to a complete writing system {1}. When hands aren't enough{m:or can't be bothered}, I write code {2}. The rest comes from the things {door} I love{m:go on, open it}.",
 };
 export const aboutVigs: Vig[] = [
-  { src: '/vig/v-logo.webp', label: { fr: 'logotype', en: 'logotype' } },
-  { src: '/vig/v-lettre.webp', label: { fr: 'glyphes', en: 'glyphs' } },
+  { src: '', label: { fr: 'logotype', en: 'logotype' } },
+  { src: '', label: { fr: 'glyphes', en: 'glyphs' } },
   { src: '/vig/v-matrix.webp', label: { fr: 'code', en: 'code' } }, // pluie de caractères façon Matrix (générée, gardée)
 ];
 
@@ -71,7 +71,7 @@ export const path = {
   en: 'Independent since 2020{m:2020 —}, for artists {v:0} and brands. Before that, designer at DOERS in Paris{m:2018 — 20} for PlayStation {l:playstation}, Nespresso {l:nespresso} and Chanel {l:chanel}. Trained at HETIC{m:2018 — 21} and École 42{m:2015 — 17}.',
 };
 export const pathVigs: Vig[] = [
-  { src: '/vig/v-pochette.webp', label: { fr: 'pochette', en: 'cover' } },
+  { src: '', label: { fr: 'pochette', en: 'cover' } },
 ];
 
 export const aboutLabels = {
