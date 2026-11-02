@@ -15,7 +15,8 @@ declare global { interface Window { kkScreens?: Screens } }
 const EDITABLE = 'input, textarea, select, [contenteditable], iframe';
 
 export function initScreens(host: HTMLElement): Screens {
-  const S = [...host.querySelectorAll<HTMLElement>(':scope > .scr')];
+  // écrans affichés seulement (certains n'existent que sur téléphone, d'autres que sur ordinateur)
+  const S = [...host.querySelectorAll<HTMLElement>(':scope > .scr')].filter((s) => getComputedStyle(s).display !== 'none');
   const header = document.querySelector<HTMLElement>('.site-header');
   const key = `kk-scr:${location.pathname}`;
   let cur = 0, busy = false;

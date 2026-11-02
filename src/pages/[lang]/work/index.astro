@@ -35,19 +35,26 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
             })}
           </ol>
         </div>
-        <ol class="mlist g">
+        <!-- téléphone : sommaire (chaque titre amène son écran) -->
+        <ol class="mindex g">
           {projects.map((p, i) => (
-            <li>
-              <a href={`/${lang}/work/${p.slug}/`}>
-                {media[p.slug] ? <img class="mimg" src={media[p.slug].cover.src} alt="" loading="lazy" /> : <span class="ph" aria-hidden="true"><i>{t.visual}</i></span>}
-                <span class="tl"><span class="t28">{p[lang].title}</span><span class="mono mu">{pad(i + 1)}</span></span>
-                <span class="mono mu">{p[lang].short} — {p.yearLabel}</span>
-              </a>
-            </li>
+            <li><a href={`/${lang}/work/${p.slug}/`} data-go={i + 1}><span class="mono mu">{pad(i + 1)}</span><span class="t28">{p[lang].title}</span></a></li>
           ))}
         </ol>
       </div>
     </section>
+    {/* téléphone : un écran par projet (masqués sur ordinateur, où la scène d'objets les remplace) */}
+    {projects.map((p, i) => (
+      <section class="scr mo" aria-labelledby={`mo-${i}`}>
+        <div class="in g">
+          <p class="lab mono mu par">{pad(i + 1)} / {pad(projects.length)}</p>
+          <a class="mo-v" href={`/${lang}/work/${p.slug}/`} tabindex="-1" aria-hidden="true"><ObjectShape kind={p.object} /></a>
+          <h2 class="mo-t t56" id={`mo-${i}`}><a href={`/${lang}/work/${p.slug}/`}>{p[lang].title}</a></h2>
+          <p class="mo-m mono mu">{p[lang].short} — {p.yearLabel}</p>
+          <p class="mo-b"><a class="bp hit" href={`/${lang}/work/${p.slug}/`}>{lang === 'fr' ? 'voir le projet' : 'view project'}</a></p>
+        </div>
+      </section>
+    ))}
     <section class="scr" data-peek data-still aria-label={lang === 'fr' ? 'Pied de page' : 'Footer'}>
       <Footer lang={lang} />
     </section>
@@ -65,17 +72,25 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
   .obj :global(.shape) { width: 100%; height: auto; transform: rotate(var(--r)); filter: drop-shadow(0 var(--sh, 26px) 22px rgba(0, 0, 0, .22)); pointer-events: none; }
   .obj .lb { white-space: nowrap; transition: transform .35s var(--out); }
   @media (hover: hover) { .obj a:hover .lb { transform: translateX(6px); } }
-  .mlist { display: none; }
+  .mindex, .mo { display: none; }
   .ft { margin-top: auto; }
 
   @media (max-width: 760px) {
     .stage { display: none; }
-    .ttl { position: static; padding: calc(var(--head) + 24px) var(--m) 24px; }
-    .mlist { display: grid; row-gap: 32px; padding-bottom: 48px; }
-    .mlist li { grid-column: 1 / -1; }
-    .mlist .ph, .mlist .mimg { display: block; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 10px; object-fit: cover; }
-    .tl { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-    .tl .t28 { font-weight: 500; }
+    .page { justify-content: flex-end; }
+    .ttl { position: absolute; }
+    .mindex { display: grid; padding-bottom: 72px; }
+    .mindex li { grid-column: 1 / -1; }
+    .mindex a { display: flex; align-items: baseline; gap: 12px; padding: 4px 0; }
+    .mindex .mono { min-width: 22px; font-size: 12px; }
+    .mindex .t28 { font-weight: 500; }
+    .mo { display: block; }
+    .mo-v { grid-column: 1 / -1; justify-self: center; width: 58vw; margin-bottom: 40px; }
+    .mo-v :global(.shape) { display: block; width: 100%; height: auto; filter: drop-shadow(0 22px 20px rgba(0, 0, 0, .2)); }
+    .mo-t, .mo-m, .mo-b { grid-column: 1 / -1; }
+    .mo-t { font-weight: 500; }
+    .mo-m { margin-top: 8px; }
+    .mo-b { margin-top: 20px; }
   }
 </style>
 
