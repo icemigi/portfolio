@@ -57,7 +57,7 @@ tools/
 
 - Un texte : `src/data/*.ts`, en français et en anglais.
 - Une image d'étude : déposer le WebP dans `public/work/<projet>/`, puis l'ajouter dans `src/data/media.ts`.
-- Une pièce d'archive : `public/archive/` + une ligne dans `src/data/archive.ts` (l'année trie la page, de la plus récente à la plus ancienne).
+- Une pièce d'archive : `public/archive/` (1400 px) + sa miniature `public/archive/s/` (800 px) + une ligne dans `src/data/archive.ts` (l'année trie la page, de la plus récente à la plus ancienne).
 - Une vignette de texte d'affiche : `src` dans `src/data/about.ts` (vide = emplacement gris) ; `python3 tools/vignettes.py` les régénère.
 - Liens de « Ce que j'aime » : constantes `LETTERBOXD` et `SPOTIFY` en haut de `src/data/likes.ts`.
 - Logos clients du parcours : `public/logos/playstation.webp`, `nespresso.webp`, `chanel.webp` (carrés 256 px, gris, même surface optique).

@@ -21,7 +21,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
         {pieces.map((p, i) => (
           <li class="pc" id={pad(i + 1)}>
             <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
-              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src} alt="" loading="lazy" />}</span>
+              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src.replace('/archive/', '/archive/s/')} srcset={`${p.src.replace('/archive/', '/archive/s/')} 800w, ${p.src} 1400w`} sizes={`(max-width: 760px) 92vw, ${Math.round((560 * p.w) / p.h)}px`} alt="" loading="lazy" decoding="async" />}</span>
               <span class="mono mu c">{cap(i)}</span>
             </a>
           </li>
@@ -169,7 +169,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const show = (i: number, push = true) => {
     cur = (i + A.caps.length) % A.caps.length;
     big.style.aspectRatio = String(A.ratios[cur]);
-    big.innerHTML = A.srcs[cur] ? `<img src="${A.srcs[cur]}" alt="" style="width:100%;height:100%;object-fit:contain">` : '';
+    big.innerHTML = A.srcs[cur] ? `<img src="${A.srcs[cur]}" alt="${A.caps[cur]}" style="width:100%;height:100%;object-fit:contain">` : '';
     cap.textContent = `${P(cur + 1)} — ${A.caps[cur]}`;
     lb.hidden = false;
     if (push) history.replaceState(null, '', `#${P(cur + 1)}`);
