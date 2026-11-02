@@ -29,17 +29,17 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
     <div class="bot g">
       <div class="info mono">
         <p>{pad(index + 1)} / {pad(N)} — {r.title}</p>
-        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i lk hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>(i)</button></Fragment>}</p>
+        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i bp hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>i</button></Fragment>}</p>
       </div>
       <ol class="dots mono" aria-label="Lab">
         {rooms.map((x, i) => <li><a class:list={['hit', { mu: i !== index }]} href={url(i)} aria-current={i === index ? 'page' : undefined} aria-label={x[lang].title}>{pad(i + 1)}</a></li>)}
       </ol>
       <div class="act">
         {room.kind === 'font' && (room.file
-          ? <a class="btn mono" href={room.file} download>{t.download} <span class="ar"><i>↓</i></span></a>
-          : <span class="btn mono off">{t.fileSoon}</span>)}
-        <a class="arw mono" href={url(index - 1)} aria-label={t.prev} data-prev>←</a>
-        <a class="arw mono" href={url(index + 1)} aria-label={t.nextShort} data-nextroom>→</a>
+          ? <a class="bp hit" href={room.file} download>{t.download.toLowerCase()}</a>
+          : <span class="mono mu">{t.fileSoon.toLowerCase()}</span>)}
+        <a class="arw bp hit" href={url(index - 1)} data-prev>{t.prev.toLowerCase()}</a>
+        <a class="arw bp hit" href={url(index + 1)} data-nextroom>{t.nextShort.toLowerCase()}</a>
       </div>
     </div>
     {room.kind !== 'font' && <div class="note" id="note" hidden><p class="mono mu">{t.note}</p><p>{r.note}</p></div>}
@@ -57,18 +57,15 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
   .bot { position: absolute; left: 0; right: 0; bottom: 24px; align-items: end; z-index: 3; }
   .info { grid-column: 1 / 5; }
   .info p + p { margin-top: 4px; }
-  .i { font: inherit; }
+
   .dots { grid-column: 5 / 9; display: flex; gap: 14px; justify-self: center; }
-  .act { grid-column: 9 / 13; justify-self: end; display: flex; gap: 8px; align-items: center; }
-  .arw { width: 44px; height: 44px; display: grid; place-items: center; font-size: 16px; color: var(--mu); transition: color .2s; }
-  @media (hover: hover) { .arw:hover { color: var(--fg); } }
-  .btn.off { background: var(--bg); color: var(--mu); box-shadow: inset 0 0 0 1px var(--ln); margin-right: 8px; }
-  .act .btn { margin-right: 8px; }
+  .act { grid-column: 9 / 13; justify-self: end; display: flex; gap: 20px; align-items: baseline; }
+  .arw { padding: 12px 0; }
   .note { position: absolute; z-index: 4; left: var(--m); bottom: 96px; width: 320px; background: var(--bg); padding: 16px; box-shadow: 0 0 0 1px var(--ln); }
   .note p + p { margin-top: 8px; }
   @media (max-width: 760px) {
     .tester { font-size: 52px; line-height: 56px; }
-    .bot { row-gap: 14px; }
+    .bot { row-gap: 14px; bottom: calc(64px + env(safe-area-inset-bottom)); }
     .info { grid-column: 1 / -1; }
     .dots { grid-column: 1 / 3; justify-self: start; gap: 10px; }
     .act { grid-column: 3 / 5; }

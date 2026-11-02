@@ -28,24 +28,38 @@ const tiles = [
   ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year.replace(/^\[.*\]$/, '—'), href: `/${lang}/lab/${r.id}/` })),
   { id: 'heraldry', title: 'Algorithmic Heraldry', cat: fr ? 'Générateur' : 'Generator', year: '2025', href: '/lab/heraldry/index.html' },
 ];
+const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tiles.slice(k * 4, k * 4 + 4));
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
   <div class="boot" data-boot aria-hidden="true"><img src="/logo-kerningkastle.svg" alt="" width="84" height="84" /><span class="pb"><i data-pb></i></span></div>
   <h1 class="sr">Lab</h1>
-  <section class="lgrid g" aria-label="Lab">
-    <p class="lg-t mono mu par">{t.nav.lab} {pad(tiles.length)}</p>
-    <p class="lg-i">{fr ? 'Des expériences, des générateurs et des fontes.' : 'Experiments, generators and typefaces.'}</p>
-    <ol class="lg-l">
-      {tiles.map((x, i) => (
-        <li><a href={x.href}>
-          <span class="lg-v"><span class="ai" data-icon={x.id}></span></span>
-          <span class="lg-n mono"><span class="mu">{pad(i + 1)}</span> — {x.title.toLowerCase()}</span>
-          <span class="lg-c mono mu">{x.cat.toLowerCase()} · {x.year}</span>
-        </a></li>
-      ))}
-    </ol>
-  </section>
-  <div class="lg-f"><Footer lang={lang} top={false} /></div>
+  <!-- téléphone : défilement par écrans, comme le reste du site (intro, pièces par quatre, pied de page) -->
+  <div class="lgrid screens-host">
+    <section class="scr" aria-label="Lab">
+      <div class="in g">
+        <p class="lab mono mu par">{t.nav.lab} {pad(tiles.length)}</p>
+        <p class="lg-i t56">{fr ? 'Des expériences, des générateurs et des fontes.' : 'Experiments, generators and typefaces.'}</p>
+      </div>
+    </section>
+    {pages.map((pg, k) => (
+      <section class="scr">
+        <div class="in g">
+          <p class="lab mono mu par">{pad(k * 4 + 1)}—{pad(k * 4 + pg.length)}</p>
+          <ol class="lg-l">
+            {pg.map((x, j) => (
+              <li><a href={x.href}>
+                <span class="lg-v"><span class="ai" data-icon={x.id}></span></span>
+                <span class="lg-n mono"><span class="mu">{pad(k * 4 + j + 1)}</span> — {x.title.toLowerCase()}</span>
+                <span class="lg-c mono mu">{x.cat.toLowerCase()} · {x.year}</span>
+              </a></li>
+            ))}
+          </ol>
+        </div>
+      </section>
+    ))}
+    <section class="scr lg-last" aria-label={fr ? 'Pied de page' : 'Footer'}><Footer lang={lang} /></section>
+  </div>
+  <script is:inline>if (matchMedia('(max-width: 760px)').matches) document.currentScript.previousElementSibling.setAttribute('data-screens', '');</script>
   <div class="mac" data-mac>
     <!-- bureau -->
     <div class="desk" data-desk>
@@ -95,21 +109,19 @@ const tiles = [
 
 <style>
   /* ---------- téléphone : grille ---------- */
-  .lgrid, .lg-f { display: none; }
+  .lgrid { display: none; }
   @media (max-width: 760px) {
     .mac, .boot { display: none !important; }
-    .lgrid { display: grid; padding-top: calc(var(--head) + 16px); padding-bottom: 48px; row-gap: 0; }
-    .lg-t, .lg-i, .lg-l { grid-column: 1 / -1; }
-    .lg-i { margin-top: 32px; font-size: 6.4vw; line-height: 1.15; letter-spacing: -0.02em; font-weight: 500; }
-    .lg-l { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px 12px; }
+    .lgrid { display: block; }
+    .lg-i { grid-column: 1 / -1; }
+    .lg-l { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 12px; }
     .lg-l a { display: block; }
     .lg-v { display: grid; place-items: center; aspect-ratio: 1; background: rgba(0, 0, 0, .045); transition: background .3s; }
     .lg-l a:active .lg-v { background: rgba(0, 0, 0, .08); }
-    .lg-f { display: block; }
-    :global(.site-header) { background: var(--bg); } /* la grille défile sous l'en-tête */
     .lg-v .ai { width: 42%; height: 42%; filter: grayscale(1); } /* en gris, comme les objets de la page Projets */
     .lg-n { display: block; margin-top: 10px; font-size: 12px; }
     .lg-c { display: block; margin-top: 2px; font-size: 12px; }
+    .lg-last { display: flex; flex-direction: column; justify-content: flex-end; }
   }
 
   /* ---------- démarrage ---------- */

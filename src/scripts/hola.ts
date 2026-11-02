@@ -4,7 +4,7 @@
 // (décalage par top/left, crénage intact) ; l'apparition anime ses propres spans .ch à l'intérieur, les deux décalages s'additionnent.
 // Cibles : [data-hola] ; réglages par cible : data-hola="poussée écart rayon". Ordinateur seulement ; rien si « Réduire les animations ».
 const DEF = { A: 0.26, SPREAD: 0.06, SIGMA: 90 }; // poussée verticale (em), écart horizontal (em), rayon (px)
-const SKIP = '.note, .vi, .door, .mono, svg, [data-copy]';
+const SKIP = '.note, .bp, .vi, .door, .mono, svg, [data-copy]';
 const SOLID = '.vi, .door'; // images : bougent d'un bloc
 
 type It = { el: HTMLElement; k: number; cx: number; cy: number; y: number; x: number };

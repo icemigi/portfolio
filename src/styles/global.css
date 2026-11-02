@@ -100,8 +100,9 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .site-header .r .lang { display: none; }
   /* « (menu) » en bas, au centre, sous le pouce ; il devient « (fermer) » au même endroit */
   .site-header .burger { display: inline-block; position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); translate: -50% 0; z-index: 2;
-    padding: 12px 16px; background: none;
-    font: inherit; text-transform: inherit; color: var(--fg); }
+    padding: 12px 16px; }
+  /* la bande du bas (≈ 56 px) est réservée à « (menu) » : ce qui était posé au ras du bas remonte d'autant */
+  .ft { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
   /* plein écran : rubriques en grand, numérotées ; la langue en bas */
   .site-header nav { position: fixed; inset: 0; z-index: -1; display: flex; flex-direction: column; justify-content: flex-end; gap: 28px;
     padding: calc(var(--head) + 24px) var(--m) calc(88px + env(safe-area-inset-bottom)); background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
@@ -160,7 +161,7 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 /* fluidité : chaque écran a son propre calque (le glissement ne repeint rien) ; les éléments en parallaxe et les vignettes
    animées aussi (leur mouvement et leurs images ne font plus repeindre le paragraphe qui les contient) */
 html.js .screens-host > .scr { will-change: transform; }
-html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host .vi, html.js .screens-host .door, html.js .screens-host .mimg, html.js .screens-host [data-par] { will-change: translate; }
+html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host .mimg { will-change: translate; }
 .scr::-webkit-scrollbar { display: none; }
 .scr:not(.on) { transform: translateY(100%); }
 .scr.on { transform: none; }
@@ -225,6 +226,9 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .site-header nav a[aria-current='page']::after { content: ')'; position: absolute; right: -.62em; top: 14px; }
 @media (hover: hover) { .site-header nav a.lk:hover { transform: none; } }
 .plus { display: inline-block; }
+/* boutons : un mot entre parenthèses, en Geist noir (les libellés, eux, restent en Geist Mono gris) */
+.bp { display: inline-block; font-family: var(--sans) !important; font-weight: 500; font-size: 15px; line-height: 1.2; letter-spacing: -0.01em; color: var(--fg) !important; text-transform: none; white-space: nowrap; background: none; }
+.bp::before, .hit.bp::before { content: '('; position: static; height: auto; transform: none; } .bp::after { content: ')'; }
 
 [data-copy], [data-copy] *, input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 .hc { position: relative; }

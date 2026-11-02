@@ -4,7 +4,7 @@ export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
 export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
 // Texte non animé : libellés Geist Mono, vignettes, menus, médias, champs.
-const SKIP = '.mono, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
+const SKIP = '.mono, .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
 
 function textNodes(root: Element, extraSkip?: string) {
   const skip = extraSkip ? `${SKIP}, ${extraSkip}` : SKIP;

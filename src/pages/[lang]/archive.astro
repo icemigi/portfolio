@@ -37,10 +37,10 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   </div>
 
   <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={t.archiveCount}>
-    <button class="x mono lk hit" type="button" data-close>{t.close} ×</button>
+    <button class="x bp hit" type="button" data-close>{t.close.toLowerCase()}</button>
     <figure><span class="ph big" data-big></span><figcaption class="mono mu" data-cap></figcaption></figure>
-    <button class="arw mono" type="button" data-step="-1" aria-label={t.prev}>←</button>
-    <button class="arw mono" type="button" data-step="1" aria-label={t.nextShort}>→</button>
+    <button class="arw bp" type="button" data-step="-1">{t.prev.toLowerCase()}</button>
+    <button class="arw bp" type="button" data-step="1">{t.nextShort.toLowerCase()}</button>
   </div>
 </Base>
 
@@ -83,9 +83,9 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   .big { display: block; height: min(72dvh, 720px); max-width: calc(100vw - 2 * var(--m) - 120px); }
   .x { position: absolute; right: var(--m); top: calc(var(--head) + 8px); }
   /* flèches nues : un signe, rien autour */
-  .arw { position: absolute; bottom: 32px; width: 44px; height: 44px; display: grid; place-items: center; font-size: 16px; color: var(--mu); transition: color .2s, translate .25s var(--out); }
-  @media (hover: hover) { .arw:hover { color: var(--fg); } [data-step='-1']:hover { translate: -3px 0; } [data-step='1']:hover { translate: 3px 0; } }
-  [data-step='-1'] { right: calc(var(--m) + 40px); } [data-step='1'] { right: calc(var(--m) - 12px); }
+  .arw { position: absolute; bottom: 32px; padding: 12px 0; }
+  [data-step='-1'] { left: var(--m); } [data-step='1'] { right: var(--m); }
+  @media (max-width: 760px) { .arw { bottom: calc(60px + env(safe-area-inset-bottom)); } }
 
   @media (max-width: 760px) {
     .arc { position: static; overflow: visible; }

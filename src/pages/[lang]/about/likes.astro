@@ -15,7 +15,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
 <Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac.' : 'Things I love, in no particular order.'} path="about/likes/" active="about">
   <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
   <div class="likes" data-likes data-own-wheel>
-    <p class="ttl mono mu"><a class="lk hit" href={`/${lang}/about/`}>← {t.nav.about}</a></p>
+    <p class="ttl"><a class="bp hit" href={`/${lang}/about/`}>{fr ? 'retour' : 'back'}</a></p>
     <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
     <h1 class="big" data-big><span class="t56">{(fr ? 'Ce que j\'aime.' : 'Things I love.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w">{w}</span></Fragment>)}</span></h1>
     <div class="stage" data-stage>
@@ -31,7 +31,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
         <p class="sub mono mu"><span data-sub></span><a class="lk" data-link target="_blank" rel="noopener" hidden></a></p>
         <h2 class="t28 tt" id="like-t" data-title></h2>
         <p class="txt" data-text></p>
-        <button class="x mono lk hit" type="button" data-close>{t.close} ×</button>
+        <button class="x bp hit" type="button" data-close>{t.close.toLowerCase()}</button>
       </div>
     </div>
   </div>
@@ -76,7 +76,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .likes.open .it:not(.sel) { opacity: .08; }
   /* téléphone : le texte s'ouvre en feuille au bas de l'écran */
   @media (max-width: 760px) {
-    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
+    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(64px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
     .card .in { grid-column: auto; }
     .card .txt { max-width: none; }
     .card .x { margin-top: 20px; }

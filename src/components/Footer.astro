@@ -38,7 +38,7 @@ const moods = fr
     ? 'Fait main à Paris avec Geist, Geist Mono et beaucoup trop de parenthèses (c\'est assumé). Aucun framework, aucun cookie, quelques sons.'
     : 'Handmade in Paris with Geist, Geist Mono and far too many parentheses (on purpose). No framework, no cookies, a few sounds.'}</p>
   <div class="c"><p class="mono mu">© {new Date().getFullYear()} kerningkastle</p><a class="lk mu mono" href={`/${lang}/legal/`}>{fr ? 'Mentions légales' : 'Legal notice'}</a></div>
-  {top && <a class="top mono lk hit" href="#main" data-go="0">{t.top} ↑</a>}
+  {top && <a class="top bp hit" href="#main" data-go="0">{t.top.toLowerCase()}</a>}
 </footer>
 
 <script>

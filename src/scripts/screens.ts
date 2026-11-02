@@ -78,12 +78,15 @@ export function initScreens(host: HTMLElement): Screens {
     });
   };
   const wasVis: boolean[] = [];
+  const gone = new Set<HTMLElement>();
+  const idle = (fn: () => void) => ((window as any).requestIdleCallback ? (window as any).requestIdleCallback(fn, { timeout: 800 }) : setTimeout(fn, 200));
+  const flush = () => idle(() => { if (busy) return; gone.forEach((s) => { if (!wasVis[S.indexOf(s)]) settle(s); }); gone.clear(); });
   const render = () => {
     S.forEach((s, i) => {
       const d = T[i] - scroll;
       const vis = d > -H - 2 && d < H + 2;
-      // écran sorti du cadre : son texte animé est recollé hors de la vue (aucun saut perceptible)
-      if (wasVis[i] && !vis) settle(s);
+      // écran sorti du cadre : son texte animé sera recollé hors de la vue, une fois le glissement fini (aucun saut, aucun à-coup)
+      if (wasVis[i] && !vis) gone.add(s);
       wasVis[i] = vis;
       s.style.transform = `translate3d(0, ${Math.round(d * 100) / 100}px, 0)`;
       s.style.visibility = vis ? '' : 'hidden';
@@ -106,6 +109,7 @@ export function initScreens(host: HTMLElement): Screens {
     mv = null; busy = false; vel = 0; scroll = T[tgt]; pend = null;
     cur = tgt; place(); save();
     emit('screens:enter', { index: cur });
+    flush();
   };
   const tick = (now: number) => {
     raf = 0;
@@ -147,7 +151,12 @@ export function initScreens(host: HTMLElement): Screens {
     // (deux mouvements lourds ne se superposent pas) ; un écran simplement traversé est affiché d'un coup
     if (pend && pend !== b) { pend.getAnimations({ subtree: true }).forEach((x) => x.finish()); revealed.delete(pend); }
     pend = null;
-    if (!b.hasAttribute('data-still') && now - (revealed.get(b) || -1e4) > 1400) { revealed.set(b, now); reveal(b, Math.round(mv.d * 0.55)); pend = b; }
+    // le découpage du texte attend deux images : le glissement démarre d'abord, sans à-coup
+    if (!b.hasAttribute('data-still') && now - (revealed.get(b) || -1e4) > 1400) {
+      revealed.set(b, now); pend = b;
+      const d0 = mv.d;
+      requestAnimationFrame(() => requestAnimationFrame(() => { if (pend === b) reveal(b, Math.max(0, Math.round(d0 * 0.55) - 33)); }));
+    }
   }
 
   // molette / pavé tactile : un geste = un écran.
