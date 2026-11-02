@@ -70,12 +70,11 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 
 /* ---------- accessibilité ---------- */
 /* curseur : gantelet (fichier fourni), point chaud à la pointe ; le curseur système reste pour les champs de texte */
-/* deux tailles : nette sur écran Retina (version 2×, agrandie proprement puis lissée) */
-html, a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog, .obj a, .stage {
-  cursor: url(/cursor.png) 0 0, auto !important;
-  cursor: -webkit-image-set(url(/cursor.png) 1x, url(/cursor-2x.png) 2x) 0 0, auto !important;
-  cursor: image-set(url(/cursor.png) 1x, url(/cursor-2x.png) 2x) 0 0, auto !important;
-}
+/* curseurs : gantelet médiéval (THTH, domaine public), recoloré en fer noirci et braise ; 48 px, version 2× pour Retina */
+html { cursor: url(/cur-default.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; }
+a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog { cursor: url(/cur-pointer.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; }
+.obj a, .stage { cursor: url(/cur-grab.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; }
+.obj.drag a, .stage:active { cursor: url(/cur-grabbing.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; }
 input, textarea, [contenteditable] { cursor: text; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
 .skip { position: fixed; left: var(--m); top: 8px; z-index: 200; background: var(--fg); color: var(--bg); padding: 12px 16px; transform: translateY(-200%); }
@@ -224,6 +223,8 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 
 /* ---------- parenthèses et signe + (signes de la marque) ---------- */
 .par::before { content: '('; }
+/* libellés de section : en orange */
+.lab.par, .ttl.par, .lab4.par, .k.par { color: var(--ac); }
 .par::after { content: ')'; }
 /* menu : la page en cours entre parenthèses, sans animation */
 .site-header nav a { position: relative; display: inline-block; padding: 14px 0; white-space: nowrap; }

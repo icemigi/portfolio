@@ -3,7 +3,6 @@ import './loader';
 import { initScreens } from './screens';
 import { reveal } from './motion';
 import './sound';
-import { paren } from './paren';
 import { initHola } from './hola';
 
 // Email : clic = adresse copiée avec confirmation ; l'adresse reste sélectionnable.
@@ -28,9 +27,6 @@ document.addEventListener('click', (e) => {
 document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
   a.addEventListener('click', () => { try { localStorage.setItem('kk-lang', a.dataset.lang!); } catch { /* */ } }),
 );
-
-// parenthèses des textes courants en orange (avant toute découpe en lettres)
-paren();
 
 // curseur : le gantelet est posé en CSS (global.css) ; l'ancienne flèche dessinée en JS est retirée
 

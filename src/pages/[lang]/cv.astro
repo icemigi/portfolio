@@ -90,7 +90,6 @@ const PS = 'xavier@kerningkastle ~ %';
 </style>
 
 <script>
-  import { paren } from '../../scripts/paren';
   type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
   const root = document.querySelector<HTMLElement>('[data-term]')!;
   const d: D = JSON.parse(root.dataset.cv!);
@@ -128,7 +127,7 @@ const PS = 'xavier@kerningkastle ~ %';
     const tmp = document.createElement('div'); tmp.innerHTML = html;
     let held = false;
     for (const el of [...tmp.children]) {
-      out.appendChild(el); paren(el); follow();
+      out.appendChild(el); follow();
       if (!held && el.getBoundingClientRect().top < out.getBoundingClientRect().bottom - 24) { write(el); await wait(gap); }
       else { held = true; el.classList.add('t-wait'); io.observe(el); }
     }
