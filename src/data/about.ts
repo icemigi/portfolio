@@ -41,10 +41,11 @@ export const services = {
 };
 
 // Stack technique, en texte d'affiche : chaque logiciel est suivi de sa vignette-logo.
+// Téléphone : icônes dans le texte ; ordinateur : fanions sous le texte (les icônes y sont masquées).
 // Logos : /public/stack/<nom>.webp (icônes d'app, 160 px) ; tant qu'un fichier manque, la vignette affiche le nom.
 export const stack = {
-  fr: "Je dessine mes lettres dans Glyphs, je compose dans Illustrator, Photoshop et Figma, je griffonne sur Procreate, je code en TypeScript, p5.js et Python, et je joue en direct avec TouchDesigner.",
-  en: "I draw my letters in Glyphs, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python, and play live with TouchDesigner.",
+  fr: "Je dessine mes lettres dans Glyphs {0}, je compose dans Illustrator {1}, Photoshop {2} et Figma {3}, je griffonne sur Procreate {4}, je code en TypeScript {5}, p5.js {6} et Python {7}, et je joue en direct avec TouchDesigner {8}.",
+  en: "I draw my letters in Glyphs {0}, lay out in Illustrator {1}, Photoshop {2} and Figma {3}, sketch in Procreate {4}, code in TypeScript {5}, p5.js {6} and Python {7}, and play live with TouchDesigner {8}.",
 };
 const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.webp`, label: { fr: name, en: name }, logo: true });
 // fanions sous le texte : drap à la couleur du logiciel, logo vectoriel détouré (/public/stack/mk-<id>.svg ; Procreate et TouchDesigner en PNG 512 px), encre du nom et des coutures

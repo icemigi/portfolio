@@ -35,12 +35,9 @@ const { items } = Astro.props;
     .fanions:not(.live) .fn .cloth { animation: kk-fade .5s ease-out backwards; animation-delay: calc(var(--n) * 60ms); }
   }
   @keyframes kk-fade { from { opacity: 0; transform: translateY(-10px); } }
-  @media (max-width: 760px) {
-    .fanions { margin-top: 28px; }
-    ul { flex-wrap: wrap; gap: 14px 8px; }
-    .fn { flex: 0 0 calc((100% - 32px) / 5); }
-    .cloth { height: clamp(110px, 17vh, 160px); }
-  }
+  /* téléphone : pas de fanions, les icônes restent dans le texte ; ordinateur : l'inverse */
+  @media (max-width: 760px) { .fanions { display: none; } }
+  @media (min-width: 761px) { :global(.stk .vi.lg) { display: none; } }
 </style>
 
 <script>

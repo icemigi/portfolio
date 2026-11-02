@@ -39,7 +39,7 @@ raw.forEach((p, i) => {
     if (next && next.kind === 'text') { const pm = next.text.match(/^([.,;:!?…)]+)/); if (pm) { p.punct = pm[1]; next.text = next.text.slice(pm[1].length); } }
     // et reste avec le mot qu'elle illustre
     const prev = parts[parts.length - 1];
-    if (prev && prev.kind === 'text') { const mm = prev.text.match(/^([\s\S]*?)(\S+)\s$/); if (mm) { prev.text = mm[1]; p.word = mm[2] + ' '; } }
+    if (prev && prev.kind === 'text') { const mm = prev.text.match(/^([\s\S]*?)(\S+)\s$/); if (mm) { prev.text = mm[1]; p.word = mm[2] + (p.vig.logo ? '' : ' '); } } // icône : l'espace devient une marge (masquable avec elle)
   }
   if (p.kind !== 'glue') { parts.push(p); return; }
   const prev = parts[parts.length - 1];
