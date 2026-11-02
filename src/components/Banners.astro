@@ -115,12 +115,16 @@ const { items } = Astro.props;
     let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, energy = 1, raf = 0, visible = true;
     const step = () => {
       t += 1;
-      const breeze = 0.012 * Math.sin(t * 0.021) + 0.008 * Math.sin(t * 0.047 + 1.3);
+      let bi = 0;
       for (const b of banners) {
+        // vent léger permanent : rafales lentes et décalées d'un fanion à l'autre (jamais deux fanions en phase)
+        const ph = bi++ * 1.7, gust = Math.sin(t * 0.011 + ph) * 0.6 + Math.sin(t * 0.027 + ph * 2.3) * 0.3 + Math.sin(t * 0.063 + ph * 0.7) * 0.15;
+        const wz = 0.05 * (0.55 + gust), wx = 0.012 * Math.sin(t * 0.017 + ph);
         const { P, Q, w, h } = b, sx = w / (C - 1), sy = h / (R - 1);
         for (let n = C; n < C * R; n++) { // la rangée du haut reste accrochée à la hampe
           const k = n * 3, x = P[k], y = P[k + 1], z = P[k + 2];
-          let fx = 0, fy = 0.22, fz = breeze * (n / (C * R)) * 6;
+          const row = Math.floor(n / C) / (R - 1); // le vent prend surtout le bas du tissu
+          let fx = wx * row, fy = 0.22, fz = wz * row * (0.7 + 0.3 * Math.sin(t * 0.05 + (n % C) * 0.6));
           const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy;
           if (d2 < 130 * 130) { const f = (1 - Math.sqrt(d2) / 130) ** 2; fx += vx * 0.03 * f; fy += vy * 0.012 * f; fz += (Math.abs(vx) + Math.abs(vy)) * 0.022 * f * Math.sign(dx || 1); }
           P[k] = x + (x - Q[k]) * 0.982 + fx; P[k + 1] = y + (y - Q[k + 1]) * 0.982 + fy; P[k + 2] = z + (z - Q[k + 2]) * 0.982 + fz;
@@ -174,6 +178,8 @@ const { items } = Astro.props;
     // la boucle ne tourne que quand la section est à l'écran
     new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) kick(); }, { threshold: 0.05 }).observe(root);
     document.fonts.ready.then(build);
-    let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = window.setTimeout(build, 200); });
+    // la mise en page de la section peut bouger après coup (apparition, polices) : on reconstruit dès que la largeur change
+    let rz = 0, lastW = 0;
+    new ResizeObserver(() => { const w = root.clientWidth; if (Math.abs(w - lastW) < 2) return; lastW = w; clearTimeout(rz); rz = window.setTimeout(build, 150); }).observe(root);
   }
 </script>
