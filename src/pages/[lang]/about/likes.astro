@@ -61,7 +61,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   /* écran de l'iPod : le lecteur Spotify y est posé (iframe 300 px réduite à la taille de l'écran) */
   .emb { position: absolute; left: 8.5%; top: 3.8%; width: 83%; height: 42%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
   .it.sel .emb { opacity: 1; pointer-events: auto; }
-  .emb :global(iframe) { width: 300px; height: 380px; max-width: none; border: 0; transform-origin: 0 0; }
+  .emb :global(iframe) { width: 300px; height: 352px; max-width: none; border: 0; transform-origin: 0 0; }
   .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
   .card[hidden] { display: none; }
   .card .in { grid-column: 7 / 11; pointer-events: auto; }
@@ -230,8 +230,9 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
     const emb = it.el.querySelector<HTMLElement>('[data-emb]');
     if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
-    // le lecteur prend tout l'écran de l'iPod : largeur 300 px réduite, hauteur calée sur les proportions de l'écran
-    if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.height = `${Math.ceil(emb.clientHeight / k) + 2}px`; f.style.transform = `scale(${k})`; }
+    // le lecteur prend tout l'écran de l'iPod : hauteur standard de Spotify (352 px, sans l'aperçu vidéo qui s'ajoute au-delà)
+    // réduite à la hauteur de l'écran, largeur recalculée pour remplir l'écran aux mêmes proportions
+    if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientHeight / 352; f.style.height = '352px'; f.style.width = `${Math.ceil(emb.clientWidth / k) + 1}px`; f.style.transform = `scale(${k})`; }
     card.querySelector('[data-title]')!.textContent = d.title;
     card.querySelector('[data-text]')!.textContent = d.text;
     card.hidden = false;
