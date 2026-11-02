@@ -21,7 +21,7 @@ export const cv: Record<Lang, Cv> = {
       bye: 'déconnexion…',
       sudo: 'bien essayé.',
       back: 'retour au site',
-      lang: 'english',
+      lang: 'en / fr',
     },
     sections: [
       { id: 'profil', cmd: ['profil', 'profile', 'whoami'], title: 'profil',
@@ -110,7 +110,7 @@ export const cv: Record<Lang, Cv> = {
       bye: 'logging out…',
       sudo: 'nice try.',
       back: 'back to the site',
-      lang: 'français',
+      lang: 'en / fr',
     },
     sections: [
       { id: 'profil', cmd: ['profile', 'profil', 'whoami'], title: 'profile',

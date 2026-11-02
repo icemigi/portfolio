@@ -26,7 +26,7 @@ const PS = 'xavier@kerningkastle ~ %';
       <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="ttl mu">xavier — cv — zsh</span>
       <span class="act">
-        <a href={`/${other}/cv/`} data-lang={other}>{c.ui.lang}</a>
+        <span class="lg"><a href="/en/cv/" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>en</a> / <a href="/fr/cv/" data-lang="fr" aria-current={lang === 'fr' ? 'true' : undefined}>fr</a></span>
         <a href={`/${lang}/`}>exit</a>
       </span>
     </div>
@@ -54,7 +54,7 @@ const PS = 'xavier@kerningkastle ~ %';
   .ttl { flex: 1; text-align: center; }
   .act { display: flex; gap: 20px; }
   .act a:hover, .chips button:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
-  .act a { color: var(--mu); }
+  .act a { color: var(--mu); } .act .lg [aria-current='true'] { color: var(--fg); }
   .out { flex: 1; overflow-y: auto; padding: 28px 0 8px; scrollbar-width: none; max-width: 980px; }
   .out::-webkit-scrollbar { display: none; }
   .out :global(p) { margin: 0; }
