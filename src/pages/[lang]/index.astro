@@ -77,11 +77,11 @@ const t = ui[lang];
   // Le nom remplit la largeur (ligne du milieu), puis on le cale verticalement pour que le bas de l'écran
   // coupe « le » au premier tiers bas de l'œil du e : on reconnaît la lettre, la coupe reste franche.
     const n = document.getElementById('name')!, hero = n.closest<HTMLElement>('.hero')!, s1 = n.closest<HTMLElement>('.scr')!;
-  const place = () => {
+  const place = (k = 1) => {
     const W = n.parentElement!.clientWidth;
     n.style.fontSize = '100px';
     const w = n.getBoundingClientRect().width;
-    const fs = Math.floor(((100 * W) / w) * 100) / 100;
+    const fs = Math.floor(((100 * W) / w) * 100 * k) / 100;
     n.style.fontSize = `${fs}px`;
     // ligne de base de « le » et hauteur d'x de la fonte, mesurées
     const last = n.lastElementChild as HTMLElement;
@@ -96,14 +96,18 @@ const t = ui[lang];
     const H = s1.clientHeight;
     const head = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--head')) || 56;
     // bas de l'écran = ligne de base − tiers de la hauteur d'x ; jamais sous le menu
-    const pad = Math.max(head + 8, H - (base - xh / 3));
-    hero.style.paddingTop = `${pad}px`;
-    // écran en hauteur (téléphone, fenêtre étroite) : le nom descend loin ; la phrase passe au-dessus de lui
-    // au lieu de le chevaucher en bas
     const ph = document.querySelector<HTMLElement>('.s1 .phrase')!;
-    if (pad - head > ph.offsetHeight + 140) { ph.style.top = `${Math.round(pad - ph.offsetHeight - 28)}px`; ph.style.bottom = 'auto'; }
+    // téléphone : le nom occupe toute la largeur jusqu'en bas, la phrase se place toujours au-dessus de lui ;
+    // sur un écran court, le nom descend un peu plus (le « le » est coupé plus bas) plutôt que de passer sous la phrase
+    const phone = matchMedia('(max-width: 760px)').matches;
+    const min = head + 8 + (phone ? ph.offsetHeight + 36 : 0), need = base - xh / 3;
+    // écran trop court pour le nom entier sous la phrase : on réduit le nom (une fois) au lieu de le couper davantage
+    if (phone && k === 1 && H - need < min) return place(Math.max(0.6, (H - min) / need));
+    const pad = Math.max(min, H - need);
+    hero.style.paddingTop = `${pad}px`;
+    if (phone || pad - head > ph.offsetHeight + 140) { ph.style.top = `${Math.round(pad - ph.offsetHeight - 24)}px`; ph.style.bottom = 'auto'; }
     else { ph.style.top = ''; ph.style.bottom = ''; }
   };
-  document.fonts.ready.then(place);
-  addEventListener('resize', place);
+  document.fonts.ready.then(() => place());
+  addEventListener('resize', () => place());
 </script>
