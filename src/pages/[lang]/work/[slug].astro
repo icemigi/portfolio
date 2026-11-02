@@ -26,6 +26,7 @@ type Block =
   | { kind: 'img'; imgs: Img[] }
   | { kind: 'gen'; src: string };
 const M = media[project.slug];
+const vid = (src: string) => /\.(mp4|webm)$/i.test(src); // boucle vidéo = « GIF » léger
 const gals = M?.gal ?? [];
 let gi = 0;
 const gallery = (layout: 'full' | 'pair'): Block | null =>
@@ -79,7 +80,9 @@ const tall = (i: Img) => i.h > i.w * 2;
     </section>
 
     <section class="scr open" data-still aria-label={t.opening}>
-      {M ? <img class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />
+      {M ? (vid(M.cover.src)
+           ? <video class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} autoplay muted loop playsinline aria-label={c.title}></video>
+           : <img class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />)
          : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
     </section>
 
@@ -100,8 +103,10 @@ const tall = (i: Img) => i.h > i.w * 2;
         </section>
       ) : b.kind === 'img' ? (
         <section class="scr" data-still={b.imgs.some(tall) ? undefined : ''}>
-          <div class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
-            {b.imgs.map((im) => <img src={im.src} width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
+          <div data-enter class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
+            {b.imgs.map((im) => vid(im.src)
+              ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
+              : <img class="md" src={im.src} width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
           </div>
         </section>
       ) : b.kind === 'gen' ? (
@@ -180,6 +185,12 @@ const tall = (i: Img) => i.h > i.w * 2;
   .im.n2 img { grid-column: span 6; }
   .im.tall img { max-height: none; }
   .im.n1.tall img { grid-column: 3 / 11; }
+  .im .md { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
+  .im.n1 .md { grid-column: 1 / -1; } .im.n2 .md { grid-column: span 6; } .im.tall .md { max-height: none; } .im.n1.tall .md { grid-column: 3 / 11; }
+  .im { perspective: 1400px; }
+  /* image d'ouverture : elle respire (zoom lent, aller-retour) */
+  @media (prefers-reduced-motion: no-preference) { .cov { animation: kk-breathe 18s ease-in-out infinite alternate; } }
+  @keyframes kk-breathe { from { transform: scale(1); } to { transform: scale(1.06); } }
 
   .gen { row-gap: 16px; }
   .gen .k { grid-column: 1 / -1; }
@@ -202,7 +213,7 @@ const tall = (i: Img) => i.h > i.w * 2;
     .rub .k, .rub .v { grid-column: 1 / -1; }
     .blk div { grid-template-columns: 1fr; row-gap: 4px; }
     .gal .h { grid-column: 1 / -1; }
-    .im.n2 img, .im.n1.tall img { grid-column: 1 / -1; }
+    .im.n2 img, .im.n1.tall img, .im.n2 .md, .im.n1.tall .md { grid-column: 1 / -1; }
     .nx .k, .nx .tt { grid-column: 1 / -1; }
     .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
   }
@@ -242,6 +253,31 @@ const tall = (i: Img) => i.h > i.w * 2;
       fill.onfinish = open;
     };
     host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
+
+    // ---------- les images n'arrivent jamais deux fois de la même façon ----------
+    // chaque bloc d'images a son entrée (rideau, zoom, cartes jetées, volet), jouée pendant la fin du glissement
+    const OUT = 'cubic-bezier(.2,.7,.2,1)';
+    const enters = [
+      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(60px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1000, delay: i * 140, easing: OUT, fill: 'backwards' }),
+      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(18% 18% 18% 18%)', transform: 'scale(1.18)', opacity: 0 }, { clipPath: 'inset(0 0 0 0)', transform: 'none', opacity: 1 }], { duration: 1100, delay: i * 160, easing: OUT, fill: 'backwards' }),
+      (m: HTMLElement, i: number) => { const s = i % 2 ? 1 : -1; return m.animate([{ transform: `translate(${s * 90}px, 160px) rotate(${s * 7}deg)`, opacity: 0 }, { opacity: 1, offset: .35 }, { transform: 'none', opacity: 1 }], { duration: 1050, delay: i * 180, easing: OUT, fill: 'backwards' }); },
+      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(0 100% 0 0)', transform: 'scale(1.08)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1100, delay: i * 150, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'backwards' }),
+    ];
+    const blocks = [...host.querySelectorAll<HTMLElement>('[data-enter]')];
+    const play = (scr: HTMLElement, delay: number) => {
+      if (reduced()) return;
+      const b = scr.querySelector<HTMLElement>('[data-enter]'); if (!b) return;
+      const fx = enters[blocks.indexOf(b) % enters.length];
+      b.querySelectorAll<HTMLElement>('.md').forEach((m, i) => { const a = fx(m, i); a.startTime = (document.timeline.currentTime as number) + delay; });
+    };
+    host.addEventListener('screens:leave', (e) => { const to = (e as CustomEvent).detail.to; const el = api.el(to); if (el) play(el, 220); });
+    // l'image suit la souris (légère inclinaison en 3D) : elle se laisse regarder
+    if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reduced()) {
+      host.querySelectorAll<HTMLElement>('.im .md').forEach((m) => {
+        m.addEventListener('pointermove', (e) => { const r = m.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; m.style.transform = `rotateY(${x * 6}deg) rotateX(${-y * 6}deg) scale(1.015)`; });
+        m.addEventListener('pointerleave', () => { m.style.transform = ''; });
+      });
+    }
     host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
     host.addEventListener('screens:beyond', open);
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
