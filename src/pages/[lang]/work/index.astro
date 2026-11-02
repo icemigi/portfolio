@@ -5,6 +5,7 @@
 import Base from '../../../layouts/Base.astro';
 import Footer from '../../../components/Footer.astro';
 import ObjectShape from '../../../components/ObjectShape.astro';
+import ProjectRows from '../../../components/ProjectRows.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media } from '../../../data/media';
@@ -35,12 +36,8 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
             })}
           </ol>
         </div>
-        <!-- téléphone : sommaire (chaque titre amène son écran) -->
-        <ol class="mindex g">
-          {projects.map((p, i) => (
-            <li><a href={`/${lang}/work/${p.slug}/`} data-go={i + 1}><span class="mono mu">{pad(i + 1)}</span><span class="t28">{p[lang].title}</span></a></li>
-          ))}
-        </ol>
+        <!-- téléphone : la même liste que la section Projets de l'accueil -->
+        <div class="mindex g"><div class="mlist"><ProjectRows lang={lang} /></div></div>
       </div>
     </section>
     {/* téléphone : un écran par projet (masqués sur ordinateur, où la scène d'objets les remplace) */}
@@ -80,12 +77,7 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
     .page { justify-content: flex-end; }
     .ttl { position: absolute; }
     .mindex { display: grid; padding-bottom: 72px; }
-    .mindex li { grid-column: 1 / -1; }
-    /* sommaire en grand, comme le menu : numéro en exposant, titre en Geist 500 */
-    .mindex { row-gap: 2px; }
-    .mindex a { display: flex; align-items: flex-start; gap: 10px; }
-    .mindex .mono { min-width: 22px; padding-top: 1.4vw; font-size: 12px; line-height: 1; }
-    .mindex .t28 { font-weight: 500; font-size: 8.6vw; line-height: 1.02; letter-spacing: -0.04em; }
+    .mlist { grid-column: 1 / -1; }
     .mo { display: block; }
     .mo-v { grid-column: 1 / -1; justify-self: center; width: 58vw; margin-bottom: 40px; }
     .mo-v :global(.shape) { display: block; width: 100%; height: auto; filter: drop-shadow(0 22px 20px rgba(0, 0, 0, .2)); }
