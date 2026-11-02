@@ -31,6 +31,14 @@ document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
 
 initCursor();
 
+// Boutons « (mot) + » : le signe devient un élément à part (il tourne au survol, le + devient × en fermant)
+document.querySelectorAll<HTMLElement>('.bp:not(.d)').forEach((b) => {
+  const label = b.textContent || '';
+  b.innerHTML = `<span class="bl"></span>${b.classList.contains('ba') ? '' : '<i class="sg" aria-hidden="true">+</i>'}`;
+  b.querySelector('.bl')!.textContent = label;
+  b.classList.add('d');
+});
+
 // Évitement du curseur : découpe faite avant toute apparition, pour que les deux animations se cumulent.
 initHola();
 

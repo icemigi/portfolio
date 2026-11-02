@@ -230,6 +230,16 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .bp::after { content: ')\00a0+'; } .bp.bx::after { content: ')\00a0×'; }
 /* flèches : le signe se suffit, pas de + */
 .bp.ba::after { content: ')'; }
+/* une fois le bouton préparé (site.ts) : le signe devient un élément à part, qui tourne au survol ;
+   « fermer » = le même + tourné de 45° (×) ; les flèches avancent de 3 px */
+.bp.d::after { content: none; } .bp.d .bl::after { content: ')'; }
+.bp .sg { display: inline-block; font-style: normal; margin-left: .3em; transition: rotate .4s var(--out); }
+.bp.bx .sg { rotate: 45deg; }
+.bp.ba { transition: translate .3s var(--out); }
+@media (hover: hover) {
+  .bp:hover .sg { rotate: 90deg; } .bp.bx:hover .sg { rotate: 135deg; }
+  .bp.ba:hover { translate: 3px 0; } .bp.ba[data-prev]:hover, .bp.ba[data-step='-1']:hover { translate: -3px 0; }
+}
 
 [data-copy], [data-copy] *, input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 .hc { position: relative; }

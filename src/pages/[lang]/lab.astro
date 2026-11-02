@@ -77,7 +77,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
           <line data-h x1="50" y1="50" x2="50" y2="28" />
           <line data-m x1="50" y1="50" x2="50" y2="16" />
           <line data-s x1="50" y1="58" x2="50" y2="12" />
-          <circle cx="50" cy="50" r="2.4" fill="#f60" />
+          <circle cx="50" cy="50" r="2.4" fill="#111" />
         </svg></div>
         <div class="wd glass note"><p class="nt">{M.note}</p><p>{M.hint}</p></div>
       </div>
@@ -132,7 +132,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   :global(.lab-booted) .boot { display: none; }
 
   /* ---------- bureau ---------- */
-  .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
+  .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: var(--fg); font-family: var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
     background: var(--bg) url(/logo-kerningkastle-dark.svg) center 46% / min(22vh, 220px) no-repeat; } /* même fond que le menu du site : aucune limite entre les deux */
 
   /* widgets */
@@ -151,25 +151,26 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   .desk { position: absolute; inset: 0; }
   .widgets { position: absolute; left: 22px; top: 18px; display: grid; grid-template-columns: 160px 160px; gap: 16px; }
   .wd { width: 160px; height: 160px; border-radius: 26px; padding: 14px 16px; overflow: hidden; }
-  .weather { --glass: linear-gradient(180deg, rgba(47, 127, 216, .78), rgba(90, 162, 236, .62)); color: #fff; }
-  .wc { font-weight: 600; font-size: 14px; }
+  /* bureau dans la direction du site : Geist, monochrome, verre neutre (aucune couleur d'interface Apple) */
+  .weather { --glass: rgba(17, 17, 17, .86); color: #f3f3f3; }
+  .wc { font-weight: 500; font-size: 14px; }
   .wc span { font-size: 9px; opacity: .9; }
-  .wt { font-size: 44px; font-weight: 300; line-height: 1.05; letter-spacing: -0.03em; }
-  .ws { margin-top: 18px; font-size: 12px; font-weight: 600; line-height: 1.35; }
+  .wt { font-size: 44px; font-weight: 500; line-height: 1.05; letter-spacing: -0.03em; }
+  .ws { margin-top: 18px; font-size: 12px; font-weight: 400; line-height: 1.35; }
   .cal { --glass: rgba(255, 255, 255, .5); color: #111; padding: 12px 12px; }
-  .cal :global(.cm) { color: #f23b30; font-weight: 700; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
+  .cal :global(.cm) { color: var(--fg); font-family: var(--mono); font-weight: 400; text-transform: lowercase; font-size: 11px; text-transform: uppercase; margin-bottom: 6px; }
   .cal :global(.cg) { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 3px; text-align: center; font-size: 10px; font-weight: 600; }
   .cal :global(.cg .h) { color: #999; font-weight: 600; }
   .cal :global(.cg .o) { color: #ccc; }
-  .cal :global(.cg .t) { background: #f23b30; color: #fff; border-radius: 50%; width: 17px; height: 17px; line-height: 17px; margin: 0 auto; }
+  .cal :global(.cg .t) { background: var(--fg); color: var(--bg); border-radius: 50%; width: 17px; height: 17px; line-height: 17px; margin: 0 auto; }
   .clockw { --glass: rgba(28, 28, 30, .55); padding: 10px; display: grid; place-items: center; }
   .clockw svg { width: 140px; height: 140px; }
-  .clockw text { font: 600 9px -apple-system, sans-serif; fill: #111; }
+  .clockw text { font: 500 9px var(--sans); fill: #111; }
   .clockw line { stroke: #111; stroke-width: 3.2; stroke-linecap: round; }
   .clockw line[data-m] { stroke-width: 2.4; }
-  .clockw line[data-s] { stroke: #f60; stroke-width: 1.2; }
-  .note { --glass: rgba(253, 230, 138, .62); color: #3d3317; }
-  .nt { font-weight: 700; margin-bottom: 6px; }
+  .clockw line[data-s] { stroke: #888; stroke-width: 1.2; }
+  .note { --glass: rgba(255, 255, 255, .55); color: var(--fg); }
+  .nt { font-weight: 500; margin-bottom: 6px; }
   @media (max-width: 900px) { .widgets { grid-template-columns: 160px; } .clockw, .note { display: none; } }
   @media (max-width: 760px) { .desk { overflow-y: auto; padding-bottom: 90px; } .widgets { position: static; display: flex; gap: 12px; padding: 16px 16px 0; } .wd { width: calc(50vw - 22px); height: calc(50vw - 22px); max-width: 170px; max-height: 170px; } }
 
@@ -180,7 +181,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   .dicon .ai { width: 60px; height: 60px; border-radius: 8px; padding: 3px; }
   .dicon .lbl { padding: 1px 5px; border-radius: 4px; line-height: 1.25; max-width: 92px; }
   .dicon.sel .ai { background: rgba(0, 0, 0, .08); box-shadow: 0 0 0 1px rgba(0, 0, 0, .12); }
-  .dicon.sel .lbl { background: #2b6ae6; color: #fff; }
+  .dicon.sel .lbl { background: var(--fg); color: var(--bg); }
   .dicon.drag { z-index: 30; opacity: .85; }
   @media (max-width: 760px) {
     .icons { position: static; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 8px; padding: 22px 12px; pointer-events: auto; }
@@ -189,8 +190,8 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
 
   /* icônes d'app (dessinées en CSS + SVG par le script) */
   .ai { display: block; }
-  .ai :global(svg), .ai :global(img) { display: block; width: 100%; height: 100%; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
-  .ai :global(img) { object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .18)); }
+  .ai :global(svg), .ai :global(img) { display: block; width: 100%; height: 100%; filter: grayscale(1) drop-shadow(0 2px 3px rgba(0, 0, 0, .25)); }
+  .ai :global(img) { object-fit: contain; filter: grayscale(1) drop-shadow(0 2px 3px rgba(0, 0, 0, .18)); }
 
   /* fenêtres */
   .wins { position: absolute; inset: 0; pointer-events: none; }
@@ -200,8 +201,8 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   .wins :global(.tb) { position: relative; flex: none; height: 32px; display: flex; align-items: center; justify-content: center; background: transparent; color: #3c3c3c; font-weight: 600; font-size: 13px; touch-action: none; user-select: none; }
   .wins :global(.win.blur .tb) { color: #a5a5a5; }
   .wins :global(.tl) { position: absolute; left: 13px; top: 10px; display: flex; gap: 8px; }
-  .wins :global(.tl button) { width: 12px; height: 12px; border-radius: 50%; display: grid; place-items: center; font: 700 9px/1 -apple-system, sans-serif; color: transparent; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .2); }
-  .wins :global(.tl .c) { background: #ff5f57; } .wins :global(.tl .m) { background: #febc2e; } .wins :global(.tl .z) { background: #28c840; }
+  .wins :global(.tl button) { width: 12px; height: 12px; border-radius: 50%; display: grid; place-items: center; font: 500 9px/1 var(--sans); color: transparent; box-shadow: inset 0 0 0 .5px rgba(0, 0, 0, .2); }
+  .wins :global(.tl .c), .wins :global(.tl .m), .wins :global(.tl .z) { background: #c8c8c8; } .wins :global(.tl:hover .c) { background: #111; } .wins :global(.tl:hover .m), .wins :global(.tl:hover .z) { background: #9a9a9a; }
   .wins :global(.tl:hover button) { color: rgba(0, 0, 0, .55); }
   .wins :global(.win.blur .tl button) { background: #d6d6d6; }
   .wins :global(.wb) { position: relative; flex: 1; margin: 0 6px 6px; border-radius: 12px; overflow: hidden; background: #fff; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .08); }
@@ -217,7 +218,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   .dock { position: absolute; z-index: 40; left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; align-items: flex-end; gap: 6px; padding: 0 9px 7px; height: 66px; border-radius: 28px; --glass: rgba(255, 255, 255, .18); }
   .dk { position: relative; width: 52px; height: 52px; display: block; flex: none; }
   .dk .ai { width: 100%; height: 100%; }
-  .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(255, 255, 255, .55); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); box-shadow: var(--rim), 0 4px 14px rgba(0, 0, 0, .12); color: #1d1d1f; font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
+  .dk .tip { position: absolute; left: 50%; bottom: calc(100% + 12px); transform: translateX(-50%); padding: 3px 9px; border-radius: 6px; background: rgba(255, 255, 255, .55); -webkit-backdrop-filter: var(--glass-fx); backdrop-filter: var(--glass-fx); box-shadow: var(--rim), 0 4px 14px rgba(0, 0, 0, .12); color: var(--fg); font-style: normal; font-size: 12px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .15s; }
   .dk:hover .tip { opacity: 1; }
   .dk .run { position: absolute; left: 50%; bottom: -5px; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: rgba(0, 0, 0, .55); opacity: 0; }
   .dk.on .run { opacity: 1; }

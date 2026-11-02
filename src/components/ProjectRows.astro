@@ -1,10 +1,13 @@
 ---
+// Liste des projets (accueil, page Projets sur téléphone). Ordinateur : au survol d'une ligne, l'objet du projet
+// apparaît et suit le curseur (amorti), comme un aperçu ; rien sur écran tactile.
 import { projects } from '../data/projects';
 import { tags, pad, type Lang } from '../data/ui';
+import ObjectShape from './ObjectShape.astro';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 ---
-<ol class="rows">
+<ol class="rows" data-rows>
   {projects.map((p, i) => (
     <li>
       <a class="row" href={`/${lang}/work/${p.slug}/`}>
@@ -13,6 +16,39 @@ const { lang } = Astro.props;
         <span class="d mono mu">{p.tags.map((t) => tags[lang][t]).join(', ')}</span>
         <span class="y mono mu">{p.yearLabel}</span>
       </a>
+      <span class="pv" aria-hidden="true"><ObjectShape kind={p.object} /></span>
     </li>
   ))}
 </ol>
+
+<style>
+  .rows { position: relative; }
+  .pv { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .pv { display: block; position: absolute; left: 0; top: 0; z-index: 5; width: 168px; pointer-events: none; opacity: 0; scale: .8; transition: opacity .25s, scale .45s var(--out); will-change: transform; }
+    .pv :global(.shape) { display: block; width: 100%; height: auto; filter: drop-shadow(0 18px 18px rgba(0, 0, 0, .2)); }
+    li:hover .pv { opacity: 1; scale: 1; }
+  }
+</style>
+
+<script>
+  // l'aperçu suit le curseur avec un léger retard (une seule boucle, arrêtée dès que l'aperçu est posé)
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.querySelectorAll<HTMLElement>('[data-rows]').forEach((list) => {
+      const pvs = [...list.querySelectorAll<HTMLElement>('.pv')];
+      let x = 0, y = 0, tx = 0, ty = 0, raf = 0, first = true;
+      const loop = () => {
+        x += (tx - x) * 0.18; y += (ty - y) * 0.18;
+        pvs.forEach((p) => (p.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${((tx - x) * 0.04).toFixed(2)}deg)`));
+        raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.3 ? requestAnimationFrame(loop) : 0;
+      };
+      list.addEventListener('pointermove', (e) => {
+        const r = list.getBoundingClientRect();
+        tx = e.clientX - r.left + 24; ty = e.clientY - r.top - 84;
+        if (first) { x = tx; y = ty; first = false; }
+        if (!raf) raf = requestAnimationFrame(loop);
+      });
+      list.addEventListener('pointerleave', () => { first = true; });
+    });
+  }
+</script>
