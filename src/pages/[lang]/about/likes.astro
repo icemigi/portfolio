@@ -187,7 +187,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
     const id = hit ? hit.kk : null;
     if (id && id !== hovered) dispatchEvent(new CustomEvent('kk:sound', { detail: 'hover' }));
-    hovered = id; stage.style.cursor = id ? 'grab' : 'default';
+    hovered = id; stage.style.cursor = id ? 'grab' : '';
   });
 
   // clic : l'objet vient au premier plan, agrandi, à gauche ; le texte apparaît à droite ; les autres objets sont chassés

@@ -4,7 +4,6 @@ import { initScreens } from './screens';
 import { reveal } from './motion';
 import './sound';
 import { initHola } from './hola';
-import { initCursor } from './cursor';
 
 // Email : clic = adresse copiée avec confirmation ; l'adresse reste sélectionnable.
 document.addEventListener('click', (e) => {
@@ -29,7 +28,7 @@ document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
   a.addEventListener('click', () => { try { localStorage.setItem('kk-lang', a.dataset.lang!); } catch { /* */ } }),
 );
 
-initCursor();
+// curseur : le gantelet est posé en CSS (global.css) ; l'ancienne flèche dessinée en JS est retirée
 
 // Boutons « (mot) + » : le signe devient un élément à part (il tourne au survol, le + devient × en fermant)
 document.querySelectorAll<HTMLElement>('.bp:not(.d)').forEach((b) => {
