@@ -5,7 +5,8 @@
 // Les fenêtres se déplacent, se redimensionnent, se réduisent dans le Dock et passent en plein écran.
 // Téléphone : écran d'accueil en grille, une app = une fenêtre plein écran.
 import Base from '../../layouts/Base.astro';
-import { ui, languages, getLangFromParam } from '../../data/ui';
+import Footer from '../../components/Footer.astro';
+import { ui, languages, getLangFromParam, pad } from '../../data/ui';
 import { rooms } from '../../data/lab';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
@@ -22,10 +23,29 @@ const M = fr
   ? { app: 'Finder', menus: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], about: 'À propos de kerningkastle', site: [['Accueil', ''], ['Projets', 'work/'], ['Archive', 'archive/'], ['À propos', 'about/']], lang: 'English', hint: 'Double-cliquez sur une icône pour ouvrir une expérience. Tout se déplace.', note: 'Lab', trash: 'Corbeille', trashEmpty: 'Des brouillons, des essais ratés, des idées pas finies. On ne la vide jamais.', weather: 'Paris', today: "Aujourd'hui", close: 'Fermer', min: 'Réduire', zoom: 'Plein écran' }
   : { app: 'Finder', menus: ['File', 'Edit', 'View', 'Go', 'Window', 'Help'], about: 'About kerningkastle', site: [['Home', ''], ['Work', 'work/'], ['Archive', 'archive/'], ['About', 'about/']], lang: 'Français', hint: 'Double-click an icon to open an experiment. Everything can be moved.', note: 'Lab', trash: 'Trash', trashEmpty: 'Drafts, failed tests, unfinished ideas. We never empty it.', weather: 'Paris', today: 'Today', close: 'Close', min: 'Minimise', zoom: 'Full screen' };
 const other = fr ? 'en' : 'fr';
+// téléphone : pas de faux bureau, une grille dans le style du site ; chaque pièce s'ouvre en pleine page
+const tiles = [
+  ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year.replace(/^\[.*\]$/, '—'), href: `/${lang}/lab/${r.id}/` })),
+  { id: 'heraldry', title: 'Algorithmic Heraldry', cat: fr ? 'Générateur' : 'Generator', year: '2025', href: '/lab/heraldry/index.html' },
+];
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
   <div class="boot" data-boot aria-hidden="true"><img src="/logo-kerningkastle.svg" alt="" width="84" height="84" /><span class="pb"><i data-pb></i></span></div>
   <h1 class="sr">Lab</h1>
+  <section class="lgrid g" aria-label="Lab">
+    <p class="lg-t mono mu par">{t.nav.lab} {pad(tiles.length)}</p>
+    <p class="lg-i">{fr ? 'Des expériences, des générateurs et des fontes. Sur ordinateur, tout ça vit dans un faux Mac (oui, vraiment).' : 'Experiments, generators and typefaces. On a computer, all of this lives inside a fake Mac (yes, really).'}</p>
+    <ol class="lg-l">
+      {tiles.map((x, i) => (
+        <li><a href={x.href}>
+          <span class="lg-v"><span class="ai" data-icon={x.id}></span></span>
+          <span class="lg-n mono"><span class="mu">{pad(i + 1)}</span> — {x.title.toLowerCase()}</span>
+          <span class="lg-c mono mu">{x.cat.toLowerCase()} · {x.year}</span>
+        </a></li>
+      ))}
+    </ol>
+  </section>
+  <div class="lg-f"><Footer lang={lang} top={false} /></div>
   <div class="mac" data-mac>
     <!-- bureau -->
     <div class="desk" data-desk>
@@ -74,6 +94,24 @@ const other = fr ? 'en' : 'fr';
 </script>
 
 <style>
+  /* ---------- téléphone : grille ---------- */
+  .lgrid, .lg-f { display: none; }
+  @media (max-width: 760px) {
+    .mac, .boot { display: none !important; }
+    .lgrid { display: grid; padding-top: calc(var(--head) + 16px); padding-bottom: 48px; row-gap: 0; }
+    .lg-t, .lg-i, .lg-l { grid-column: 1 / -1; }
+    .lg-i { margin-top: 32px; font-size: 6.4vw; line-height: 1.15; letter-spacing: -0.02em; font-weight: 500; }
+    .lg-l { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px 12px; }
+    .lg-l a { display: block; }
+    .lg-v { display: grid; place-items: center; aspect-ratio: 1; background: rgba(0, 0, 0, .045); transition: background .3s; }
+    .lg-l a:active .lg-v { background: rgba(0, 0, 0, .08); }
+    .lg-f { display: block; }
+    :global(.site-header) { background: var(--bg); } /* la grille défile sous l'en-tête */
+    .lg-v .ai { width: 42%; height: 42%; filter: grayscale(1); } /* en gris, comme les objets de la page Projets */
+    .lg-n { display: block; margin-top: 10px; font-size: 12px; }
+    .lg-c { display: block; margin-top: 2px; font-size: 12px; }
+  }
+
   /* ---------- démarrage ---------- */
   .boot { position: fixed; inset: var(--head) 0 0 0; z-index: 200; background: #000; display: grid; place-items: center; align-content: center; row-gap: 56px; }
   .boot img { width: 84px; height: 84px; }
@@ -212,7 +250,7 @@ const other = fr ? 'en' : 'fr';
     heraldry: sq('#111', `<path d="M30 24h40v26c0 16-10 26-20 30-10-4-20-14-20-30Z" fill="#fff"/><path d="M50 24v56c-10-4-20-14-20-30V24Z" fill="#111" stroke="#fff" stroke-width="2"/><path d="M30 50h40" stroke="#111" stroke-width="2"/>`),
     trash: `<img src="/lab/trash.webp" alt="" width="256" height="256" />`,
   };
-  root.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });
+  document.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });
 
   // ---------- horloge, calendrier, météo ----------
   const loc = L.lang === 'fr' ? 'fr-FR' : 'en-GB';
