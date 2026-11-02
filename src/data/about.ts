@@ -47,11 +47,17 @@ export const stack = {
   en: "I draw my letters in Glyphs, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python, and play live with TouchDesigner.",
 };
 const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.webp`, label: { fr: name, en: name }, logo: true });
-// fanions sous le texte : logos détourés dans /public/stack/mark-<id>.png
+// fanions sous le texte : drap à la couleur du logiciel, logo détouré (/public/stack/mark-<id>.png), encre du nom et des coutures
 export const stackBanners = [
-  { id: 'glyphs', name: 'Glyphs' }, { id: 'illustrator', name: 'Illustrator' }, { id: 'photoshop', name: 'Photoshop' },
-  { id: 'figma', name: 'Figma' }, { id: 'procreate', name: 'Procreate' }, { id: 'typescript', name: 'TypeScript' },
-  { id: 'p5js', name: 'p5.js' }, { id: 'python', name: 'Python' }, { id: 'touchdesigner', name: 'TouchDesigner' },
+  { id: 'glyphs', name: 'Glyphs', bg: '#4fae4f', ink: '#ffffff', mark: 'mark-glyphs-w' },
+  { id: 'illustrator', name: 'Illustrator', bg: '#330000', ink: '#ff9a00', mark: 'mark-illustrator' },
+  { id: 'photoshop', name: 'Photoshop', bg: '#001e36', ink: '#31a8ff', mark: 'mark-photoshop' },
+  { id: 'figma', name: 'Figma', bg: '#1e1e1e', ink: '#f3f3f3', mark: 'mark-figma' },
+  { id: 'procreate', name: 'Procreate', bg: '#121212', ink: '#d9a9ff', mark: 'mark-procreate' },
+  { id: 'typescript', name: 'TypeScript', bg: '#3178c6', ink: '#ffffff', mark: 'mark-typescript' },
+  { id: 'p5js', name: 'p5.js', bg: '#ed225d', ink: '#ffffff', mark: 'mark-p5js-w' },
+  { id: 'python', name: 'Python', bg: '#f7f7f5', ink: '#3776ab', mark: 'mark-python' },
+  { id: 'touchdesigner', name: 'TouchDesigner', bg: '#161616', ink: '#8fbf6a', mark: 'mark-touchdesigner' },
 ];
 export const stackVigs: Vig[] = [
   tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),

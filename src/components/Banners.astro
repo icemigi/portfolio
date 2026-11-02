@@ -1,23 +1,20 @@
 ---
-// Stack en fanions « médiéval moderne » : une hampe en fer, des bannières à queue d'aronde en drap noir,
-// bordure argent sur tout le contour, logo détouré en grand, nom en Mono. Le passage de la souris les fait
-// balancer (pendule amorti, la pointe traîne comme un tissu) ; au doigt, un toucher secoue la bannière touchée.
-interface Props { items: { id: string; name: string }[] }
+// Stack en fanions de tissu. Chaque fanion = un vrai tissu simulé (maillage de points, intégration de Verlet,
+// contraintes de distance, gravité, brise légère) et dessiné en WebGL avec un éclairage calculé sur les plis.
+// Drap à la couleur du logiciel, logo détouré, couture piquée, queue d'aronde ; la hampe en fer les retient.
+// La souris passe = le vent qu'elle fait pousse le tissu. Sans WebGL ou avec « Réduire les animations » :
+// fanions fixes en HTML (même dessin, sans mouvement).
+interface Props { items: { id: string; name: string; bg: string; ink: string; mark: string }[] }
 const { items } = Astro.props;
-const CLOTH = 'M0 0 H100 V300 L50 252 L0 300 Z';
-const EDGE = 'M5 10 H95 V285 L50 242 L5 285 Z';
 ---
 <div class="fanions" data-fanions aria-label="Stack">
   <span class="rod" aria-hidden="true"></span>
+  <canvas class="gl" aria-hidden="true"></canvas>
   <ul>
     {items.map((x) => (
-      <li class="fn">
-        <span class="cloth">
-          <svg viewBox="0 0 100 300" preserveAspectRatio="none" aria-hidden="true">
-            <path d={CLOTH} class="c" /><path d={EDGE} class="e" vector-effect="non-scaling-stroke" />
-            <rect x="0" y="0" width="100" height="10" class="h" />
-          </svg>
-          <img src={`/stack/mark-${x.id}.png`} alt={x.name} loading="lazy" decoding="async" />
+      <li class="fn" data-bg={x.bg} data-ink={x.ink} data-mark={`/stack/${x.mark}.png`} data-name={x.name.toLowerCase()}>
+        <span class="cloth" style={`--bg:${x.bg};--ink:${x.ink}`}>
+          <img src={`/stack/${x.mark}.png`} alt={x.name} decoding="async" />
           <span class="nm mono">{x.name.toLowerCase()}</span>
         </span>
       </li>
@@ -26,62 +23,166 @@ const EDGE = 'M5 10 H95 V285 L50 242 L5 285 Z';
 </div>
 
 <style>
-  .fanions { position: relative; margin-top: 44px; padding-top: 4px; }
-  /* hampe : barre de fer à pommeaux */
-  .rod { position: absolute; left: -10px; right: -10px; top: 0; height: 7px; border-radius: 4px; z-index: 2;
-    background: linear-gradient(180deg, #6d6d70 0%, #2a2a2c 45%, #0c0c0d 100%); box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
-  .rod::before, .rod::after { content: ''; position: absolute; top: -4px; width: 15px; height: 15px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #a9a9ad, #2a2a2c 60%, #0c0c0d); }
-  .rod::before { left: -9px; } .rod::after { right: -9px; }
-  ul { display: flex; gap: clamp(8px, 1.1vw, 16px); padding: 0 6px; }
+  .fanions { position: relative; margin-top: 44px; padding-top: 5px; }
+  .rod { position: absolute; left: -12px; right: -12px; top: 0; height: 8px; border-radius: 4px; z-index: 3;
+    background: linear-gradient(180deg, #8a8a8e 0%, #2e2e31 45%, #0b0b0c 100%); box-shadow: 0 3px 6px rgba(0, 0, 0, .25); }
+  .rod::before, .rod::after { content: ''; position: absolute; top: -5px; width: 18px; height: 18px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #c4c4c8, #3a3a3d 55%, #0b0b0c); }
+  .rod::before { left: -10px; } .rod::after { right: -10px; }
+  .gl { position: absolute; left: -60px; right: -60px; top: 0; height: calc(100% + 80px); width: calc(100% + 120px); pointer-events: none; z-index: 2; }
+  ul { display: flex; gap: clamp(10px, 1.2vw, 18px); padding: 0 8px; }
   .fn { flex: 1; min-width: 0; }
-  .cloth { position: relative; display: block; height: clamp(170px, 32vh, 320px); transform-origin: 50% 0; will-change: transform;
-    filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .18)); }
-  .cloth svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
-  /* drap noir avec un pli de lumière au centre */
-  .c { fill: #151516; }
-  .cloth::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
-    background: linear-gradient(90deg, rgba(0, 0, 0, .35), rgba(255, 255, 255, .07) 45%, rgba(255, 255, 255, .02) 60%, rgba(0, 0, 0, .3));
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); }
-  .e { fill: none; stroke: #9a9a9e; stroke-width: 1; opacity: .7; }
-  .h { fill: #0a0a0b; }
-  .cloth img { position: absolute; z-index: 2; left: 14%; right: 14%; top: 13%; width: 72%; height: auto; max-height: 34%; object-fit: contain; }
-  .nm { position: absolute; z-index: 2; left: 0; right: 0; top: 56%; text-align: center; font-size: 11px; color: #c7c7cb; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
+  /* version fixe (aussi la mise en page de référence pour le tissu) */
+  .cloth { position: relative; display: flex; flex-direction: column; align-items: center; height: clamp(180px, 34vh, 340px); padding-top: 16%;
+    background: var(--bg); color: var(--ink); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%); }
+  .cloth img { width: 74%; height: auto; max-height: 34%; object-fit: contain; }
+  .nm { margin-top: auto; margin-bottom: 34%; font-size: 11px; white-space: nowrap; }
+  .fanions.live ul { visibility: hidden; }
   @media (max-width: 760px) {
     .fanions { margin-top: 28px; }
     ul { flex-wrap: wrap; gap: 14px 8px; }
     .fn { flex: 0 0 calc((100% - 32px) / 5); }
     .cloth { height: clamp(110px, 17vh, 160px); }
-    .nm { display: none; }
-    .rod { display: none; }
+    .nm, .rod { display: none; }
   }
 </style>
 
 <script>
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  document.querySelectorAll<HTMLElement>('[data-fanions]').forEach((root) => {
-    if (still) return;
-    const F = [...root.querySelectorAll<HTMLElement>('.cloth')].map((el) => ({ el, a: 0, v: 0, cx: 0 }));
-    let raf = 0, lx = 0, lt = 0;
-    const measure = () => F.forEach((f) => { const r = f.el.getBoundingClientRect(); f.cx = r.left + r.width / 2; });
-    const loop = () => {
-      let moving = false;
-      for (const f of F) {
-        f.v += -0.05 * f.a - 0.075 * f.v; f.a += f.v;
-        if (Math.abs(f.a) > 0.02 || Math.abs(f.v) > 0.02) moving = true; else { f.a = 0; f.v = 0; }
-        f.el.style.transform = f.a ? `rotate(${f.a.toFixed(2)}deg) skewX(${(-f.a * 0.5).toFixed(2)}deg)` : '';
-      }
-      raf = moving ? requestAnimationFrame(loop) : 0;
-    };
-    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
-    root.addEventListener('pointerenter', (e) => { measure(); lx = e.clientX; lt = performance.now(); });
-    root.addEventListener('pointermove', (e) => {
-      if (e.pointerType !== 'mouse') return;
-      const now = performance.now(), dx = e.clientX - lx, dt = Math.max(8, now - lt); lx = e.clientX; lt = now;
-      const vx = Math.max(-3, Math.min(3, dx / dt));
-      for (const f of F) { const d = Math.abs(e.clientX - f.cx); if (d < 170) f.v += vx * 1.5 * (1 - d / 170); }
-      kick();
+  type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; uv: Float32Array; sh: Float32Array };
+  const C = 8, R = 22; // colonnes × rangées de points par fanion
+  const root = document.querySelector<HTMLElement>('[data-fanions]');
+  const still = matchMedia('(prefers-reduced-motion: reduce), (max-width: 760px)').matches;
+  const cv = root?.querySelector<HTMLCanvasElement>('canvas.gl');
+  const gl = !still && cv ? cv.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true }) : null;
+  if (root && cv && gl) {
+    const li = [...root.querySelectorAll<HTMLElement>('li.fn')];
+    // ---------- shaders : position en px, texture du drap, éclairage par sommet (plis) ----------
+    const sh = (t: number, s: string) => { const o = gl.createShader(t)!; gl.shaderSource(o, s); gl.compileShader(o); return o; };
+    const pr = gl.createProgram()!;
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, `attribute vec2 p; attribute vec2 t; attribute float l; uniform vec2 u; varying vec2 vt; varying float vl;
+      void main(){ vt=t; vl=l; gl_Position=vec4(p.x/u.x*2.0-1.0, 1.0-p.y/u.y*2.0, 0.0, 1.0); }`));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; uniform sampler2D s; varying vec2 vt; varying float vl;
+      void main(){ vec4 c=texture2D(s,vt); if(c.a<0.02) discard; vec3 col=c.rgb*(0.62+0.5*vl)+vec3(0.09)*pow(max(vl-0.55,0.0)*2.2,2.0)*c.a; gl_FragColor=vec4(col,c.a); }`));
+    gl.linkProgram(pr); gl.useProgram(pr);
+    const aP = gl.getAttribLocation(pr, 'p'), aT = gl.getAttribLocation(pr, 't'), aL = gl.getAttribLocation(pr, 'l'), uU = gl.getUniformLocation(pr, 'u');
+    const bP = gl.createBuffer(), bT = gl.createBuffer(), bL = gl.createBuffer(), bI = gl.createBuffer();
+    gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    // indices du maillage (deux triangles par case)
+    const idx: number[] = [];
+    for (let r = 0; r < R - 1; r++) for (let c = 0; c < C - 1; c++) { const i = r * C + c; idx.push(i, i + 1, i + C, i + 1, i + C + 1, i + C); }
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bI); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
+
+    // ---------- texture d'un fanion : drap, ourlet, couture, logo, nom, queue d'aronde ----------
+    const paint = (el: HTMLElement, w: number, h: number) => new Promise<HTMLCanvasElement>((res) => {
+      const k = 2, W = Math.round(w * k), H = Math.round(h * k), c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d')!, notch = 0.15;
+      const shape = (m: number) => { x.beginPath(); x.moveTo(m, m); x.lineTo(W - m, m); x.lineTo(W - m, H - m * 1.4); x.lineTo(W / 2, H * (1 - notch) - m * 0.4); x.lineTo(m, H - m * 1.4); x.closePath(); };
+      shape(0); x.fillStyle = el.dataset.bg!; x.fill();
+      // trame très légère (le drap n'est pas un aplat numérique)
+      x.save(); shape(0); x.clip(); x.globalAlpha = .045; x.fillStyle = '#000';
+      for (let i = 0; i < H; i += 3) x.fillRect(0, i, W, 1);
+      x.globalAlpha = .18; x.fillRect(0, 0, W, H * 0.045); x.restore(); // ourlet
+      // couture piquée
+      x.save(); shape(k * 7); x.setLineDash([k * 4, k * 3]); x.lineWidth = k * 1; x.strokeStyle = el.dataset.ink!; x.globalAlpha = .45; x.stroke(); x.restore();
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const mw = W * 0.72, mh = Math.min(H * 0.3, (mw * img.height) / img.width), sw = (mh * img.width) / img.height;
+        x.drawImage(img, (W - sw) / 2, H * 0.12, sw, mh);
+        x.fillStyle = el.dataset.ink!; x.globalAlpha = .85; x.font = `${11 * k}px "Geist Mono", monospace`; x.textAlign = 'center';
+        x.fillText(el.dataset.name!, W / 2, H * 0.6, W - k * 16);
+        res(c);
+      };
+      img.onerror = () => res(c);
+      img.src = el.dataset.mark!;
     });
-    root.addEventListener('pointerdown', (e) => { measure(); const f = F.find((x) => Math.abs(e.clientX - x.cx) < x.el.offsetWidth / 2); if (f) { f.v += (Math.random() > 0.5 ? 1 : -1) * 3; kick(); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); } });
-  });
+
+    let banners: B[] = [], CW = 0, CH = 0, dpr = 1;
+    const build = async () => {
+      dpr = Math.min(2, devicePixelRatio || 1);
+      const cr = cv.getBoundingClientRect(); CW = cr.width; CH = cr.height;
+      cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr); gl.viewport(0, 0, cv.width, cv.height);
+      const next: B[] = [];
+      for (const el of li) {
+        const r = el.querySelector('.cloth')!.getBoundingClientRect();
+        const b: B = { x0: r.left - cr.left, y0: r.top - cr.top, w: r.width, h: r.height, P: new Float32Array(C * R * 3), Q: new Float32Array(C * R * 3), tex: null, uv: new Float32Array(C * R * 2), sh: new Float32Array(C * R) };
+        for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
+          const n = j * C + i, px = b.x0 + (i / (C - 1)) * b.w, py = b.y0 + (j / (R - 1)) * b.h;
+          b.P.set([px, py, 0], n * 3); b.Q.set([px, py, 0], n * 3); b.uv.set([i / (C - 1), j / (R - 1)], n * 2);
+        }
+        const c = await paint(el, b.w, b.h);
+        b.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, b.tex);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        next.push(b);
+      }
+      banners.forEach((b) => gl.deleteTexture(b.tex)); banners = next;
+      root.classList.add('live'); kick();
+    };
+
+    // ---------- simulation ----------
+    let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, energy = 1, raf = 0, visible = true;
+    const step = () => {
+      t += 1;
+      const breeze = 0.012 * Math.sin(t * 0.021) + 0.008 * Math.sin(t * 0.047 + 1.3);
+      for (const b of banners) {
+        const { P, Q, w, h } = b, sx = w / (C - 1), sy = h / (R - 1);
+        for (let n = C; n < C * R; n++) { // la rangée du haut reste accrochée à la hampe
+          const k = n * 3, x = P[k], y = P[k + 1], z = P[k + 2];
+          let fx = 0, fy = 0.22, fz = breeze * (n / (C * R)) * 6;
+          const dx = x - mx, dy = y - my, d2 = dx * dx + dy * dy;
+          if (d2 < 130 * 130) { const f = (1 - Math.sqrt(d2) / 130) ** 2; fx += vx * 0.03 * f; fy += vy * 0.012 * f; fz += (Math.abs(vx) + Math.abs(vy)) * 0.022 * f * Math.sign(dx || 1); }
+          P[k] = x + (x - Q[k]) * 0.982 + fx; P[k + 1] = y + (y - Q[k + 1]) * 0.982 + fy; P[k + 2] = z + (z - Q[k + 2]) * 0.982 + fz;
+          Q[k] = x; Q[k + 1] = y; Q[k + 2] = z;
+        }
+        for (let it = 0; it < 6; it++) {
+          for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
+            const n = j * C + i;
+            if (i < C - 1) link(P, n, n + 1, sx, j === 0);
+            if (j < R - 1) link(P, n, n + C, sy, false);
+            if (i < C - 1 && j < R - 1) link(P, n, n + C + 1, Math.hypot(sx, sy), false, 0.5);
+          }
+          for (let i = 0; i < C; i++) { const k = i * 3; P[k] = b.x0 + (i / (C - 1)) * w; P[k + 1] = b.y0; P[k + 2] = 0; }
+        }
+        // éclairage : normale du maillage, lumière en haut à gauche, devant
+        for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
+          const n = j * C + i, a = (j * C + Math.min(i + 1, C - 1)) * 3, bb = (j * C + Math.max(i - 1, 0)) * 3, c = (Math.min(j + 1, R - 1) * C + i) * 3, d = (Math.max(j - 1, 0) * C + i) * 3;
+          const tx = P[a] - P[bb], ty = P[a + 1] - P[bb + 1], tz = P[a + 2] - P[bb + 2], ux = P[c] - P[d], uy = P[c + 1] - P[d + 1], uz = P[c + 2] - P[d + 2];
+          let nx = ty * uz - tz * uy, ny = tz * ux - tx * uz, nz = tx * uy - ty * ux; const L = Math.hypot(nx, ny, nz) || 1; nx /= L; ny /= L; nz /= L;
+          b.sh[n] = Math.max(0, -0.35 * nx - 0.45 * ny + 0.82 * Math.abs(nz));
+        }
+      }
+      vx *= 0.82; vy *= 0.82;
+    };
+    function link(P: Float32Array, a: number, b: number, rest: number, _top: boolean, k = 1) {
+      const A = a * 3, Bk = b * 3, dx = P[Bk] - P[A], dy = P[Bk + 1] - P[A + 1], dz = P[Bk + 2] - P[A + 2];
+      const d = Math.hypot(dx, dy, dz) || 1e-6, f = ((d - rest) / d) * 0.5 * k;
+      P[A] += dx * f; P[A + 1] += dy * f; P[A + 2] += dz * f; P[Bk] -= dx * f; P[Bk + 1] -= dy * f; P[Bk + 2] -= dz * f;
+    }
+    const draw = () => {
+      gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform2f(uU, CW, CH);
+      const xy = new Float32Array(C * R * 2);
+      for (const b of banners) {
+        for (let n = 0; n < C * R; n++) { xy[n * 2] = b.P[n * 3]; xy[n * 2 + 1] = b.P[n * 3 + 1]; }
+        gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferData(gl.ARRAY_BUFFER, xy, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bT); gl.bufferData(gl.ARRAY_BUFFER, b.uv, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bL); gl.bufferData(gl.ARRAY_BUFFER, b.sh, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aL); gl.vertexAttribPointer(aL, 1, gl.FLOAT, false, 0, 0);
+        gl.bindTexture(gl.TEXTURE_2D, b.tex); gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
+      }
+    };
+    const loop = () => { step(); step(); draw(); raf = visible ? requestAnimationFrame(loop) : 0; };
+    function kick() { if (!raf && visible) raf = requestAnimationFrame(loop); }
+    // la souris fait du vent : sa vitesse pousse le tissu à proximité
+    let lx = 0, ly = 0;
+    const host = root.closest('.scr') || document;
+    host.addEventListener('pointermove', (e: Event) => {
+      const p = e as PointerEvent, r = cv.getBoundingClientRect();
+      const x = p.clientX - r.left, y = p.clientY - r.top;
+      vx = Math.max(-24, Math.min(24, x - lx)); vy = Math.max(-24, Math.min(24, y - ly)); lx = x; ly = y; mx = x; my = y;
+    });
+    // la boucle ne tourne que quand la section est à l'écran
+    new IntersectionObserver((es) => { visible = es[0].isIntersecting; if (visible) kick(); }, { threshold: 0.05 }).observe(root);
+    document.fonts.ready.then(build);
+    let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = window.setTimeout(build, 200); });
+  }
 </script>
