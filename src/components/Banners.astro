@@ -1,0 +1,61 @@
+---
+// Stack en fanions : un fanion à queue d'aronde par logiciel, aux couleurs de son icône, suspendu sous le texte.
+// Le passage de la souris les fait balancer (pendule amorti, la pointe traîne comme un tissu) ; au doigt, un toucher les secoue.
+interface Props { items: { id: string; name: string; bg: string; ink: string }[] }
+const { items } = Astro.props;
+---
+<ul class="fanions" data-fanions aria-label="Stack">
+  {items.map((x) => (
+    <li class="fn" style={`--bg:${x.bg};--ink:${x.ink}`}>
+      <span class="cloth"><img src={`/stack/${x.id}.webp`} alt="" width="160" height="160" loading="lazy" decoding="async" /><span class="nm mono">{x.name.toLowerCase()}</span></span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .fanions { display: flex; gap: clamp(8px, 1.2vw, 18px); margin-top: 40px; padding-bottom: 8px; }
+  .fn { flex: 1; min-width: 0; }
+  .cloth { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; height: clamp(150px, 30vh, 300px); padding-top: 16%; background: var(--bg); color: var(--ink);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); transform-origin: 50% 0; will-change: transform;
+    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .14)); }
+  .cloth img { width: 58%; height: auto; border-radius: 22%; }
+  .nm { font-size: 11px; letter-spacing: 0; writing-mode: vertical-rl; transform: rotate(180deg); opacity: .8; }
+  @media (max-width: 760px) {
+    .fanions { flex-wrap: wrap; gap: 10px 8px; margin-top: 32px; }
+    .fn { flex: 0 0 calc((100% - 32px) / 5); }
+    .cloth { height: clamp(96px, 15vh, 150px); }
+    .nm { display: none; }
+  }
+</style>
+
+<script>
+  // une seule boucle, active seulement pendant que quelque chose bouge
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  document.querySelectorAll<HTMLElement>('[data-fanions]').forEach((ul) => {
+    if (still) return;
+    const F = [...ul.querySelectorAll<HTMLElement>('.cloth')].map((el) => ({ el, a: 0, v: 0, cx: 0 }));
+    let raf = 0, lx = 0, lt = 0;
+    const measure = () => F.forEach((f) => { const r = f.el.getBoundingClientRect(); f.cx = r.left + r.width / 2; });
+    const loop = () => {
+      let moving = false;
+      for (const f of F) {
+        f.v += (-0.06 * f.a) - 0.08 * f.v; f.a += f.v;
+        if (Math.abs(f.a) > 0.02 || Math.abs(f.v) > 0.02) moving = true; else { f.a = 0; f.v = 0; }
+        // rotation autour de l'accroche + pointe qui traîne (inclinaison inverse) : effet tissu
+        f.el.style.transform = f.a ? `rotate(${f.a.toFixed(2)}deg) skewX(${(-f.a * 0.45).toFixed(2)}deg)` : '';
+      }
+      raf = moving ? requestAnimationFrame(loop) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    ul.addEventListener('pointerenter', (e) => { measure(); lx = e.clientX; lt = performance.now(); });
+    ul.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const now = performance.now(), dx = e.clientX - lx, dt = Math.max(8, now - lt); lx = e.clientX; lt = now;
+      const vx = Math.max(-3, Math.min(3, dx / dt)); // px/ms
+      for (const f of F) { const d = Math.abs(e.clientX - f.cx); if (d < 160) f.v += vx * 1.6 * (1 - d / 160); }
+      kick();
+    });
+    // doigt / clic : une secousse sur le fanion touché
+    ul.addEventListener('pointerdown', (e) => { measure(); const f = F.find((x) => Math.abs(e.clientX - x.cx) < x.el.offsetWidth / 2); if (f) { f.v += (Math.random() > 0.5 ? 1 : -1) * 3; kick(); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); } });
+  });
+</script>

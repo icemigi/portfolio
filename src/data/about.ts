@@ -43,10 +43,18 @@ export const services = {
 // Stack technique, en texte d'affiche : chaque logiciel est suivi de sa vignette-logo.
 // Logos : /public/stack/<nom>.webp (icônes d'app, 160 px) ; tant qu'un fichier manque, la vignette affiche le nom.
 export const stack = {
-  fr: "Je dessine mes lettres dans Glyphs {0}, je compose dans Illustrator {1}, Photoshop {2} et Figma {3}, je griffonne sur Procreate {4}, je code en TypeScript {5}, p5.js {6} et Python {7}, et je joue en direct avec TouchDesigner {8}.",
-  en: "I draw my letters in Glyphs {0}, lay out in Illustrator {1}, Photoshop {2} and Figma {3}, sketch in Procreate {4}, code in TypeScript {5}, p5.js {6} and Python {7}, and play live with TouchDesigner {8}.",
+  fr: "Je dessine mes lettres dans Glyphs, je compose dans Illustrator, Photoshop et Figma, je griffonne sur Procreate, je code en TypeScript, p5.js et Python, et je joue en direct avec TouchDesigner.",
+  en: "I draw my letters in Glyphs, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python, and play live with TouchDesigner.",
 };
 const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.webp`, label: { fr: name, en: name }, logo: true });
+// fanions sous le texte : couleur du tissu = fond de l'icône, encre = nom du logiciel
+export const stackBanners = [
+  { id: 'glyphs', name: 'Glyphs', bg: '#f1f1f1', ink: '#111' }, { id: 'illustrator', name: 'Illustrator', bg: '#330000', ink: '#ff9a00' },
+  { id: 'photoshop', name: 'Photoshop', bg: '#001e36', ink: '#31a8ff' }, { id: 'figma', name: 'Figma', bg: '#f5f5f5', ink: '#111' },
+  { id: 'procreate', name: 'Procreate', bg: '#1e1e1e', ink: '#f3f3f3' }, { id: 'typescript', name: 'TypeScript', bg: '#3178c6', ink: '#fff' },
+  { id: 'p5js', name: 'p5.js', bg: '#ffffff', ink: '#ed225d' }, { id: 'python', name: 'Python', bg: '#ffffff', ink: '#3776ab' },
+  { id: 'touchdesigner', name: 'TouchDesigner', bg: '#111111', ink: '#f3f3f3' },
+];
 export const stackVigs: Vig[] = [
   tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),
   tool('typescript', 'TypeScript'), tool('p5js', 'p5.js'), tool('python', 'Python'), tool('touchdesigner', 'TouchDesigner'),
