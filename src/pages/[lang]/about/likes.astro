@@ -230,9 +230,9 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
     const emb = it.el.querySelector<HTMLElement>('[data-emb]');
     if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
-    // le lecteur prend tout l'écran de l'iPod : hauteur standard de Spotify (352 px, sans l'aperçu vidéo qui s'ajoute au-delà)
-    // réduite à la hauteur de l'écran, largeur recalculée pour remplir l'écran aux mêmes proportions
-    if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientHeight / 352; f.style.height = '352px'; f.style.width = `${Math.ceil(emb.clientWidth / k) + 1}px`; f.style.transform = `scale(${k})`; }
+    // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions
+    // (assez haut pour que Spotify affiche aussi la liste des morceaux)
+    if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.width = '300px'; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; }
     card.querySelector('[data-title]')!.textContent = d.title;
     card.querySelector('[data-text]')!.textContent = d.text;
     card.hidden = false;
