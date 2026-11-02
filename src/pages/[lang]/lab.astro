@@ -18,6 +18,7 @@ type App = { id: string; title: string; src: string; icon: string; w: number; h:
 const apps: App[] = [
   ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), src: `/${lang}/lab/${r.id}/?embed`, icon: r.id, w: 880, h: 580 })),
   { id: 'heraldry', title: 'Algorithmic Heraldry', src: '/lab/heraldry/index.html', icon: 'heraldry', w: 980, h: 640 },
+  { id: 'quiz', title: 'Quiz Arcade', src: '/lab/quiz/index.html', icon: 'quiz', w: 1040, h: 700 },
 ];
 const M = fr
   ? { app: 'Finder', menus: ['Fichier', 'Édition', 'Présentation', 'Aller', 'Fenêtre', 'Aide'], about: 'À propos de kerningkastle', site: [['Accueil', ''], ['Projets', 'work/'], ['Archive', 'archive/'], ['À propos', 'about/']], lang: 'English', hint: 'Double-cliquez sur une icône pour ouvrir une expérience. Tout se déplace.', note: 'Lab', trash: 'Corbeille', trashEmpty: 'Des brouillons, des essais ratés, des idées pas finies. On ne la vide jamais.', weather: 'Paris', today: "Aujourd'hui", close: 'Fermer', min: 'Réduire', zoom: 'Plein écran' }
@@ -27,6 +28,7 @@ const other = fr ? 'en' : 'fr';
 const tiles = [
   ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year.replace(/^\[.*\]$/, '—'), href: `/${lang}/lab/${r.id}/` })),
   { id: 'heraldry', title: 'Algorithmic Heraldry', cat: fr ? 'Générateur' : 'Generator', year: '2025', href: '/lab/heraldry/index.html' },
+  { id: 'quiz', title: 'Quiz Arcade', cat: fr ? 'Jeu' : 'Game', year: '2026', href: '/lab/quiz/index.html' },
 ];
 const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tiles.slice(k * 4, k * 4 + 4));
 ---
@@ -260,6 +262,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
     gravity: sq('url(#gg)', `<g font-family="Geist, sans-serif" font-weight="600" fill="#111"><text x="30" y="40" font-size="20" transform="rotate(-18 30 40)">A</text><text x="52" y="56" font-size="22" transform="rotate(12 52 56)">g</text><text x="34" y="78" font-size="22">k</text><text x="58" y="80" font-size="22" transform="rotate(-8 58 80)">s</text></g>`, `<linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#ffb84d"/></linearGradient>`),
     'free-font': sq('#fbf7ee', `<text x="50" y="66" text-anchor="middle" font-family="Georgia, serif" font-size="40" fill="#111">Aa</text><rect x="20" y="74" width="60" height="2" fill="#d33"/>`),
     heraldry: sq('#111', `<path d="M30 24h40v26c0 16-10 26-20 30-10-4-20-14-20-30Z" fill="#fff"/><path d="M50 24v56c-10-4-20-14-20-30V24Z" fill="#111" stroke="#fff" stroke-width="2"/><path d="M30 50h40" stroke="#111" stroke-width="2"/>`),
+    quiz: sq('url(#gq)', `<text x="50" y="68" text-anchor="middle" font-family="Geist, sans-serif" font-weight="700" font-size="52" fill="#fff">?</text><circle cx="74" cy="28" r="8" fill="#ffd23f"/>`, `<linearGradient id="gq" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#5b21b6"/></linearGradient>`),
     trash: `<img src="/lab/trash.webp" alt="" width="256" height="256" />`,
   };
   document.querySelectorAll<HTMLElement>('[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon!] || ICONS['modular-type']; });

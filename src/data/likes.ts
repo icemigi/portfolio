@@ -2,8 +2,9 @@
 // w × h : proportions de l'image ; cm : taille réelle (sert à garder une hiérarchie douce entre les objets) ;
 // hull : contour de collision (enveloppe convexe du PNG, coordonnées 0–1), pour que les objets se touchent vraiment.
 // Textes : écrits à partir des notes de Xavier (01/11), à relire.
-// Liens : LETTERBOXD (sur le DVD) et SPOTIFY (lecteur dans l'écran de l'iPod, lien « embed »).
+// Liens : LETTERBOXD (sur le DVD), KERN_OUTDOOR (sur le sac) et SPOTIFY (lecteur dans l'écran de l'iPod, lien « embed »).
 const LETTERBOXD = 'https://letterboxd.com/icemigi/';
+const KERN_OUTDOOR = 'https://www.instagram.com/kern.outdoor/'; // le média outdoor (sur le sac à dos)
 const SPOTIFY = 'https://open.spotify.com/embed/playlist/5pJ0LEKT6sF4oUpoI8Hkme?utm_source=generator&theme=0'; // playlist de test, à remplacer
 export type Like = {
   id: string;
@@ -31,10 +32,10 @@ export const likes: Like[] = [
     hull: [[0.0,0.0],[1.0,0.0],[1.0,1.0],[0.0,1.0]],
     fr: { title: 'Films d\'horreur', sub: 'The Thing, John Carpenter', text: 'J\'adore le cinéma, tous les genres, avec un faible pour l\'horreur. The Thing reste mon modèle : un lieu fermé, une poignée de personnages, et la paranoïa qui fait le reste. Les films sont une de mes sources principales pour les affiches et le titrage ; je regarde un générique comme d\'autres regardent un tableau.' },
     en: { title: 'Horror films', sub: 'The Thing, John Carpenter', text: 'I love cinema, every genre, with a soft spot for horror. The Thing is still my reference: one closed place, a handful of characters, and paranoia does the rest. Films are one of my main sources for posters and titling; I watch opening credits the way some people look at paintings.' } },
-  { id: 'backpack', src: '/likes/backpack.webp', shape: 'rect', w: 280, h: 520, cm: 60,
+  { id: 'backpack', link: KERN_OUTDOOR, src: '/likes/backpack.webp', shape: 'rect', w: 280, h: 520, cm: 60,
     hull: [[0.029,0.123],[0.114,0.062],[0.343,0.0],[0.714,0.0],[0.9,0.069],[0.957,0.208],[1.0,0.392],[0.971,0.846],[0.914,0.954],[0.743,1.0],[0.371,1.0],[0.1,0.985],[0.014,0.869],[0.0,0.531]],
-    fr: { title: 'Randonnée', sub: 'Le sac, toujours prêt', text: 'La montagne, je la pratique depuis que je sais marcher. Je viens du Pays basque, où il suffit de lever la tête pour avoir envie d\'y aller, et j\'y ai grimpé assez de dénivelé pour pousser jusqu\'à des niveaux sérieux. Aujourd\'hui je prépare le diplôme d\'accompagnateur en moyenne montagne (AMM). Le sac est toujours à moitié prêt dans l\'entrée (on ne sait jamais).' },
-    en: { title: 'Hiking', sub: 'The pack, always ready', text: 'I\'ve been walking up mountains for as long as I\'ve been walking. I\'m from the Basque Country, where you only need to look up to want to go, and I\'ve climbed enough elevation there to reach fairly serious levels. I\'m now training for the French mountain leader diploma (AMM). The pack is always half-packed by the door (you never know).' } },
+    fr: { title: 'Randonnée', sub: 'Le sac, toujours prêt', text: 'La montagne, je la pratique depuis que je sais marcher. Je viens du Pays basque, où il suffit de lever la tête pour avoir envie d\'y aller, et j\'y ai grimpé assez de dénivelé pour pousser jusqu\'à des niveaux sérieux. Aujourd\'hui je prépare le diplôme d\'accompagnateur en moyenne montagne (AMM). Le sac est toujours à moitié prêt dans l\'entrée (on ne sait jamais). Ce que j\'en rapporte finit sur kern.outdoor, un média sur le terrain et le matériel.' },
+    en: { title: 'Hiking', sub: 'The pack, always ready', text: 'I\'ve been walking up mountains for as long as I\'ve been walking. I\'m from the Basque Country, where you only need to look up to want to go, and I\'ve climbed enough elevation there to reach fairly serious levels. I\'m now training for the French mountain leader diploma (AMM). The pack is always half-packed by the door (you never know). What I bring back ends up on kern.outdoor, a media about the field and the gear.' } },
   { id: 'hold-1', src: '/likes/hold-1.webp', shape: 'rect', w: 520, h: 239, cm: 25,
     hull: [[0.0,0.644],[0.123,0.085],[0.169,0.034],[0.931,0.0],[0.977,0.068],[1.0,0.169],[1.0,0.305],[0.938,0.661],[0.908,0.746],[0.731,0.983],[0.662,1.0],[0.231,0.932],[0.054,0.831],[0.0,0.746]],
     fr: { title: 'Escalade', sub: 'La prise', text: 'L\'escalade est sans doute le sport qui me relie à la nature de la façon la plus pure : le rocher, les mains, rien d\'autre. Et j\'adore son côté puzzle. Chaque voie est une énigme qu\'on lit d\'en bas, qu\'on rate, qu\'on relit, jusqu\'au moment où le bon mouvement devient évident.' },
