@@ -1,6 +1,7 @@
 // Comportements communs à toutes les pages.
 import './loader';
 import { initScreens } from './screens';
+import { initFlow } from './flow';
 import { reveal } from './motion';
 import './sound';
 import { initHola } from './hola';
@@ -43,7 +44,11 @@ initHola();
 
 // Pages en écrans
 const host = document.querySelector<HTMLElement>('[data-screens]');
-if (host) {
+// essai : défilement libre sur les pages marquées data-flow (?ecrans pour comparer avec l'écran par écran)
+if (host && host.hasAttribute('data-flow') && !new URLSearchParams(location.search).has('ecrans')) {
+  initFlow(host);
+  document.dispatchEvent(new Event('kk:flow'));
+} else if (host) {
   const api = initScreens(host);
   if (api.count < 2) document.querySelectorAll('[data-go="0"]').forEach((a) => a.remove());
   // arrivée par « Projet suivant » : l'étude gère elle-même son apparition
