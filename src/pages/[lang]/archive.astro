@@ -251,20 +251,24 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     raf = x !== target || foot !== footTarget ? requestAnimationFrame(loop) : 0;
   };
   const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
-  let endSince = Infinity; // depuis quand la dernière affiche est posée
-  const seek = (v: number) => { const was = target >= max(); target = Math.max(0, Math.min(max(), v)); if (target >= max() && !was) endSince = performance.now(); if (target < max()) endSince = Infinity; kick(); };
+  const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
 
   // molette : avance la bande ; au bout, un nouveau geste découvre le pied de page
-  let last = 0, atEndAtStart = false, atStartFoot = false, footHold = false;
+  let last = 0, atEndAtStart = false, atStartFoot = false, footHold = false, push = 0;
   addEventListener('wheel', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
     const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     const now = performance.now();
-    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; footHold = false; }
+    // un geste = une suite d'événements sans pause de plus de 200 ms (l'inertie du pavé en fait partie)
+    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; footHold = false; push = 0; }
     last = now;
     if (footHold) return; // le geste qui a refermé le pied de page s'arrête là
-    if (d > 0 && (atEndAtStart || (target >= max() && now - endSince > 450))) { footTarget = ft.offsetHeight; kick(); return; }
-    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; footHold = true; kick(); } return; }
+    // le pied de page ne s'ouvre que sur un NOUVEAU geste vers le bas, commencé alors que la dernière affiche est déjà posée,
+    // et franc (au moins 60 px cumulés) : ni l'inertie, ni un petit retour de pavé, ni un geste vers le haut ne l'ouvrent
+    if (d > 0 && atEndAtStart && footTarget === 0) { push += d; if (push > 60) { footTarget = ft.offsetHeight; kick(); } return; }
+    if (d > 0 && footTarget > 0) return;
+    if (d < 0 && footTarget > 0) { footTarget = 0; footHold = true; kick(); return; } // vers le haut : il se referme, et le geste s'arrête là
+    if (d < 0) push = 0;
     seek(target + d);
   }, { passive: true });
   addEventListener('keydown', (e) => {
