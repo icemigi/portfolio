@@ -8,7 +8,7 @@ import { join, extname } from 'node:path';
 const base = (process.argv[2] || '').replace(/\/$/, '');
 if (!base || !base.startsWith('/')) { console.error('usage : node tools/rebase.mjs /sous-dossier'); process.exit(1); }
 const site = 'https://icemigi.github.io';
-const DIRS = ['fr', 'en', '_astro', 'archive', 'work', 'vig', 'stack', 'logos', 'likes', 'lab', 'fonts', 'og', 'vendor', 'logo-kerningkastle', 'favicon', 'sitemap', 'robots'];
+const DIRS = ['fr', 'en', '_astro', 'archive', 'work', 'vig', 'stack', 'logos', 'likes', 'lab', 'fonts', 'og', 'vendor', 'logo-kerningkastle', 'favicon', 'sitemap', 'robots', 'apple-touch-icon', 'icon', 'site'];
 const top = `(?:${DIRS.join('|')})(?=[/.\\-"'\`)?#\\s]|$)`;
 // "/fr/…"  '/archive/…'  `/lab/…`  `/${lang}/…`  url(/fonts/…)  (/og/…)  srcset=" /…"
 const rx = new RegExp(`([\"'\`(=,\\s])/(${top}|\\$\\{)`, 'g');
@@ -23,6 +23,7 @@ const walk = (d) => readdirSync(d).forEach((f) => {
   t = t.replace(rx, (_, pre, what) => `${pre}${base}/${what}`);
   // racine nue : href="/" et la redirection de langue
   t = t.replace(/(href=["'])\/(["'])/g, `$1${base}/$2`);
+  t = t.replace(/("scope":\s*")\/(")/g, `$1${base}/$2`); // manifeste de l'écran d'accueil
   if (t !== s) { writeFileSync(p, t); files++; }
 });
 walk('dist');
