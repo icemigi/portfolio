@@ -22,7 +22,7 @@ const { items } = Astro.props;
 
 <style>
   .fanions { position: relative; margin-top: 32px; }
-  .gl { position: absolute; left: -60px; right: -60px; top: 0; height: calc(100% + 80px); width: calc(100% + 120px); pointer-events: none; z-index: 2; }
+  .gl { position: absolute; left: -60px; top: 0; height: calc(100% + 80px); width: calc(100% + 120px); max-width: none; /* la remise à zéro globale bornait le canvas à 100 % : le dernier fanion était coupé */ pointer-events: none; z-index: 2; }
   ul { display: flex; gap: clamp(10px, 1.2vw, 18px); padding: 0 8px; }
   .fn { flex: 1; min-width: 0; }
   /* version fixe (aussi la mise en page de référence pour le tissu) */
