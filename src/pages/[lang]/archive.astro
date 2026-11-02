@@ -145,7 +145,8 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img };
   });
   const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * (phone() ? .42 : .52)) * r, innerWidth * (phone() ? .62 : .34)); return [w, w / r]; };
-  const pos = (c: Card) => [c.x0 * W + c.dx, c.y0 * H + c.dy];
+  // sur téléphone, la pile se resserre vers le centre (les affiches y sont plus grandes que l'écran n'est large)
+  const pos = (c: Card) => [(phone() ? .5 + (c.x0 - .5) * .45 : c.x0) * W + c.dx, c.y0 * H + c.dy];
   const paint = (g: CanvasRenderingContext2D, c: Card, x: number, y: number, rot: number, s = 1, alpha = 1) => {
     const [w, h] = size(c.i);
     g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s); g.globalAlpha = alpha;
