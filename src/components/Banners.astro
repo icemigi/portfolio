@@ -1,61 +1,87 @@
 ---
-// Stack en fanions : un fanion à queue d'aronde par logiciel, aux couleurs de son icône, suspendu sous le texte.
-// Le passage de la souris les fait balancer (pendule amorti, la pointe traîne comme un tissu) ; au doigt, un toucher les secoue.
-interface Props { items: { id: string; name: string; bg: string; ink: string }[] }
+// Stack en fanions « médiéval moderne » : une hampe en fer, des bannières à queue d'aronde en drap noir,
+// bordure argent sur tout le contour, logo détouré en grand, nom en Mono. Le passage de la souris les fait
+// balancer (pendule amorti, la pointe traîne comme un tissu) ; au doigt, un toucher secoue la bannière touchée.
+interface Props { items: { id: string; name: string }[] }
 const { items } = Astro.props;
+const CLOTH = 'M0 0 H100 V300 L50 252 L0 300 Z';
+const EDGE = 'M5 10 H95 V285 L50 242 L5 285 Z';
 ---
-<ul class="fanions" data-fanions aria-label="Stack">
-  {items.map((x) => (
-    <li class="fn" style={`--bg:${x.bg};--ink:${x.ink}`}>
-      <span class="cloth"><img src={`/stack/${x.id}.webp`} alt="" width="160" height="160" loading="lazy" decoding="async" /><span class="nm mono">{x.name.toLowerCase()}</span></span>
-    </li>
-  ))}
-</ul>
+<div class="fanions" data-fanions aria-label="Stack">
+  <span class="rod" aria-hidden="true"></span>
+  <ul>
+    {items.map((x) => (
+      <li class="fn">
+        <span class="cloth">
+          <svg viewBox="0 0 100 300" preserveAspectRatio="none" aria-hidden="true">
+            <path d={CLOTH} class="c" /><path d={EDGE} class="e" vector-effect="non-scaling-stroke" />
+            <rect x="0" y="0" width="100" height="10" class="h" />
+          </svg>
+          <img src={`/stack/mark-${x.id}.png`} alt={x.name} loading="lazy" decoding="async" />
+          <span class="nm mono">{x.name.toLowerCase()}</span>
+        </span>
+      </li>
+    ))}
+  </ul>
+</div>
 
 <style>
-  .fanions { display: flex; gap: clamp(8px, 1.2vw, 18px); margin-top: 40px; padding-bottom: 8px; }
+  .fanions { position: relative; margin-top: 44px; padding-top: 4px; }
+  /* hampe : barre de fer à pommeaux */
+  .rod { position: absolute; left: -10px; right: -10px; top: 0; height: 7px; border-radius: 4px; z-index: 2;
+    background: linear-gradient(180deg, #6d6d70 0%, #2a2a2c 45%, #0c0c0d 100%); box-shadow: 0 2px 4px rgba(0, 0, 0, .25); }
+  .rod::before, .rod::after { content: ''; position: absolute; top: -4px; width: 15px; height: 15px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #a9a9ad, #2a2a2c 60%, #0c0c0d); }
+  .rod::before { left: -9px; } .rod::after { right: -9px; }
+  ul { display: flex; gap: clamp(8px, 1.1vw, 16px); padding: 0 6px; }
   .fn { flex: 1; min-width: 0; }
-  .cloth { position: relative; display: flex; flex-direction: column; align-items: center; gap: 10px; height: clamp(150px, 30vh, 300px); padding-top: 16%; background: var(--bg); color: var(--ink);
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); transform-origin: 50% 0; will-change: transform;
-    filter: drop-shadow(0 10px 12px rgba(0, 0, 0, .14)); }
-  .cloth img { width: 58%; height: auto; border-radius: 22%; }
-  .nm { font-size: 11px; letter-spacing: 0; writing-mode: vertical-rl; transform: rotate(180deg); opacity: .8; }
+  .cloth { position: relative; display: block; height: clamp(170px, 32vh, 320px); transform-origin: 50% 0; will-change: transform;
+    filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .18)); }
+  .cloth svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  /* drap noir avec un pli de lumière au centre */
+  .c { fill: #151516; }
+  .cloth::before { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    background: linear-gradient(90deg, rgba(0, 0, 0, .35), rgba(255, 255, 255, .07) 45%, rgba(255, 255, 255, .02) 60%, rgba(0, 0, 0, .3));
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 84%, 0 100%); }
+  .e { fill: none; stroke: #9a9a9e; stroke-width: 1; opacity: .7; }
+  .h { fill: #0a0a0b; }
+  .cloth img { position: absolute; z-index: 2; left: 14%; right: 14%; top: 13%; width: 72%; height: auto; max-height: 34%; object-fit: contain; }
+  .nm { position: absolute; z-index: 2; left: 0; right: 0; top: 56%; text-align: center; font-size: 11px; color: #c7c7cb; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; }
   @media (max-width: 760px) {
-    .fanions { flex-wrap: wrap; gap: 10px 8px; margin-top: 32px; }
+    .fanions { margin-top: 28px; }
+    ul { flex-wrap: wrap; gap: 14px 8px; }
     .fn { flex: 0 0 calc((100% - 32px) / 5); }
-    .cloth { height: clamp(96px, 15vh, 150px); }
+    .cloth { height: clamp(110px, 17vh, 160px); }
     .nm { display: none; }
+    .rod { display: none; }
   }
 </style>
 
 <script>
-  // une seule boucle, active seulement pendant que quelque chose bouge
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  document.querySelectorAll<HTMLElement>('[data-fanions]').forEach((ul) => {
+  document.querySelectorAll<HTMLElement>('[data-fanions]').forEach((root) => {
     if (still) return;
-    const F = [...ul.querySelectorAll<HTMLElement>('.cloth')].map((el) => ({ el, a: 0, v: 0, cx: 0 }));
+    const F = [...root.querySelectorAll<HTMLElement>('.cloth')].map((el) => ({ el, a: 0, v: 0, cx: 0 }));
     let raf = 0, lx = 0, lt = 0;
     const measure = () => F.forEach((f) => { const r = f.el.getBoundingClientRect(); f.cx = r.left + r.width / 2; });
     const loop = () => {
       let moving = false;
       for (const f of F) {
-        f.v += (-0.06 * f.a) - 0.08 * f.v; f.a += f.v;
+        f.v += -0.05 * f.a - 0.075 * f.v; f.a += f.v;
         if (Math.abs(f.a) > 0.02 || Math.abs(f.v) > 0.02) moving = true; else { f.a = 0; f.v = 0; }
-        // rotation autour de l'accroche + pointe qui traîne (inclinaison inverse) : effet tissu
-        f.el.style.transform = f.a ? `rotate(${f.a.toFixed(2)}deg) skewX(${(-f.a * 0.45).toFixed(2)}deg)` : '';
+        f.el.style.transform = f.a ? `rotate(${f.a.toFixed(2)}deg) skewX(${(-f.a * 0.5).toFixed(2)}deg)` : '';
       }
       raf = moving ? requestAnimationFrame(loop) : 0;
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
-    ul.addEventListener('pointerenter', (e) => { measure(); lx = e.clientX; lt = performance.now(); });
-    ul.addEventListener('pointermove', (e) => {
+    root.addEventListener('pointerenter', (e) => { measure(); lx = e.clientX; lt = performance.now(); });
+    root.addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
       const now = performance.now(), dx = e.clientX - lx, dt = Math.max(8, now - lt); lx = e.clientX; lt = now;
-      const vx = Math.max(-3, Math.min(3, dx / dt)); // px/ms
-      for (const f of F) { const d = Math.abs(e.clientX - f.cx); if (d < 160) f.v += vx * 1.6 * (1 - d / 160); }
+      const vx = Math.max(-3, Math.min(3, dx / dt));
+      for (const f of F) { const d = Math.abs(e.clientX - f.cx); if (d < 170) f.v += vx * 1.5 * (1 - d / 170); }
       kick();
     });
-    // doigt / clic : une secousse sur le fanion touché
-    ul.addEventListener('pointerdown', (e) => { measure(); const f = F.find((x) => Math.abs(e.clientX - x.cx) < x.el.offsetWidth / 2); if (f) { f.v += (Math.random() > 0.5 ? 1 : -1) * 3; kick(); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); } });
+    root.addEventListener('pointerdown', (e) => { measure(); const f = F.find((x) => Math.abs(e.clientX - x.cx) < x.el.offsetWidth / 2); if (f) { f.v += (Math.random() > 0.5 ? 1 : -1) * 3; kick(); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); } });
   });
 </script>

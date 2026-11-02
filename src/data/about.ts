@@ -47,13 +47,11 @@ export const stack = {
   en: "I draw my letters in Glyphs, lay out in Illustrator, Photoshop and Figma, sketch in Procreate, code in TypeScript, p5.js and Python, and play live with TouchDesigner.",
 };
 const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.webp`, label: { fr: name, en: name }, logo: true });
-// fanions sous le texte : couleur du tissu = fond de l'icône, encre = nom du logiciel
+// fanions sous le texte : logos détourés dans /public/stack/mark-<id>.png
 export const stackBanners = [
-  { id: 'glyphs', name: 'Glyphs', bg: '#f1f1f1', ink: '#111' }, { id: 'illustrator', name: 'Illustrator', bg: '#330000', ink: '#ff9a00' },
-  { id: 'photoshop', name: 'Photoshop', bg: '#001e36', ink: '#31a8ff' }, { id: 'figma', name: 'Figma', bg: '#f5f5f5', ink: '#111' },
-  { id: 'procreate', name: 'Procreate', bg: '#1e1e1e', ink: '#f3f3f3' }, { id: 'typescript', name: 'TypeScript', bg: '#3178c6', ink: '#fff' },
-  { id: 'p5js', name: 'p5.js', bg: '#ffffff', ink: '#ed225d' }, { id: 'python', name: 'Python', bg: '#ffffff', ink: '#3776ab' },
-  { id: 'touchdesigner', name: 'TouchDesigner', bg: '#111111', ink: '#f3f3f3' },
+  { id: 'glyphs', name: 'Glyphs' }, { id: 'illustrator', name: 'Illustrator' }, { id: 'photoshop', name: 'Photoshop' },
+  { id: 'figma', name: 'Figma' }, { id: 'procreate', name: 'Procreate' }, { id: 'typescript', name: 'TypeScript' },
+  { id: 'p5js', name: 'p5.js' }, { id: 'python', name: 'Python' }, { id: 'touchdesigner', name: 'TouchDesigner' },
 ];
 export const stackVigs: Vig[] = [
   tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),
