@@ -71,9 +71,9 @@ const PS = 'xavier@kerningkastle ~ %';
   .out :global(.t-err) { color: #e0806a; }
   .out :global(.t-wait) { visibility: hidden; }
   .out :global(a) { text-decoration: underline; text-underline-offset: 3px; }
-  .ps { color: var(--mu); white-space: nowrap; }
+  .ps { color: var(--ac); white-space: nowrap; }
   .in { display: flex; gap: 10px; align-items: baseline; padding: 6px 0 4px; flex: none; }
-  .in input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--fg); font: inherit; caret-color: var(--fg); padding: 0; }
+  .in input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--fg); font: inherit; caret-color: var(--ac); padding: 0; }
   .chips { display: flex; flex-wrap: wrap; gap: 4px 18px; padding: 10px 0 22px; border-top: 1px solid var(--ln); flex: none; }
   .chips button { color: var(--mu); padding: 4px 0; }
   .term :global(.typing)::after { content: '▍'; animation: blink 1s steps(1) infinite; }
@@ -90,6 +90,7 @@ const PS = 'xavier@kerningkastle ~ %';
 </style>
 
 <script>
+  import { paren } from '../../scripts/paren';
   type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
   const root = document.querySelector<HTMLElement>('[data-term]')!;
   const d: D = JSON.parse(root.dataset.cv!);
@@ -127,7 +128,7 @@ const PS = 'xavier@kerningkastle ~ %';
     const tmp = document.createElement('div'); tmp.innerHTML = html;
     let held = false;
     for (const el of [...tmp.children]) {
-      out.appendChild(el); follow();
+      out.appendChild(el); paren(el); follow();
       if (!held && el.getBoundingClientRect().top < out.getBoundingClientRect().bottom - 24) { write(el); await wait(gap); }
       else { held = true; el.classList.add('t-wait'); io.observe(el); }
     }

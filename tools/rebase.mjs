@@ -8,7 +8,7 @@ import { join, extname } from 'node:path';
 const base = (process.argv[2] || '').replace(/\/$/, '');
 if (!base || !base.startsWith('/')) { console.error('usage : node tools/rebase.mjs /sous-dossier'); process.exit(1); }
 const site = 'https://icemigi.github.io';
-const DIRS = ['fr', 'en', '_astro', 'archive', 'work', 'vig', 'stack', 'logos', 'likes', 'lab', 'fonts', 'og', 'vendor', 'logo-kerningkastle', 'favicon', 'sitemap', 'robots', 'apple-touch-icon', 'icon', 'site'];
+const DIRS = ['fr', 'en', '_astro', 'archive', 'work', 'vig', 'stack', 'logos', 'likes', 'lab', 'fonts', 'og', 'vendor', 'logo-kerningkastle', 'favicon', 'sitemap', 'robots', 'apple-touch-icon', 'icon', 'site', 'cursor'];
 const top = `(?:${DIRS.join('|')})(?=[/.\\-"'\`)?#\\s]|$)`;
 // "/fr/…"  '/archive/…'  `/lab/…`  `/${lang}/…`  url(/fonts/…)  (/og/…)  srcset=" /…"
 const rx = new RegExp(`([\"'\`(=,\\s])/(${top}|\\$\\{)`, 'g');

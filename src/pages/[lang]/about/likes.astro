@@ -84,6 +84,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
 </style>
 
 <script>
+  import { paren } from '../../../scripts/paren';
   import { letters } from '../../../scripts/motion';
   const M = (window as any).Matter;
   const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; cm: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
@@ -226,13 +227,13 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     if (!big.hidden) hideTitle();
     card.querySelector('[data-sub]')!.textContent = d.sub;
     const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
-    lk.hidden = !d.link; if (d.link) { lk.href = d.link; lk.textContent = ' ↗'; lk.setAttribute('aria-label', 'Letterboxd'); }
+    lk.hidden = !d.link; if (d.link) { lk.href = d.link; lk.textContent = ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', 'Letterboxd'); }
     // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
     const emb = it.el.querySelector<HTMLElement>('[data-emb]');
     if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
     if (emb?.firstElementChild) (emb.firstElementChild as HTMLElement).style.transform = `scale(${emb.clientWidth / 300})`;
     card.querySelector('[data-title]')!.textContent = d.title;
-    card.querySelector('[data-text]')!.textContent = d.text;
+    card.querySelector('[data-text]')!.textContent = d.text; paren(card);
     card.hidden = false;
     card.scrollTop = 0;
     const r = (small ? card : card.querySelector('.in')!).getBoundingClientRect();

@@ -59,6 +59,7 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
   .info p + p { margin-top: 4px; }
 
   .dots { grid-column: 5 / 9; display: flex; gap: 14px; justify-self: center; }
+  .dots [aria-current='page'] { color: var(--ac); }
   .act { grid-column: 9 / 13; justify-self: end; display: flex; gap: 20px; align-items: baseline; }
   .arw { padding: 12px 0; }
   .note { position: absolute; z-index: 4; left: var(--m); bottom: 96px; width: 320px; background: var(--bg); padding: 16px; box-shadow: 0 0 0 1px var(--ln); }
