@@ -10,8 +10,8 @@ const { items } = Astro.props;
 <div class="fanions" data-fanions aria-label="Stack">
   <canvas class="gl" aria-hidden="true"></canvas>
   <ul>
-    {items.map((x) => (
-      <li class="fn" data-bg={x.bg} data-ink={x.ink} data-mark={`/stack/${x.mark}`} data-name={x.name.toLowerCase()}>
+    {items.map((x, i) => (
+      <li class="fn" style={`--n:${i}`} data-bg={x.bg} data-ink={x.ink} data-mark={`/stack/${x.mark}`} data-name={x.name.toLowerCase()}>
         <span class="cloth" style={`--bg:${x.bg};--ink:${x.ink}`}>
           <img src={`/stack/${x.mark}`} alt={x.name} decoding="async" />
         </span>
@@ -30,14 +30,11 @@ const { items } = Astro.props;
     background: var(--bg); color: var(--ink); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%); }
   .cloth img { width: 60%; aspect-ratio: 1; height: auto; object-fit: contain; }
   .fanions.live ul { visibility: hidden; }
-  /* version fixe : les fanions se déroulent du haut, l'un après l'autre */
+  /* version fixe : simple fondu décalé */
   @media (prefers-reduced-motion: no-preference) {
-    .fanions:not(.live) .fn .cloth { animation: kk-unfurl .9s cubic-bezier(.2,.7,.2,1) backwards; }
-    .fn:nth-child(2) .cloth { animation-delay: .08s; } .fn:nth-child(3) .cloth { animation-delay: .16s; } .fn:nth-child(4) .cloth { animation-delay: .24s; }
-    .fn:nth-child(5) .cloth { animation-delay: .32s; } .fn:nth-child(6) .cloth { animation-delay: .4s; } .fn:nth-child(7) .cloth { animation-delay: .48s; }
-    .fn:nth-child(8) .cloth { animation-delay: .56s; } .fn:nth-child(9) .cloth { animation-delay: .64s; }
+    .fanions:not(.live) .fn .cloth { animation: kk-fade .5s ease-out backwards; animation-delay: calc(var(--n) * 60ms); }
   }
-  @keyframes kk-unfurl { from { clip-path: polygon(0 0, 100% 0, 100% 0, 50% 0, 0 0); } }
+  @keyframes kk-fade { from { opacity: 0; transform: translateY(-10px); } }
   @media (max-width: 760px) {
     .fanions { margin-top: 28px; }
     ul { flex-wrap: wrap; gap: 14px 8px; }
@@ -47,7 +44,7 @@ const { items } = Astro.props;
 </style>
 
 <script>
-  type B = { rel: number; u: number; x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; uv: Float32Array; sh: Float32Array };
+  type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; uv: Float32Array; sh: Float32Array };
   const C = 8, R = 22; // colonnes × rangées de points par fanion
   const root = document.querySelector<HTMLElement>('[data-fanions]');
   const still = matchMedia('(prefers-reduced-motion: reduce), (max-width: 760px)').matches;
@@ -59,12 +56,12 @@ const { items } = Astro.props;
     // ---------- shaders : position en px, texture du drap, éclairage par sommet (plis) ----------
     const sh = (t: number, s: string) => { const o = gl.createShader(t)!; gl.shaderSource(o, s); gl.compileShader(o); return o; };
     const pr = gl.createProgram()!;
-    gl.attachShader(pr, sh(gl.VERTEX_SHADER, `attribute vec2 p; attribute vec2 t; attribute float l; uniform vec2 u; varying vec2 vt; varying float vl;
-      void main(){ vt=t; vl=l; gl_Position=vec4(p.x/u.x*2.0-1.0, 1.0-p.y/u.y*2.0, 0.0, 1.0); }`));
-    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; uniform sampler2D s; varying vec2 vt; varying float vl;
-      void main(){ vec4 c=texture2D(s,vt); if(c.a<0.02) discard; vec3 col=c.rgb*(0.62+0.5*vl)+vec3(0.09)*pow(max(vl-0.55,0.0)*2.2,2.0)*c.a; gl_FragColor=vec4(col,c.a); }`));
+    gl.attachShader(pr, sh(gl.VERTEX_SHADER, `attribute vec2 p; attribute vec2 t; attribute float l; uniform vec2 u; uniform float oy; varying vec2 vt; varying float vl;
+      void main(){ vt=t; vl=l; gl_Position=vec4(p.x/u.x*2.0-1.0, 1.0-(p.y+oy)/u.y*2.0, 0.0, 1.0); }`));
+    gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, `precision mediump float; uniform sampler2D s; uniform float al; varying vec2 vt; varying float vl;
+      void main(){ vec4 c=texture2D(s,vt); if(c.a<0.02) discard; vec3 col=c.rgb*(0.62+0.5*vl)+vec3(0.09)*pow(max(vl-0.55,0.0)*2.2,2.0)*c.a; gl_FragColor=vec4(col,c.a)*al; }`));
     gl.linkProgram(pr); gl.useProgram(pr);
-    const aP = gl.getAttribLocation(pr, 'p'), aT = gl.getAttribLocation(pr, 't'), aL = gl.getAttribLocation(pr, 'l'), uU = gl.getUniformLocation(pr, 'u');
+    const aP = gl.getAttribLocation(pr, 'p'), aT = gl.getAttribLocation(pr, 't'), aL = gl.getAttribLocation(pr, 'l'), uU = gl.getUniformLocation(pr, 'u'), uA = gl.getUniformLocation(pr, 'al'), uO = gl.getUniformLocation(pr, 'oy');
     const bP = gl.createBuffer(), bT = gl.createBuffer(), bL = gl.createBuffer(), bI = gl.createBuffer();
     gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     // indices du maillage (deux triangles par case)
@@ -104,7 +101,7 @@ const { items } = Astro.props;
       const next: B[] = [];
       for (const el of li) {
         const r = el.querySelector('.cloth')!.getBoundingClientRect();
-        const b: B = { rel: 0, u: R, x0: r.left - cr.left, y0: r.top - cr.top, w: r.width, h: r.height, P: new Float32Array(C * R * 3), Q: new Float32Array(C * R * 3), tex: null, uv: new Float32Array(C * R * 2), sh: new Float32Array(C * R) };
+        const b: B = { x0: r.left - cr.left, y0: r.top - cr.top, w: r.width, h: r.height, P: new Float32Array(C * R * 3), Q: new Float32Array(C * R * 3), tex: null, uv: new Float32Array(C * R * 2), sh: new Float32Array(C * R) };
         for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
           const n = j * C + i, px = b.x0 + (i / (C - 1)) * b.w, py = b.y0 + (j / (R - 1)) * b.h;
           b.P.set([px, py, 0], n * 3); b.Q.set([px, py, 0], n * 3); b.uv.set([i / (C - 1), j / (R - 1)], n * 2);
@@ -116,18 +113,19 @@ const { items } = Astro.props;
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         next.push(b);
       }
-      banners.forEach((b) => gl.deleteTexture(b.tex)); const again = !banners.length || banners.some((b) => b.u < R || t < b.rel); banners = next; if (again || !visible) furl();
-      root.classList.add('live'); kick();
+      const first = !banners.length;
+      banners.forEach((b) => gl.deleteTexture(b.tex)); banners = next;
+      for (let s = 0; s < 120; s++) step(); // le tissu est déjà posé quand il apparaît
+      if (first) t0 = performance.now();
+      kick();
     };
 
     // ---------- simulation ----------
-    let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, energy = 1, raf = 0, visible = true;
+    let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, raf = 0, on = false, t0 = 0;
     const step = () => {
       t += 1;
       let bi = 0;
       for (const b of banners) {
-        if (t < b.rel) continue; // encore roulé
-        if (b.u < R) b.u = Math.min(R, b.u + 0.32); // le rouleau descend : une rangée de tissu se libère à la fois
         // vent léger permanent : rafales lentes et décalées d'un fanion à l'autre (jamais deux fanions en phase)
         const ph = bi++ * 1.7, gust = Math.sin(t * 0.011 + ph) * 0.6 + Math.sin(t * 0.027 + ph * 2.3) * 0.3 + Math.sin(t * 0.063 + ph * 0.7) * 0.15;
         const wz = 0.05 * (0.55 + gust), wx = 0.012 * Math.sin(t * 0.017 + ph);
@@ -149,8 +147,6 @@ const { items } = Astro.props;
             if (i < C - 1 && j < R - 1) link(P, n, n + C + 1, Math.hypot(sx, sy), false, 0.5);
           }
           for (let i = 0; i < C; i++) { const k = i * 3; P[k] = b.x0 + (i / (C - 1)) * w; P[k + 1] = b.y0; P[k + 2] = 0; }
-          // rangées encore enroulées : collées au rouleau, sous la partie déjà déroulée
-          if (b.u < R) { const j0 = Math.max(1, Math.ceil(b.u)), ry = b.y0 + b.u * sy; for (let n = j0 * C; n < C * R; n++) { const k = n * 3, x = b.x0 + ((n % C) / (C - 1)) * w; P[k] = Q[k] = x; P[k + 1] = Q[k + 1] = ry; P[k + 2] = Q[k + 2] = 0; } }
         }
         // éclairage : normale du maillage, lumière en haut à gauche, devant
         for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
@@ -170,7 +166,12 @@ const { items } = Astro.props;
     const draw = () => {
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform2f(uU, CW, CH);
       const xy = new Float32Array(C * R * 2);
-      for (const b of banners) {
+      const now = performance.now();
+      for (const [i, b] of banners.entries()) {
+        // apparition sobre : fondu + léger glissement, décalé de 60 ms d'un fanion à l'autre
+        const e = Math.max(0, Math.min(1, (now - t0 - i * 60) / 500)), ez = 1 - (1 - e) ** 3;
+        if (e <= 0) continue;
+        gl.uniform1f(uA, ez); gl.uniform1f(uO, -10 * (1 - ez));
         for (let n = 0; n < C * R; n++) { xy[n * 2] = b.P[n * 3]; xy[n * 2 + 1] = b.P[n * 3 + 1]; }
         gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferData(gl.ARRAY_BUFFER, xy, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
         gl.bindBuffer(gl.ARRAY_BUFFER, bT); gl.bufferData(gl.ARRAY_BUFFER, b.uv, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 0, 0);
@@ -178,10 +179,16 @@ const { items } = Astro.props;
         gl.bindTexture(gl.TEXTURE_2D, b.tex); gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
       }
     };
-    // apparition : chaque fanion part roulé sous l'accroche et se déroule sous son poids, l'un après l'autre
-    const furl = () => { for (const [i, b] of banners.entries()) { b.rel = t + 34 + i * 6; b.u = 0; for (let n = 0; n < C * R; n++) { const k = n * 3, i2 = n % C, j = Math.floor(n / C); const x = b.x0 + (i2 / (C - 1)) * b.w, y = b.y0 + j * 0.6; b.P[k] = b.Q[k] = x; b.P[k + 1] = b.Q[k + 1] = y; b.P[k + 2] = b.Q[k + 2] = 0; } } };
-    const loop = () => { step(); step(); draw(); raf = visible ? requestAnimationFrame(loop) : 0; };
-    function kick() { if (!raf && visible) raf = requestAnimationFrame(loop); }
+    // visibilité vérifiée à chaque image (l'IntersectionObserver ratait les sections déplacées par le défilement écran par écran)
+    const shown = () => { const r = root.getBoundingClientRect(); return r.width > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth; };
+    const loop = () => {
+      const v = shown();
+      if (v && !on) t0 = performance.now(); // à chaque retour sur la section, nouveau fondu
+      on = v;
+      if (v && banners.length) { step(); step(); draw(); }
+      raf = requestAnimationFrame(loop);
+    };
+    function kick() { if (!raf) raf = requestAnimationFrame(loop); }
     // la souris fait du vent : sa vitesse pousse le tissu à proximité
     let lx = 0, ly = 0;
     const host = root.closest('.scr') || document;
@@ -192,7 +199,6 @@ const { items } = Astro.props;
     });
     // la boucle ne tourne que quand la section est à l'écran
     // à chaque retour sur la section, les fanions se déroulent de nouveau (comme les lettres réapparaissent)
-    new IntersectionObserver((es) => { const v = es[0].isIntersecting; if (v && !visible) furl(); visible = v; if (visible) kick(); }, { threshold: 0.05 }).observe(root);
     document.fonts.ready.then(build);
     // la mise en page de la section peut bouger après coup (apparition, polices) : on reconstruit dès que la largeur change
     let rz = 0, lastW = root.clientWidth;

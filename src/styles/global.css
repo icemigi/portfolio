@@ -71,10 +71,10 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 /* ---------- accessibilité ---------- */
 /* curseur : gantelet (fichier fourni), point chaud à la pointe ; le curseur système reste pour les champs de texte */
 /* curseurs : gantelet médiéval (THTH, domaine public), passé en niveaux de gris ; 48 px, version 2× pour Retina */
-html { cursor: url(/cur-default.png) 4 6, auto !important; cursor: -webkit-image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 4 6, auto !important; cursor: image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 4 6, auto !important; }
-a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog { cursor: url(/cur-pointer.png) 4 6, auto !important; cursor: -webkit-image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 4 6, auto !important; cursor: image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 4 6, auto !important; }
-.obj a, .stage { cursor: url(/cur-grab.png) 4 6, auto !important; cursor: -webkit-image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 4 6, auto !important; cursor: image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 4 6, auto !important; }
-.obj.drag a, .stage:active { cursor: url(/cur-grabbing.png) 4 6, auto !important; cursor: -webkit-image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 4 6, auto !important; cursor: image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 4 6, auto !important; }
+html { cursor: url(/cur-default.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; }
+a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog { cursor: url(/cur-pointer.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; }
+.obj a, .stage { cursor: url(/cur-grab.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; }
+.obj.drag a, .stage:active { cursor: url(/cur-grabbing.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; }
 input, textarea, [contenteditable] { cursor: text; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
 .skip { position: fixed; left: var(--m); top: 8px; z-index: 200; background: var(--fg); color: var(--bg); padding: 12px 16px; transform: translateY(-200%); }
