@@ -59,7 +59,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .it.sel img { filter: drop-shadow(0 30px 34px rgba(0, 0, 0, .22)); }
   .it:has(img) { background: none; padding: 0; }
   /* écran de l'iPod : le lecteur Spotify y est posé (iframe 300 px réduite à la taille de l'écran) */
-  .emb { position: absolute; left: 8.5%; top: 3.8%; width: 83%; height: 42%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
+  .emb { position: absolute; left: 10.8%; top: 4.9%; width: 78.4%; height: 51.7%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
   .it.sel .emb { opacity: 1; pointer-events: auto; }
   .emb :global(iframe) { width: 300px; height: 352px; max-width: none; border: 0; transform-origin: 0 0; }
   .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
