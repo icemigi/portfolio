@@ -228,7 +228,9 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .plus { display: inline-block; }
 /* boutons : un mot entre parenthèses, en Geist noir (les libellés, eux, restent en Geist Mono gris) */
 .bp { display: inline-block; font-family: var(--sans) !important; font-weight: 500; font-size: 15px; line-height: 1.2; letter-spacing: -0.01em; color: var(--fg) !important; text-transform: none; white-space: nowrap; background: none; }
-.bp::before, .hit.bp::before { content: '('; position: static; height: auto; transform: none; } .bp::after { content: ')'; }
+.bp::before, .hit.bp::before { content: '('; position: static; height: auto; transform: none; }
+/* le « + » signe ce qui se clique (les libellés, eux, n'en ont pas) ; « fermer » prend le × (le + tourné) */
+.bp::after { content: '\00a0+)'; } .bp.bx::after { content: '\00a0×)'; }
 
 [data-copy], [data-copy] *, input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 .hc { position: relative; }
