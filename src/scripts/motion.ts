@@ -99,5 +99,23 @@ export function vignettes(frame: Element, delay = 300): number {
 export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   const start = vignettes(frame, delay);
   fadeMono(frame, delay);
-  return letters(frame, start, extraSkip);
+  const end = letters(frame, start, extraSkip);
+  afterText(frame, end);
+  return end;
+}
+
+// Une fois le texte écrit : les apartés entre parenthèses surgissent l'un après l'autre (petit saut, comme une note
+// qu'on ajoute en marge), puis le bouton « (…) + » arrive, et son + fait un tour pour attirer l'œil.
+function afterText(frame: Element, end: number) {
+  if (reduced()) return;
+  const notes = [...frame.querySelectorAll<HTMLElement>('.note')];
+  notes.forEach((n, i) => n.animate(
+    [{ opacity: 0, transform: 'translateY(.5em) scale(.9)' }, { opacity: 1, transform: 'translateY(-.08em) scale(1.04)', offset: 0.7 }, { opacity: 1, transform: 'none' }],
+    { duration: 520, delay: end - 120 + i * 140, easing: EASE_OUT, fill: 'backwards' },
+  ));
+  const t0 = end + notes.length * 140;
+  frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
+    b.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: t0, easing: EASE_OUT, fill: 'backwards' });
+    b.querySelector('.sg')?.animate([{ rotate: '0deg' }, { rotate: '180deg' }], { duration: 700, delay: t0 + 350, easing: EASE_OUT });
+  });
 }

@@ -4,13 +4,14 @@
 import { ui, pad, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
 import { rooms } from '../data/lab';
+import { pieces } from '../data/archive';
 interface Props { lang: Lang; path: string; active?: string }
 const { lang, path, active } = Astro.props;
 const t = ui[lang];
 const items = [
   { key: 'work', href: `/${lang}/work/`, count: pad(projects.length) },
   { key: 'lab', href: `/${lang}/lab/`, count: pad(rooms.length) },
-  { key: 'archive', href: `/${lang}/archive/`, count: '' },
+  { key: 'archive', href: `/${lang}/archive/`, count: String(pieces.length) },
   { key: 'about', href: `/${lang}/about/`, count: '' },
 ] as const;
 ---
