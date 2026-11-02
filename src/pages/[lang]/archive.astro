@@ -1,6 +1,7 @@
 ---
-// Archive. Ordinateur : une bande horizontale, pièces à leurs vraies proportions, « année — catégorie » dessous ;
-// la molette (et le pavé, les flèches) fait avancer la bande ; barre de progression cliquable + compteur ;
+// Archive. Ordinateur : une pile d'affiches jetées sur la table — chaque cran de molette (pavé, flèches) en jette une
+// de plus, à une place et un angle fixes (tirés au sort une fois pour toutes), sur toute la largeur de l'écran ;
+// remonter les reprend une à une ; barre de progression cliquable + compteur ;
 // au bout de la bande, le geste suivant découvre le pied de page. Pièce ouverte en grand, adresse propre (#01).
 // Téléphone : colonne verticale puis pied de page.
 import Base from '../../layouts/Base.astro';
@@ -77,6 +78,16 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   .prog em { position: absolute; right: 0; top: -8px; font-style: normal; }
   .arc :global(.ft) { position: absolute; left: 0; right: 0; top: 100dvh; }
 
+  /* ---------- ordinateur : la pile ---------- */
+  @media (min-width: 761px) {
+    .track { left: 0; right: 0; top: var(--head); bottom: 84px; display: block; transform: none !important; will-change: auto; }
+    .pc { position: absolute; left: var(--x); top: var(--y); height: auto; display: block; transform: translate(-50%, -50%) rotate(var(--rot)); visibility: hidden; }
+    .pc.on { visibility: visible; }
+    .pc .im { height: min(460px, calc(100dvh - var(--head) - 200px)); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 34px rgba(0, 0, 0, .12); }
+    .pc .c { display: none; }
+    .edge { display: none; }
+  }
+
   .lb { position: fixed; inset: 0; z-index: 80; background: var(--bg); display: grid; place-items: center; }
   .lb[hidden] { display: none; }
   .lb figure { display: grid; justify-items: start; gap: 10px; }
@@ -113,13 +124,47 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const P = (n: number) => String(n).padStart(2, '0');
   let x = 0, target = 0, foot = 0, footTarget = 0, raf = 0;
 
-  const max = () => Math.max(0, track.scrollWidth - (innerWidth - 2 * parseFloat(getComputedStyle(track).left)));
-  const index = () => { let k = 0; items.forEach((it, i) => { if (it.offsetLeft - x < innerWidth * 0.5) k = i; }); return k; };
+  // ---------- la pile ----------
+  const STEP = 120; // un cran de molette = une affiche
+  const max = () => (items.length - 1) * STEP;
+  const index = () => Math.max(0, Math.min(items.length - 1, Math.floor(target / STEP + 0.001)));
+  // place et angle de chaque affiche : tirés au sort une fois (graine fixe), répartis sur presque toute la largeur
+  const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  items.forEach((it, i) => {
+    const x0 = i === 0 ? .5 : .14 + rnd(i) * .72, y0 = i === 0 ? .5 : .4 + rnd(i + 99) * .2, a = i === 0 ? -2 : (rnd(i + 7) - .5) * 18;
+    it.style.setProperty('--x', `${(x0 * 100).toFixed(1)}%`); it.style.setProperty('--y', `${(y0 * 100).toFixed(1)}%`); it.style.setProperty('--rot', `${a.toFixed(1)}deg`);
+    it.style.zIndex = String(i + 1);
+  });
+  let shown = 0; // nombre d'affiches sur la table
+  const throwIn = (it: HTMLElement, k: number, i: number) => {
+    it.classList.add('on'); it.getAnimations().forEach((a) => a.cancel());
+    if (reduced()) return;
+    // jetée depuis le bas de l'écran, de biais : elle tourne un peu en vol et claque sur la pile
+    const s = rnd(i + 3) > .5 ? 1 : -1, base = `translate(-50%, -50%) rotate(${it.style.getPropertyValue('--rot')})`;
+    it.animate([
+      { transform: `translate(calc(-50% + ${s * 140}px), calc(-50% + 75vh)) rotate(${s * 24}deg) scale(1.12)` },
+      { transform: `${base} scale(1.03)`, offset: .78 },
+      { transform: base },
+    ], { duration: 520, delay: k * 45, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' });
+  };
+  const takeOut = (it: HTMLElement) => {
+    it.getAnimations().forEach((a) => a.cancel());
+    if (reduced()) { it.classList.remove('on'); return; }
+    const base = `translate(-50%, -50%) rotate(${it.style.getPropertyValue('--rot')})`;
+    it.animate([{ transform: base, opacity: 1 }, { transform: `${base} translateY(-24px) scale(1.04)`, opacity: 0 }], { duration: 220, easing: 'ease-in' }).onfinish = () => { if (Number(it.style.zIndex) > shown) it.classList.remove('on'); };
+  };
+  const pile = () => {
+    if (!desktop()) { items.forEach((it) => it.classList.add('on')); return; }
+    const n = index() + 1;
+    if (n > shown) for (let i = shown; i < n; i++) throwIn(items[i], i - shown, i);
+    else for (let i = shown - 1; i >= n; i--) takeOut(items[i]);
+    shown = n;
+  };
   const render = () => {
-    track.style.transform = `translateX(${-x}px)`;
     root.style.transform = `translateY(${-foot}px)`;
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
-    const k = index() + 1; count.textContent = `${P(k)} / ${P(items.length)}`; prog.setAttribute('aria-valuenow', String(k));
+    const k = index() + 1; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k));
+    pile();
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;
@@ -146,7 +191,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   }, { passive: true });
   addEventListener('keydown', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
-    const step = items[0]?.offsetWidth || 400;
+    const step = STEP;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); target >= max() - 1 ? (footTarget = ft.offsetHeight, kick()) : seek(target + step); }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); footTarget > 0 ? (footTarget = 0, kick()) : seek(target - step); }
     if (e.key === 'Home') seek(0);
@@ -157,7 +202,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
   root.addEventListener('touchmove', (e) => { if (!desktop()) return; const nx = e.touches[0].clientX; seek(target + (tx - nx)); tx = nx; }, { passive: true });
   prog.addEventListener('click', (e) => { const r = prog.getBoundingClientRect(); seek(((e.clientX - r.left) / r.width) * max()); });
-  addEventListener('resize', () => { seek(target); });
+  addEventListener('resize', () => { seek(target); render(); });
   document.querySelector('.ft [data-go]')?.remove();
 
   // pièce ouverte
