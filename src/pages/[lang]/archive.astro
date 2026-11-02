@@ -15,14 +15,14 @@ const t = ui[lang];
 const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i].year})` : ''); // catégorie (année)
 ---
 <Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? 'Direction artistique musicale, projets concepts, lettrages et logos.' : 'Music art direction, concept projects, lettering and logos.'} path="archive/" active="archive">
-  <div class="arc" data-arc data-own-wheel>
+  <div class="arc pile" data-arc data-own-wheel>
     <section class="band">
       <h1 class="ttl mono mu par">{t.archiveCount} {pad(pieces.length)}</h1>
       <ol class="track" data-track>
         {pieces.map((p, i) => (
           <li class="pc" id={pad(i + 1)}>
             <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
-              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src.replace('/archive/', '/archive/s/')} srcset={`${p.src.replace('/archive/', '/archive/s/')} 800w, ${p.src} 1400w`} sizes={`(max-width: 760px) 92vw, ${Math.round((560 * p.w) / p.h)}px`} alt="" loading="lazy" decoding="async" />}</span>
+              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src.replace('/archive/', '/archive/s/')} srcset={`${p.src.replace('/archive/', '/archive/s/')} 800w, ${p.src} 1400w`} sizes={`(max-width: 760px) 92vw, ${Math.min(Math.round((400 * p.w) / p.h), 480)}px`} alt="" loading="lazy" decoding="async" />}</span>
               <span class="mono mu c">{cap(i)}</span>
             </a>
           </li>
@@ -83,7 +83,10 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     .track { left: 0; right: 0; top: var(--head); bottom: 84px; display: block; transform: none !important; will-change: auto; }
     .pc { position: absolute; left: var(--x); top: var(--y); height: auto; display: block; transform: translate(-50%, -50%) rotate(var(--rot)); visibility: hidden; }
     .pc.on { visibility: visible; }
-    .pc .im { height: auto; width: min(calc(min(400px, 52dvh) * var(--r)), 34vw); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 34px rgba(0, 0, 0, .12); }
+    .pc .im { height: auto; width: min(calc(min(400px, 52dvh) * var(--r)), 34vw); box-shadow: 0 10px 24px rgba(0, 0, 0, .13); }
+    .pc { contain: layout style; }
+    .pc.drag { transition: none; }
+    .pc .im img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
     .pc .c { display: none; }
     .edge { display: none; }
   }
@@ -160,11 +163,33 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     else for (let i = shown - 1; i >= n; i--) takeOut(items[i]);
     shown = n;
   };
+  let lastK = 0;
+  // ---------- glisser-déposer : chaque affiche se déplace à la main et passe au-dessus ----------
+  let topZ = items.length + 1, drag: { it: HTMLElement; sx: number; sy: number; dx: number; dy: number; moved: boolean } | null = null;
+  track.addEventListener('pointerdown', (e) => {
+    if (!desktop() || e.button !== 0) return;
+    const it = (e.target as Element).closest<HTMLElement>('.pc.on'); if (!it) return;
+    const [dx, dy] = (it.style.translate || '0px 0px').split(' ').map((v) => parseFloat(v) || 0);
+    drag = { it, sx: e.clientX, sy: e.clientY, dx, dy, moved: false };
+  });
+  addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const mx = e.clientX - drag.sx, my = e.clientY - drag.sy;
+    if (!drag.moved && Math.hypot(mx, my) < 5) return;
+    if (!drag.moved) { drag.moved = true; drag.it.classList.add('drag'); drag.it.style.zIndex = String(++topZ); document.documentElement.classList.add('grabbing'); }
+    drag.it.style.translate = `${drag.dx + mx}px ${drag.dy + my}px`;
+  });
+  addEventListener('pointerup', () => {
+    if (!drag) return;
+    if (drag.moved) { const it = drag.it; it.classList.remove('drag'); document.documentElement.classList.remove('grabbing'); it.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); }, { capture: true, once: true }); }
+    drag = null;
+  });
+
   const render = () => {
     root.style.transform = `translateY(${-foot}px)`;
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
-    const k = index() + 1; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k));
-    pile();
+    const k = index() + 1;
+    if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;
@@ -178,15 +203,16 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
 
   // molette : avance la bande ; au bout, un nouveau geste découvre le pied de page
-  let last = 0, atEndAtStart = false, atStartFoot = false;
+  let last = 0, atEndAtStart = false, atStartFoot = false, hold = false;
   addEventListener('wheel', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
     const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     const now = performance.now();
-    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; }
+    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; hold = false; }
     last = now;
+    if (hold) return; // le geste qui a refermé le pied de page s'arrête là
     if (d > 0 && atEndAtStart) { footTarget = ft.offsetHeight; kick(); return; }
-    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; kick(); } return; }
+    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; hold = true; kick(); } return; }
     seek(target + d);
   }, { passive: true });
   addEventListener('keydown', (e) => {
