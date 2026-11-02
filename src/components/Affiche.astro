@@ -58,7 +58,7 @@ raw.forEach((p, i) => {
 <Tag class:list={['t56 affiche', cls]} data-hola>
   {parts.map((p) =>
     p.kind === 'logo' ? (
-      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" onerror="this.remove()" />{p.punct}</span>
+      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
       <Door lang={lang} />
     ) : p.kind === 'vig' ? (

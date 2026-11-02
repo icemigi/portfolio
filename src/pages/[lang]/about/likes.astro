@@ -21,7 +21,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     <div class="stage" data-stage>
       {data.map((d) => (
         <button class:list={['it', d.shape]} type="button" data-id={d.id} style={`width:${d.w / 4}px;height:${d.h / 4}px`} aria-label={d.title}>
-          {d.src ? <img src={d.src} alt="" draggable="false" /> : <span class="mono">{d.sub}</span>}
+          {d.src ? <img src={d.src} alt="" draggable="false" decoding="async" /> : <span class="mono">{d.sub}</span>}
           {d.embed && <span class="emb" data-emb={d.embed} aria-hidden="true"></span>}
         </button>
       ))}
@@ -76,7 +76,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .likes.open .it:not(.sel) { opacity: .08; }
   /* téléphone : le texte s'ouvre en feuille au bas de l'écran */
   @media (max-width: 760px) {
-    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(64px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
+    .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
     .card .in { grid-column: auto; }
     .card .txt { max-width: none; }
     .card .x { margin-top: 20px; }
@@ -145,7 +145,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
       body = Bodies.fromVertices(x, y, [verts], opt);
     }
     body.kk = d.id;
-    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, home: null as null | { x: number; y: number; a: number } };
+    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, tf: '', home: null as null | { x: number; y: number; a: number } };
   });
   // le titre s'écrit au centre, puis les objets pleuvent dessus ; il s'efface quand un objet est ouvert, mais l'étagère reste (rien ne tombe)
   const showTitle = (delay: number) => {
@@ -270,7 +270,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const { el, body, w, h, ox, oy } = it; const sc = it.s;
     const ca = Math.cos(body.angle), sa = Math.sin(body.angle);
     const cx = body.position.x + ox * ca - oy * sa, cy = body.position.y + ox * sa + oy * ca;
-    el.style.transform = `translate(${cx - w / 2}px, ${cy - h / 2}px) rotate(${body.angle}rad) scale(${sc})`;
+    const tf = `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${body.angle.toFixed(4)}rad) scale(${sc.toFixed(3)})`;
+    if (tf !== it.tf) { it.tf = tf; el.style.transform = tf; }
   });
   if (still) { setTimeout(() => { for (let i = 0; i < 600; i++) Engine.update(engine, 1000 / 60); }, 10); }
   let last = performance.now();

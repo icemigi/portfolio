@@ -65,7 +65,9 @@ export function initScreens(host: HTMLElement): Screens {
   let T: number[] = [], H = 0, scroll = 0, tgt = cur, raf = 0, vel = 0, lastT = 0;
   let mv: { p0: number; v0: number; t0: number; d: number } | null = null;
   const PAR = '.im img, .cov, .vi, .door, .mimg, [data-par]';
-  const parEls = S.map((s) => [...s.querySelectorAll<HTMLElement>(PAR)].map((el) => ({ el, k: Number(el.dataset.par || 80) })));
+  // parallaxe : ordinateur seulement (sur téléphone, le décalage ne se voit pas et coûte une écriture par image et par élément)
+  const phone = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
+  const parEls = S.map((s) => (phone ? [] : [...s.querySelectorAll<HTMLElement>(PAR)].map((el) => ({ el, k: Number(el.dataset.par || 80) }))));
   const parOn = S.map(() => false);
   const measure = () => {
     H = host.clientHeight || innerHeight;

@@ -1,5 +1,8 @@
 // Mouvement validé (étape 6) : lettres et vignettes.
 export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+// téléphone : les lettres apparaissent en fondu, sans la petite montée (invisible à cette taille, mais coûteuse : elle
+// force le navigateur à recalculer la mise en page du paragraphe à chaque image)
+const PHONE = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
 export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
 export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
@@ -44,7 +47,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
       const sp = document.createElement('span');
       sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
       f.appendChild(sp);
-      sp.animate([{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }], { duration: 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
+      sp.animate(PHONE ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }], { duration: PHONE ? 360 : 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
     }
     const first = f.firstChild!, last = f.lastChild!;
     n.replaceWith(f);

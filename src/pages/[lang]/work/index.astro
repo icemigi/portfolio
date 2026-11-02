@@ -84,12 +84,13 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
   // survol = l'objet se soulève de 14 px. Les objets se prennent à la main (glisser-déposer) et restent où on les pose.
   // Un clic sans déplacement ouvre l'étude.
   const stage = document.querySelector<HTMLElement>('[data-stage]');
-  if (stage) {
+  // téléphone : la scène est masquée (liste à la place), on ne lance rien
+  if (stage && stage.offsetParent !== null) {
     const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
     const O = [...stage.querySelectorAll<HTMLElement>('.obj')].map((el, i) => ({
       el, a: el.querySelector('a')!, f: el.querySelector<HTMLElement>('.float')!, z: Number(el.dataset.depth),
-      ph: i * 1.7, sp: 0.55 + i * 0.09, dx: 0, dy: 0, px: 0, py: 0, lift: 0, hov: false,
+      ph: i * 1.7, sp: 0.55 + i * 0.09, dx: 0, dy: 0, px: 0, py: 0, lift: 0, hov: false, sh: 26,
     }));
     const m = { nx: 0, ny: 0, tx: 0, ty: 0 };
     stage.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); m.tx = (e.clientX - r.left) / r.width - 0.5; m.ty = (e.clientY - r.top) / r.height - 0.5; });
@@ -124,10 +125,12 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
         o.px = lerp(o.px, still ? 0 : -m.nx * 28 * o.z, 0.08); o.py = lerp(o.py, still ? 0 : -m.ny * 20 * o.z, 0.08);
         o.lift = lerp(o.lift, o.hov || held ? -14 : 0, still ? 1 : 0.14);
         o.a.style.transform = `translate(${o.dx}px, ${o.dy}px)`;
-        o.f.style.transform = `translate(${o.px}px, ${o.py + float + o.lift}px)`;
-        o.f.style.setProperty('--sh', `${26 - o.lift}px`);
+        o.f.style.transform = `translate(${o.px.toFixed(2)}px, ${(o.py + float + o.lift).toFixed(2)}px)`;
+        // l'ombre (filtre coûteux) n'est retouchée que quand l'objet se soulève vraiment
+        const sh = Math.round(26 - o.lift);
+        if (sh !== o.sh) { o.sh = sh; o.f.style.setProperty('--sh', `${sh}px`); }
       });
-      requestAnimationFrame(tick);
+      if (!document.hidden) requestAnimationFrame(tick); else document.addEventListener('visibilitychange', () => requestAnimationFrame(tick), { once: true });
     };
     requestAnimationFrame(tick);
   }

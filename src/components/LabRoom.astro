@@ -65,7 +65,7 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
   .note p + p { margin-top: 8px; }
   @media (max-width: 760px) {
     .tester { font-size: 52px; line-height: 56px; }
-    .bot { row-gap: 14px; bottom: calc(64px + env(safe-area-inset-bottom)); }
+    .bot { row-gap: 14px; bottom: calc(24px + env(safe-area-inset-bottom)); }
     .info { grid-column: 1 / -1; }
     .dots { grid-column: 1 / 3; justify-self: start; gap: 10px; }
     .act { grid-column: 3 / 5; }

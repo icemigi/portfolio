@@ -98,14 +98,11 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .site-header .home img { width: 30px; height: 30px; }
   .site-header .r { grid-column: 3 / 5; justify-content: flex-end; gap: 20px; }
   .site-header .r .lang { display: none; }
-  /* « (menu) » en bas, au centre, sous le pouce ; il devient « (fermer) » au même endroit */
-  .site-header .burger { display: inline-block; position: fixed; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); translate: -50% 0; z-index: 2;
-    padding: 12px 16px; }
-  /* la bande du bas (≈ 56 px) est réservée à « (menu) » : ce qui était posé au ras du bas remonte d'autant */
-  .ft { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+  /* « (menu) + » au centre de la barre du haut (en bas, il passait sur les textes) ; il devient « (fermer) × » au même endroit */
+  .site-header .burger { display: inline-block; position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 2; padding: 12px 16px; }
   /* plein écran : rubriques en grand, numérotées ; la langue en bas */
   .site-header nav { position: fixed; inset: 0; z-index: -1; display: flex; flex-direction: column; justify-content: flex-end; gap: 28px;
-    padding: calc(var(--head) + 24px) var(--m) calc(88px + env(safe-area-inset-bottom)); background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
+    padding: calc(var(--head) + 24px) var(--m) calc(32px + env(safe-area-inset-bottom)); background: var(--bg); visibility: hidden; opacity: 0; transition: opacity .25s, visibility 0s .25s; }
   .menu-open .site-header nav { visibility: visible; opacity: 1; transition: opacity .25s; }
   .site-header nav ul { flex-direction: column; gap: 4px; }
   .site-header nav li { overflow: hidden; padding-bottom: .06em; }
