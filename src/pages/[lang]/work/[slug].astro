@@ -271,6 +271,9 @@ const tall = (i: Img) => i.h > i.w * 2;
       b.querySelectorAll<HTMLElement>('.md').forEach((m, i) => { const a = fx(m, i); a.startTime = (document.timeline.currentTime as number) + delay; });
     };
     host.addEventListener('screens:leave', (e) => { const to = (e as CustomEvent).detail.to; const el = api.el(to); if (el) play(el, 220); });
+    // boucles vidéo : elles ne tournent que lorsqu'elles sont à l'écran
+    const vio = new IntersectionObserver((es) => es.forEach((e) => { const v = e.target as HTMLVideoElement; if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }), { threshold: 0.1 });
+    host.querySelectorAll('video').forEach((v) => vio.observe(v));
     // l'image suit la souris (légère inclinaison en 3D) : elle se laisse regarder
     if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reduced()) {
       host.querySelectorAll<HTMLElement>('.im .md').forEach((m) => {
