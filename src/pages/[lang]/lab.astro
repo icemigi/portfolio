@@ -34,7 +34,7 @@ const tiles = [
   <h1 class="sr">Lab</h1>
   <section class="lgrid g" aria-label="Lab">
     <p class="lg-t mono mu par">{t.nav.lab} {pad(tiles.length)}</p>
-    <p class="lg-i">{fr ? 'Des expériences, des générateurs et des fontes. Sur ordinateur, tout ça vit dans un faux Mac (oui, vraiment).' : 'Experiments, generators and typefaces. On a computer, all of this lives inside a fake Mac (yes, really).'}</p>
+    <p class="lg-i">{fr ? 'Des expériences, des générateurs et des fontes.' : 'Experiments, generators and typefaces.'}</p>
     <ol class="lg-l">
       {tiles.map((x, i) => (
         <li><a href={x.href}>

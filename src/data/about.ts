@@ -22,7 +22,7 @@ export const aboutIntro = {
 export const aboutVigs: Vig[] = [
   { src: '', label: { fr: 'logotype', en: 'logotype' } },
   { src: '', label: { fr: 'glyphes', en: 'glyphs' } },
-  { src: '', label: { fr: 'code', en: 'code' } },
+  { src: '/vig/v-matrix.webp', label: { fr: 'code', en: 'code' } }, // pluie de caractères façon Matrix (générée, gardée)
 ];
 
 export const services = {
