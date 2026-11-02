@@ -13,7 +13,9 @@ def fit(p, bg=None, crop=None):
     if crop: im=im.crop(crop)
     b=bg or edge(im); im.thumbnail((W-2*PAD,H-2*PAD),Image.LANCZOS)
     out=Image.new('RGB',(W,H),b); out.paste(im,((W-im.width)//2,(H-im.height)//2)); return out
-def save(fr,name,dur): fr[0].save(O+name+'.webp',save_all=True,append_images=fr[1:],duration=dur,loop=0,quality=84,method=6)
+def save(fr,name,dur):
+    fr[0].save(O+name+'.webp',save_all=True,append_images=fr[1:],duration=dur,loop=0,quality=84,method=6)
+    fr[0].save(O+name+'.still.webp',quality=84,method=6)  # image fixe : « Réduire les animations »
 a=lambda *n:[fit(A+f'{x}.webp') for x in n]
 sh=lambda *i:[fit(f'tools/heraldry-frames/h{k:02d}.png',bg=(0,0,0),crop=(60,40,640,560)) for k in i]
 w=lambda *p:[fit('public/work/'+x,bg=(22,22,22)) for x in p]

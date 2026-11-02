@@ -8,6 +8,9 @@ import Door from './Door.astro';
 interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string }
 const { text, vigs, lang, tag = 'p', class: cls = '' } = Astro.props;
 const Tag = tag as any;
+// vignette animée : sa version fixe (même nom + .still.webp, fabriquée par tools/vignettes.py) sert quand « Réduire les animations » est actif
+import { existsSync } from 'node:fs';
+const still = (src: string) => { const f = src.replace(/\.webp$/, '.still.webp'); return f !== src && existsSync(`public${f}`) ? f : ''; };
 type Part = { kind: 'logo'; name: string; word?: string; punct?: string } | { kind: 'door' } | { kind: 'vig'; vig: Vig; punct?: string; word?: string } | { kind: 'text'; text: string } | { kind: 'glue'; word: string; note: string; punct: string };
 const raw: Part[] = text.split(/(\{(?:v:|m:|l:)?[^}]+\})/).filter(Boolean).map((p): Part => {
   if (p === '{door}') return { kind: 'door' };
@@ -61,7 +64,7 @@ raw.forEach((p, i) => {
     ) : p.kind === 'vig' ? (
       <span class="glue">{p.word}{p.vig.logo
         ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={p.vig.src} alt="" loading="lazy" onerror="var v=this.parentElement,t=v.previousSibling;if(t&&t.nodeType===3)t.nodeValue=t.nodeValue.replace(/\s+$/,'');v.remove()" /></span>
-        : <span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `background-image:url(${p.vig.src})` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>}{p.punct}</span>
+        : <span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `--vi:url(${p.vig.src})${still(p.vig.src) ? `;--vi-still:url(${still(p.vig.src)})` : ''}` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>}{p.punct}</span>
     ) : p.kind === 'glue' ? (
       <span class="glue">{p.word}<span class="note mono mu">({p.note})</span>{p.punct}</span>
     ) : (

@@ -171,7 +171,8 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .ch { position: relative; }
 
 /* vignettes dans le texte d'affiche */
-.vi { display: inline-block; position: relative; width: 96px; height: 54px; margin: 0 .08em; vertical-align: -0.08em; background: #c9c9c9 center / cover no-repeat; }
+.vi { display: inline-block; position: relative; width: 96px; height: 54px; margin: 0 .08em; vertical-align: -0.08em; background: #c9c9c9 center / cover no-repeat; background-image: var(--vi, none); }
+@media (prefers-reduced-motion: reduce) { .vi { background-image: var(--vi-still, var(--vi, none)); } }
 .vi i { position: absolute; left: 4px; bottom: 2px; font: 9px/10px var(--mono); text-transform: lowercase; color: #fff; font-style: normal; }
 /* vignette-logo (stack) : l'icône seule, sans cadre ni fond, carrée, toutes à la même taille, avec une ombre portée */
 .vi.lg { width: .95em; height: .95em; margin: 0 .1em; vertical-align: -0.14em; background: none; box-shadow: none; }
