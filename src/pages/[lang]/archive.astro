@@ -29,6 +29,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
         ))}
       </ol>
       <div class="edge" aria-hidden="true"></div>
+      <div class="pst" data-stage aria-hidden="true"><canvas class="cv-base"></canvas><canvas class="cv-fly"></canvas></div>
       <span class="hint-r mono" data-hint aria-hidden="true"><span>→</span></span>
       <div class="prog" data-prog role="slider" tabindex="0" aria-label={t.archiveCount} aria-valuemin="1" aria-valuemax={pieces.length} aria-valuenow="1">
         <span class="bar" data-bar></span><em class="mono mu" data-count>01 / {pad(pieces.length)}</em>
@@ -78,17 +79,14 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   .prog em { position: absolute; right: 0; top: -8px; font-style: normal; }
   .arc :global(.ft) { position: absolute; left: 0; right: 0; top: 100dvh; }
 
-  /* ---------- ordinateur : la pile ---------- */
+  /* ---------- ordinateur : la pile, dessinée sur deux toiles (dessous figé + affiches en mouvement) ---------- */
+  .pst { display: none; }
   @media (min-width: 761px) {
-    .track { left: 0; right: 0; top: var(--head); bottom: 84px; display: block; transform: none !important; will-change: auto; }
-    .pc { position: absolute; left: var(--x); top: var(--y); height: auto; display: block; transform: translate(-50%, -50%) rotate(var(--rot)); visibility: hidden; }
-    .pc.on { visibility: visible; }
-    .pc .im { height: auto; width: min(calc(min(400px, 52dvh) * var(--r)), 34vw); box-shadow: 0 10px 24px rgba(0, 0, 0, .13); }
-    .pc { contain: layout style; }
-    .pc.drag { transition: none; }
-    .pc .im img { -webkit-user-drag: none; user-select: none; pointer-events: none; }
-    .pc .c { display: none; }
+    .track { display: none; }
     .edge { display: none; }
+    .pst { display: block; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; }
+    .pst canvas { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
+    .cv-fly { touch-action: none; }
   }
 
   .lb { position: fixed; inset: 0; z-index: 80; background: var(--bg); display: grid; place-items: center; }
@@ -128,63 +126,114 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   let x = 0, target = 0, foot = 0, footTarget = 0, raf = 0;
 
   // ---------- la pile ----------
+  // Dessinée sur deux toiles : la pile posée est peinte une fois sur la toile du dessous (elle ne coûte plus rien,
+  // quel que soit le nombre d'affiches) ; seules les affiches en vol, celle qu'on tient ou celle qui s'ouvre
+  // sont redessinées à chaque image, sur la toile du dessus.
   const STEP = 120; // un cran de molette = une affiche
   const max = () => (items.length - 1) * STEP;
   const index = () => Math.max(0, Math.min(items.length - 1, Math.floor(target / STEP + 0.001)));
-  // place et angle de chaque affiche : tirés au sort une fois (graine fixe), répartis sur presque toute la largeur
   const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
-  items.forEach((it, i) => {
-    const x0 = i === 0 ? .5 : .14 + rnd(i) * .72, y0 = i === 0 ? .5 : .32 + rnd(i + 99) * .36, a = i === 0 ? -2 : (rnd(i + 7) - .5) * 18;
-    it.style.setProperty('--x', `${(x0 * 100).toFixed(1)}%`); it.style.setProperty('--y', `${(y0 * 100).toFixed(1)}%`); it.style.setProperty('--rot', `${a.toFixed(1)}deg`);
-    it.style.zIndex = String(i + 1);
+  const K = (window as any).kkArchive as { caps: string[]; ratios: number[]; srcs: string[] };
+  const stage = root.querySelector<HTMLElement>('[data-stage]')!;
+  const base = stage.querySelector<HTMLCanvasElement>('.cv-base')!, fly = stage.querySelector<HTMLCanvasElement>('.cv-fly')!;
+  const bx = base.getContext('2d')!, fx = fly.getContext('2d')!;
+  type Card = { i: number; x0: number; y0: number; rot: number; dx: number; dy: number; img: HTMLImageElement };
+  let order: number[] = []; // affiches posées, de dessous à dessus
+  let air: { i: number; t0: number; kind: 'in' | 'out' }[] = [];
+  let hold: { i: number; sx: number; sy: number; dx0: number; dy0: number; moved: boolean } | null = null;
+  let lifted = -1, dirty = false, W = 0, H = 0, dpr = 1, raf2 = 0, shown = 0;
+  const cards: Card[] = items.map((_, i) => {
+    const img = new Image(); img.decoding = 'async';
+    if (K.srcs[i]) img.src = K.srcs[i].replace('/archive/', '/archive/s/');
+    img.onload = () => { if (order.includes(i)) { dirty = true; go(); } };
+    return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img };
   });
-  let shown = 0; // nombre d'affiches sur la table
-  const throwIn = (it: HTMLElement, k: number, i: number) => {
-    it.classList.add('on'); it.getAnimations().forEach((a) => a.cancel());
-    if (reduced()) return;
-    // jetée depuis le bas de l'écran, de biais : elle tourne un peu en vol et claque sur la pile
-    const s = rnd(i + 3) > .5 ? 1 : -1, base = `translate(-50%, -50%) rotate(${it.style.getPropertyValue('--rot')})`;
-    it.animate([
-      { transform: `translate(calc(-50% + ${s * 140}px), calc(-50% + 75vh)) rotate(${s * 24}deg) scale(1.12)` },
-      { transform: `${base} scale(1.03)`, offset: .78 },
-      { transform: base },
-    ], { duration: 520, delay: k * 45, easing: 'cubic-bezier(.2,.75,.25,1)', fill: 'backwards' });
+  const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * .52) * r, innerWidth * .34); return [w, w / r]; };
+  const pos = (c: Card) => [c.x0 * W + c.dx, c.y0 * H + c.dy];
+  const paint = (g: CanvasRenderingContext2D, c: Card, x: number, y: number, rot: number, s = 1, alpha = 1) => {
+    const [w, h] = size(c.i);
+    g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s); g.globalAlpha = alpha;
+    g.shadowColor = 'rgba(0,0,0,.14)'; g.shadowBlur = 22; g.shadowOffsetY = 10; g.fillStyle = '#d4d4d4'; g.fillRect(-w / 2, -h / 2, w, h);
+    g.shadowColor = 'transparent';
+    const im = c.img;
+    if (im.complete && im.naturalWidth) {
+      const ir = im.naturalWidth / im.naturalHeight, r = w / h; let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0;
+      if (ir > r) { sw = sh * r; sx = (im.naturalWidth - sw) / 2; } else { sh = sw / r; sy = (im.naturalHeight - sh) / 2; }
+      g.drawImage(im, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+    }
+    g.restore();
   };
-  const takeOut = (it: HTMLElement) => {
-    it.getAnimations().forEach((a) => a.cancel());
-    if (reduced()) { it.classList.remove('on'); return; }
-    const base = `translate(-50%, -50%) rotate(${it.style.getPropertyValue('--rot')})`;
-    it.animate([{ transform: base, opacity: 1 }, { transform: `${base} translateY(-24px) scale(1.04)`, opacity: 0 }], { duration: 220, easing: 'ease-in' }).onfinish = () => { if (Number(it.style.zIndex) > shown) it.classList.remove('on'); };
-  };
+  const off = (i: number) => i === lifted || hold?.i === i || air.some((a) => a.i === i && a.kind === 'in');
+  const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
+  const fit = () => { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1); for (const cv of [base, fly]) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } dirty = true; go(); };
+  const go = () => { if (!raf2) raf2 = requestAnimationFrame(tick); };
+  const ease = (p: number) => 1 - Math.pow(1 - p, 3);
+  function tick(now: number) {
+    raf2 = 0;
+    if (dirty) { dirty = false; bake(); }
+    fx.setTransform(dpr, 0, 0, dpr, 0, 0); fx.clearRect(0, 0, W, H);
+    for (const a of [...air]) {
+      const c = cards[a.i], [x, y] = pos(c), p = (now - a.t0) / (a.kind === 'in' ? 520 : 220);
+      if (p < 0) continue;
+      if (p >= 1) {
+        air.splice(air.indexOf(a), 1);
+        if (a.kind === 'in') {
+          // posée : peinte directement sur la pile si rien de déjà posé n'est au-dessus d'elle, sinon la pile est repeinte
+          const k = order.indexOf(a.i);
+          if (k >= 0 && order.slice(k + 1).every((j) => off(j)) && a.i !== lifted && hold?.i !== a.i) { bx.setTransform(dpr, 0, 0, dpr, 0, 0); paint(bx, c, x, y, c.rot); } else dirty = true;
+        }
+        continue;
+      }
+      if (a.kind === 'in') { const e = ease(p), s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * (1 - e), y + innerHeight * .75 * (1 - e), r0 + (c.rot - r0) * e, 1 + .12 * (1 - e)); }
+      else paint(fx, c, x, y - 24 * p, c.rot, 1 + .04 * p, 1 - p);
+    }
+    if (hold?.moved) { const c = cards[hold.i], [x, y] = pos(c); paint(fx, c, x, y, c.rot, 1.03); }
+    if (air.length || dirty) go();
+  }
   const pile = () => {
-    if (!desktop()) { items.forEach((it) => it.classList.add('on')); return; }
-    const n = index() + 1;
-    if (n > shown) for (let i = shown; i < n; i++) throwIn(items[i], i - shown, i);
-    else for (let i = shown - 1; i >= n; i--) takeOut(items[i]);
-    shown = n;
+    if (!desktop()) return;
+    const n = index() + 1, now = performance.now();
+    if (n > shown) for (let i = shown; i < n; i++) { order = order.filter((o) => o !== i); order.push(i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (i - shown) * 45, kind: 'in' }); else dirty = true; }
+    else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now, kind: 'out' }); dirty = true; }
+    shown = n; go();
   };
-  let lastK = 0;
-  // ---------- glisser-déposer : chaque affiche se déplace à la main et passe au-dessus ----------
-  let topZ = items.length + 1, drag: { it: HTMLElement; sx: number; sy: number; dx: number; dy: number; moved: boolean } | null = null;
-  track.addEventListener('pointerdown', (e) => {
-    if (!desktop() || e.button !== 0) return;
-    const it = (e.target as Element).closest<HTMLElement>('.pc.on'); if (!it) return;
-    const [dx, dy] = (it.style.translate || '0px 0px').split(' ').map((v) => parseFloat(v) || 0);
-    drag = { it, sx: e.clientX, sy: e.clientY, dx, dy, moved: false };
+  // quelle affiche est sous le pointeur (la plus haute)
+  const hit = (cx: number, cy: number) => {
+    const r = stage.getBoundingClientRect(), px = cx - r.left, py = cy - r.top;
+    for (let k = order.length - 1; k >= 0; k--) {
+      const c = cards[order[k]], [x, y] = pos(c), [w, h] = size(c.i), co = Math.cos(-c.rot), si = Math.sin(-c.rot);
+      const lx = (px - x) * co - (py - y) * si, ly = (px - x) * si + (py - y) * co;
+      if (Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2) return c.i;
+    }
+    return -1;
+  };
+  // ---------- glisser-déposer ----------
+  fly.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const i = hit(e.clientX, e.clientY); if (i < 0) return;
+    fly.setPointerCapture(e.pointerId);
+    hold = { i, sx: e.clientX, sy: e.clientY, dx0: cards[i].dx, dy0: cards[i].dy, moved: false };
   });
-  addEventListener('pointermove', (e) => {
-    if (!drag) return;
-    const mx = e.clientX - drag.sx, my = e.clientY - drag.sy;
-    if (!drag.moved && Math.hypot(mx, my) < 5) return;
-    if (!drag.moved) { drag.moved = true; drag.it.classList.add('drag'); drag.it.style.zIndex = String(++topZ); document.documentElement.classList.add('grabbing'); }
-    drag.it.style.translate = `${drag.dx + mx}px ${drag.dy + my}px`;
+  fly.addEventListener('pointermove', (e) => {
+    if (!hold) { fly.classList.toggle('stage', hit(e.clientX, e.clientY) >= 0); return; }
+    const mx = e.clientX - hold.sx, my = e.clientY - hold.sy;
+    if (!hold.moved && Math.hypot(mx, my) < 5) return;
+    if (!hold.moved) { hold.moved = true; order = order.filter((o) => o !== hold!.i); order.push(hold.i); dirty = true; document.documentElement.classList.add('grabbing'); }
+    cards[hold.i].dx = hold.dx0 + mx; cards[hold.i].dy = hold.dy0 + my; go();
   });
-  addEventListener('pointerup', () => {
-    if (!drag) return;
-    if (drag.moved) { const it = drag.it; it.classList.remove('drag'); document.documentElement.classList.remove('grabbing'); it.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopImmediatePropagation(); }, { capture: true, once: true }); }
-    drag = null;
-  });
+  const drop = () => {
+    if (!hold) return;
+    const h = hold; hold = null;
+    document.documentElement.classList.remove('grabbing');
+    if (h.moved) { dirty = true; go(); } else open(h.i);
+  };
+  fly.addEventListener('pointerup', drop);
+  fly.addEventListener('pointercancel', drop);
+  fly.addEventListener('pointerleave', () => { if (!hold) fly.classList.remove('stage'); });
+  if (desktop()) fit();
+  addEventListener('resize', () => { if (desktop()) fit(); });
 
+  let lastK = 0;
   const render = () => {
     root.style.transform = `translateY(${-foot}px)`;
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
@@ -240,13 +289,43 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const show = (i: number, push = true) => {
     cur = (i + A.caps.length) % A.caps.length;
     big.style.aspectRatio = String(A.ratios[cur]);
+    // l'image réduite (déjà chargée) s'affiche tout de suite, la grande prend le relais
+    const small = A.srcs[cur] ? A.srcs[cur].replace('/archive/', '/archive/s/') : '';
+    big.style.background = small ? `#d4d4d4 center / cover no-repeat url(${small})` : '';
     big.innerHTML = A.srcs[cur] ? `<img src="${A.srcs[cur]}" alt="${A.caps[cur]}" style="width:100%;height:100%;object-fit:contain">` : '';
     cap.textContent = `${P(cur + 1)} — ${A.caps[cur]}`;
     lb.hidden = false;
     if (push) history.replaceState(null, '', `#${P(cur + 1)}`);
-    lb.querySelector<HTMLElement>('[data-close]')!.focus();
+    lb.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
   };
-  const close = () => { lb.hidden = true; cur = -1; history.replaceState(null, '', location.pathname); opener?.focus(); };
+  // l'affiche posée sur la table, en coordonnées d'écran
+  const cardAt = (i: number) => {
+    if (!desktop() || !order.includes(i)) return null;
+    const c = cards[i], [x, y] = pos(c), r = stage.getBoundingClientRect(), [w] = size(i);
+    return { x: r.left + x, y: r.top + y, w, rot: c.rot };
+  };
+  const OUT = 'cubic-bezier(.2,.75,.25,1)';
+  const fromCard = (i: number) => { const c = cardAt(i), b = big.getBoundingClientRect(); return c ? `translate(${c.x - (b.left + b.width / 2)}px, ${c.y - (b.top + b.height / 2)}px) rotate(${c.rot}rad) scale(${c.w / b.width})` : 'translateY(24px) scale(.94)'; };
+  const chrome = () => [...lb.querySelectorAll<HTMLElement>('figcaption, .x, .arw')];
+  const open = (i: number) => {
+    show(i);
+    if (reduced()) return;
+    const t = fromCard(cur);
+    if (cardAt(cur)) { lifted = cur; dirty = true; go(); }
+    big.animate([{ transform: t }, { transform: 'none' }], { duration: 620, easing: OUT });
+    lb.animate([{ backgroundColor: 'rgba(243,243,243,0)' }, { backgroundColor: 'rgba(243,243,243,1)' }], { duration: 420, easing: 'ease-out' });
+    chrome().forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' }));
+  };
+  const close = () => {
+    const done = () => { lb.hidden = true; cur = -1; lifted = -1; dirty = true; go(); history.replaceState(null, '', location.pathname); opener?.focus(); };
+    if (reduced() || lb.hidden) { done(); return; }
+    const t = fromCard(cur), back = !!cardAt(cur);
+    chrome().forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+    lb.animate([{ backgroundColor: 'rgba(243,243,243,1)' }, { backgroundColor: 'rgba(243,243,243,0)' }], { duration: 480, easing: 'ease-in', fill: 'forwards' });
+    big.animate([{ transform: 'none', opacity: 1 }, { transform: t, opacity: back ? 1 : 0 }], { duration: 520, easing: 'cubic-bezier(.6,0,.3,1)', fill: 'forwards' }).onfinish = () => {
+      done(); lb.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    };
+  };
   track.addEventListener('click', (e) => {
     const a = (e.target as Element).closest<HTMLElement>('[data-open]');
     if (!a) return;
@@ -255,13 +334,12 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   lb.addEventListener('click', (e) => {
     const el = e.target as Element;
     if (el.closest('[data-close]') || el === lb) close();
-    const s = el.closest<HTMLElement>('[data-step]'); if (s) show(cur + Number(s.dataset.step));
+    const s = el.closest<HTMLElement>('[data-step]'); if (s) { lifted = -1; dirty = true; go(); show(cur + Number(s.dataset.step)); if (cardAt(cur)) { lifted = cur; } }
   });
   addEventListener('keydown', (e) => {
     if (lb.hidden) return;
     if (e.key === 'Escape') close();
-    if (e.key === 'ArrowRight') show(cur + 1);
-    if (e.key === 'ArrowLeft') show(cur - 1);
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { lifted = -1; show(cur + (e.key === 'ArrowRight' ? 1 : -1)); if (cardAt(cur)) lifted = cur; dirty = true; go(); }
   });
   const h = Number(location.hash.slice(1));
   if (h >= 1 && h <= A.caps.length) show(h - 1, false);

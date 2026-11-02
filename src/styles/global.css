@@ -179,12 +179,6 @@ html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host
   .scr .in .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; }
 }
 html:not(.js) .screens-host { position: static; }
-/* défilement libre (essai) : les écrans deviennent des sections empilées ; le libellé reste accroché en haut */
-html.flowing .screens-host { position: static; overflow: visible; }
-html.flowing .screens-host > .scr { position: relative; transform: none !important; overflow: visible; min-height: 100dvh; will-change: auto; }
-html.flowing .scr .in { min-height: 100dvh; }
-html.flowing .scr .lab { position: sticky; top: calc(var(--head) + 14px); }
-@media (max-width: 760px) { html.flowing .scr .in .lab { position: sticky; top: calc(var(--head) + 8px); left: auto; } }
 html:not(.js) .scr { position: relative; transform: none; min-height: 100vh; }
 html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
 
