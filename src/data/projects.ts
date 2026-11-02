@@ -1,4 +1,4 @@
-// Études de cas, dans l'ordre par force (validé). Même gabarit pour toutes :
+// Études de cas, dans l'ordre choisi le 02/11 : Heraldry, ASAPHR, (ChâteauStudio)®, Identités musicales, BMS, HOTSHOT, Sports Aventure. Même gabarit pour toutes :
 // en-tête (meta) · accroche (lead) · sections (Point de départ, Ce qui a été fait / Méthode, Choix clés, Résultat, Statut).
 // `draft: true` affiche un badge « à valider » tant que le texte n'est pas validé.
 
@@ -128,57 +128,6 @@ export const projects: Project[] = [
       ],
     },
   },
-  // ---------------------------------------------------------------- HOT
-  {
-    slug: 'hotshot',
-    years: [2024],
-    tags: ['I', 'T', 'P'],
-    yearLabel: '2024',
-    object: 'bottle',
-    draft: true,
-    fr: {
-      title: 'HOTSHOT',
-      short: 'De la sauce piquante au restaurant',
-      meta: { year: '2024', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: '[À compléter]' },
-      lead: "Une marque de sauce piquante qui grandit jusqu'au restaurant. Un concept, mené comme une vraie commande.",
-      sections: [
-        { h: 'Point de départ', paras: [{ p: "Une sauce piquante, puis le lieu qui va avec. Il fallait une marque assez forte pour tenir sur une étiquette de bouteille comme sur une devanture, sans jamais changer de voix." }] },
-        { h: 'Ce qui a été fait', paras: [{ p: "Le nom, un logotype dessiné sur mesure, une mascotte, une signature et toutes les déclinaisons : bouteilles, menu, sous-verres, baguettes, papier d'emballage, réseaux, site et devanture." }] },
-        {
-          h: 'Choix clés',
-          paras: [
-            { t: 'Un logotype en bloc.', p: "Des lettres condensées et anguleuses, empilées en carré, avec une bouteille qui s'invite dans le lettrage. Il tient en tampon, en étiquette comme en enseigne." },
-            { t: 'Deux rouges.', p: "Un rouge vif pour la brûlure, un bordeaux profond pour le fond. La couleur fait le travail avant même la lecture." },
-            { t: 'Une mascotte rétro.', p: "Un piment au trait épais, façon vieux cartoon, qui ajoute une dose d'insolence au sérieux du titrage." },
-            { t: 'Un ton.', p: "« Because mild is overrated. » La signature devient un titrage à part entière, sur les affiches comme sur les murs." },
-          ],
-        },
-        { h: 'Résultat', paras: [{ p: "Une identité complète, du produit au lieu : packaging, imprimés de table, signalétique, réseaux et site." }] },
-        { h: 'Statut', paras: [{ p: 'Concept personnel, non commandé.' }] },
-      ],
-    },
-    en: {
-      title: 'HOTSHOT',
-      short: 'From hot sauce to restaurant',
-      meta: { year: '2024', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: '[To complete]' },
-      lead: 'A hot sauce brand that grows into a restaurant. A concept, handled like a real commission.',
-      sections: [
-        { h: 'Starting point', paras: [{ p: 'A hot sauce, then the place that goes with it. The brand had to be strong enough to work on a bottle label as well as on a shopfront, without ever changing its voice.' }] },
-        { h: 'What was made', paras: [{ p: 'The name, a custom-drawn logotype, a mascot, a tagline and every application: bottles, menu, coasters, chopsticks, wrapping paper, social media, website and shopfront.' }] },
-        {
-          h: 'Key decisions',
-          paras: [
-            { t: 'A block logotype.', p: 'Condensed, angular letters stacked into a square, with a bottle slipping into the lettering. It works as a stamp, a label or a sign.' },
-            { t: 'Two reds.', p: 'A bright red for the burn, a deep burgundy for the background. The colour does the job before you even read.' },
-            { t: 'A retro mascot.', p: 'A thick-lined chilli in the style of old cartoons, adding some cheek to the seriousness of the titling.' },
-            { t: 'A tone of voice.', p: '“Because mild is overrated.” The tagline becomes titling in its own right, on posters as well as on walls.' },
-          ],
-        },
-        { h: 'Outcome', paras: [{ p: 'A complete identity, from product to place: packaging, table print, signage, social media and website.' }] },
-        { h: 'Status', paras: [{ p: 'Personal concept, not commissioned.' }] },
-      ],
-    },
-  },
   // ---------------------------------------------------------------- asaphr
   {
     slug: 'asaphr',
@@ -220,6 +169,76 @@ export const projects: Project[] = [
         { k: 'Object', v: 'A book object with a mechanical reveal, in development.' },
       ],
       sections: [],
+    },
+  },
+  // ---------------------------------------------------------------- chateau-studio
+  {
+    slug: 'chateau-studio',
+    years: [2026],
+    tags: ['I'],
+    yearLabel: '2026',
+    object: 'rook',
+    draft: true,
+    fr: {
+      title: '(ChâteauStudio)®',
+      short: "Identité d'un studio",
+      meta: {
+        year: '2026',
+        context: 'Identité de studio',
+        role: 'Naming, identité, typographie',
+        tools: '[À compléter]',
+      },
+      lead: "[À valider] L'identité d'un studio de design graphique, construite comme une commande : brief, contraintes, pistes, choix.",
+      sections: [
+        {
+          h: 'Point de départ',
+          paras: [
+            { p: "Un nom qui fonctionne dans deux langues : château en français, castle en anglais. [À compléter : le brief que tu te fixes — positionnement, cible, supports]." },
+            { p: "Contrainte réelle : plusieurs « chateau » existent déjà en ligne, dans d'autres secteurs et d'autres pays. L'identité doit se distinguer sans changer de nom." },
+          ],
+        },
+        {
+          h: 'Ce qui a été fait',
+          paras: [{ p: '[À compléter] Logotype, caractère dessiné sur mesure (si oui), système de déclinaisons : devis, factures, réseaux, site.' }],
+        },
+        {
+          h: 'Choix clés',
+          paras: [
+            { t: '[À compléter]', p: 'Les pistes explorées puis écartées, et pourquoi.' },
+            { t: '[À compléter]', p: 'Le choix typographique.' },
+          ],
+        },
+        { h: 'Statut', paras: [{ p: 'En cours.' }] },
+      ],
+    },
+    en: {
+      title: '(ChâteauStudio)®',
+      short: 'Studio identity',
+      meta: {
+        year: '2026',
+        context: 'Studio identity',
+        role: 'Naming, identity, type',
+        tools: '[To complete]',
+      },
+      lead: '[To validate] The identity of a graphic design studio, approached as a real commission: brief, constraints, directions, decisions.',
+      sections: [
+        {
+          h: 'Starting point',
+          paras: [
+            { p: 'A name that works in two languages: château in French, castle in English. [To complete: the brief — positioning, audience, formats].' },
+            { p: 'A real constraint: several “chateau” accounts already exist online, in other sectors and countries. The identity has to stand apart without changing the name.' },
+          ],
+        },
+        { h: 'What was made', paras: [{ p: '[To complete] Logotype, custom typeface (if any), roll-out system: quotes, invoices, social, website.' }] },
+        {
+          h: 'Key decisions',
+          paras: [
+            { t: '[To complete]', p: 'Directions explored then dropped, and why.' },
+            { t: '[To complete]', p: 'The typographic choice.' },
+          ],
+        },
+        { h: 'Status', paras: [{ p: 'In progress.' }] },
+      ],
     },
   },
   // ---------------------------------------------------------------- music-identities
@@ -325,127 +344,6 @@ export const projects: Project[] = [
       ],
     },
   },
-  // ---------------------------------------------------------------- SA
-  {
-    slug: 'sports-aventure',
-    years: [2024],
-    tags: ['I', 'W'],
-    yearLabel: '2024',
-    object: 'compass',
-    draft: true,
-    fr: {
-      title: 'Sports Aventure',
-      short: 'Refonte non sollicitée',
-      meta: { year: '2024', context: 'Initiative personnelle, présentée au magasin', role: 'Direction artistique, identité, UX/UI', tools: '[À compléter]' },
-      lead: "La refonte d'un magasin d'équipement outdoor bordelais, faite sans commande, puis présentée à l'équipe.",
-      sections: [
-        { h: 'Point de départ', paras: [{ p: "Client régulier de ce magasin spécialisé dans la randonnée, j'y retrouvais dans les rayons un esprit d'aventure que son site ne transmettait pas. J'ai repensé l'expérience en ligne de moi-même, puis je suis allé leur présenter le résultat." }] },
-        { h: 'Ce qui a été fait', paras: [{ p: "Une identité reconstruite autour de quatre éléments (typographie, palette, images, pictogrammes), un nouveau logo, le site complet, et son extension au print : affichage, sacs, cartes de fidélité." }] },
-        {
-          h: 'Choix clés',
-          paras: [
-            { t: 'Une palette de terrain.', p: "Le vert délavé d'origine laisse place à des kakis terreux et des bruns profonds, pris à la nature." },
-            { t: 'Une montagne pour logo.', p: "Une montagne stylisée, simple et forte, qui range le magasin dans la famille visuelle des grandes marques outdoor." },
-            { t: 'Un site qui donne envie de partir.', p: "Accès direct aux catégories et aux fonctions de la boutique, images plein cadre et grand titrage « Explore » : chaque écran pousse à aller plus loin." },
-            { t: 'Des pictogrammes maison.', p: "Une série d'icônes simples pour se repérer dans l'interface." },
-          ],
-        },
-        { h: 'Résultat', paras: [{ p: 'Une identité cohérente en ligne comme en magasin, du site au sac de caisse.' }] },
-        { h: 'Statut', paras: [{ p: 'Présenté au magasin.' }] },
-      ],
-    },
-    en: {
-      title: 'Sports Aventure',
-      short: 'Unsolicited redesign',
-      meta: { year: '2024', context: 'Self-initiated, pitched to the store', role: 'Art direction, identity, UX/UI', tools: '[To complete]' },
-      lead: 'The redesign of an outdoor gear store in Bordeaux, made without a brief, then pitched to the team.',
-      sections: [
-        { h: 'Starting point', paras: [{ p: "As a regular customer of this hiking specialist, I found a spirit of adventure in its aisles that its website didn't convey. I rethought the online experience on my own, then went to show them the result." }] },
-        { h: 'What was made', paras: [{ p: 'An identity rebuilt around four elements (type, palette, imagery, icons), a new logo, the full website, and its extension to print: billboards, bags, loyalty cards.' }] },
-        {
-          h: 'Key decisions',
-          paras: [
-            { t: 'A palette from the field.', p: 'The original faded green gives way to earthy khakis and deep browns, taken from nature.' },
-            { t: 'A mountain for a logo.', p: 'A stylised mountain, simple and strong, placing the store in the visual family of the major outdoor brands.' },
-            { t: 'A site that makes you want to head out.', p: 'Direct access to categories and store features, full-bleed images and a large “Explore” title: every screen pushes you further.' },
-            { t: 'Custom icons.', p: 'A set of simple icons to find your way through the interface.' },
-          ],
-        },
-        { h: 'Outcome', paras: [{ p: 'A consistent identity online and in store, from the website to the shopping bag.' }] },
-        { h: 'Status', paras: [{ p: 'Pitched to the store.' }] },
-      ],
-    },
-  },
-  // ---------------------------------------------------------------- chateau-studio
-  {
-    slug: 'chateau-studio',
-    years: [2026],
-    tags: ['I'],
-    yearLabel: '2026',
-    object: 'rook',
-    draft: true,
-    fr: {
-      title: '(ChâteauStudio)®',
-      short: "Identité d'un studio",
-      meta: {
-        year: '2026',
-        context: 'Identité de studio',
-        role: 'Naming, identité, typographie',
-        tools: '[À compléter]',
-      },
-      lead: "[À valider] L'identité d'un studio de design graphique, construite comme une commande : brief, contraintes, pistes, choix.",
-      sections: [
-        {
-          h: 'Point de départ',
-          paras: [
-            { p: "Un nom qui fonctionne dans deux langues : château en français, castle en anglais. [À compléter : le brief que tu te fixes — positionnement, cible, supports]." },
-            { p: "Contrainte réelle : plusieurs « chateau » existent déjà en ligne, dans d'autres secteurs et d'autres pays. L'identité doit se distinguer sans changer de nom." },
-          ],
-        },
-        {
-          h: 'Ce qui a été fait',
-          paras: [{ p: '[À compléter] Logotype, caractère dessiné sur mesure (si oui), système de déclinaisons : devis, factures, réseaux, site.' }],
-        },
-        {
-          h: 'Choix clés',
-          paras: [
-            { t: '[À compléter]', p: 'Les pistes explorées puis écartées, et pourquoi.' },
-            { t: '[À compléter]', p: 'Le choix typographique.' },
-          ],
-        },
-        { h: 'Statut', paras: [{ p: 'En cours.' }] },
-      ],
-    },
-    en: {
-      title: '(ChâteauStudio)®',
-      short: 'Studio identity',
-      meta: {
-        year: '2026',
-        context: 'Studio identity',
-        role: 'Naming, identity, type',
-        tools: '[To complete]',
-      },
-      lead: '[To validate] The identity of a graphic design studio, approached as a real commission: brief, constraints, directions, decisions.',
-      sections: [
-        {
-          h: 'Starting point',
-          paras: [
-            { p: 'A name that works in two languages: château in French, castle in English. [To complete: the brief — positioning, audience, formats].' },
-            { p: 'A real constraint: several “chateau” accounts already exist online, in other sectors and countries. The identity has to stand apart without changing the name.' },
-          ],
-        },
-        { h: 'What was made', paras: [{ p: '[To complete] Logotype, custom typeface (if any), roll-out system: quotes, invoices, social, website.' }] },
-        {
-          h: 'Key decisions',
-          paras: [
-            { t: '[To complete]', p: 'Directions explored then dropped, and why.' },
-            { t: '[To complete]', p: 'The typographic choice.' },
-          ],
-        },
-        { h: 'Status', paras: [{ p: 'In progress.' }] },
-      ],
-    },
-  },
   // ---------------------------------------------------------------- bms-esport
   {
     slug: 'bms-esport',
@@ -470,7 +368,8 @@ export const projects: Project[] = [
             { t: 'Un mode clair.', p: 'Ajouté à la demande du client, à côté du mode sombre, pour lire confortablement partout.' },
           ],
         },
-        { h: 'Résultat', paras: [{ p: "Un site et une boutique qui forment un seul parcours, et une présence en ligne à la hauteur des ambitions du club." }] },
+        { h: 'Résultat', paras: [{ p: "Un site et une boutique pensés comme un seul parcours, à la hauteur des ambitions du club." }] },
+        { h: 'Statut', paras: [{ p: 'Livré au club, jamais mis en ligne.' }] },
       ],
     },
     en: {
@@ -489,7 +388,110 @@ export const projects: Project[] = [
             { t: 'A light mode.', p: 'Added at the client\'s request, alongside the dark mode, for comfortable reading anywhere.' },
           ],
         },
-        { h: 'Outcome', paras: [{ p: "A website and a store that form a single journey, and an online presence that matches the club's ambitions." }] },
+        { h: 'Outcome', paras: [{ p: "A website and a store designed as a single journey, matching the club's ambitions." }] },
+        { h: 'Status', paras: [{ p: 'Delivered to the club, never launched.' }] },
+      ],
+    },
+  },
+  // ---------------------------------------------------------------- HOT
+  {
+    slug: 'hotshot',
+    years: [2024],
+    tags: ['I', 'T', 'P'],
+    yearLabel: '2024',
+    object: 'bottle',
+    draft: true,
+    fr: {
+      title: 'HOTSHOT',
+      short: 'De la sauce piquante au restaurant',
+      meta: { year: '2024', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: 'Illustrator, Procreate, p5.js, Python' },
+      lead: "Une marque de sauce piquante qui grandit jusqu'au restaurant. Un concept, mené comme une vraie commande.",
+      sections: [
+        { h: 'Point de départ', paras: [{ p: "Une sauce piquante, puis le lieu qui va avec. Il fallait une marque assez forte pour tenir sur une étiquette de bouteille comme sur une devanture, sans jamais changer de voix." }] },
+        { h: 'Ce qui a été fait', paras: [{ p: "Le nom, un logotype dessiné sur mesure, une mascotte, une signature et toutes les déclinaisons : bouteilles, menu, sous-verres, baguettes, papier d'emballage, réseaux, site et devanture." }] },
+        {
+          h: 'Choix clés',
+          paras: [
+            { t: 'Un logotype en bloc.', p: "Des lettres condensées et anguleuses, empilées en carré, avec une bouteille qui s'invite dans le lettrage. Il tient en tampon, en étiquette comme en enseigne." },
+            { t: 'Deux rouges.', p: "Un rouge vif pour la brûlure, un bordeaux profond pour le fond. La couleur fait le travail avant même la lecture." },
+            { t: 'Une mascotte rétro.', p: "Un piment au trait épais, façon vieux cartoon, qui ajoute une dose d'insolence au sérieux du titrage." },
+            { t: 'Un ton.', p: "« Because mild is overrated. » La signature devient un titrage à part entière, sur les affiches comme sur les murs." },
+          ],
+        },
+        { h: 'Résultat', paras: [{ p: "Une identité complète, du produit au lieu : packaging, imprimés de table, signalétique, réseaux et site." }] },
+        { h: 'Statut', paras: [{ p: 'Concept personnel, non commandé.' }] },
+      ],
+    },
+    en: {
+      title: 'HOTSHOT',
+      short: 'From hot sauce to restaurant',
+      meta: { year: '2024', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: 'Illustrator, Procreate, p5.js, Python' },
+      lead: 'A hot sauce brand that grows into a restaurant. A concept, handled like a real commission.',
+      sections: [
+        { h: 'Starting point', paras: [{ p: 'A hot sauce, then the place that goes with it. The brand had to be strong enough to work on a bottle label as well as on a shopfront, without ever changing its voice.' }] },
+        { h: 'What was made', paras: [{ p: 'The name, a custom-drawn logotype, a mascot, a tagline and every application: bottles, menu, coasters, chopsticks, wrapping paper, social media, website and shopfront.' }] },
+        {
+          h: 'Key decisions',
+          paras: [
+            { t: 'A block logotype.', p: 'Condensed, angular letters stacked into a square, with a bottle slipping into the lettering. It works as a stamp, a label or a sign.' },
+            { t: 'Two reds.', p: 'A bright red for the burn, a deep burgundy for the background. The colour does the job before you even read.' },
+            { t: 'A retro mascot.', p: 'A thick-lined chilli in the style of old cartoons, adding some cheek to the seriousness of the titling.' },
+            { t: 'A tone of voice.', p: '“Because mild is overrated.” The tagline becomes titling in its own right, on posters as well as on walls.' },
+          ],
+        },
+        { h: 'Outcome', paras: [{ p: 'A complete identity, from product to place: packaging, table print, signage, social media and website.' }] },
+        { h: 'Status', paras: [{ p: 'Personal concept, not commissioned.' }] },
+      ],
+    },
+  },
+  // ---------------------------------------------------------------- SA
+  {
+    slug: 'sports-aventure',
+    years: [2024],
+    tags: ['I', 'W'],
+    yearLabel: '2024',
+    object: 'compass',
+    draft: true,
+    fr: {
+      title: 'Sports Aventure',
+      short: 'Refonte non sollicitée',
+      meta: { year: '2024', context: 'Initiative personnelle, présentée au magasin', role: 'Direction artistique, identité, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
+      lead: "La refonte d'un magasin d'équipement outdoor bordelais, faite sans commande, puis présentée à l'équipe.",
+      sections: [
+        { h: 'Point de départ', paras: [{ p: "Client régulier de ce magasin spécialisé dans la randonnée, j'y retrouvais dans les rayons un esprit d'aventure que son site ne transmettait pas. J'ai repensé l'expérience en ligne de moi-même, puis je suis allé leur présenter le résultat." }] },
+        { h: 'Ce qui a été fait', paras: [{ p: "Une identité reconstruite autour de quatre éléments (typographie, palette, images, pictogrammes), un nouveau logo, le site complet, et son extension au print : affichage, sacs, cartes de fidélité." }] },
+        {
+          h: 'Choix clés',
+          paras: [
+            { t: 'Une palette de terrain.', p: "Le vert délavé d'origine laisse place à des kakis terreux et des bruns profonds, pris à la nature." },
+            { t: 'Une montagne pour logo.', p: "Une montagne stylisée, simple et forte, qui range le magasin dans la famille visuelle des grandes marques outdoor." },
+            { t: 'Un site qui donne envie de partir.', p: "Accès direct aux catégories et aux fonctions de la boutique, images plein cadre et grand titrage « Explore » : chaque écran pousse à aller plus loin." },
+            { t: 'Des pictogrammes maison.', p: "Une série d'icônes simples pour se repérer dans l'interface." },
+          ],
+        },
+        { h: 'Résultat', paras: [{ p: 'Une identité cohérente en ligne comme en magasin, du site au sac de caisse.' }] },
+        { h: 'Statut', paras: [{ p: 'Présenté au magasin : bien reçu, resté sans suite.' }] },
+      ],
+    },
+    en: {
+      title: 'Sports Aventure',
+      short: 'Unsolicited redesign',
+      meta: { year: '2024', context: 'Self-initiated, pitched to the store', role: 'Art direction, identity, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
+      lead: 'The redesign of an outdoor gear store in Bordeaux, made without a brief, then pitched to the team.',
+      sections: [
+        { h: 'Starting point', paras: [{ p: "As a regular customer of this hiking specialist, I found a spirit of adventure in its aisles that its website didn't convey. I rethought the online experience on my own, then went to show them the result." }] },
+        { h: 'What was made', paras: [{ p: 'An identity rebuilt around four elements (type, palette, imagery, icons), a new logo, the full website, and its extension to print: billboards, bags, loyalty cards.' }] },
+        {
+          h: 'Key decisions',
+          paras: [
+            { t: 'A palette from the field.', p: 'The original faded green gives way to earthy khakis and deep browns, taken from nature.' },
+            { t: 'A mountain for a logo.', p: 'A stylised mountain, simple and strong, placing the store in the visual family of the major outdoor brands.' },
+            { t: 'A site that makes you want to head out.', p: 'Direct access to categories and store features, full-bleed images and a large “Explore” title: every screen pushes you further.' },
+            { t: 'Custom icons.', p: 'A set of simple icons to find your way through the interface.' },
+          ],
+        },
+        { h: 'Outcome', paras: [{ p: 'A consistent identity online and in store, from the website to the shopping bag.' }] },
+        { h: 'Status', paras: [{ p: 'Pitched to the store: well received, not taken further.' }] },
       ],
     },
   },
