@@ -25,7 +25,7 @@ const L = aboutLabels[lang];
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-2">{L.services}</h2>
         <ul class="bd svc" data-hola>
-          {services[lang].map(([h, d]) => <li><h3 class="t56">{h}</h3><p class="mono mu">{d}</p></li>)}
+          {services[lang].map(([h, d], i) => <li><span class="mono mu n">{String(i + 1).padStart(2, '0')}</span><h3 class="t56">{h}</h3><ul class="mono dl">{d.split(' · ').map((x) => <li><i class="pl" aria-hidden="true">+</i> {x.toLowerCase()}</li>)}</ul></li>)}
         </ul>
       </div>
     </section>
@@ -51,15 +51,20 @@ const L = aboutLabels[lang];
 <style>
   .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
   .bd { grid-column: 4 / 12; }
-  .svc li { display: grid; grid-template-columns: 5fr 3fr; column-gap: var(--gut); align-items: baseline; border-top: 1px solid var(--ln); padding: 14px 0 10px; }
+  /* services : quatre blocs en 2 × 2, sans filets ; numéro, grand mot, ce qu'il contient en liste « + » */
+  .svc { display: grid; grid-template-columns: 1fr 1fr; gap: 48px var(--gut); }
+  .svc > li { display: grid; grid-template-rows: auto auto 1fr; row-gap: 10px; }
+  .svc .n { font-size: 12px; }
+  .svc h3 { transition: translate .5s var(--out); }
+  .svc .dl { display: grid; row-gap: 3px; font-size: 13px; color: var(--mu); }
+  .svc .dl .pl { color: var(--ac); font-style: normal; display: inline-block; transition: rotate .5s var(--out); }
+  @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } .svc > li:hover .pl { rotate: 90deg; } }
   .cvl { margin-top: 40px; }
-  .svc li:last-child { border-bottom: 1px solid var(--ln); }
 
 
   @media (max-width: 760px) {
     .lab, .bd { grid-column: 1 / -1; }
     .lab { margin-bottom: 20px; padding-top: 0; }
-    .svc li { grid-template-columns: 1fr; }
-    .svc .mono { margin-top: 6px; }
+    .svc { grid-template-columns: 1fr; row-gap: 32px; }
   }
 </style>

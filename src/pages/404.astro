@@ -19,8 +19,59 @@ import '../styles/global.css';
         <p class="t28 mu" lang="fr">Cette page n'existe pas.</p>
         <p class="links"><a class="bp" href="/en/">home</a><a class="bp" href="/fr/" lang="fr">accueil</a></p>
       </div>
+      <!-- mini-jeu : le cavalier saute par-dessus les caractères perdus (espace, clic ou toucher) -->
+      <div class="game" data-game>
+        <canvas aria-label="Mini-game: jump over the lost characters (space or click)"></canvas>
+        <p class="mono mu hint" data-hint>space / click to ride — espace / clic pour chevaucher</p>
+        <p class="mono sc"><span class="mu">score</span> <b data-score>000</b> <span class="mu">best</span> <b data-best>000</b></p>
+      </div>
     </main>
   </body>
+<script>
+  // Le cavalier (le logo) galope ; des caractères perdus arrivent (4, 0, 4, parenthèses, +) : sauter par-dessus.
+  const box = document.querySelector<HTMLElement>('[data-game]')!;
+  const cv = box.querySelector('canvas')!, g = cv.getContext('2d')!;
+  const sEl = box.querySelector('[data-score]')!, bEl = box.querySelector('[data-best]')!, hint = box.querySelector('[data-hint]')!;
+  const knight = new Image(); knight.src = '/logo-kerningkastle-dark.svg';
+  const GLYPHS = ['4', '0', '4', '(', ')', '+', '?', '§', '&'];
+  let W = 0, H = 0, dpr = 1, run = false, dead = false, t = 0, speed = 6, y = 0, vy = 0, score = 0, next = 60, raf = 0;
+  let best = 0; try { best = Number(localStorage.getItem('kk-404') || 0); } catch { /* */ }
+  let obs: { x: number; c: string; w: number }[] = [];
+  const pad = (n: number) => String(Math.floor(n)).padStart(3, '0');
+  bEl.textContent = pad(best);
+  const fit = () => { const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; draw(); };
+  const GROUND = () => H - 24, K = 46;
+  const jump = () => {
+    if (!run || dead) { run = true; dead = false; obs = []; score = 0; speed = 6; t = 0; next = 50; y = 0; vy = 0; hint.classList.add('gone'); if (!raf) raf = requestAnimationFrame(loop); return; }
+    if (y === 0) vy = 13;
+  };
+  function draw() {
+    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    g.fillStyle = '#d6d6d6'; g.fillRect(0, GROUND(), W, 1);
+    const bob = run && !dead && y === 0 ? Math.abs(Math.sin(t * .35)) * 3 : 0;
+    if (knight.complete) g.drawImage(knight, 40, GROUND() - K - y - bob, K, K);
+    g.fillStyle = '#111'; g.font = '500 44px Geist, sans-serif'; g.textBaseline = 'alphabetic';
+    for (const o of obs) g.fillText(o.c, o.x, GROUND() - 2);
+    if (dead) { g.fillStyle = '#FF8716'; g.font = '400 13px "Geist Mono", monospace'; g.fillText('(désarçonné) + / (unhorsed) +', 40, 24); }
+  }
+  function loop() {
+    raf = 0; if (!run || dead) return;
+    t++; score += .2; speed = 6 + Math.min(8, score / 60);
+    vy -= .9; y = Math.max(0, y + vy); if (y === 0) vy = 0;
+    if (--next <= 0) { const c = GLYPHS[Math.floor(Math.random() * GLYPHS.length)]; g.font = '500 44px Geist, sans-serif'; obs.push({ x: W + 10, c, w: g.measureText(c).width }); next = 38 + Math.random() * 60 - Math.min(20, score / 20); }
+    for (const o of obs) o.x -= speed;
+    obs = obs.filter((o) => o.x > -60);
+    // collision : boîte du cavalier contre la boîte du caractère (avec un peu d'indulgence)
+    for (const o of obs) if (o.x < 40 + K - 10 && o.x + o.w > 40 + 10 && y < 30) { dead = true; if (score > best) { best = score; try { localStorage.setItem('kk-404', String(Math.floor(best))); } catch { /* */ } bEl.textContent = pad(best); } }
+    sEl.textContent = pad(score);
+    draw();
+    if (!dead) raf = requestAnimationFrame(loop);
+  }
+  addEventListener('keydown', (e) => { if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); jump(); } });
+  cv.addEventListener('pointerdown', jump);
+  addEventListener('resize', fit);
+  knight.onload = draw; document.fonts.ready.then(fit); fit();
+</script>
 </html>
 
 <style>
@@ -29,5 +80,12 @@ import '../styles/global.css';
   .k { grid-column: 1 / 4; padding-top: 10px; }
   .v { grid-column: 4 / 12; }
   .links { display: flex; gap: 32px; margin-top: 32px; }
+  .nf { align-content: center; row-gap: 48px; }
+  .game { grid-column: 1 / -1; position: relative; }
+  .game canvas { display: block; width: 100%; height: 180px; max-width: none; cursor: pointer; }
+  .hint { position: absolute; left: 0; top: 0; transition: opacity .3s; }
+  .hint.gone { opacity: 0; }
+  .sc { position: absolute; right: 0; top: 0; display: flex; gap: 8px; }
+  .sc b { font-weight: 400; color: var(--ac); }
   @media (max-width: 760px) { .k, .v { grid-column: 1 / -1; } .k { margin-bottom: 16px; } }
 </style>
