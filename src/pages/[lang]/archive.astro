@@ -252,16 +252,16 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
 
   // molette : avance la bande ; au bout, un nouveau geste découvre le pied de page
-  let last = 0, atEndAtStart = false, atStartFoot = false, hold = false;
+  let last = 0, atEndAtStart = false, atStartFoot = false, footHold = false;
   addEventListener('wheel', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
     const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     const now = performance.now();
-    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; hold = false; }
+    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; footHold = false; }
     last = now;
-    if (hold) return; // le geste qui a refermé le pied de page s'arrête là
+    if (footHold) return; // le geste qui a refermé le pied de page s'arrête là
     if (d > 0 && atEndAtStart) { footTarget = ft.offsetHeight; kick(); return; }
-    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; hold = true; kick(); } return; }
+    if (d < 0 && footTarget > 0) { if (atStartFoot) { footTarget = 0; footHold = true; kick(); } return; }
     seek(target + d);
   }, { passive: true });
   addEventListener('keydown', (e) => {
