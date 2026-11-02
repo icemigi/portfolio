@@ -231,6 +231,8 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 .bp::before, .hit.bp::before { content: '('; position: static; height: auto; transform: none; }
 /* le « + » signe ce qui se clique (les libellés, eux, n'en ont pas) ; « fermer » prend le × (le + tourné) */
 .bp::after { content: ')\00a0+'; } .bp.bx::after { content: ')\00a0×'; }
+/* flèches : le signe se suffit, pas de + */
+.bp.ba::after { content: ')'; }
 
 [data-copy], [data-copy] *, input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 .hc { position: relative; }

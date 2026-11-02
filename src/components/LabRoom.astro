@@ -29,7 +29,7 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
     <div class="bot g">
       <div class="info mono">
         <p>{pad(index + 1)} / {pad(N)} — {r.title}</p>
-        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i bp hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>i</button></Fragment>}</p>
+        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i bp hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>note</button></Fragment>}</p>
       </div>
       <ol class="dots mono" aria-label="Lab">
         {rooms.map((x, i) => <li><a class:list={['hit', { mu: i !== index }]} href={url(i)} aria-current={i === index ? 'page' : undefined} aria-label={x[lang].title}>{pad(i + 1)}</a></li>)}
@@ -38,8 +38,8 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
         {room.kind === 'font' && (room.file
           ? <a class="bp hit" href={room.file} download>{t.download.toLowerCase()}</a>
           : <span class="mono mu">{t.fileSoon.toLowerCase()}</span>)}
-        <a class="arw bp hit" href={url(index - 1)} data-prev>{t.prev.toLowerCase()}</a>
-        <a class="arw bp hit" href={url(index + 1)} data-nextroom>{t.nextShort.toLowerCase()}</a>
+        <a class="arw bp ba hit" href={url(index - 1)} aria-label={t.prev} data-prev>←</a>
+        <a class="arw bp ba hit" href={url(index + 1)} aria-label={t.nextShort} data-nextroom>→</a>
       </div>
     </div>
     {room.kind !== 'font' && <div class="note" id="note" hidden><p class="mono mu">{t.note}</p><p>{r.note}</p></div>}

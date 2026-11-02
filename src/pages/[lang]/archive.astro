@@ -39,8 +39,8 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={t.archiveCount}>
     <button class="x bp bx hit" type="button" data-close>{t.close.toLowerCase()}</button>
     <figure><span class="ph big" data-big></span><figcaption class="mono mu" data-cap></figcaption></figure>
-    <button class="arw bp" type="button" data-step="-1">{t.prev.toLowerCase()}</button>
-    <button class="arw bp" type="button" data-step="1">{t.nextShort.toLowerCase()}</button>
+    <button class="arw bp ba" type="button" data-step="-1" aria-label={t.prev}>←</button>
+    <button class="arw bp ba" type="button" data-step="1" aria-label={t.nextShort}>→</button>
   </div>
 </Base>
 
