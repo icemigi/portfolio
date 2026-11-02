@@ -83,7 +83,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     .track { left: 0; right: 0; top: var(--head); bottom: 84px; display: block; transform: none !important; will-change: auto; }
     .pc { position: absolute; left: var(--x); top: var(--y); height: auto; display: block; transform: translate(-50%, -50%) rotate(var(--rot)); visibility: hidden; }
     .pc.on { visibility: visible; }
-    .pc .im { height: min(460px, calc(100dvh - var(--head) - 200px)); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 34px rgba(0, 0, 0, .12); }
+    .pc .im { height: auto; width: min(calc(min(400px, 52dvh) * var(--r)), 34vw); box-shadow: 0 1px 2px rgba(0, 0, 0, .08), 0 14px 34px rgba(0, 0, 0, .12); }
     .pc .c { display: none; }
     .edge { display: none; }
   }
@@ -131,7 +131,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   // place et angle de chaque affiche : tirés au sort une fois (graine fixe), répartis sur presque toute la largeur
   const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
   items.forEach((it, i) => {
-    const x0 = i === 0 ? .5 : .14 + rnd(i) * .72, y0 = i === 0 ? .5 : .4 + rnd(i + 99) * .2, a = i === 0 ? -2 : (rnd(i + 7) - .5) * 18;
+    const x0 = i === 0 ? .5 : .14 + rnd(i) * .72, y0 = i === 0 ? .5 : .32 + rnd(i + 99) * .36, a = i === 0 ? -2 : (rnd(i + 7) - .5) * 18;
     it.style.setProperty('--x', `${(x0 * 100).toFixed(1)}%`); it.style.setProperty('--y', `${(y0 * 100).toFixed(1)}%`); it.style.setProperty('--rot', `${a.toFixed(1)}deg`);
     it.style.zIndex = String(i + 1);
   });
