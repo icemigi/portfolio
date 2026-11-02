@@ -101,13 +101,13 @@ export function initScreens(host: HTMLElement): Screens {
   };
   // courbe du glissement (cubic-bezier .7,0,.2,1) ; la vitesse héritée s'éteint par u(1-u)^3
   const bez = (x: number) => {
-    const X = (t: number) => 3 * (1 - t) * (1 - t) * t * 0.7 + 3 * (1 - t) * t * t * 0.2 + t * t * t;
+    const X = (t: number) => 3 * (1 - t) * (1 - t) * t * 0.45 + 3 * (1 - t) * t * t * 0.15 + t * t * t;
     const Y = (t: number) => 3 * (1 - t) * t * t + t * t * t;
     let lo = 0, hi = 1, t = x;
     for (let n = 0; n < 24; n++) { const v = X(t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
     return Y(t);
   };
-  const DUR = 680;
+  const DUR = 560; // départ plus franc (courbe .45,0,.15,1) : le geste répond tout de suite, l'arrivée reste douce
   const arrive = () => {
     mv = null; busy = false; vel = 0; scroll = T[tgt]; pend = null;
     cur = tgt; place(); save();
@@ -221,13 +221,18 @@ export function initScreens(host: HTMLElement): Screens {
     y0 = e.touches[0].clientY; t0 = performance.now();
     down = !canScroll(S[cur], 1); up = !canScroll(S[cur], -1);
   }, { passive: true });
-  addEventListener('touchend', (e) => {
-    if (Number.isNaN(y0)) return;
-    const d = y0 - e.changedTouches[0].clientY;
-    if (Math.abs(d) < 50 || performance.now() - t0 > 900) return;
-    if (d > 0 && (down || busy)) step(1);
-    if (d < 0 && (up || busy)) step(-1);
-  }, { passive: true });
+  // le passage part dès que le doigt a glissé de 36 px (sans attendre qu'il quitte l'écran) : plus de latence
+  let fired = false;
+  const swipe = (yNow: number) => {
+    if (Number.isNaN(y0) || fired) return;
+    const d = y0 - yNow;
+    if (Math.abs(d) < 36 || performance.now() - t0 > 900) return;
+    if (d > 0 && (down || busy)) { fired = true; step(1); }
+    if (d < 0 && (up || busy)) { fired = true; step(-1); }
+  };
+  addEventListener('touchstart', () => { fired = false; }, { passive: true });
+  addEventListener('touchmove', (e) => swipe(e.touches[0].clientY), { passive: true });
+  addEventListener('touchend', (e) => swipe(e.changedTouches[0].clientY), { passive: true });
 
   // tabulation : le focus amène son écran
   host.addEventListener('focusin', (e) => {
