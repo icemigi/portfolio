@@ -44,7 +44,7 @@ const { items } = Astro.props;
 </style>
 
 <script>
-  type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; uv: Float32Array; sh: Float32Array };
+  type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; sh: Float32Array };
   const C = 8, R = 22; // colonnes × rangées de points par fanion
   const root = document.querySelector<HTMLElement>('[data-fanions]');
   const still = matchMedia('(prefers-reduced-motion: reduce), (max-width: 760px)').matches;
@@ -100,25 +100,31 @@ const { items } = Astro.props;
     });
 
     let banners: B[] = [], CW = 0, CH = 0, dpr = 1;
+    let gen = 0;
     const build = async () => {
+      const my = ++gen; // une reconstruction plus récente annule celle-ci
       dpr = Math.min(2, devicePixelRatio || 1);
-      const cr = cv.getBoundingClientRect(); CW = cr.width; CH = cr.height;
+      // toutes les mesures d'un coup, AVANT toute attente : l'écran peut glisser pendant le chargement des logos,
+      // et des fanions mesurés à des instants différents se retrouvaient décalés d'une hauteur d'écran (invisibles)
+      const cr = cv.getBoundingClientRect();
+      const rects = li.map((el) => el.querySelector('.cloth')!.getBoundingClientRect());
+      const canv = await Promise.all(li.map((el, i) => paint(el, rects[i].width, rects[i].height)));
+      if (my !== gen) return;
+      CW = cr.width; CH = cr.height;
       cv.width = Math.round(CW * dpr); cv.height = Math.round(CH * dpr); gl.viewport(0, 0, cv.width, cv.height);
-      const next: B[] = [];
-      for (const el of li) {
-        const r = el.querySelector('.cloth')!.getBoundingClientRect();
-        const b: B = { x0: r.left - cr.left, y0: r.top - cr.top, w: r.width, h: r.height, P: new Float32Array(C * R * 3), Q: new Float32Array(C * R * 3), tex: null, uv: new Float32Array(C * R * 2), sh: new Float32Array(C * R) };
+      const next: B[] = li.map((_, k) => {
+        const r = rects[k];
+        const b: B = { x0: r.left - cr.left, y0: r.top - cr.top, w: r.width, h: r.height, P: new Float32Array(C * R * 3), Q: new Float32Array(C * R * 3), tex: null, sh: new Float32Array(C * R) };
         for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
           const n = j * C + i, px = b.x0 + (i / (C - 1)) * b.w, py = b.y0 + (j / (R - 1)) * b.h;
-          b.P.set([px, py, 0], n * 3); b.Q.set([px, py, 0], n * 3); b.uv.set([i / (C - 1), j / (R - 1)], n * 2);
+          b.P.set([px, py, 0], n * 3); b.Q.set([px, py, 0], n * 3);
         }
-        const c = await paint(el, b.w, b.h);
         b.tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, b.tex);
         gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canv[k]);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        next.push(b);
-      }
+        return b;
+      });
       const first = !banners.length;
       banners.forEach((b) => gl.deleteTexture(b.tex)); banners = next;
       for (let s = 0; s < 120; s++) step(); // le tissu est déjà posé quand il apparaît
