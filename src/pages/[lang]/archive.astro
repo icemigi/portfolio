@@ -167,13 +167,15 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
   const fit = () => { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1); for (const cv of [base, fly]) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } dirty = true; go(); };
   const go = () => { if (!raf2) raf2 = requestAnimationFrame(tick); };
+  // la boîte fixe s'allonge de la hauteur du pied de page : sinon, remonté par translateY, il est rogné (overflow:hidden)
+  const tall = () => { if (desktop()) { root.style.bottom = 'auto'; root.style.height = `calc(100dvh + ${ft.offsetHeight}px)`; } else { root.style.bottom = ''; root.style.height = ''; } };
   const ease = (p: number) => 1 - Math.pow(1 - p, 3);
   function tick(now: number) {
     raf2 = 0;
     if (dirty) { dirty = false; bake(); }
     fx.setTransform(dpr, 0, 0, dpr, 0, 0); fx.clearRect(0, 0, W, H);
     for (const a of [...air]) {
-      const c = cards[a.i], [x, y] = pos(c), p = (now - a.t0) / (a.kind === 'in' ? 520 : 220);
+      const c = cards[a.i], [x, y] = pos(c), p = (now - a.t0) / (a.kind === 'in' ? 520 : 420);
       if (p < 0) continue;
       if (p >= 1) {
         air.splice(air.indexOf(a), 1);
@@ -185,7 +187,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
         continue;
       }
       if (a.kind === 'in') { const e = ease(p), s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * (1 - e), y + innerHeight * .75 * (1 - e), r0 + (c.rot - r0) * e, 1 + .12 * (1 - e)); }
-      else paint(fx, c, x, y - 24 * p, c.rot, 1 + .04 * p, 1 - p);
+      else { const e = p * p * p, s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * e, y + innerHeight * .75 * e, c.rot + (r0 - c.rot) * e, 1 + .12 * e); } // le même geste à l'envers
     }
     if (hold?.moved) { const c = cards[hold.i], [x, y] = pos(c); paint(fx, c, x, y, c.rot, 1.03); }
     if (air.length || dirty) go();
@@ -194,7 +196,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
     if (!desktop()) return;
     const n = index() + 1, now = performance.now();
     if (n > shown) for (let i = shown; i < n; i++) { order = order.filter((o) => o !== i); order.push(i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (i - shown) * 45, kind: 'in' }); else dirty = true; }
-    else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now, kind: 'out' }); dirty = true; }
+    else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (shown - 1 - i) * 30, kind: 'out' }); dirty = true; }
     shown = n; go();
   };
   // quelle affiche est sous le pointeur (la plus haute)
@@ -230,8 +232,8 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   fly.addEventListener('pointerup', drop);
   fly.addEventListener('pointercancel', drop);
   fly.addEventListener('pointerleave', () => { if (!hold) fly.classList.remove('stage'); });
-  if (desktop()) fit();
-  addEventListener('resize', () => { if (desktop()) fit(); });
+  tall(); if (desktop()) fit();
+  addEventListener('resize', () => { tall(); if (desktop()) fit(); });
 
   let lastK = 0;
   const render = () => {
