@@ -67,6 +67,12 @@ const { items } = Astro.props;
     // indices du maillage (deux triangles par case)
     const idx: number[] = [];
     for (let r = 0; r < R - 1; r++) for (let c = 0; c < C - 1; c++) { const i = r * C + c; idx.push(i, i + 1, i + C, i + 1, i + C + 1, i + C); }
+    // tampons alloués une seule fois (aucune allocation par image) ; les coordonnées de texture sont les mêmes pour tous les fanions
+    const xy = new Float32Array(C * R * 2), uv = new Float32Array(C * R * 2);
+    for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) uv.set([i / (C - 1), j / (R - 1)], (j * C + i) * 2);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bT); gl.bufferData(gl.ARRAY_BUFFER, uv, gl.STATIC_DRAW); gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferData(gl.ARRAY_BUFFER, xy.byteLength, gl.DYNAMIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bL); gl.bufferData(gl.ARRAY_BUFFER, C * R * 4, gl.DYNAMIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bI); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
 
     // ---------- texture d'un fanion : drap, ourlet, couture, logo, nom, queue d'aronde ----------
@@ -121,7 +127,7 @@ const { items } = Astro.props;
     };
 
     // ---------- simulation ----------
-    let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, raf = 0, on = false, t0 = 0;
+    let mx = -1e4, my = -1e4, vx = 0, vy = 0, t = 0, raf = 0, on = false, t0 = 0, acc = 0, last = performance.now();
     const step = () => {
       t += 1;
       let bi = 0;
@@ -139,7 +145,7 @@ const { items } = Astro.props;
           P[k] = x + (x - Q[k]) * 0.982 + fx; P[k + 1] = y + (y - Q[k + 1]) * 0.982 + fy; P[k + 2] = z + (z - Q[k + 2]) * 0.982 + fz;
           Q[k] = x; Q[k + 1] = y; Q[k + 2] = z;
         }
-        for (let it = 0; it < 6; it++) {
+        for (let it = 0; it < 4; it++) {
           for (let j = 0; j < R; j++) for (let i = 0; i < C; i++) {
             const n = j * C + i;
             if (i < C - 1) link(P, n, n + 1, sx, j === 0);
@@ -165,7 +171,6 @@ const { items } = Astro.props;
     }
     const draw = () => {
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); gl.uniform2f(uU, CW, CH);
-      const xy = new Float32Array(C * R * 2);
       const now = performance.now();
       for (const [i, b] of banners.entries()) {
         // apparition sobre : fondu + léger glissement, décalé de 60 ms d'un fanion à l'autre
@@ -173,9 +178,8 @@ const { items } = Astro.props;
         if (e <= 0) continue;
         gl.uniform1f(uA, ez); gl.uniform1f(uO, -10 * (1 - ez));
         for (let n = 0; n < C * R; n++) { xy[n * 2] = b.P[n * 3]; xy[n * 2 + 1] = b.P[n * 3 + 1]; }
-        gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferData(gl.ARRAY_BUFFER, xy, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, bT); gl.bufferData(gl.ARRAY_BUFFER, b.uv, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aT); gl.vertexAttribPointer(aT, 2, gl.FLOAT, false, 0, 0);
-        gl.bindBuffer(gl.ARRAY_BUFFER, bL); gl.bufferData(gl.ARRAY_BUFFER, b.sh, gl.DYNAMIC_DRAW); gl.enableVertexAttribArray(aL); gl.vertexAttribPointer(aL, 1, gl.FLOAT, false, 0, 0);
+        gl.bindBuffer(gl.ARRAY_BUFFER, bP); gl.bufferSubData(gl.ARRAY_BUFFER, 0, xy); gl.enableVertexAttribArray(aP); gl.vertexAttribPointer(aP, 2, gl.FLOAT, false, 0, 0);
+                gl.bindBuffer(gl.ARRAY_BUFFER, bL); gl.bufferSubData(gl.ARRAY_BUFFER, 0, b.sh); gl.enableVertexAttribArray(aL); gl.vertexAttribPointer(aL, 1, gl.FLOAT, false, 0, 0);
         gl.bindTexture(gl.TEXTURE_2D, b.tex); gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_SHORT, 0);
       }
     };
@@ -185,7 +189,14 @@ const { items } = Astro.props;
       const v = shown();
       if (v && !on) t0 = performance.now(); // à chaque retour sur la section, nouveau fondu
       on = v;
-      if (v && banners.length) { step(); step(); draw(); }
+      const now = performance.now();
+      if (v && banners.length) {
+        acc = Math.min(acc + (now - last), 50); // 120 pas de simulation par seconde, quel que soit l'écran
+        let moved = false;
+        while (acc >= 8.33) { step(); acc -= 8.33; moved = true; }
+        if (moved) draw();
+      }
+      last = now;
       raf = requestAnimationFrame(loop);
     };
     function kick() { if (!raf) raf = requestAnimationFrame(loop); }
