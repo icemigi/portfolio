@@ -131,15 +131,15 @@ export const projects: Project[] = [
   // ---------------------------------------------------------------- HOT
   {
     slug: 'hotshot',
-    years: [],
+    years: [2024],
     tags: ['I', 'T', 'P'],
-    yearLabel: '[Année]',
+    yearLabel: '2024',
     object: 'bottle',
     draft: true,
     fr: {
       title: 'HOTSHOT',
       short: 'De la sauce piquante au restaurant',
-      meta: { year: '[Année]', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: '[À compléter]' },
+      meta: { year: '2024', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: '[À compléter]' },
       lead: "Une marque de sauce piquante qui grandit jusqu'au restaurant. Un concept, mené comme une vraie commande.",
       sections: [
         { h: 'Point de départ', paras: [{ p: "Une sauce piquante, puis le lieu qui va avec. Il fallait une marque assez forte pour tenir sur une étiquette de bouteille comme sur une devanture, sans jamais changer de voix." }] },
@@ -160,7 +160,7 @@ export const projects: Project[] = [
     en: {
       title: 'HOTSHOT',
       short: 'From hot sauce to restaurant',
-      meta: { year: '[Year]', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: '[To complete]' },
+      meta: { year: '2024', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: '[To complete]' },
       lead: 'A hot sauce brand that grows into a restaurant. A concept, handled like a real commission.',
       sections: [
         { h: 'Starting point', paras: [{ p: 'A hot sauce, then the place that goes with it. The brand had to be strong enough to work on a bottle label as well as on a shopfront, without ever changing its voice.' }] },
