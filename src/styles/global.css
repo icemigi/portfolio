@@ -70,8 +70,12 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 
 /* ---------- accessibilité ---------- */
 /* curseur : gantelet (fichier fourni), point chaud à la pointe ; le curseur système reste pour les champs de texte */
-:root { --cur: url(/cursor.png) 0 0, auto; }
-html, a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog, .obj a, .stage { cursor: var(--cur) !important; }
+/* deux tailles : nette sur écran Retina (version 2×, agrandie proprement puis lissée) */
+html, a, button, [role='button'], label, summary, select, [data-go], [data-copy], .prog, .obj a, .stage {
+  cursor: url(/cursor.png) 0 0, auto !important;
+  cursor: -webkit-image-set(url(/cursor.png) 1x, url(/cursor-2x.png) 2x) 0 0, auto !important;
+  cursor: image-set(url(/cursor.png) 1x, url(/cursor-2x.png) 2x) 0 0, auto !important;
+}
 input, textarea, [contenteditable] { cursor: text; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
 .skip { position: fixed; left: var(--m); top: 8px; z-index: 200; background: var(--fg); color: var(--bg); padding: 12px 16px; transform: translateY(-200%); }
