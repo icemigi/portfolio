@@ -186,12 +186,19 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 
 /* ---------- pied de page ---------- */
 .ft { padding-top: 24px; padding-bottom: 40px; row-gap: 32px; background: var(--bg); }
-.ft .a { grid-column: 1 / 4; } .ft .b { grid-column: 7 / 10; } .ft .c { grid-column: 10 / 12; } .ft .top { grid-column: 12 / 13; justify-self: end; align-self: start; }
+.ft .a { grid-column: 1 / 5; } .ft .b { grid-column: 5 / 7; } .ft .n { grid-column: 7 / 9; } .ft .h { grid-column: 9 / 12; } .ft .top { grid-column: 12 / 13; grid-row: 1; justify-self: end; align-self: start; }
+.ft .col { grid-column: 1 / 7; max-width: 52ch; align-self: end; }
+.ft .c { grid-column: 9 / 13; display: flex; gap: 24px; align-items: baseline; justify-content: space-between; align-self: end; }
 .ft p + p, .ft p + a, .ft a + a { margin-top: 4px; }
-.ft .b a { display: table; }
+.ft .c p + a { margin-top: 0; }
+.ft .b a, .ft .n a { display: table; }
 @media (max-width: 760px) {
   .ft > * { grid-column: 1 / -1 !important; }
-  .ft .c { grid-column: 1 / 3 !important; } .ft .top { grid-column: 3 / 5 !important; align-self: end; }
+  .ft .b { grid-column: 1 / 3 !important; } .ft .n { grid-column: 3 / 5 !important; }
+  .ft.line .a { display: none; } /* écran Contact : l'adresse est déjà en grand juste au-dessus */
+  .ft .col { font-size: 13px; line-height: 1.45; }
+  .ft .c, .ft .c * { white-space: nowrap; } .ft .c { gap: 16px; }
+  .ft .c { grid-column: 1 / 4 !important; justify-content: flex-start; } .ft .top { grid-column: 4 / 5 !important; grid-row: auto; align-self: end; }
 }
 
 /* ---------- réduire les animations ---------- */

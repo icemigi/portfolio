@@ -70,4 +70,5 @@ export const aboutLabels = {
 export const contact = {
   email: 'hello@kerningkastle.com', // TODO : adresse réelle
   instagram: 'https://www.instagram.com/kerningkastle/',
+  behance: 'https://www.behance.net/icemigi',
 };

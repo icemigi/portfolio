@@ -1,21 +1,56 @@
 ---
-// Pied de page : email (clic = copie), Instagram, CV, année, retour en haut.
+// Pied de page : contact (clic = copie), ailleurs, plan du site, heure de Paris avec une humeur qui change selon l'heure,
+// colophon (avec beaucoup trop de parenthèses, c'est assumé), année, mentions légales, retour en haut.
 import { ui, type Lang } from '../data/ui';
 import { contact } from '../data/about';
 interface Props { lang: Lang; class?: string; top?: boolean }
 const { lang, class: cls = '', top = true } = Astro.props;
 const t = ui[lang];
+const fr = lang === 'fr';
+const nav = [['work/', t.nav.work], ['lab/', t.nav.lab], ['archive/', t.nav.archive], ['about/', t.nav.about]] as const;
+// humeur selon l'heure de Paris : [heure de début, texte]
+const moods = fr
+  ? [[0, '(sûrement en train de dessiner un g à deux étages)'], [7, '(café, puis crénage)'], [9, '(en train d\'ajuster un crénage)'], [12, '(pause déj, les lettres attendent)'], [14, '(en train de pousser des pixels)'], [19, '(en montagne, ou en plein speedrun)'], [22, '(un dernier glyphe et au lit)']]
+  : [[0, '(probably drawing a double-storey g)'], [7, '(coffee, then kerning)'], [9, '(adjusting some kerning)'], [12, '(lunch break, the letters can wait)'], [14, '(pushing pixels)'], [19, '(in the mountains, or mid-speedrun)'], [22, '(one last glyph, then bed)']];
 ---
 <footer class:list={['ft g', cls]}>
   <div class="a">
     <p class="mono mu par">{t.contact}</p>
     <p><a class="lk" href={`mailto:${contact.email}`} data-copy={contact.email} data-copied={t.copied}><span data-label>{contact.email}</span></a></p>
+    <p class="mu">{fr ? 'Paris & remote' : 'Paris & remote'}</p>
   </div>
   <div class="b">
     <p class="mono mu par">{t.elsewhere}</p>
     <a class="lk" href={contact.instagram} rel="me noopener" target="_blank">Instagram ↗</a>
+    <a class="lk" href={contact.behance} rel="me noopener" target="_blank">Behance ↗</a>
     <a class="lk" href={`/${lang}/cv/`}>{t.cv}</a>
   </div>
-  <div class="c"><p class="mono mu">© {new Date().getFullYear()}</p><a class="lk mu" href={`/${lang}/legal/`}>{lang === 'fr' ? 'Mentions légales' : 'Legal notice'}</a></div>
+  <nav class="n" aria-label={fr ? 'Plan du site' : 'Sitemap'}>
+    <p class="mono mu par">{fr ? 'Plan' : 'Index'}</p>
+    {nav.map(([h, l]) => <a class="lk" href={`/${lang}/${h}`}>{l}</a>)}
+  </nav>
+  <div class="h" data-clock data-moods={JSON.stringify(moods)}>
+    <p class="mono mu par">{fr ? 'Heure locale' : 'Local time'}</p>
+    <p><span data-time>Paris</span></p>
+    <p class="mu" data-mood></p>
+  </div>
+  <p class="col mu">{fr
+    ? 'Fait main à Paris avec Geist, Geist Mono et beaucoup trop de parenthèses (c\'est assumé). Aucun framework, aucun cookie, quelques sons.'
+    : 'Handmade in Paris with Geist, Geist Mono and far too many parentheses (on purpose). No framework, no cookies, a few sounds.'}</p>
+  <div class="c"><p class="mono mu">© {new Date().getFullYear()} kerningkastle</p><a class="lk mu mono" href={`/${lang}/legal/`}>{fr ? 'Mentions légales' : 'Legal notice'}</a></div>
   {top && <a class="top mono lk hit" href="#main" data-go="0">{t.top} ↑</a>}
 </footer>
+
+<script>
+  // Heure de Paris (minute près) et humeur du moment.
+  const tick = () => document.querySelectorAll<HTMLElement>('[data-clock]').forEach((el) => {
+    const now = new Date();
+    const hm = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+    const h = parseInt(hm, 10);
+    const moods = JSON.parse(el.dataset.moods || '[]') as [number, string][];
+    const mood = moods.filter(([s]) => h >= s).pop();
+    el.querySelector('[data-time]')!.textContent = `Paris, ${hm.replace(':', ':')}`;
+    el.querySelector('[data-mood]')!.textContent = mood ? mood[1] : '';
+  });
+  tick(); setInterval(tick, 20000);
+</script>
