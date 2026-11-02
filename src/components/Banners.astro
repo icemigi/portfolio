@@ -1,21 +1,19 @@
 ---
 // Stack en fanions de tissu. Chaque fanion = un vrai tissu simulé (maillage de points, intégration de Verlet,
 // contraintes de distance, gravité, brise légère) et dessiné en WebGL avec un éclairage calculé sur les plis.
-// Drap à la couleur du logiciel, logo détouré, couture piquée, queue d'aronde ; la hampe en fer les retient.
+// Drap à la couleur du logiciel, logo détouré dans le bas, couture piquée, queue d'aronde.
 // La souris passe = le vent qu'elle fait pousse le tissu. Sans WebGL ou avec « Réduire les animations » :
 // fanions fixes en HTML (même dessin, sans mouvement).
 interface Props { items: { id: string; name: string; bg: string; ink: string; mark: string }[] }
 const { items } = Astro.props;
 ---
 <div class="fanions" data-fanions aria-label="Stack">
-  <span class="rod" aria-hidden="true"></span>
   <canvas class="gl" aria-hidden="true"></canvas>
   <ul>
     {items.map((x) => (
       <li class="fn" data-bg={x.bg} data-ink={x.ink} data-mark={`/stack/${x.mark}.png`} data-name={x.name.toLowerCase()}>
         <span class="cloth" style={`--bg:${x.bg};--ink:${x.ink}`}>
           <img src={`/stack/${x.mark}.png`} alt={x.name} decoding="async" />
-          <span class="nm mono">{x.name.toLowerCase()}</span>
         </span>
       </li>
     ))}
@@ -23,27 +21,20 @@ const { items } = Astro.props;
 </div>
 
 <style>
-  .fanions { position: relative; margin-top: 44px; padding-top: 5px; }
-  .rod { position: absolute; left: -12px; right: -12px; top: 0; height: 8px; border-radius: 4px; z-index: 3;
-    background: linear-gradient(180deg, #8a8a8e 0%, #2e2e31 45%, #0b0b0c 100%); box-shadow: 0 3px 6px rgba(0, 0, 0, .25); }
-  .rod::before, .rod::after { content: ''; position: absolute; top: -5px; width: 18px; height: 18px; border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #c4c4c8, #3a3a3d 55%, #0b0b0c); }
-  .rod::before { left: -10px; } .rod::after { right: -10px; }
+  .fanions { position: relative; margin-top: 32px; }
   .gl { position: absolute; left: -60px; right: -60px; top: 0; height: calc(100% + 80px); width: calc(100% + 120px); pointer-events: none; z-index: 2; }
   ul { display: flex; gap: clamp(10px, 1.2vw, 18px); padding: 0 8px; }
   .fn { flex: 1; min-width: 0; }
   /* version fixe (aussi la mise en page de référence pour le tissu) */
-  .cloth { position: relative; display: flex; flex-direction: column; align-items: center; height: clamp(180px, 34vh, 340px); padding-top: 16%;
+  .cloth { position: relative; display: flex; flex-direction: column; align-items: center; height: clamp(130px, 24vh, 250px); justify-content: flex-end; padding-bottom: 30%;
     background: var(--bg); color: var(--ink); clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 85%, 0 100%); }
   .cloth img { width: 74%; height: auto; max-height: 34%; object-fit: contain; }
-  .nm { margin-top: auto; margin-bottom: 34%; font-size: 11px; white-space: nowrap; }
   .fanions.live ul { visibility: hidden; }
   @media (max-width: 760px) {
     .fanions { margin-top: 28px; }
     ul { flex-wrap: wrap; gap: 14px 8px; }
     .fn { flex: 0 0 calc((100% - 32px) / 5); }
     .cloth { height: clamp(110px, 17vh, 160px); }
-    .nm, .rod { display: none; }
   }
 </style>
 
@@ -81,15 +72,14 @@ const { items } = Astro.props;
       // trame très légère (le drap n'est pas un aplat numérique)
       x.save(); shape(0); x.clip(); x.globalAlpha = .045; x.fillStyle = '#000';
       for (let i = 0; i < H; i += 3) x.fillRect(0, i, W, 1);
-      x.globalAlpha = .18; x.fillRect(0, 0, W, H * 0.045); x.restore(); // ourlet
+      x.globalAlpha = .07; x.fillRect(0, 0, W, H * 0.04); x.restore(); // ourlet
       // couture piquée
       x.save(); shape(k * 7); x.setLineDash([k * 4, k * 3]); x.lineWidth = k * 1; x.strokeStyle = el.dataset.ink!; x.globalAlpha = .45; x.stroke(); x.restore();
       const img = new Image(); img.crossOrigin = 'anonymous';
       img.onload = () => {
-        const mw = W * 0.72, mh = Math.min(H * 0.3, (mw * img.height) / img.width), sw = (mh * img.width) / img.height;
-        x.drawImage(img, (W - sw) / 2, H * 0.12, sw, mh);
-        x.fillStyle = el.dataset.ink!; x.globalAlpha = .85; x.font = `${11 * k}px "Geist Mono", monospace`; x.textAlign = 'center';
-        x.fillText(el.dataset.name!, W / 2, H * 0.6, W - k * 16);
+        const mw = W * 0.74, mh = Math.min(H * 0.32, (mw * img.height) / img.width), sw = (mh * img.width) / img.height;
+        // logo dans la partie basse du fanion, au-dessus de la queue d'aronde
+        x.drawImage(img, (W - sw) / 2, H * 0.66 - mh, sw, mh);
         res(c);
       };
       img.onerror = () => res(c);
