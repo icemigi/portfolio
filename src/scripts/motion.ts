@@ -104,18 +104,35 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   return end;
 }
 
-// Une fois le texte écrit : les apartés entre parenthèses surgissent l'un après l'autre (petit saut, comme une note
-// qu'on ajoute en marge), puis le bouton « (…) + » arrive, et son + fait un tour pour attirer l'œil.
+// Une fois le texte écrit : les apartés entre parenthèses se tapent à la machine, caractère par caractère (Geist Mono,
+// chasse fixe : rien ne bouge autour), puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans,
+// et son + fait un tour pour attirer l'œil.
+const TYPE = 26; // ms par caractère
+function type(el: HTMLElement, delay: number): number {
+  const text = (el.dataset.txt ??= el.textContent || '');
+  el.textContent = '';
+  const f = document.createDocumentFragment();
+  let k = 0;
+  for (const c of text) {
+    if (c === ' ') { f.appendChild(document.createTextNode(' ')); k++; continue; }
+    const sp = document.createElement('span'); sp.textContent = c;
+    sp.animate([{ opacity: 0 }, { opacity: 0, offset: 0.99 }, { opacity: 1 }], { duration: delay + k++ * TYPE, fill: 'backwards' });
+    f.appendChild(sp);
+  }
+  el.appendChild(f);
+  dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
+  return delay + k * TYPE;
+}
 function afterText(frame: Element, end: number) {
   if (reduced()) return;
-  const notes = [...frame.querySelectorAll<HTMLElement>('.note')];
-  notes.forEach((n, i) => n.animate(
-    [{ opacity: 0, transform: 'translateY(.5em) scale(.9)' }, { opacity: 1, transform: 'translateY(-.08em) scale(1.04)', offset: 0.7 }, { opacity: 1, transform: 'none' }],
-    { duration: 520, delay: end - 120 + i * 140, easing: EASE_OUT, fill: 'backwards' },
-  ));
-  const t0 = end + notes.length * 140;
+  let t = end - 80;
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n) => { t = type(n, t) + 120; });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
-    b.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: t0, easing: EASE_OUT, fill: 'backwards' });
-    b.querySelector('.sg')?.animate([{ rotate: '0deg' }, { rotate: '180deg' }], { duration: 700, delay: t0 + 350, easing: EASE_OUT });
+    b.animate([{ opacity: 0 }, { opacity: 0, offset: 0.99 }, { opacity: 1 }], { duration: t, fill: 'backwards' });
+    const word = b.querySelector<HTMLElement>('.bl');
+    const sg = b.querySelector<HTMLElement>('.sg');
+    const done = word ? type(word, t + 60) : t;
+    sg?.animate([{ opacity: 0, rotate: '-180deg' }, { opacity: 1, rotate: '0deg' }], { duration: 500, delay: done + 40, easing: EASE_OUT, fill: 'backwards' });
+    t = done + 200;
   });
 }
