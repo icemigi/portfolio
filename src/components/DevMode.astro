@@ -1,99 +1,112 @@
 ---
-// Dev mode caché : taper « dev » au clavier (ou ajouter ?dev à l'URL).
-// Affiche la grille + baseline, et des infos techniques. Échap pour quitter.
+// Mode dev caché : taper « dev » n'importe où (ou ?dev dans l'adresse). Échap ou (fermer) pour quitter.
+// Grille 12 colonnes numérotées + ligne de base 8 px, panneau d'infos en direct (poids, requêtes, chargement, images par
+// seconde, écran, point de rupture, mouvement réduit), et un inspecteur typo : au survol d'un texte, sa fonte, sa graisse,
+// son corps, son interlignage et son approche s'affichent près du curseur.
 const buildDate = new Date().toISOString().slice(0, 10);
 ---
 <div class="dev-grid" aria-hidden="true">
-  <div class="g">
-    {Array.from({ length: 12 }, () => <span></span>)}
-  </div>
+  <div class="g">{Array.from({ length: 12 }, (_, i) => <span style={`--i:${i}`}><b>{String(i + 1).padStart(2, '0')}</b></span>)}</div>
 </div>
 <aside class="dev-panel" aria-label="Dev mode" data-build={buildDate}>
-  <p class="dev-title">DEV MODE <button type="button" class="dev-close" aria-label="Close dev mode">×</button></p>
+  <p class="dev-title"><span>(dev mode)</span><button type="button" class="dev-close bp bx">fermer</button></p>
   <dl>
-    <dt>Weight</dt><dd data-k="weight">—</dd>
-    <dt>Requests</dt><dd data-k="req">—</dd>
-    <dt>Load</dt><dd data-k="load">—</dd>
-    <dt>DOM</dt><dd data-k="dom">—</dd>
-    <dt>Viewport</dt><dd data-k="vp">—</dd>
-    <dt>Build</dt><dd data-k="build">—</dd>
-    <dt>Stack</dt><dd>Astro · HTML/CSS · Canvas 2D · 0 framework client</dd>
+    <dt>poids</dt><dd data-k="weight">—</dd>
+    <dt>requêtes</dt><dd data-k="req">—</dd>
+    <dt>chargement</dt><dd data-k="load">—</dd>
+    <dt>images/s</dt><dd data-k="fps">—</dd>
+    <dt>écran</dt><dd data-k="scr">—</dd>
+    <dt>fenêtre</dt><dd data-k="vp">—</dd>
+    <dt>rupture</dt><dd data-k="bp">—</dd>
+    <dt>mouvement</dt><dd data-k="rm">—</dd>
+    <dt>nœuds</dt><dd data-k="dom">—</dd>
+    <dt>build</dt><dd data-k="build">—</dd>
+    <dt>pile</dt><dd>astro · css · webgl · 0 framework</dd>
   </dl>
-  <p class="dev-more">[More to come]</p>
+  <p class="dev-hint">survolez un texte pour l'inspecter</p>
 </aside>
+<div class="dev-tip" aria-hidden="true"></div>
 
 <style>
-  .dev-grid, .dev-panel { display: none; }
-  :global(html[data-dev]) .dev-grid {
-    display: block;
-    position: fixed; inset: 0; z-index: 90; pointer-events: none;
-    background-image: repeating-linear-gradient(to bottom, rgba(255, 136, 0, 0.2) 0 1px, transparent 1px 8px);
-  }
+  .dev-grid, .dev-panel, .dev-tip { display: none; }
+  :global(html[data-dev]) .dev-grid { display: block; position: fixed; inset: 0; z-index: 90; pointer-events: none;
+    background-image: repeating-linear-gradient(to bottom, rgba(255, 135, 22, .16) 0 1px, transparent 1px 8px); animation: dv-in .5s ease-out; }
   .dev-grid .g { height: 100%; }
-  .dev-grid span { background: rgba(255, 136, 0, 0.08); border-left: 1px solid rgba(255, 136, 0, 0.35); border-right: 1px solid rgba(255, 136, 0, 0.35); }
-  :global(html[data-dev]) .dev-panel {
-    display: block;
-    position: fixed; right: 12px; bottom: 12px; z-index: 100;
-    width: min(320px, calc(100vw - 24px));
-    background: #000; color: #fff;
-    font-family: var(--mono); font-size: 11px; line-height: 1.6;
-    padding: 12px 14px; border: 1px solid var(--accent);
-  }
-  .dev-title { color: var(--accent); display: flex; justify-content: space-between; margin-bottom: 8px; }
-  .dev-close { background: none; border: 0; color: #fff; font: inherit; cursor: pointer; padding: 0 4px; }
-  dl { display: grid; grid-template-columns: 72px 1fr; gap: 2px 8px; margin: 0; }
-  dt { color: #9a9a9a; }
-  dd { margin: 0; }
-  .dev-more { color: #9a9a9a; margin-top: 8px; }
+  .dev-grid span { position: relative; background: rgba(255, 135, 22, .06); box-shadow: inset 1px 0 rgba(255, 135, 22, .4), inset -1px 0 rgba(255, 135, 22, .4);
+    transform-origin: 50% 0; animation: dv-col .6s cubic-bezier(.2,.7,.2,1) backwards; animation-delay: calc(var(--i) * 30ms); }
+  .dev-grid b { position: absolute; top: calc(var(--head) + 4px); left: 4px; font: 400 10px/1 var(--mono); color: var(--ac); }
+  @keyframes dv-col { from { transform: scaleY(0); } }
+  @keyframes dv-in { from { opacity: 0; } }
+  :global(html[data-dev]) .dev-panel { display: block; position: fixed; right: 16px; bottom: 16px; z-index: 100; width: min(300px, calc(100vw - 32px));
+    background: #111; color: #f3f3f3; font: 400 11px/1.65 var(--mono); padding: 14px 16px; animation: dv-panel .5s cubic-bezier(.2,.7,.2,1); }
+  @keyframes dv-panel { from { opacity: 0; transform: translateY(12px); } }
+  .dev-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; color: var(--ac); }
+  .dev-close { color: #f3f3f3 !important; font-size: 13px; }
+  dl { display: grid; grid-template-columns: 82px 1fr; gap: 1px 10px; margin: 0; }
+  dt { color: #8a8a8a; } dd { margin: 0; }
+  .dev-hint { margin-top: 10px; color: #8a8a8a; }
+  :global(html[data-dev]) .dev-tip.on { display: block; position: fixed; z-index: 110; pointer-events: none; background: var(--ac); color: #111;
+    font: 400 10px/1.4 var(--mono); padding: 4px 7px; white-space: nowrap; }
+  :global(html[data-dev]) :global(.dev-hl) { outline: 1px solid var(--ac); outline-offset: 2px; }
 </style>
 
 <script>
   const html = document.documentElement;
-  const panel = document.querySelector<HTMLElement>('.dev-panel');
-
+  const panel = document.querySelector<HTMLElement>('.dev-panel')!;
+  const tip = document.querySelector<HTMLElement>('.dev-tip')!;
   const store = {
     get: () => { try { return sessionStorage.getItem('kk-dev') === '1'; } catch { return false; } },
-    set: (v: boolean) => { try { sessionStorage.setItem('kk-dev', v ? '1' : '0'); } catch { /* ignore */ } },
+    set: (v: boolean) => { try { sessionStorage.setItem('kk-dev', v ? '1' : '0'); } catch { /* */ } },
   };
-
-  function fmtKB(bytes: number) { return `${(bytes / 1024).toFixed(1)} KB`; }
-
+  const set = (k: string, v: string) => { const el = panel.querySelector(`[data-k="${k}"]`); if (el) el.textContent = v; };
+  const kb = (b: number) => (b > 1048576 ? `${(b / 1048576).toFixed(2)} Mo` : `${(b / 1024).toFixed(0)} Ko`);
   function fill() {
-    if (!panel) return;
-    const set = (k: string, v: string) => { const el = panel.querySelector(`[data-k="${k}"]`); if (el) el.textContent = v; };
     const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
     const res = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
     const bytes = (nav?.transferSize || nav?.encodedBodySize || 0) + res.reduce((s, r) => s + (r.transferSize || r.encodedBodySize || 0), 0);
-    set('weight', fmtKB(bytes));
-    set('req', String(res.length + 1));
+    set('weight', kb(bytes)); set('req', String(res.length + 1));
     set('load', nav && nav.loadEventEnd ? `${Math.round(nav.loadEventEnd)} ms` : '…');
-    set('dom', `${document.getElementsByTagName('*').length} nodes`);
+    set('dom', String(document.getElementsByTagName('*').length));
     set('vp', `${innerWidth} × ${innerHeight} @${devicePixelRatio}x`);
+    set('bp', innerWidth <= 760 ? 'téléphone (≤ 760)' : innerWidth <= 1100 ? 'tablette' : 'ordinateur');
+    set('rm', matchMedia('(prefers-reduced-motion: reduce)').matches ? 'réduit' : 'complet');
+    const s = (window as any).kkScreens; set('scr', s ? `${String(s.current() + 1).padStart(2, '0')} / ${String(s.count).padStart(2, '0')}` : '—');
     set('build', panel.dataset.build || '—');
   }
-
+  // images par seconde (mesurées seulement quand le mode est ouvert)
+  let raf = 0, frames = 0, t0 = 0;
+  const fps = (now: number) => { frames++; if (now - t0 >= 500) { set('fps', String(Math.round((frames * 1000) / (now - t0)))); frames = 0; t0 = now; fill(); } raf = requestAnimationFrame(fps); };
+  // inspecteur typo
+  let hl: HTMLElement | null = null;
+  const inspect = (e: PointerEvent) => {
+    const el = (e.target as HTMLElement)?.closest?.('p, h1, h2, h3, a, li, span, dd, button') as HTMLElement | null;
+    if (hl && hl !== el) hl.classList.remove('dev-hl');
+    if (!el || el.closest('.dev-panel') || !el.textContent?.trim()) { tip.classList.remove('on'); hl = null; return; }
+    hl = el; el.classList.add('dev-hl');
+    const cs = getComputedStyle(el), fs = parseFloat(cs.fontSize), lh = cs.lineHeight === 'normal' ? 'normal' : `${Math.round(parseFloat(cs.lineHeight))}`;
+    const ls = cs.letterSpacing === 'normal' ? '0' : `${(parseFloat(cs.letterSpacing) / fs).toFixed(3)}em`;
+    tip.textContent = `${cs.fontFamily.split(',')[0].replace(/"/g, '')} ${cs.fontWeight} · ${Math.round(fs * 10) / 10} / ${lh} px · ${ls}`;
+    tip.classList.add('on'); tip.style.left = `${Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)}px`; tip.style.top = `${e.clientY + 18}px`;
+  };
   function toggle(on: boolean) {
-    if (on) { html.setAttribute('data-dev', ''); fill(); }
-    else html.removeAttribute('data-dev');
+    if (on) { html.setAttribute('data-dev', ''); fill(); t0 = performance.now(); frames = 0; if (!raf) raf = requestAnimationFrame(fps); addEventListener('pointermove', inspect, { passive: true }); }
+    else { html.removeAttribute('data-dev'); cancelAnimationFrame(raf); raf = 0; removeEventListener('pointermove', inspect); tip.classList.remove('on'); hl?.classList.remove('dev-hl'); }
     store.set(on);
+    dispatchEvent(new CustomEvent('kk:sound', { detail: on ? 'pick' : 'drop' }));
   }
-
   if (new URLSearchParams(location.search).has('dev') || store.get()) {
-    if (document.readyState === 'complete') toggle(true);
-    else addEventListener('load', () => toggle(true));
+    if (document.readyState === 'complete') toggle(true); else addEventListener('load', () => toggle(true));
   }
-
   let buffer = '';
   addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement;
     if (target && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName))) return;
-    if (e.key === 'Escape') { toggle(false); return; }
+    if (e.key === 'Escape' && html.hasAttribute('data-dev')) { toggle(false); return; }
     if (e.key.length !== 1) return;
     buffer = (buffer + e.key.toLowerCase()).slice(-3);
     if (buffer === 'dev') { toggle(!html.hasAttribute('data-dev')); buffer = ''; }
   });
   addEventListener('resize', () => { if (html.hasAttribute('data-dev')) fill(); });
-  panel?.querySelector('.dev-close')?.addEventListener('click', () => toggle(false));
-
-  console.log('%ckerningkastle', 'color:#ff8800;font-weight:bold', '— type « dev » anywhere.');
+  panel.querySelector('.dev-close')?.addEventListener('click', () => toggle(false));
+  console.log('%c(kerningkastle)', 'color:#FF8716;font-family:monospace', '— tapez « dev » n\'importe où.');
 </script>

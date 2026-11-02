@@ -32,7 +32,7 @@ const { items } = Astro.props;
   .fanions.live ul { visibility: hidden; }
   /* version fixe : les fanions se déroulent du haut, l'un après l'autre */
   @media (prefers-reduced-motion: no-preference) {
-    .fn .cloth { animation: kk-unfurl .9s cubic-bezier(.2,.7,.2,1) backwards; }
+    .fanions:not(.live) .fn .cloth { animation: kk-unfurl .9s cubic-bezier(.2,.7,.2,1) backwards; }
     .fn:nth-child(2) .cloth { animation-delay: .08s; } .fn:nth-child(3) .cloth { animation-delay: .16s; } .fn:nth-child(4) .cloth { animation-delay: .24s; }
     .fn:nth-child(5) .cloth { animation-delay: .32s; } .fn:nth-child(6) .cloth { animation-delay: .4s; } .fn:nth-child(7) .cloth { animation-delay: .48s; }
     .fn:nth-child(8) .cloth { animation-delay: .56s; } .fn:nth-child(9) .cloth { animation-delay: .64s; }
@@ -54,6 +54,7 @@ const { items } = Astro.props;
   const cv = root?.querySelector<HTMLCanvasElement>('canvas.gl');
   const gl = !still && cv ? cv.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true }) : null;
   if (root && cv && gl) {
+    root.classList.add('live'); // la version fixe ne s'affiche jamais : pas de double apparition
     const li = [...root.querySelectorAll<HTMLElement>('li.fn')];
     // ---------- shaders : position en px, texture du drap, éclairage par sommet (plis) ----------
     const sh = (t: number, s: string) => { const o = gl.createShader(t)!; gl.shaderSource(o, s); gl.compileShader(o); return o; };
@@ -178,7 +179,7 @@ const { items } = Astro.props;
       }
     };
     // apparition : chaque fanion part roulé sous l'accroche et se déroule sous son poids, l'un après l'autre
-    const furl = () => { for (const [i, b] of banners.entries()) { b.rel = t + 6 + i * 7; b.u = 0; for (let n = 0; n < C * R; n++) { const k = n * 3, i2 = n % C, j = Math.floor(n / C); const x = b.x0 + (i2 / (C - 1)) * b.w, y = b.y0 + j * 0.6; b.P[k] = b.Q[k] = x; b.P[k + 1] = b.Q[k + 1] = y; b.P[k + 2] = b.Q[k + 2] = 0; } } };
+    const furl = () => { for (const [i, b] of banners.entries()) { b.rel = t + 34 + i * 6; b.u = 0; for (let n = 0; n < C * R; n++) { const k = n * 3, i2 = n % C, j = Math.floor(n / C); const x = b.x0 + (i2 / (C - 1)) * b.w, y = b.y0 + j * 0.6; b.P[k] = b.Q[k] = x; b.P[k + 1] = b.Q[k + 1] = y; b.P[k + 2] = b.Q[k + 2] = 0; } } };
     const loop = () => { step(); step(); draw(); raf = visible ? requestAnimationFrame(loop) : 0; };
     function kick() { if (!raf && visible) raf = requestAnimationFrame(loop); }
     // la souris fait du vent : sa vitesse pousse le tissu à proximité
