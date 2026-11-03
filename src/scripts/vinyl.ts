@@ -71,12 +71,12 @@ export function initVinyl(root: HTMLElement) {
     // 1. pochette, le vinyle en sort
     const S = sleeve.offsetWidth;
     const outD = ease(seg(P, 0.03, 0.11)), away = ease(seg(P, 0.14, 0.19));
-    sleeve.style.transform = `translate3d(${(-S * 0.38 * outD - 70 * VW * away).toFixed(1)}px, ${((1 - out(seg(P, 0, 0.03))) * 40 * VH).toFixed(1)}px, 0) rotate(${(-10 * away).toFixed(2)}deg)`;
+    sleeve.style.transform = `translate3d(${(9 * VW - S * 0.26 * outD - 75 * VW * away).toFixed(1)}px, ${((1 - out(seg(P, 0, 0.03))) * 40 * VH).toFixed(1)}px, 0) rotate(${(-10 * away).toFixed(2)}deg)`;
     const rot = P * 4200; // le disque tourne avec le défilement
     const big = ease(seg(P, 0.14, 0.19)), small = ease(seg(P, 0.29, 0.32));
     const D = disc.offsetWidth, ballD = 14 * VM;
-    const dScale = lerp(lerp(1, 1.34, big), ballD / D, small);
-    const dx = lerp(S * 0.52 * outD, 0, big);
+    const dScale = lerp(lerp(1, 1.2, big), ballD / D, small);
+    const dx = lerp(9 * VW + S * 0.62 * outD, 0, big);
     disc.style.transform = `translate3d(${dx.toFixed(1)}px, ${((1 - out(seg(P, 0, 0.03))) * 40 * VH).toFixed(1)}px, 0) scale(${dScale.toFixed(4)}) rotate(${rot.toFixed(1)}deg)`;
     disc.style.opacity = P > 0.32 ? '0' : '1';
     cols[0].el.style.opacity = fade(P, 0.01, 0.035, 0.12, 0.14).toFixed(3); words(cols[0], seg(P, 0.025, 0.12));
