@@ -13,7 +13,7 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const L = aboutLabels[lang];
 // (services) : chaque service renvoie aux projets qui le montrent (la section se lit comme un index, pas comme une liste vide)
-const SEEN: string[][] = [['hotshot', 'bms-esport', 'music-identities'], ['asaphr', 'music-identities'], ['bms-esport', 'sports-aventure'], ['algorithmic-heraldry']];
+const SEEN: string[][] = [['music-identities', 'bms-esport'], ['asaphr', 'music-identities'], ['bms-esport', 'sports-aventure'], ['algorithmic-heraldry']];
 const P = (slug: string) => projects.find((x) => x.slug === slug);
 ---
 <Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">

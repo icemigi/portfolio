@@ -280,6 +280,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- HOT
   {
     slug: 'hotshot',
+    hidden: true, // 03/11 : brief trop attendu (marque fictive de sauce) ; les images passent dans l'archive
     years: [2024],
     tags: ['I', 'T', 'P'],
     yearLabel: '2024',
