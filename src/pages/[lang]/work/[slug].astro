@@ -35,9 +35,20 @@ const chapters: Ch[] = [
 const flat = gals.flat();
 const C = chapters.length, n = flat.length; // répartition régulière : 8 images sur 7 chapitres → 1,1,1,1,1,1,2
 const scenes = chapters.map((ch, i) => ({ ...ch, imgs: flat.slice(Math.round((i * n) / C), Math.round(((i + 1) * n) / C)) }));
-// forme d'arrivée des planches, propre au projet : disque qui roule (pochette, disque radial), écu, cadre
-const MOTIF: Record<string, string> = { 'music-identities': 'disc', asaphr: 'disc', 'algorithmic-heraldry': 'shield' };
-const motif = MOTIF[project.slug] ?? 'frame';
+// placement des images d'une scène : bords gauche / droit en alternance, une sur deux devant le texte (plus rapide),
+// l'autre derrière (plus lente) ; jamais en pleine largeur
+const place = (i: number, k: number, m: number, g: Img) => {
+  const left = (i + k) % 2 === 0;
+  const front = k % 2 === 1;
+  const w = (g.h > g.w * 1.15 ? 22 : 32) * (front ? 0.85 : 1);
+  const x = left ? 3 + ((i * 7 + k * 5) % 6) : 100 - w - 3 - ((i * 5 + k * 7) % 6);
+  const y = 14 + ((k + 0.5) / m) * 62;
+  return { style: `--x:${x}vw;--y:${y.toFixed(1)}%;--w:${w}vw`, front, side: left ? -1 : 1, speed: front ? -0.45 : 0.25 };
+};
+// chaque scène fait entrer ses images autrement (jamais deux fois la même à la suite, et décalé d'un projet à l'autre) :
+// parallaxe simple, glissement depuis le bord, dévoilement par le bas, croissance, croisement
+const VARIANTS = ['par', 'slide', 'mask', 'grow', 'cross'] as const;
+const variant = (i: number) => VARIANTS[(i + index) % VARIANTS.length];
 // longueur d'une scène : assez pour allumer tous les mots, et pour laisser passer ses images
 const run = (sc: { paras: { t?: string; p: string }[]; imgs: Img[] }) => {
   const nw = sc.paras.reduce((a, p) => a + ((p.t ?? '') + ' ' + p.p).split(/\s+/).length, 0);
@@ -45,7 +56,6 @@ const run = (sc: { paras: { t?: string; p: string }[]; imgs: Img[] }) => {
 };
 const wordsOf = (str: string) => str.split(' ').filter(Boolean);
 const mid = Math.floor(scenes.length / 2);
-const stacks = [scenes.slice(0, mid + 1), scenes.slice(mid + 1)].filter((x) => x.length);
 // le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
 const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
 const words = c.lead.split(' ');
@@ -98,45 +108,38 @@ const im = (i: Img, cls = '') => vid(i.src)
       </dl>
     </section>
 
-    <!-- planches : chacune monte, prend sa forme (disque qui roule, écu, cadre) puis recouvre la précédente ;
-         une fois posée, son texte s'allume mot à mot -->
-    {stacks.map((st, si) => (
-      <Fragment>
-        <section class="stack" data-stack data-motif={motif}>
-          {st.map((sc, j) => {
-            const i = si ? mid + 1 + j : j;
-            return (
-              <Fragment>
-                <article class={`card ${sc.imgs.length ? 'has' : 'solo'}`} data-card data-k={i}>
-                  <div class="in">
-                    <header class="top mono"><span class="par">({pad(i + 1)})</span><span>{sc.h}</span><span class="mu r">{c.title} — {pad(i + 1)}/{pad(scenes.length)}</span></header>
-                    <div class="v">{sc.paras.map((p, pi) => <p>{p.t && <b><span class="mono num mu">{pad(i + 1)}.{pi + 1}</span> {wordsOf(p.t).map((w) => <span class="w">{w} </span>)}</b>}{wordsOf(p.p).map((w) => <span class="w">{w} </span>)}</p>)}</div>
-                    {sc.imgs.length > 0 && (
-                      <div class={`pics n${Math.min(sc.imgs.length, 2)}`}>
-                        {sc.imgs.slice(0, 2).map((g) => (
-                          <figure><div class="mask"><Fragment set:html={im(g)} /></div>{cap(g) && <figcaption class="mono">→ {cap(g)}</figcaption>}</figure>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <i class="veil" aria-hidden="true"></i>
-                </article>
-                <div class="gap" style={`height:${run(sc)}vh`} aria-hidden="true"></div>
-              </Fragment>
-            );
-          })}
-        </section>
-        {si === 0 && stacks.length > 1 && (
-          <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
-        )}
-      </Fragment>
-    ))}
-    {project.generator && (
-      <section class="gen g" data-fx="rise-soft">
-        <p class="k mono par">({fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'})</p>
-        <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
-      </section>
-    )}
+    {scenes.map((sc, i) => {
+      return (
+        <Fragment>
+          <section class="pin scene" data-pin="words" style={`height:calc(100vh + ${run(sc)}vh)`}>
+            <div class="stick g">
+              <div class="txt">
+                <p class="k mono par">({pad(i + 1)} — {sc.h.toLowerCase()})</p>
+                <div class="v">{sc.paras.map((p) => <p>{p.t && <b>{wordsOf(p.t).map((w) => <span class="w">{w} </span>)}</b>}{wordsOf(p.p).map((w) => <span class="w">{w} </span>)}</p>)}</div>
+              </div>
+            </div>
+            {sc.imgs.map((g, k) => {
+              const pl = place(i, k, sc.imgs.length, g);
+              return (
+                <figure class={`fl ${pl.front ? 'front' : 'back'}`} style={pl.style} data-fx="fl" data-v={variant(i)} data-side={pl.side} data-k={k} data-speed={pl.speed}>
+                  <Fragment set:html={im(g)} />
+                  {cap(g) && <figcaption class="mono">→ {cap(g)}</figcaption>}
+                </figure>
+              );
+            })}
+          </section>
+          {i === mid && (
+            <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
+          )}
+          {project.generator && i === scenes.length - 2 && (
+            <section class="gen g" data-fx="rise-soft">
+              <p class="k mono par">({fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'})</p>
+              <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+            </section>
+          )}
+        </Fragment>
+      );
+    })}
 
     <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
     <section class="nx g" aria-labelledby="next-l">
@@ -187,24 +190,23 @@ const im = (i: Img, cls = '') => vid(i.src)
   .fiche-s { padding-block: 4vh 6vh; }
   .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
   .fiche dd { margin-top: 4px; }
-  /* planches empilées : toutes collées au même endroit, la suivante monte et recouvre la précédente */
-  .stack { position: relative; padding-bottom: 8vh; }
-  .card { position: sticky; top: calc(var(--head) + 3vh); height: calc(100vh - var(--head) - 6vh); width: min(1060px, 72vw); margin: 0 auto; z-index: 1; will-change: transform, clip-path; transform-origin: 50% 0; }
-  .card .in { position: absolute; inset: 0; background: #fbfbfa; border: 1px solid var(--ln); box-shadow: 0 30px 70px rgba(0, 0, 0, .10); padding: 28px 32px 32px; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr; column-gap: 40px; row-gap: 28px; overflow: hidden; }
-  .card .veil { position: absolute; inset: 0; background: #f3f3f3; opacity: 0; pointer-events: none; }
-  .top { grid-column: 1 / -1; display: grid; grid-template-columns: 64px 1fr auto; gap: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--ln); }
-  .card .v { align-self: center; font-weight: 500; font-size: clamp(17px, 1.4vw, 23px); line-height: 1.26; letter-spacing: -0.015em; max-width: 34em; }
-  .card.solo .v { grid-column: 1 / -1; justify-self: center; font-size: clamp(22px, 2.3vw, 36px); max-width: 26em; }
-  .card .v p + p { margin-top: .8em; }
-  .card .v b { font-weight: 500; }
-  .num { font-size: 11px; letter-spacing: 0; margin-right: .4em; vertical-align: .25em; }
+  /* scènes : le texte, centré et épinglé, s'allume mot à mot ; les images passent en parallaxe
+     devant (plus vite) et derrière (plus lentement), sur les bords, jamais en pleine largeur */
+  .scene { overflow-x: clip; }
+  .scene .stick { z-index: 2; pointer-events: none; mix-blend-mode: difference; color: #f3f3f3; }
+  .scene .stick .par { color: inherit; }
+  .txt { grid-column: 3 / 11; }
+  .txt .k { margin-bottom: 22px; }
+  .txt .v { font-weight: 500; font-size: clamp(20px, 1.85vw, 30px); line-height: 1.22; letter-spacing: -0.02em; }
+  .txt .v p + p { margin-top: .7em; }
+  .txt .v b { font-weight: 500; }
+  .txt .v b .w.on { color: var(--mu); }
   .v .w { opacity: .12; transition: opacity .25s; }
   .v .w.on { opacity: 1; }
-  .pics { display: grid; gap: 16px; min-height: 0; align-self: stretch; }
-  .pics.n2 { grid-template-columns: 1fr 1fr; }
-  .pics figure { display: grid; grid-template-rows: 1fr auto; min-height: 0; }
-  .mask { position: relative; overflow: hidden; min-height: 0; }
-  .mask :global(img), .mask :global(video) { position: absolute; left: 0; top: -8%; width: 100%; height: 116%; object-fit: contain; will-change: transform; }
+  .fl { position: absolute; left: var(--x); top: var(--y); width: var(--w); z-index: 1; will-change: transform; }
+  .fl.front { z-index: 3; }
+  .fl :global(img), .fl :global(video) { display: block; width: 100%; height: auto; box-shadow: 0 24px 50px rgba(0, 0, 0, .14); }
+  .fl.back :global(img), .fl.back :global(video) { box-shadow: 0 12px 30px rgba(0, 0, 0, .08); }
   figcaption { margin-top: 10px; color: var(--mu); }
   /* le mot qui se resserre au centre, puis s'efface */
   .close-pin { height: 190vh; }
@@ -229,12 +231,8 @@ const im = (i: Img, cls = '') => vid(i.src)
     .hero { height: 120vh; } .hero-img { width: 86vw; top: 16vh; } .hero-txt { top: 52vh; }
     .lead { grid-column: 1 / -1; } .lead-pin { height: 180vh; }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-    .card { position: relative; top: 0; width: calc(100vw - 2 * var(--m)); height: auto; }
-    .card .in { position: relative; grid-template-columns: 1fr; grid-template-rows: auto; padding: 16px; row-gap: 16px; }
-    .gap { height: 5vh !important; }
-    .mask { aspect-ratio: 4 / 3; }
-    .top { grid-template-columns: 40px 1fr; } .top .r { display: none; }
-    .card .v, .card.solo .v { font-size: 16px; align-self: start; }
+    .txt { grid-column: 1 / -1; } .txt .v { font-size: 17px; }
+    .fl { --w: 34vw !important; } .fl.front { --w: 28vw !important; }
     .gen .k, .gen iframe { grid-column: 1 / -1; }
     .close-pin { height: 200vh; }
     .nx .k, .nx .tt { grid-column: 1 / -1; } .next-title { font-size: 9.6vw; line-height: 1.04; }
