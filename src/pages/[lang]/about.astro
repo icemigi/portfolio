@@ -13,8 +13,8 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const L = aboutLabels[lang];
 // (services) : chaque service renvoie aux projets qui le montrent (la section se lit comme un index, pas comme une liste vide)
-const SEEN: string[][] = [['hotshot', 'bms-esport', 'chateau-studio', 'music-identities'], ['asaphr', 'music-identities'], ['bms-esport', 'sports-aventure'], ['algorithmic-heraldry']];
-const P = (slug: string) => projects.find((x) => x.slug === slug)!;
+const SEEN: string[][] = [['hotshot', 'bms-esport', 'music-identities'], ['asaphr', 'music-identities'], ['bms-esport', 'sports-aventure'], ['algorithmic-heraldry']];
+const P = (slug: string) => projects.find((x) => x.slug === slug);
 ---
 <Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">
   <div class="screens-host" data-screens>
@@ -34,7 +34,7 @@ const P = (slug: string) => projects.find((x) => x.slug === slug)!;
               <span class="mono mu n">{String(i + 1).padStart(2, '0')}</span>
               <h3 class="t56">{h}</h3>
               <p class="mono mu dl">{d.toLowerCase()}</p>
-              <p class="mono seen"><span class="mu">{lang === 'fr' ? 'vu dans' : 'seen in'}</span>{SEEN[i].map((s) => <a class="lk" href={`/${lang}/work/${s}/`}>{P(s)[lang].title}</a>)}{i === 3 && <a class="lk" href={`/${lang}/lab/`}>Lab</a>}</p>
+              <p class="mono seen"><span class="mu">{lang === 'fr' ? 'vu dans' : 'seen in'}</span>{SEEN[i].filter(P).map((s) => <a class="lk" href={`/${lang}/work/${s}/`}>{P(s)![lang].title}</a>)}{i === 3 && <a class="lk" href={`/${lang}/lab/`}>Lab</a>}</p>
             </li>
           ))}
         </ul>

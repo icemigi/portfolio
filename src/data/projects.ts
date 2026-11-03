@@ -15,6 +15,7 @@ type Content = {
 };
 export type Tag = 'I' | 'T' | 'G' | 'W' | 'E' | 'P';
 export type Project = {
+  hidden?: boolean;   // masqué partout tant que le projet n'existe pas encore
   slug: string;
   draft: boolean;
   years: number[];    // [début] ou [début, fin] — vide si inconnu
@@ -27,7 +28,7 @@ export type Project = {
   fr: Content;
 };
 
-export const projects: Project[] = [
+const all: Project[] = [
   // ---------------------------------------------------------------- algorithmic-heraldry
   {
     slug: 'algorithmic-heraldry',
@@ -174,6 +175,7 @@ export const projects: Project[] = [
   // ---------------------------------------------------------------- chateau-studio
   {
     slug: 'chateau-studio',
+    hidden: true, // rien n'est encore dessiné (03/11) : l'étude revient quand l'identité existe
     years: [2026],
     tags: ['I'],
     yearLabel: '2026',
@@ -402,7 +404,7 @@ export const projects: Project[] = [
     object: 'bottle',
     draft: true,
     fr: {
-      title: 'HOTSHOT',
+      title: 'Hotshot®',
       short: 'De la sauce piquante au restaurant',
       meta: { year: '2024', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: 'Illustrator, Procreate, p5.js, Python' },
       lead: "Une marque de sauce piquante qui grandit jusqu'au restaurant. Un concept, mené comme une vraie commande.",
@@ -423,7 +425,7 @@ export const projects: Project[] = [
       ],
     },
     en: {
-      title: 'HOTSHOT',
+      title: 'Hotshot®',
       short: 'From hot sauce to restaurant',
       meta: { year: '2024', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: 'Illustrator, Procreate, p5.js, Python' },
       lead: 'A hot sauce brand that grows into a restaurant. A concept, handled like a real commission.',
@@ -453,7 +455,7 @@ export const projects: Project[] = [
     object: 'compass',
     draft: true,
     fr: {
-      title: 'Sports Aventure',
+      title: 'Sports Aventure®',
       short: 'Refonte non sollicitée',
       meta: { year: '2024', context: 'Initiative personnelle, présentée au magasin', role: 'Direction artistique, identité, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
       lead: "La refonte d'un magasin d'équipement outdoor bordelais, faite sans commande, puis présentée à l'équipe.",
@@ -474,7 +476,7 @@ export const projects: Project[] = [
       ],
     },
     en: {
-      title: 'Sports Aventure',
+      title: 'Sports Aventure®',
       short: 'Unsolicited redesign',
       meta: { year: '2024', context: 'Self-initiated, pitched to the store', role: 'Art direction, identity, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
       lead: 'The redesign of an outdoor gear store in Bordeaux, made without a brief, then pitched to the team.',
@@ -496,3 +498,4 @@ export const projects: Project[] = [
     },
   },
 ];
+export const projects: Project[] = all.filter((p) => !p.hidden);

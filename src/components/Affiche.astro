@@ -61,6 +61,8 @@ raw.forEach((p, i) => {
       <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
       <Door lang={lang} />
+    ) : p.kind === 'vig' && !p.vig.src && !p.vig.logo ? (
+      <span class="glue">{(p.word || '').trimEnd()}{p.punct}</span>
     ) : p.kind === 'vig' ? (
       <span class="glue">{p.word}{p.vig.logo
         ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={p.vig.src} alt="" loading="lazy" onerror="var v=this.parentElement,t=v.previousSibling;if(t&&t.nodeType===3)t.nodeValue=t.nodeValue.replace(/\s+$/,'');v.remove()" /></span>

@@ -226,7 +226,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     if (!big.hidden) hideTitle();
     card.querySelector('[data-sub]')!.textContent = d.sub;
     const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
-    lk.hidden = !d.link; if (d.link) { lk.href = d.link; lk.textContent = ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', new URL(d.link).hostname.replace('www.', '')); }
+    lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
     // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
     const emb = it.el.querySelector<HTMLElement>('[data-emb]');
     if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;

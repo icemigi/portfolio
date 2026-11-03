@@ -12,7 +12,7 @@ export type Room = {
   fr: { title: string; cat: string; note: string };
 };
 
-export const rooms: Room[] = [
+const all: Room[] = [
   {
     id: 'vexillology', year: '2026', kind: 'slot',
     fr: { title: 'Systemic Vexillology', cat: 'Générateur', note: 'Des générateurs de drapeaux. [Pièce à intégrer]' },
@@ -34,8 +34,16 @@ export const rooms: Room[] = [
     en: { title: 'Falling letters', cat: 'Generative poster', note: 'A poster that composes itself: every click drops a letter, which falls and piles up in the grid. Each letter has a real physical body, cut to its shape. p5.js, Matter.js.' },
   },
   {
+    id: 'physarum', year: '2026', kind: 'embed', src: '/lab/physarum/index.html',
+    fr: { title: 'Lettres qui poussent', cat: 'Automate cellulaire', note: 'Des lettres qui se forment comme une culture : un automate cellulaire pousse dans le contour du glyphe, puis glisse vers la lettre suivante. On peut y déposer sa propre image. p5.js.' },
+    en: { title: 'Growing letters', cat: 'Cellular automaton', note: 'Letters that grow like a culture: a cellular automaton spreads inside the glyph outline, then morphs into the next letter. You can drop in your own image. p5.js.' },
+  },
+  {
     id: 'free-font', year: '[Année]', kind: 'font',
     fr: { title: '[Fonte libre]', cat: 'Fonte', note: 'Fonte libre, OTF et WOFF. [Fichier et nom à venir]' },
     en: { title: '[Free typeface]', cat: 'Typeface', note: 'Free typeface, OTF and WOFF. [File and name to come]' },
   },
 ];
+// pièces vides (kind 'slot') masquées tant qu'elles ne sont pas intégrées (décision du 03/11)
+export const rooms: Room[] = all.filter((r) => r.kind !== 'slot' && !(r.kind === 'font' && !r.file));
+export const allRooms = all;
