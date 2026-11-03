@@ -33,8 +33,8 @@ const chapters: Ch[] = [
 ];
 // répartition : après chaque chapitre, un bloc d'images (les images restantes vont dans le final)
 const per = chapters.length ? Math.max(1, Math.floor(gals.length / (chapters.length + 1))) : gals.length;
-const after = chapters.map(() => gals.splice(0, per));
-const rest = gals;
+const after = chapters.map(() => gals.splice(0, per).flat()); // un bloc de galerie = 1 ou 2 images
+const rest = gals.flat();
 // le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
 const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
 const words = c.lead.split(' ');
