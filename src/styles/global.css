@@ -185,6 +185,7 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 html.flow, html.flow body { height: auto; overflow: visible; overscroll-behavior: auto; }
 html.flow .screens-host { position: relative; inset: auto; overflow: visible; }
 html.flow .screens-host > .scr { position: relative; inset: auto; min-height: 100vh; transform: none; visibility: visible; overflow: visible; will-change: auto; transition: opacity .3s; }
+html.flow .screens-host > .scr .in { min-height: 100vh; }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
