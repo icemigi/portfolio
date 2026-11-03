@@ -5,7 +5,8 @@
 export type Room = {
   id: string;
   year: string;
-  kind: 'type' | 'font' | 'slot';
+  kind: 'type' | 'font' | 'slot' | 'embed';
+  src?: string; // embed : page autonome (dans /public/lab/)
   file?: string; // fonte : fichier à télécharger
   en: { title: string; cat: string; note: string };
   fr: { title: string; cat: string; note: string };
@@ -28,9 +29,9 @@ export const rooms: Room[] = [
     en: { title: 'Modular type', cat: 'Type experiment', note: 'Letters built from modules that change shape under the cursor. Canvas 2D.' },
   },
   {
-    id: 'gravity', year: '2026', kind: 'slot',
-    fr: { title: 'Lettres qui tombent', cat: 'Expérience type', note: 'Chaque lettre tapée tombe et s\'empile jusqu\'à remplir l\'écran. [À construire]' },
-    en: { title: 'Falling letters', cat: 'Type experiment', note: 'Every letter you type falls and piles up until the screen is full. [To build]' },
+    id: 'gravity', year: '2026', kind: 'embed', src: '/lab/gravity/index.html',
+    fr: { title: 'Lettres qui tombent', cat: 'Affiche générative', note: 'Une affiche qui se compose toute seule : chaque clic lâche une lettre, qui tombe et s\'empile dans la grille. Les lettres ont un vrai corps physique, taillé sur leur dessin. p5.js, Matter.js.' },
+    en: { title: 'Falling letters', cat: 'Generative poster', note: 'A poster that composes itself: every click drops a letter, which falls and piles up in the grid. Each letter has a real physical body, cut to its shape. p5.js, Matter.js.' },
   },
   {
     id: 'free-font', year: '[Année]', kind: 'font',

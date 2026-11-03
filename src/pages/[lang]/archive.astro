@@ -22,7 +22,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
         {pieces.map((p, i) => (
           <li class="pc" id={pad(i + 1)}>
             <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
-              <span class="ph im" style={`--r:${p.w / p.h}`}>{p.src && <img src={p.src.replace('/archive/', '/archive/s/')} srcset={`${p.src.replace('/archive/', '/archive/s/')} 800w, ${p.src} 1400w`} sizes={`(max-width: 760px) 92vw, ${Math.min(Math.round((400 * p.w) / p.h), 480)}px`} alt="" loading="lazy" decoding="async" />}</span>
+              <span class="ph im" style={`--r:${p.w / p.h}`}></span>
               <span class="mono mu c">{cap(i)}</span>
             </a>
           </li>

@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Lettres qui tombent — kerningkastle</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f3f3f3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+let Engine = Matter.Engine,
+    Bodies = Matter.Bodies,
+    Composite = Matter.Composite;
+
+let engine;
+let world;
+let letters = [];
+let chars = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
+let maxLetters = 30;
+
+let margin = 50;
+let colCount = 3;
+
+function setup() {
+  createCanvas(600, 850);
+  
+  engine = Engine.create();
+  world = engine.world;
+  
+  // Limites de l'affiche (Sol, murs latéraux)
+  let wallThickness = 60;
+  let ground = Bodies.rectangle(width / 2, height - 30 + wallThickness / 2, width, wallThickness, { isStatic: true });
+  let leftWall = Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true });
+  let rightWall = Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true });
+  
+  Composite.add(world, [ground, leftWall, rightWall]);
+  
+  // Cloisons verticales de la grille (obstacles physiques internes)
+  let usableWidth = width - (margin * 2);
+  let colWidth = usableWidth / colCount;
+  
+  for (let i = 1; i < colCount; i++) {
+    let xPos = margin + (i * colWidth);
+    let gridDivider = Bodies.rectangle(xPos, (height / 2) - 50, 4, height * 0.5, { isStatic: true, restitution: 0.1 });
+    Composite.add(world, gridDivider);
+  }
+
+  // Générer des lettres initiales
+  for (let i = 0; i < 8; i++) {
+    spawnLetter(random(margin + 40, width - margin - 40), -100 - (i * 70));
+  }
+}
+
+function draw() {
+  background(242, 241, 237);
+  
+  Engine.update(engine);
+  
+  // --- DESSIN DE LA GRILLE STRUCTURALE ---
+  let usableWidth = width - (margin * 2);
+  let colWidth = usableWidth / colCount;
+  
+  stroke(0, 45);
+  strokeWeight(1);
+  
+  for (let i = 0; i <= colCount; i++) {
+    let xPos = margin + (i * colWidth);
+    line(xPos, margin, xPos, height - margin);
+  }
+  
+  line(margin, margin, width - margin, margin);
+  line(margin, height - margin, width - margin, height - margin);
+
+  // Métadonnées typographiques
+  noStroke();
+  fill(0);
+  textFont('Helvetica');
+  textSize(9);
+  textStyle(NORMAL);
+  
+  text("SYS.GRID // COMPOUND_BODIES", margin, margin - 12);
+  textAlign(RIGHT, BASELINE);
+  text("INTERACTIVE_ACTIVE", width - margin, margin - 12);
+  
+  textAlign(LEFT, BASELINE);
+  text("STRUCTURAL COLLISION ENGINE", margin, height - margin + 20);
+  textAlign(RIGHT, BASELINE);
+  text("BORD // 2026", width - margin, height - margin + 20);
+
+  // --- RENDU DES CORPS TYPOGRAPHIQUES ---
+  for (let i = 0; i < letters.length; i++) {
+    let item = letters[i];
+    let pos = item.body.position;
+    let angle = item.body.angle;
+    
+    push();
+    translate(pos.x, pos.y);
+    rotate(angle);
+    
+    fill(0);
+    noStroke();
+    textFont('Helvetica');
+    textSize(item.size);
+    textAlign(CENTER, CENTER);
+    textStyle(BOLD);
+    text(item.char, 0, 0);
+    pop();
+  }
+  
+  // Cadre structurel extérieur
+  noFill();
+  stroke(0);
+  strokeWeight(5);
+  rect(0, 0, width, height);
+}
+
+// Fonction pour créer un corps physique composite épousant la forme exacte du glyphe
+function createLetterBody(x, y, char, size) {
+  let parts = [];
+  
+  // Construction géométrique par caractère pour coller au dessin de Helvetica
+  if (char === 'a') {
+    parts.push(Bodies.circle(0, size * 0.08, size * 0.32));
+    parts.push(Bodies.rectangle(size * 0.16, size * 0.08, size * 0.12, size * 0.55));
+  } else if (char === 'b') {
+    parts.push(Bodies.rectangle(-size * 0.16, 0, size * 0.12, size * 0.75));
+    parts.push(Bodies.circle(size * 0.08, size * 0.15, size * 0.28));
+  } else if (char === 'c') {
+    parts.push(Bodies.rectangle(0, -size * 0.22, size * 0.35, size * 0.12));
+    parts.push(Bodies.rectangle(-size * 0.16, 0, size * 0.12, size * 0.45));
+    parts.push(Bodies.rectangle(0, size * 0.22, size * 0.35, size * 0.12));
+  } else if (char === 'd') {
+    parts.push(Bodies.circle(-size * 0.08, size * 0.15, size * 0.28));
+    parts.push(Bodies.rectangle(size * 0.16, 0, size * 0.12, size * 0.75));
+  } else if (char === 'e') {
+    parts.push(Bodies.circle(0, size * 0.08, size * 0.36));
+    parts.push(Bodies.rectangle(0, size * 0.08, size * 0.3, size * 0.1));
+  } else if (char === 'f') {
+    parts.push(Bodies.rectangle(0, 0, size * 0.14, size * 0.75));
+    parts.push(Bodies.rectangle(size * 0.12, -size * 0.26, size * 0.28, size * 0.12));
+  } else if (char === 'g') {
+    // Corps haut + boucle basse caractéristique pour éviter les traversées aberrantes
+    parts.push(Bodies.circle(0, -size * 0.12, size * 0.3));
+    parts.push(Bodies.circle(0, size * 0.26, size * 0.28));
+  }
+
+  let body = Matter.Body.create({
+    parts: parts,
+    restitution: 0.02,
+    friction: 0.8,
+    angle: random(-0.8, 0.8)
+  });
+
+  Matter.Body.setPosition(body, { x: x, y: y });
+  return body;
+}
+
+function spawnLetter(customX, customY) {
+  if (letters.length >= maxLetters) {
+    let oldItem = letters.shift();
+    Composite.remove(world, oldItem.body);
+  }
+  
+  let char = random(chars);
+  let size = random(50, 180);
+  
+  let x = customX !== undefined ? customX : random(margin + 40, width - margin - 40);
+  let y = customY !== undefined ? customY : -60;
+  
+  let body = createLetterBody(x, y, char, size);
+  Composite.add(world, body);
+  
+  letters.push({
+    body: body,
+    char: char,
+    size: size
+  });
+}
+
+function mousePressed() {
+  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+    spawnLetter(mouseX, -50);
+  }
+}
+</script>
+
+</body>
+</html>

@@ -6,11 +6,15 @@ import ContactScreen from '../../components/ContactScreen.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
 import { aboutIntro, aboutVigs, services, stack, stackVigs, stackBanners, path, pathVigs, aboutLabels } from '../../data/about';
 import Banners from '../../components/Banners.astro';
+import { projects } from '../../data/projects';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const L = aboutLabels[lang];
+// (services) : chaque service renvoie aux projets qui le montrent (la section se lit comme un index, pas comme une liste vide)
+const SEEN: string[][] = [['hotshot', 'bms-esport', 'chateau-studio', 'music-identities'], ['asaphr', 'music-identities'], ['bms-esport', 'sports-aventure'], ['algorithmic-heraldry']];
+const P = (slug: string) => projects.find((x) => x.slug === slug)!;
 ---
 <Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">
   <div class="screens-host" data-screens>
@@ -25,7 +29,14 @@ const L = aboutLabels[lang];
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-2">{L.services}</h2>
         <ul class="bd svc" data-hola>
-          {services[lang].map(([h, d], i) => <li><span class="mono mu n">{String(i + 1).padStart(2, '0')}</span><h3 class="t56">{h}</h3><ul class="mono dl">{d.split(' · ').map((x) => <li><i class="pl" aria-hidden="true">+</i> {x.toLowerCase()}</li>)}</ul></li>)}
+          {services[lang].map(([h, d], i) => (
+            <li>
+              <span class="mono mu n">{String(i + 1).padStart(2, '0')}</span>
+              <h3 class="t56">{h}</h3>
+              <p class="mono mu dl">{d.toLowerCase()}</p>
+              <p class="mono seen"><span class="mu">{lang === 'fr' ? 'vu dans' : 'seen in'}</span>{SEEN[i].map((s) => <a class="lk" href={`/${lang}/work/${s}/`}>{P(s)[lang].title}</a>)}{i === 3 && <a class="lk" href={`/${lang}/lab/`}>Lab</a>}</p>
+            </li>
+          ))}
         </ul>
       </div>
     </section>
@@ -51,20 +62,22 @@ const L = aboutLabels[lang];
 <style>
   .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
   .bd { grid-column: 4 / 12; }
-  /* services : quatre blocs en 2 × 2, sans filets ; numéro, grand mot, ce qu'il contient en liste « + » */
-  .svc { display: grid; grid-template-columns: 1fr 1fr; gap: 48px var(--gut); }
-  .svc > li { display: grid; grid-template-rows: auto auto 1fr; row-gap: 10px; }
-  .svc .n { font-size: 12px; }
-  .svc h3 { transition: translate .5s var(--out); }
-  .svc .dl { display: grid; row-gap: 3px; font-size: 13px; color: var(--mu); }
-  .svc .dl .pl { color: var(--ac); font-style: normal; display: inline-block; transition: rotate .5s var(--out); }
-  @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } .svc > li:hover .pl { rotate: 90deg; } }
+  /* services : un index — numéro, grand mot, ce qu'il contient, et les projets où le voir */
+  .svc { display: grid; row-gap: 22px; }
+  .svc > li { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--gut); row-gap: 4px; align-items: baseline; }
+  .svc .n { font-size: 12px; grid-row: 1 / 3; }
+  .svc h3 { grid-column: 2; transition: translate .5s var(--out); }
+  .svc .dl { grid-column: 2; font-size: 12px; }
+  .svc .seen { grid-column: 3; grid-row: 1 / 3; align-self: center; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+  .svc .seen .mu { width: 100%; }
+  @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } }
   .cvl { margin-top: 40px; }
 
 
   @media (max-width: 760px) {
     .lab, .bd { grid-column: 1 / -1; }
     .lab { margin-bottom: 20px; padding-top: 0; }
-    .svc { grid-template-columns: 1fr; row-gap: 32px; }
+    .svc > li { grid-template-columns: 32px 1fr; }
+    .svc .seen { grid-column: 2; grid-row: auto; margin-top: 6px; }
   }
 </style>
