@@ -23,7 +23,7 @@ const pass = imgs.slice(0, 10);
 const n = S.length;
 const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
 ---
-<section class="vs" data-vinyl data-step="0.03:1000,0.12:1900:l,0.28:3400:l,0.335:1000,0.45:5200:l,0.505:1300,0.6:3200:l,0.66:1500,0.725:1500,0.79:1500,0.85:2000:l,0.96:2600:l" style="height:1050vh" data-hud={JSON.stringify(hud)}>
+<section class="vs" data-vinyl data-step="0.12:2200:l,0.28:3400:l,0.335:1000,0.45:5200:l,0.505:1300,0.6:3200:l,0.66:1500,0.725:1500,0.79:1500,0.85:2000:l,0.96:2600:l" style="height:1050vh" data-hud={JSON.stringify(hud)}>
   <div class="stage">
     <div class="world" data-world>
       <!-- HUD -->
@@ -97,7 +97,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .col .v { font-weight: 500; font-size: clamp(17px, 1.5vw, 24px); line-height: 1.24; letter-spacing: -0.015em; }
   .col.c .v { font-size: clamp(22px, 2.6vw, 40px); }
   /* anneau */
-  .ring { left: 50%; top: 50%; width: min(86vh, 76vw); height: min(86vh, 76vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
+  .ring { pointer-events: none; left: 50%; top: 50%; width: min(86vh, 76vw); height: min(86vh, 76vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
   .ring .tk line { stroke: var(--ln); stroke-width: 1.5; }
   .ring .rt { font-size: 58px; font-weight: 500; fill: var(--fg); letter-spacing: -0.02em; }
   .ring .nd { stroke: var(--fg); stroke-width: 1.5; }

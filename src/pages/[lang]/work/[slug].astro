@@ -97,7 +97,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     </section>
 
     <!-- 2. la phrase s'allume mot à mot pendant qu'on fait défiler (écran épinglé) -->
-    <section class="pin lead-pin" data-pin="words" data-step={`0.02:900,1:${Math.min(4200, Math.max(1500, words.length * 70))}:l`}>
+    <section class="pin lead-pin" data-pin="words" data-step={`1:${Math.min(4200, Math.max(1500, words.length * 70))}:l`}>
       <div class="stick g"><p class="lead">{words.map((w) => <span class="w">{w} </span>)}</p></div>
     </section>
 
@@ -117,7 +117,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     {project.slug !== 'music-identities' && scenes.map((sc, i) => {
       return (
         <Fragment>
-          <section class="pin scene" data-pin="type" data-step={`0.04:1100,1:${readMs(sc)}`} style={`height:calc(100vh + ${run(sc)}vh)`}>
+          <section class="pin scene" data-pin="type" data-step="0.04:1300" style={`height:calc(100vh + ${run(sc)}vh)`}>
             <div class="stick g">
               <div class="txt">
                 <p class="k mono par">{pad(i + 1)} — {sc.h.toLowerCase()}</p>
@@ -135,7 +135,7 @@ const im = (i: Img, cls = '') => vid(i.src)
             })}
           </section>
           {i === mid && (
-            <section class="pin close-pin" data-pin="close" data-step="0.45:1700,1:1200"><div class="stick"><p class="close">{key}</p></div></section>
+            <section class="pin close-pin" data-pin="close" data-step="0.45:1700"><div class="stick"><p class="close">{key}</p></div></section>
           )}
           {project.generator && i === scenes.length - 2 && (
             <section class="gen g" data-fx="rise-soft" data-step="0">
@@ -148,7 +148,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     })}
 
     <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
-    <section class="nx g" aria-labelledby="next-l" data-step="0,1">
+    <section class="nx g" aria-labelledby="next-l" data-step="1">
       <p class="k mono par" id="next-l">{t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
       <div class="tt"><h2 class="next-title"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
       <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
@@ -200,6 +200,7 @@ const im = (i: Img, cls = '') => vid(i.src)
      devant (plus vite) et derrière (plus lentement), sur les bords, jamais en pleine largeur */
   .scene { overflow-x: clip; }
   .scene .stick { z-index: 2; pointer-events: none; mix-blend-mode: difference; color: #f3f3f3; }
+  .scene .stick .v { pointer-events: auto; }
   .scene .stick .par { color: inherit; }
   .txt { grid-column: 3 / 11; }
   .txt .k { margin-bottom: 22px; }

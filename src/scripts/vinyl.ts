@@ -63,6 +63,7 @@ export function initVinyl(root: HTMLElement) {
   // le texte apparaît comme partout sur le site (lettre par lettre) quand son moment arrive, à chaque passage
   const show = (c: { el: HTMLElement; v: HTMLElement; on: boolean }, o: number) => {
     c.el.style.opacity = o.toFixed(3);
+    c.el.style.pointerEvents = o > 0.5 ? 'auto' : 'none'; // seul le texte visible réagit au survol
     if (o > 0.6 && !c.on) { c.on = true; if (!still) letters(c.v, 30); }
     else if (o < 0.05 && c.on) c.on = false;
   };
