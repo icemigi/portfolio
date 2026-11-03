@@ -135,36 +135,44 @@ function steps(root: HTMLElement, still: boolean) {
   measure();
   addEventListener('resize', measure);
   addEventListener('load', measure);
-  let busy = false, lastWheel = 0, raf = 0;
+  let busy = false, raf = 0, aim = -1;
   const near = () => { let i = 0; T.forEach((t, k) => { if (Math.abs(t - scrollY) < Math.abs(T[i] - scrollY)) i = k; }); return i; };
   const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const go = (dir: number) => {
-    const y = scrollY;
-    const to = dir > 0 ? T.find((t) => t > y + 2) : [...T].reverse().find((t) => t < y - 2);
+    const y = scrollY, base = busy && aim >= 0 ? aim : y; // en plein glissement : on vise l'étape d'après la cible
+    const to = dir > 0 ? T.find((t) => t > base + 2) : [...T].reverse().find((t) => t < base - 2);
     if (to === undefined) return;
     if (still) { scrollTo(0, to); return; }
     const H = innerHeight, d = to - y;
-    const dur = Math.min(1700, Math.max(850, 700 + (Math.abs(d) / H) * 260));
+    const dur = Math.min(1600, Math.max(800, 650 + (Math.abs(d) / H) * 240));
     const t0 = performance.now();
-    busy = true; cancelAnimationFrame(raf);
+    busy = true; aim = to; cancelAnimationFrame(raf);
     const tick = (now: number) => {
       const u = Math.min(1, (now - t0) / dur);
       scrollTo(0, y + d * ease(u));
-      if (u < 1) raf = requestAnimationFrame(tick); else { busy = false; lastWheel = performance.now(); }
+      if (u < 1) raf = requestAnimationFrame(tick); else { busy = false; aim = -1; }
     };
     raf = requestAnimationFrame(tick);
   };
-  const atEnd = () => scrollY >= T[T.length - 1] - 2;
+  const atEnd = () => scrollY >= T[T.length - 1] - 2 && !busy;
+  // détection d'un nouveau geste, comme les écrans du site : pause, changement de sens, ou reprise après l'inertie
+  let last = 0, gdir = 0, used = false, armed = false, low = Infinity, lastGo = 0, acc = 0;
   addEventListener('wheel', (e) => {
     if (e.ctrlKey) return;
-    const inFrame = (e.target as Element).closest?.('iframe');
-    if (inFrame) return;
-    const now = performance.now(), fresh = now - lastWheel > 220;
-    lastWheel = now;
-    if (e.deltaY > 0 && atEnd()) return; // l'anneau du projet suivant prend le relais
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    const dir = Math.sign(e.deltaY);
+    if (!dir) return;
+    if (dir > 0 && atEnd()) return; // l'anneau du projet suivant prend le relais
     e.preventDefault();
-    if (busy || !fresh || Math.abs(e.deltaY) < 4) return;
-    go(Math.sign(e.deltaY));
+    const now = performance.now(), abs = Math.abs(e.deltaY);
+    const pause = now - last > 180;
+    last = now;
+    if (used) { low = Math.min(low, abs); if (low < 6 && abs > 24) armed = true; }
+    const fresh = pause || dir !== gdir || (used && armed && now - lastGo > 450);
+    if (fresh) { acc = 0; used = false; gdir = dir; }
+    if (used) return;
+    acc += e.deltaY;
+    if (Math.abs(acc) > 30) { used = true; armed = false; low = Infinity; lastGo = now; go(dir); }
   }, { passive: false });
   addEventListener('keydown', (e) => {
     if ((e.target as Element).closest?.('input, textarea, select, [contenteditable]')) return;
