@@ -176,8 +176,7 @@ const im = (i: Img, cls = '') => vid(i.src)
   .chp.n0 .tx { grid-column: 4 / 11; }
   /* choix clés */
   .keys { grid-column: 4 / 12; display: grid; row-gap: 36px; position: relative; z-index: 1; }
-  .keys li { display: grid; grid-template-columns: 48px 1fr; column-gap: var(--gut); }
-  .keys li .mono { padding-top: 10px; grid-row: 1 / 3; }
+  .keys li > .mono { display: block; margin-bottom: 8px; }
   .keys .t28 { margin-top: 8px; }
   .fly { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
   .fly img { position: absolute; left: 0; top: 0; width: 22vmin; height: auto; opacity: 0; will-change: transform; }
