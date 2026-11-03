@@ -1,7 +1,7 @@
 // Moteur du prototype Identités musicales (components/VinylStory.astro). Une seule valeur pilote tout : P, l'avancement
 // (0 → 1) dans la scène épinglée. Chaque objet est une fonction de P : on avance, ça joue ; on remonte, ça rembobine.
 // Le défilement fluide (scripts/story.ts) donne l'inertie : la vitesse du geste devient celle de l'animation.
-import { reduced } from './motion';
+import { reduced, letters, EASE_OUT } from './motion';
 
 const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const ease = (x: number) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
@@ -16,7 +16,7 @@ export function initVinyl(root: HTMLElement) {
   const lens = $('[data-lens]'), lt = $('[data-lt]'), ball = $('[data-ball]');
   const bands = $$('[data-band]').map((b) => ({ b, t: b.querySelector<HTMLElement>('[data-bt]')!, d: b.querySelector<HTMLElement>('[data-bd]')!, l: b.querySelector<HTMLElement>('[data-rule]')! }));
   const pass = $$('[data-pass] figure'), keys = $$('[data-key]'), tiles = $$('[data-grid] i');
-  const cols = $$('[data-t]').map((el) => ({ el, ws: [...el.querySelectorAll<HTMLElement>('.w')], n: -1 }));
+  const cols = $$('[data-t]').map((el) => ({ el, v: el.querySelector<HTMLElement>('.v')!, on: false }));
   const hudL = $('[data-hudl]'), hudN = $('[data-hudn]');
   const col = (t: number) => cols.find((c) => c.el.dataset.t === String(t));
   const hud: string[] = JSON.parse(root.dataset.hud || '[]');
@@ -30,7 +30,7 @@ export function initVinyl(root: HTMLElement) {
     if (!part) return;
     if (/^\s+$/.test(part)) { lt.append(' '); return; }
     const w = document.createElement('span'); w.style.whiteSpace = 'nowrap';
-    for (const c of part) { const s = document.createElement('span'); s.className = 'ch'; s.textContent = c; w.append(s); chars.push({ el: s, x: 0, y: 0, d: false }); }
+    for (const c of part) { const s = document.createElement('span'); s.className = 'lc'; s.textContent = c; w.append(s); chars.push({ el: s, x: 0, y: 0, d: false }); }
     lt.append(w);
   });
 
@@ -60,10 +60,13 @@ export function initVinyl(root: HTMLElement) {
     world.style.transform = prev;
   };
 
-  const words = (c: (typeof cols)[number], q: number) => {
-    const n = Math.round(clamp(q) * c.ws.length);
-    if (n !== c.n) { c.ws.forEach((w, k) => w.classList.toggle('on', k < n)); c.n = n; }
+  // le texte apparaît comme partout sur le site (lettre par lettre) quand son moment arrive, à chaque passage
+  const show = (c: { el: HTMLElement; v: HTMLElement; on: boolean }, o: number) => {
+    c.el.style.opacity = o.toFixed(3);
+    if (o > 0.6 && !c.on) { c.on = true; if (!still) letters(c.v, 30); }
+    else if (o < 0.05 && c.on) c.on = false;
   };
+  const keyS = keys.map((k) => ({ el: k, v: k, on: false }));
   const fade = (P: number, a: number, b: number, c: number, d: number) => Math.min(out((P - a) / (b - a)), 1 - clamp((P - c) / (d - c)));
   const seg = (P: number, a: number, b: number) => clamp((P - a) / (b - a));
   const B = [0, 0.14, 0.29, 0.47, 0.62, 0.81, 0.86];
@@ -90,8 +93,8 @@ export function initVinyl(root: HTMLElement) {
     const dx = lerp(9 * VW + S * 0.62 * outD, 0, big);
     disc.style.transform = `translate3d(${dx.toFixed(1)}px, ${((1 - out(seg(P, 0, 0.03))) * 40 * VH).toFixed(1)}px, 0) scale(${dScale.toFixed(4)}) rotate(${rot.toFixed(1)}deg)`;
     disc.style.opacity = P > 0.32 ? '0' : '1';
-    const c0 = col(0)!; c0.el.style.opacity = fade(P, 0.01, 0.035, 0.12, 0.14).toFixed(3); words(c0, seg(P, 0.025, 0.12));
-    const c1 = col(1); if (c1) { c1.el.style.opacity = fade(P, 0.2, 0.22, 0.28, 0.3).toFixed(3); words(c1, seg(P, 0.205, 0.28)); }
+    const c0 = col(0)!; show(c0, fade(P, 0.01, 0.035, 0.12, 0.14));
+    const c1 = col(1); if (c1) show(c1, fade(P, 0.2, 0.22, 0.28, 0.3));
 
     // 2. anneau : l'aiguille fait le tour, le texte s'écrit derrière elle
     const ro = fade(P, 0.17, 0.2, 0.28, 0.3);
@@ -120,7 +123,12 @@ export function initVinyl(root: HTMLElement) {
       ball.style.transform = `translate3d(${bx.toFixed(1)}px, ${by.toFixed(1)}px, 0)`;
       const R = ballD * 1.3;
       chars.forEach((c, i) => {
-        c.el.classList.toggle('on', u > 0 && (i < L.a || (i <= L.b && c.x < tx) || (u >= 1)));
+        const on = u > 0 && (i < L.a || (i <= L.b && c.x < tx) || u >= 1);
+        if (on !== c.el.classList.contains('on')) {
+          c.el.classList.toggle('on', on);
+          // la lettre que la boule vient de dépasser monte en place, comme les apparitions du site
+          if (on && !still) c.el.animate([{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }], { duration: 420, easing: EASE_OUT });
+        }
         const ddx = c.x - bx, ddy = c.y - by, d = Math.hypot(ddx, ddy);
         if (bo > 0 && d < R) {
           const k = Math.pow(1 - d / R, 1.6) * R * 0.34, nx = ddx / (d || 1), ny = ddy / (d || 1);
@@ -144,7 +152,7 @@ export function initVinyl(root: HTMLElement) {
       t.style.clipPath = `inset(-20% ${(100 - clamp((px + dw / 2) / bw) * 100).toFixed(2)}% -20% 0)`;
       t.style.opacity = u > 0 ? '1' : '0';
     });
-    const c3 = col(3)!; c3.el.style.opacity = fade(P, 0.48, 0.5, 0.6, 0.62).toFixed(3); words(c3, seg(P, 0.49, 0.6));
+    const c3 = col(3)!; show(c3, fade(P, 0.48, 0.5, 0.6, 0.62));
 
     // 5. les pochettes se croisent sous les choix clés
     pass.forEach((f, i) => {
@@ -162,10 +170,10 @@ export function initVinyl(root: HTMLElement) {
     keys.forEach((k, i) => {
       const a = 0.63 + i * 0.065;
       const o = fade(P, a, a + 0.012, a + 0.05, a + 0.062);
-      k.style.opacity = o.toFixed(3);
+      show(keyS[i], o);
       k.style.transform = `translate3d(0, ${((1 - o) * (P < a + 0.03 ? 30 : -30)).toFixed(1)}px, 0)`;
     });
-    const c5 = col(5)!; c5.el.style.opacity = fade(P, 0.815, 0.83, 0.86, 0.875).toFixed(3); words(c5, seg(P, 0.82, 0.85));
+    const c5 = col(5)!; show(c5, fade(P, 0.815, 0.83, 0.86, 0.875));
 
     // 6. grille de toutes les pochettes, puis la scène dézoome en vignette
     tiles.forEach((tl, i) => {
@@ -173,7 +181,7 @@ export function initVinyl(root: HTMLElement) {
       tl.style.opacity = u > 0 ? '1' : '0';
       tl.style.transform = u >= 1 ? '' : `translate3d(${((1 - u) * s.x).toFixed(2)}vw, ${((1 - u) * s.y).toFixed(2)}vh, 0) rotate(${((1 - u) * s.r).toFixed(1)}deg) scale(${(0.6 + 0.4 * u).toFixed(3)})`;
     });
-    const c6 = col(6)!; c6.el.style.opacity = out(seg(P, 0.885, 0.905)).toFixed(3); words(c6, seg(P, 0.89, 0.96));
+    const c6 = col(6)!; show(c6, out(seg(P, 0.885, 0.905)));
   };
 
   const kick = () => { if (!raf) raf = requestAnimationFrame(draw); };

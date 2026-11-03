@@ -33,7 +33,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <!-- 1. pochette et vinyle -->
       <div class="sleeve" data-sleeve><img src={cover.src} width={cover.w} height={cover.h} alt="" /></div>
       <div class="disc" data-disc><i class="lbl" style={`background-image:url(${cover.src})`}></i><i class="hole"></i><i class="shine"></i></div>
-      <div class="col l" data-t="0"><p class="k mono par">{S[0]?.h.toLowerCase()}</p><p class="v">{W(txt(0)).map((w) => <span class="w">{w} </span>)}</p></div>
+      <div class="col l" data-t="0"><p class="k mono par">{S[0]?.h.toLowerCase()}</p><p class="v" data-hola>{W(txt(0)).map((w) => <span class="w">{w} </span>)}</p></div>
 
       <!-- 2. le texte s'écrit autour du disque, au passage de l'aiguille -->
       <svg class="ring" data-ring viewBox="-90 -90 1180 1180" aria-hidden="true">
@@ -43,7 +43,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
         <line class="nd" data-needle x1="500" y1="500" x2="500" y2="40" />
       </svg>
 
-      {rest && <div class="col l2" data-t="1"><p class="v">{W(rest).map((w) => <span class="w">{w} </span>)}</p></div>}
+      {rest && <div class="col l2" data-t="1"><p class="v" data-hola>{W(rest).map((w) => <span class="w">{w} </span>)}</p></div>}
 
       <!-- 3. la boule traverse le texte et écarte les lettres -->
       <div class="lens" data-lens><p class="k mono par">{S[2]?.h.toLowerCase()}</p><p class="lt" data-lt>{txt(2)}</p></div>
@@ -52,19 +52,19 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <!-- 4. des filets se tracent, un petit disque roule dessus et dévoile les mots (entre parenthèses) -->
       <div class="bands" data-bands>
         {bands.map((b, i) => (
-          <div class="band" data-band={i}><span class="bn mono mu">{String(i + 1).padStart(2, '0')}</span><p class="bt" data-bt>{b.map((x) => <span class="par">{x}</span>)}</p><i class="rule" data-rule></i><i class="bd" data-bd></i></div>
+          <div class="band" data-band={i}><span class="bn mono mu">{String(i + 1).padStart(2, '0')}</span><p class="bt" data-bt data-hola>{b.map((x) => <span class="par">{x}</span>)}</p><i class="rule" data-rule></i><i class="bd" data-bd></i></div>
         ))}
       </div>
-      <div class="col tr" data-t="3"><p class="k mono par">{S[3]?.h.toLowerCase()}</p><p class="v">{W(txt(3)).map((w) => <span class="w">{w} </span>)}</p></div>
+      <div class="col tr" data-t="3"><p class="k mono par">{S[3]?.h.toLowerCase()}</p><p class="v" data-hola>{W(txt(3)).map((w) => <span class="w">{w} </span>)}</p></div>
 
       <!-- 5. les pochettes se croisent sous les choix clés -->
       <div class="pass" data-pass>{pass.map((g, i) => <figure data-p={i} class={i % 3 === 1 ? 'front' : ''}><img src={g.src} width={g.w} height={g.h} alt="" decoding="async" /></figure>)}</div>
-      <div class="keys">{keys.map((k, i) => <div class="key" data-key={i}><p class="kt">{k.t}</p><p class="kp">{k.p}</p></div>)}</div>
-      <div class="col c" data-t="5"><p class="k mono par">{S[5]?.h.toLowerCase()}</p><p class="v">{W(txt(5)).map((w) => <span class="w">{w} </span>)}</p></div>
+      <div class="keys">{keys.map((k, i) => <div class="key" data-key={i}><p class="kt" data-hola>{k.t}</p><p class="kp">{k.p}</p></div>)}</div>
+      <div class="col c" data-t="5"><p class="k mono par">{S[5]?.h.toLowerCase()}</p><p class="v" data-hola>{W(txt(5)).map((w) => <span class="w">{w} </span>)}</p></div>
 
       <!-- 6. toutes les pochettes en grille, puis la scène entière dézoome -->
       <div class="grid" data-grid>{imgs.map((g) => <i style={`background-image:url(${g.src})`}></i>)}</div>
-      <div class="col b" data-t="6"><p class="k mono par">{S[6]?.h.toLowerCase()}</p><p class="v">{W(txt(6)).map((w) => <span class="w">{w} </span>)}</p></div>
+      <div class="col b" data-t="6"><p class="k mono par">{S[6]?.h.toLowerCase()}</p><p class="v" data-hola>{W(txt(6)).map((w) => <span class="w">{w} </span>)}</p></div>
     </div>
   </div>
 </section>
@@ -96,7 +96,6 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .col .k { margin-bottom: 14px; }
   .col .v { font-weight: 500; font-size: clamp(17px, 1.5vw, 24px); line-height: 1.24; letter-spacing: -0.015em; }
   .col.c .v { font-size: clamp(22px, 2.6vw, 40px); }
-  .w { opacity: .12; } .w.on { opacity: 1; }
   /* anneau */
   .ring { left: 50%; top: 50%; width: min(86vh, 76vw); height: min(86vh, 76vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
   .ring .tk line { stroke: var(--ln); stroke-width: 1.5; }
@@ -105,8 +104,8 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   /* boule et texte */
   .lens { left: 50%; top: 50%; translate: -50% -50%; width: min(78vw, 1180px); z-index: 4; opacity: 0; }
   .lt { font-weight: 500; font-size: clamp(26px, 3.6vw, 60px); line-height: 1.08; letter-spacing: -0.03em; }
-  .lt :global(.ch) { display: inline-block; will-change: transform; opacity: 0; transition: opacity .18s; }
-  .lt :global(.ch.on) { opacity: 1; }
+  .lt :global(.lc) { display: inline-block; position: relative; will-change: transform; opacity: 0; }
+  .lt :global(.lc.on) { opacity: 1; }
   .ball { left: 0; top: 0; width: 9vmin; height: 9vmin; margin: -4.5vmin 0 0 -4.5vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
   /* bandes */
   .bands { left: var(--m); right: calc(var(--m) + min(30vw, 440px) + 48px); top: 50%; translate: 0 -50%; display: grid; z-index: 4; }

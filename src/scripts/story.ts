@@ -1,7 +1,7 @@
 // Moteur des études de cas en « one scroll ». Chaque élément [data-fx] est piloté par sa position dans l'écran :
 // p = 0 quand il entre par le bas, 1 quand il sort par le haut. Les écrans [data-pin] sont épinglés (sticky) et
 // pilotés par l'avancement q (0 → 1) à l'intérieur de leur hauteur. Une seule boucle, seulement pendant le défilement.
-import { reduced } from './motion';
+import { reduced, letters } from './motion';
 
 const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const ease = (x: number) => 1 - Math.pow(1 - clamp(x), 3);
@@ -58,6 +58,11 @@ export function initStory(root: HTMLElement) {
         const ws = words[wordPins.indexOf(pin)];
         const n = Math.round(q * 1.25 * ws.length);
         ws.forEach((w, i) => w.classList.toggle('on', i < n));
+      } else if (pin.dataset.pin === 'type') {
+        // chapitre : son texte apparaît lettre par lettre (comme sur le reste du site) quand l'écran se pose, à chaque passage
+        const v = pin.querySelector<HTMLElement>('.v')!;
+        if (r.top <= 2 && r.bottom > H * 0.6) { if (!pin.dataset.shown) { pin.dataset.shown = '1'; v.style.opacity = '1'; letters(v, 40); } }
+        else if (r.top > H * 0.5 || r.bottom < H * 0.2) { if (pin.dataset.shown) { delete pin.dataset.shown; v.style.opacity = '0'; } }
       } else if (pin.dataset.pin === 'close') {
         // le mot arrive très espacé, se resserre au centre, tient, puis rapetisse et s'efface
         const el = pin.querySelector<HTMLElement>('.close')!;

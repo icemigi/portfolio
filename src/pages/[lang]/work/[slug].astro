@@ -57,7 +57,7 @@ const run = (sc: { paras: { t?: string; p: string }[]; imgs: Img[] }) => {
 };
 const wordsOf = (str: string) => str.split(' ').filter(Boolean);
 // défilement forcé : temps donné à un chapitre pour s'allumer (environ 55 ms par mot, entre 1,6 et 5 s)
-const readMs = (sc: { paras: { t?: string; p: string }[] }) => Math.min(5000, Math.max(1600, sc.paras.reduce((a, p) => a + wordsOf((p.t ?? '') + ' ' + p.p).length, 0) * 55));
+const readMs = (sc: { paras: { t?: string; p: string }[] }) => Math.min(2600, Math.max(1400, sc.paras.reduce((a, p) => a + wordsOf((p.t ?? '') + ' ' + p.p).length, 0) * 25));
 const mid = Math.floor(scenes.length / 2);
 // le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
 const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
@@ -117,11 +117,11 @@ const im = (i: Img, cls = '') => vid(i.src)
     {project.slug !== 'music-identities' && scenes.map((sc, i) => {
       return (
         <Fragment>
-          <section class="pin scene" data-pin="words" data-step={`0.04:1000,1:${readMs(sc)}:l`} style={`height:calc(100vh + ${run(sc)}vh)`}>
+          <section class="pin scene" data-pin="type" data-step={`0.04:1100,1:${readMs(sc)}`} style={`height:calc(100vh + ${run(sc)}vh)`}>
             <div class="stick g">
               <div class="txt">
                 <p class="k mono par">{pad(i + 1)} — {sc.h.toLowerCase()}</p>
-                <div class="v">{sc.paras.map((p) => <p>{p.t && <b>{wordsOf(p.t).map((w) => <span class="w">{w} </span>)}</b>}{wordsOf(p.p).map((w) => <span class="w">{w} </span>)}</p>)}</div>
+                <div class="v" data-hola>{sc.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
               </div>
             </div>
             {sc.imgs.map((g, k) => {
@@ -207,8 +207,7 @@ const im = (i: Img, cls = '') => vid(i.src)
   .txt .v p + p { margin-top: .7em; }
   .txt .v b { font-weight: 500; }
   .txt .v b .w.on { color: var(--mu); }
-  .v .w { opacity: .12; transition: opacity .25s; }
-  .v .w.on { opacity: 1; }
+  :global(html.js) .scene .v { opacity: 0; }
   .fl { position: absolute; left: var(--x); top: var(--y); width: var(--w); z-index: 1; will-change: transform; }
   .fl.front { z-index: 3; }
   .fl :global(img), .fl :global(video) { display: block; width: 100%; height: auto; box-shadow: 0 24px 50px rgba(0, 0, 0, .14); }
