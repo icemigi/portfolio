@@ -125,14 +125,11 @@ function type(el: HTMLElement, delay: number): number {
 }
 function afterText(frame: Element, end: number) {
   if (reduced()) return;
+  // les apartés se tapent pendant que le bouton arrive : rien n'attend la fin d'une autre animation
   let t = end - 80;
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n) => { t = type(n, t) + 120; });
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n) => { t = type(n, t) + 60; });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
-    b.animate([{ opacity: 0 }, { opacity: 0, offset: 0.99 }, { opacity: 1 }], { duration: t, fill: 'backwards' });
-    const word = b.querySelector<HTMLElement>('.bl');
-    const sg = b.querySelector<HTMLElement>('.sg');
-    const done = word ? type(word, t + 60) : t;
-    sg?.animate([{ opacity: 0, rotate: '-180deg' }, { opacity: 1, rotate: '0deg' }], { duration: 500, delay: done + 40, easing: EASE_OUT, fill: 'backwards' });
-    t = done + 200;
+    b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
+    b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });
   });
 }

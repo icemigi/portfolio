@@ -1,6 +1,8 @@
 ---
-// Étude de cas, en écrans : 1 titrage · 2 image d'ouverture plein cadre · rubriques et images · projet suivant.
-// Pas de pied de page. Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (titre continu).
+// Étude de cas en « one scroll » : la page défile librement et chaque bloc s'anime selon sa position dans l'écran
+// (parallaxe, images qui arrivent de côté ou d'en bas, pivotent, se dézooment ; texte qui passe devant les images ;
+// phrase qui s'allume mot à mot ; mot qui se resserre au centre puis s'efface). Moteur : scripts/story.ts.
+// Fin : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant (titre continu).
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
@@ -11,39 +13,34 @@ export function getStaticPaths() {
 }
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
+const fr = lang === 'fr';
 const index = projects.findIndex((p) => p.slug === Astro.params.slug);
 const project = projects[index];
 const c = project[lang];
 const next = projects[(index + 1) % projects.length];
 const nc = next[lang];
 const N = pad(projects.length);
-
-// écrans de contenu : rubriques, avec des images intercalées (vraies images si présentes, sinon emplacements)
-type Block =
-  | { kind: 'rub'; k: string; paras: { t?: string; p: string }[] }
-  | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'gal'; layout: 'full' | 'pair'; labels: string[] }
-  | { kind: 'img'; imgs: Img[] }
-  | { kind: 'gen'; src: string };
 const M = media[project.slug];
-const vid = (src: string) => /\.(mp4|webm)$/i.test(src); // boucle vidéo = « GIF » léger
-const gals = M?.gal ?? [];
-let gi = 0;
-const gallery = (layout: 'full' | 'pair'): Block | null =>
-  gals.length ? (gi < gals.length ? { kind: 'img', imgs: gals[gi++] } : null) : { kind: 'gal', layout, labels: [t.visual, t.visual] };
-const blocks: Block[] = [];
-const push = (b: Block | null) => { if (b) blocks.push(b); };
-if (c.text) blocks.push({ kind: 'rub', k: lang === 'fr' ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) });
-if (c.blocks?.length) blocks.push({ kind: 'list', k: lang === 'fr' ? 'En bref' : 'In short', items: c.blocks });
-c.sections.forEach((s, i) => {
-  blocks.push({ kind: 'rub', k: s.h, paras: s.paras });
-  const last = i === c.sections.length - 1;
-  if (!last && (gals.length || i % 2 === 0)) push(gallery(i % 4 === 0 ? 'full' : 'pair'));
-  if (project.generator && i === c.sections.length - 2) blocks.push({ kind: 'gen', src: project.generator });
-});
-if (!c.sections.length && !gals.length) push(gallery('pair'));
-while (gi < gals.length) push(gallery('full'));
-const tall = (i: Img) => i.h > i.w * 2;
+const gals = [...(M?.gal ?? [])];
+const vid = (src: string) => /\.(mp4|webm)$/i.test(src);
+// effets d'arrivée des images, en alternance (jamais deux fois le même à la suite)
+const FX = ['sides', 'rise', 'tilt', 'drift', 'zoom'] as const;
+type Ch = { h: string; paras: { t?: string; p: string }[] };
+const chapters: Ch[] = [
+  ...(c.text ? [{ h: fr ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) }] : []),
+  ...(c.blocks?.length ? [{ h: fr ? 'En bref' : 'In short', paras: c.blocks.map((b) => ({ t: b.k, p: b.v })) }] : []),
+  ...c.sections,
+];
+// répartition : après chaque chapitre, un bloc d'images (les images restantes vont dans le final)
+const per = chapters.length ? Math.max(1, Math.floor(gals.length / (chapters.length + 1))) : gals.length;
+const after = chapters.map(() => gals.splice(0, per));
+const rest = gals;
+// le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
+const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
+const words = c.lead.split(' ');
+const im = (i: Img, cls = '') => vid(i.src)
+  ? `<video class="${cls}" src="${i.src}" width="${i.w}" height="${i.h}" autoplay muted loop playsinline></video>`
+  : `<img class="${cls}" src="${i.src}" width="${i.w}" height="${i.h}" alt="${c.title.replace(/"/g, '')}" loading="lazy" decoding="async" />`;
 ---
 <Base lang={lang} title={c.title} description={c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
@@ -63,81 +60,72 @@ const tall = (i: Img) => i.h > i.w * 2;
       });
     </script>
   </Fragment>
-
-  <div class="screens-host" data-screens>
-    <section class="scr s1" aria-labelledby="case-title">
-      <div class="head g">
+  <main class="story" data-story>
+    <!-- 1. ouverture : le titre passe devant l'image, qui monte plus lentement que lui -->
+    <section class="hero">
+      {M && <div class="hero-img" data-fx="par" data-speed="-0.35"><Fragment set:html={im(M.cover, 'cov')} /></div>}
+      <div class="hero-txt g" data-fx="par" data-speed="0.25">
         <p class="no mono mu par">{pad(index + 1)} / {N}</p>
-        <h1 class="case-h1 t56" id="case-title"><span class="vt">{c.title}</span></h1>
-        <p class="lead t28">{c.lead}</p>
-        <dl class="fiche mono">
-          <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
-          <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
-          <div><dt class="mu">{t.meta.role}</dt><dd>{c.meta.role}</dd></div>
-          <div><dt class="mu">{t.meta.tools}</dt><dd>{c.meta.tools}</dd></div>
-        </dl>
+        <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
+        <p class="mono mu sub">{c.short} — {project.yearLabel}</p>
       </div>
     </section>
 
-    <section class="scr open" data-still aria-label={t.opening}>
-      {M ? (vid(M.cover.src)
-           ? <video class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} autoplay muted loop playsinline aria-label={c.title}></video>
-           : <img class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />)
-         : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
+    <!-- 2. la phrase s'allume mot à mot pendant qu'on fait défiler (écran épinglé) -->
+    <section class="pin lead-pin" data-pin="words">
+      <div class="stick g"><p class="lead">{words.map((w) => <span class="w">{w} </span>)}</p></div>
     </section>
 
-    {blocks.map((b) =>
-      b.kind === 'rub' ? (
-        <section class="scr">
-          <div class="in g rub">
-            <h2 class="k mono mu par">{b.k}</h2>
-            <div class="v">{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
-          </div>
+    <!-- 3. fiche -->
+    <section class="fiche-s g" data-fx="rise-soft">
+      <dl class="fiche mono">
+        <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
+        <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
+        <div><dt class="mu">{t.meta.role}</dt><dd>{c.meta.role}</dd></div>
+        <div><dt class="mu">{t.meta.tools}</dt><dd>{c.meta.tools}</dd></div>
+      </dl>
+    </section>
+
+    {chapters.map((ch, i) => (
+      <Fragment>
+        <section class="chap g" data-reveal>
+          <p class="k mono par">({ch.h.toLowerCase()})</p>
+          <div class="v">{ch.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
         </section>
-      ) : b.kind === 'list' ? (
-        <section class="scr">
-          <div class="in g rub">
-            <h2 class="k mono mu par">{b.k}</h2>
-            <dl class="v blk">{b.items.map((it) => <div><dt class="mono mu">{it.k}</dt><dd>{it.v}</dd></div>)}</dl>
-          </div>
-        </section>
-      ) : b.kind === 'img' ? (
-        <section class="scr" data-still={b.imgs.some(tall) ? undefined : ''}>
-          <div data-enter class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
-            {b.imgs.map((im) => vid(im.src)
-              ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
-              : <img class="md" src={im.src} width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
-          </div>
-        </section>
-      ) : b.kind === 'gen' ? (
-        <section class="scr">
-          <div class="in g gen">
-            <p class="k mono mu par">{lang === 'fr' ? 'Générateur — entrez une clé, obtenez son blason' : 'Generator — enter a key, get its coat of arms'}</p>
-            <iframe src={b.src} title={lang === 'fr' ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
-          </div>
-        </section>
-      ) : (
-        <section class="scr" data-still>
-          <div class:list={['in g gal', b.layout]}>
-            {b.layout === 'full'
-              ? <div class="ph f" role="img" aria-label={b.labels[0]}><i aria-hidden="true">{b.labels[0]}</i></div>
-              : b.labels.map((l) => <div class="ph h" role="img" aria-label={l}><i aria-hidden="true">{l}</i></div>)}
-          </div>
-        </section>
-      ),
+        {after[i].length > 0 && (
+          <section class={`imgs fx-${FX[i % FX.length]} n${Math.min(after[i].length, 2)}`}>
+            {FX[i % FX.length] === 'drift' && <p class="over" data-fx="par" data-speed="0.9" aria-hidden="true">{ch.h}</p>}
+            {after[i].map((g, k) => <figure data-fx={FX[i % FX.length]} data-k={k}><Fragment set:html={im(g)} /></figure>)}
+          </section>
+        )}
+        {i === Math.floor(chapters.length / 2) && (
+          <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
+        )}
+        {project.generator && i === chapters.length - 2 && (
+          <section class="gen g" data-fx="rise-soft">
+            <p class="k mono par">({fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'})</p>
+            <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+          </section>
+        )}
+      </Fragment>
+    ))}
+
+    {rest.length > 0 && (
+      <section class="imgs fx-rest">
+        {rest.map((g, k) => <figure data-fx={k % 2 ? 'right' : 'left'}><Fragment set:html={im(g)} /></figure>)}
+      </section>
     )}
 
-    <section class="scr nx" aria-labelledby="next-l">
-      <div class="in g">
-        <p class="k mono mu par" id="next-l">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
-        <div class="tt"><h2 class="next-title t56"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
-        <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
-          <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
-          <span class="mono" aria-hidden="true">{t.nextShort}</span>
-        </a>
-      </div>
+    <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
+    <section class="nx g" aria-labelledby="next-l">
+      <p class="k mono par" id="next-l">({t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N})</p>
+      <div class="tt"><h2 class="next-title"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
+      <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
+        <span class="mono" aria-hidden="true">{t.nextShort}</span>
+      </a>
     </section>
-  </div>
+  </main>
 </Base>
 
 <style is:global>
@@ -157,135 +145,78 @@ const tall = (i: Img) => i.h > i.w * 2;
 </style>
 
 <style>
-  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 32px; padding-top: calc(var(--head) + 32px); padding-bottom: 40px; }
-  .no, .case-h1 { grid-column: 1 / -1; }
-  .case-h1 { align-self: end; }
-  .lead { grid-column: 1 / 8; }
+  .story { position: relative; }
+  /* 1. ouverture */
+  .hero { position: relative; height: 140vh; }
+  .hero-img { position: absolute; left: 50%; top: 18vh; width: min(62vw, 980px); translate: -50% 0; z-index: 1; }
+  .hero-img :global(.cov) { display: block; width: 100%; height: auto; max-height: 78vh; object-fit: cover; box-shadow: 0 30px 60px rgba(0, 0, 0, .14); }
+  .hero-txt { position: absolute; left: 0; right: 0; top: 58vh; z-index: 2; row-gap: 10px; mix-blend-mode: difference; color: #f3f3f3; }
+  .hero-txt .no, .hero-txt .sub { grid-column: 1 / -1; color: #f3f3f3; }
+  .case-h1 { grid-column: 1 / -1; font-weight: 500; font-size: clamp(64px, 13vw, 220px); line-height: .9; letter-spacing: -0.05em; }
+  .vt { display: inline-block; white-space: nowrap; }
+  /* 2. phrase épinglée */
+  .pin { position: relative; }
+  .lead-pin { height: 220vh; }
+  .stick { position: sticky; top: 0; height: 100vh; display: grid; align-content: center; }
+  .lead { grid-column: 2 / 12; font-weight: 500; font-size: clamp(30px, 4.2vw, 64px); line-height: 1.08; letter-spacing: -0.03em; }
+  .lead .w { opacity: .12; transition: opacity .25s; }
+  .lead .w.on { opacity: 1; }
+  /* 3. fiche */
+  .fiche-s { padding-block: 10vh 16vh; }
   .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
   .fiche dd { margin-top: 4px; }
-
-  .bleed { position: absolute; inset: 0; }
-
-  .rub { row-gap: 24px; }
-  .rub .k { grid-column: 1 / 4; align-self: start; padding-top: 4px; }
-  .rub .v { grid-column: 4 / 10; }
-  .rub .v p + p { margin-top: 16px; }
-  .rub b { font-weight: 500; }
-  .blk div { display: grid; grid-template-columns: 2fr 4fr; column-gap: var(--gut); border-top: 1px solid var(--ln); padding: 12px 0; }
-  .blk div:last-child { border-bottom: 1px solid var(--ln); }
-
-  .gal { row-gap: var(--gut); }
-  .gal .f { grid-column: 1 / -1; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 88px); }
-  .gal .h { grid-column: span 6; aspect-ratio: 4 / 3; }
-
-  .cov { top: var(--head); width: 100%; height: calc(100% - var(--head)); object-fit: cover; }
-  .im { align-items: center; }
-  .im img { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; }
-  .im.n1 img { grid-column: 1 / -1; }
-  .im.n2 img { grid-column: span 6; }
-  .im.tall img { max-height: none; }
-  .im.n1.tall img { grid-column: 3 / 11; }
-  .im .md { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
-  .im.n1 .md { grid-column: 1 / -1; } .im.n2 .md { grid-column: span 6; } .im.tall .md { max-height: none; } .im.n1.tall .md { grid-column: 3 / 11; }
-  .im { perspective: 1400px; }
-  /* image d'ouverture : elle respire (zoom lent, aller-retour) */
-  @media (prefers-reduced-motion: no-preference) { .cov { animation: kk-breathe 18s ease-in-out infinite alternate; } }
-  @keyframes kk-breathe { from { transform: scale(1); } to { transform: scale(1.06); } }
-
-  .gen { row-gap: 16px; }
+  /* chapitres */
+  .chap { padding-block: 18vh; row-gap: 24px; align-items: start; }
+  .chap .k { grid-column: 1 / 4; position: sticky; top: calc(var(--head) + 24px); }
+  .chap .v { grid-column: 4 / 11; font-size: 22px; line-height: 1.42; letter-spacing: -0.01em; }
+  .chap .v p + p { margin-top: 20px; }
+  .chap b { font-weight: 500; }
+  :global(.js-story) [data-reveal] .v:not(:global(.in)) { opacity: 0; }
+  /* images */
+  .imgs { position: relative; padding: 8vh var(--m); display: flex; gap: var(--gut); justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+  .imgs figure { flex: 0 1 auto; will-change: transform; }
+  .imgs :global(img), .imgs :global(video) { display: block; width: 100%; height: auto; max-height: 84vh; object-fit: contain; box-shadow: 0 24px 50px rgba(0, 0, 0, .12); }
+  .imgs.n1 figure { width: min(78vw, 1200px); }
+  .imgs.n2 figure { width: min(40vw, 640px); }
+  .imgs.n2 figure:nth-child(odd) { margin-top: 14vh; } .imgs.n2 figure:nth-child(even) { margin-bottom: 14vh; }
+  .fx-zoom { padding: 0; } .fx-zoom figure { width: 100% !important; } .fx-zoom :global(img) { max-height: 100vh; width: 100%; object-fit: cover; box-shadow: none; }
+  .fx-tilt { perspective: 1400px; }
+  /* le titre du chapitre passe devant les images, plus vite qu'elles */
+  .over { position: absolute; left: 0; right: 0; top: 50%; z-index: 3; text-align: center; white-space: nowrap; font-weight: 500; font-size: clamp(60px, 12vw, 200px); letter-spacing: -0.05em; line-height: 1; mix-blend-mode: difference; color: #f3f3f3; pointer-events: none; }
+  .fx-rest { flex-wrap: wrap; row-gap: 10vh; }
+  .fx-rest figure { width: min(44vw, 700px); }
+  /* le mot qui se resserre au centre, puis s'efface */
+  .close-pin { height: 260vh; }
+  .close-pin .stick { place-items: center; text-align: center; overflow: hidden; }
+  .close { font-weight: 500; font-size: clamp(48px, 9vw, 150px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; will-change: transform, letter-spacing, opacity; }
+  /* générateur */
+  .gen { row-gap: 16px; padding-block: 12vh; }
   .gen .k { grid-column: 1 / -1; }
   .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
-
-  .nx .in { align-items: center; row-gap: 32px; }
+  /* fin */
+  .nx { min-height: 100vh; align-items: center; row-gap: 32px; padding-block: 20vh 30vh; }
   .nx .k { grid-column: 1 / 4; align-self: start; padding-top: 22px; }
   .nx .tt { grid-column: 4 / 10; }
+  .next-title { font-weight: 500; font-size: 56px; line-height: 60px; letter-spacing: -0.035em; }
   .nx .tt .mono { margin-top: 12px; }
   .ring { grid-column: 10 / 13; justify-self: end; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
   .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ring circle { fill: none; stroke-width: 1.5; }
   .ring .track { stroke: var(--ln); }
   .ring .arc { stroke: var(--fg); stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
-
   @media (max-width: 760px) {
-    .s1 .head { padding-top: calc(var(--head) + 24px); }
-    .lead { grid-column: 1 / -1; }
+    .hero { height: 120vh; } .hero-img { width: 86vw; top: 16vh; } .hero-txt { top: 52vh; }
+    .lead { grid-column: 1 / -1; } .lead-pin { height: 180vh; }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-    .rub .k, .rub .v { grid-column: 1 / -1; }
-    .blk div { grid-template-columns: 1fr; row-gap: 4px; }
-    .gal .h { grid-column: 1 / -1; }
-    .im.n2 img, .im.n1.tall img, .im.n2 .md, .im.n1.tall .md { grid-column: 1 / -1; }
-    .nx .k, .nx .tt { grid-column: 1 / -1; }
+    .chap { padding-block: 12vh; } .chap .k, .chap .v { grid-column: 1 / -1; position: static; } .chap .v { font-size: 18px; }
+    .imgs { flex-direction: column; min-height: 0; } .imgs.n2 figure, .imgs.n1 figure, .fx-rest figure { width: 100%; margin: 0 !important; }
+    .close-pin { height: 200vh; }
+    .nx .k, .nx .tt { grid-column: 1 / -1; } .next-title { font-size: 9.6vw; line-height: 1.04; }
     .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
   }
 </style>
 
 <script>
-  import { letters, fadeMono, reduced } from '../../../scripts/motion';
-  const run = () => {
-    const api = window.kkScreens!;
-    const host = document.querySelector<HTMLElement>('[data-screens]')!;
-    const last = api.count - 1;
-    const ring = document.querySelector<HTMLAnchorElement>('[data-next]')!;
-    const arc = document.querySelector<SVGCircleElement>('[data-arc]')!;
-    const RING = 3500;
-    let fill: Animation | null = null;
-
-    // arrivée par « Projet suivant » : le titre arrive par la transition, le reste lettre par lettre
-    if ((window as any).kkArriving) {
-      const s1 = api.el(0);
-      letters(s1, 650, '.case-h1');
-      fadeMono(s1, 650);
-    }
-
-    const open = () => {
-      if ((window as any).kkLeavingNext) return;
-      (window as any).kkLeavingNext = !reduced();
-      try { if (!reduced()) sessionStorage.setItem('kk-next', '1'); } catch { /* */ }
-      location.href = ring.href;
-    };
-    const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } };
-    const start = () => {
-      stop();
-      if (reduced()) return; // pas d'ouverture automatique : l'anneau s'ouvre au clic
-      fill = arc.animate([{ strokeDashoffset: 339.3 }, { strokeDashoffset: 0 }], { duration: RING, easing: 'linear', fill: 'forwards' });
-      if (document.hidden) fill.pause();
-      dispatchEvent(new CustomEvent('kk:sound', { detail: 'ring' }));
-      fill.onfinish = open;
-    };
-    host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
-
-    // ---------- les images n'arrivent jamais deux fois de la même façon ----------
-    // chaque bloc d'images a son entrée (rideau, zoom, cartes jetées, volet), jouée pendant la fin du glissement
-    const OUT = 'cubic-bezier(.2,.7,.2,1)';
-    const enters = [
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(60px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1000, delay: i * 140, easing: OUT, fill: 'backwards' }),
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(18% 18% 18% 18%)', transform: 'scale(1.18)', opacity: 0 }, { clipPath: 'inset(0 0 0 0)', transform: 'none', opacity: 1 }], { duration: 1100, delay: i * 160, easing: OUT, fill: 'backwards' }),
-      (m: HTMLElement, i: number) => { const s = i % 2 ? 1 : -1; return m.animate([{ transform: `translate(${s * 90}px, 160px) rotate(${s * 7}deg)`, opacity: 0 }, { opacity: 1, offset: .35 }, { transform: 'none', opacity: 1 }], { duration: 1050, delay: i * 180, easing: OUT, fill: 'backwards' }); },
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(0 100% 0 0)', transform: 'scale(1.08)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1100, delay: i * 150, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'backwards' }),
-    ];
-    const blocks = [...host.querySelectorAll<HTMLElement>('[data-enter]')];
-    const play = (scr: HTMLElement, delay: number) => {
-      if (reduced()) return;
-      const b = scr.querySelector<HTMLElement>('[data-enter]'); if (!b) return;
-      const fx = enters[blocks.indexOf(b) % enters.length];
-      b.querySelectorAll<HTMLElement>('.md').forEach((m, i) => { const a = fx(m, i); a.startTime = (document.timeline.currentTime as number) + delay; });
-    };
-    host.addEventListener('screens:leave', (e) => { const to = (e as CustomEvent).detail.to; const el = api.el(to); if (el) play(el, 220); });
-    // l'image suit la souris (légère inclinaison en 3D) : elle se laisse regarder
-    if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reduced()) {
-      host.querySelectorAll<HTMLElement>('.im .md').forEach((m) => {
-        m.addEventListener('pointermove', (e) => { const r = m.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; m.style.transform = `rotateY(${x * 6}deg) rotateX(${-y * 6}deg) scale(1.015)`; });
-        m.addEventListener('pointerleave', () => { m.style.transform = ''; });
-      });
-    }
-    host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
-    host.addEventListener('screens:beyond', open);
-    ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
-    document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); });
-    // un clic ailleurs (menu…) annule le minuteur
-    document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
-    addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
-    if (api.current() === last) start();
-  };
-  if (window.kkScreens) run(); else document.addEventListener('kk:screens', run, { once: true });
+  import { initStory } from '../../../scripts/story';
+  initStory(document.querySelector<HTMLElement>('[data-story]')!);
 </script>
