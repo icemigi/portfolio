@@ -118,7 +118,7 @@ const im = (i: Img, cls = '') => vid(i.src)
           <section class="pin scene" data-pin="words" style={`height:calc(100vh + ${run(sc)}vh)`}>
             <div class="stick g">
               <div class="txt">
-                <p class="k mono par">({pad(i + 1)} — {sc.h.toLowerCase()})</p>
+                <p class="k mono par">{pad(i + 1)} — {sc.h.toLowerCase()}</p>
                 <div class="v">{sc.paras.map((p) => <p>{p.t && <b>{wordsOf(p.t).map((w) => <span class="w">{w} </span>)}</b>}{wordsOf(p.p).map((w) => <span class="w">{w} </span>)}</p>)}</div>
               </div>
             </div>
@@ -137,7 +137,7 @@ const im = (i: Img, cls = '') => vid(i.src)
           )}
           {project.generator && i === scenes.length - 2 && (
             <section class="gen g" data-fx="rise-soft">
-              <p class="k mono par">({fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'})</p>
+              <p class="k mono par">{fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'}</p>
               <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
             </section>
           )}
@@ -147,7 +147,7 @@ const im = (i: Img, cls = '') => vid(i.src)
 
     <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
     <section class="nx g" aria-labelledby="next-l">
-      <p class="k mono par" id="next-l">({t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N})</p>
+      <p class="k mono par" id="next-l">{t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
       <div class="tt"><h2 class="next-title"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
       <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
         <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
