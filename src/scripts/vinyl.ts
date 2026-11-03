@@ -118,12 +118,12 @@ export function initVinyl(root: HTMLElement) {
       const g = ease(seg(P, 0.31, 0.335));
       const bx = lerp(cx, P < 0.335 ? L.x0 - ballD : tx, g), by = lerp(cy, ty, g);
       ball.style.transform = `translate3d(${bx.toFixed(1)}px, ${by.toFixed(1)}px, 0)`;
-      const R = ballD * 1.5;
+      const R = ballD * 1.3;
       chars.forEach((c, i) => {
         c.el.classList.toggle('on', u > 0 && (i < L.a || (i <= L.b && c.x < tx) || (u >= 1)));
         const ddx = c.x - bx, ddy = c.y - by, d = Math.hypot(ddx, ddy);
         if (bo > 0 && d < R) {
-          const k = Math.pow(1 - d / R, 1.6) * R * 0.5, nx = ddx / (d || 1), ny = ddy / (d || 1);
+          const k = Math.pow(1 - d / R, 1.6) * R * 0.34, nx = ddx / (d || 1), ny = ddy / (d || 1);
           c.el.style.transform = `translate3d(${(nx * k).toFixed(1)}px, ${(ny * k).toFixed(1)}px, 0) rotate(${(nx * k * 0.2).toFixed(1)}deg)`;
           c.d = true;
         } else if (c.d) { c.el.style.transform = ''; c.d = false; }
@@ -132,7 +132,7 @@ export function initVinyl(root: HTMLElement) {
 
     // 4. bandes découpées : un petit disque passe et dévoile les mots
     bands.forEach(({ b, t, d, l }, i) => {
-      const o = 1 - seg(P, 0.6 + i * 0.004, 0.62 + i * 0.004);
+      const o = Math.min(out(seg(P, 0.465 + i * 0.01, 0.48 + i * 0.01)), 1 - seg(P, 0.6 + i * 0.004, 0.62 + i * 0.004));
       b.style.opacity = o.toFixed(3);
       b.style.transform = o < 1 ? `translate3d(0, ${((1 - o) * -30).toFixed(1)}px, 0)` : '';
       const draw = out(seg(P, 0.47 + i * 0.01, 0.5 + i * 0.01));

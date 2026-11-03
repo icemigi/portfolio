@@ -100,7 +100,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   /* anneau */
   .ring { left: 50%; top: 50%; width: min(86vh, 76vw); height: min(86vh, 76vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
   .ring .tk line { stroke: var(--ln); stroke-width: 1.5; }
-  .ring .rt { font-size: 50px; font-weight: 500; fill: var(--fg); letter-spacing: -0.02em; }
+  .ring .rt { font-size: 58px; font-weight: 500; fill: var(--fg); letter-spacing: -0.02em; }
   .ring .nd { stroke: var(--fg); stroke-width: 1.5; }
   /* boule et texte */
   .lens { left: 50%; top: 50%; translate: -50% -50%; width: min(78vw, 1180px); z-index: 4; opacity: 0; }
@@ -110,7 +110,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .ball { left: 0; top: 0; width: 9vmin; height: 9vmin; margin: -4.5vmin 0 0 -4.5vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
   /* bandes */
   .bands { left: var(--m); right: var(--m); top: 50%; translate: 0 -50%; display: grid; z-index: 4; }
-  .band { position: relative; height: 15vh; display: grid; grid-template-columns: 64px 1fr; align-items: end; padding-bottom: 2.2vh; will-change: transform, opacity; }
+  .band { opacity: 0; position: relative; height: 15vh; display: grid; grid-template-columns: 64px 1fr; align-items: end; padding-bottom: 2.2vh; will-change: transform, opacity; }
   .bn { align-self: end; padding-bottom: .6em; }
   .bt { display: flex; gap: .6em; font-weight: 500; font-size: clamp(36px, 7.4vh, 96px); line-height: 1; letter-spacing: -0.045em; white-space: nowrap; clip-path: inset(-20% 100% -20% 0); }
   .rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--fg); transform-origin: 0 0; transform: scaleX(0); }
