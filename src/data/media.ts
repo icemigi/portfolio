@@ -2,6 +2,17 @@
 // gal = écrans de galerie, chacun 1 ou 2 images, intercalés entre les rubriques puis à la suite.
 export type Img = { src: string; w: number; h: number };
 export const media: Record<string, { cover: Img; gal: Img[][] }> = {
+  // pages du dummy (02/11) : texte en regard FR / EN, grilles de cent blasons, index des clés
+  'algorithmic-heraldry': {
+    cover: { src: '/work/algorithmic-heraldry/cover.webp', w: 2200, h: 1259 },
+    gal: [
+      [{ src: '/work/algorithmic-heraldry/01.webp', w: 1223, h: 1400 }, { src: '/work/algorithmic-heraldry/02.webp', w: 1223, h: 1400 }],
+      [{ src: '/work/algorithmic-heraldry/03.webp', w: 1223, h: 1400 }, { src: '/work/algorithmic-heraldry/04.webp', w: 1223, h: 1400 }],
+      [{ src: '/work/algorithmic-heraldry/05.webp', w: 1223, h: 1400 }, { src: '/work/algorithmic-heraldry/06.webp', w: 1223, h: 1400 }],
+      [{ src: '/work/algorithmic-heraldry/07.webp', w: 1223, h: 1400 }, { src: '/work/algorithmic-heraldry/08.webp', w: 1223, h: 1400 }],
+      [{ src: '/work/algorithmic-heraldry/09.webp', w: 1223, h: 1400 }],
+    ],
+  },
   'hotshot': {
     cover: { src: '/work/hotshot/cover.webp', w: 2149, h: 1600 },
     gal: [
