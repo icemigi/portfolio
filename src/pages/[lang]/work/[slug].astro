@@ -1,9 +1,8 @@
 ---
-// Étude de cas en écrans (03/11) : le même défilement forcé que le reste du site (un geste = un écran, glissement,
-// texte qui s'écrit à l'arrivée puis s'écarte au survol, vignettes qui partent du centre pour rejoindre leur place).
-// Écrans : ouverture → accroche + fiche → un écran par chapitre, texte et images ensemble (composition qui change
-// à chaque écran) → choix clés, avec les visuels du projet qui traversent l'écran → générateur → projet suivant.
-// Le geste au-delà du dernier écran ouvre le projet suivant (titre continu).
+// Étude de cas en « one scroll » : la page défile librement et chaque bloc s'anime selon sa position dans l'écran
+// (parallaxe, images qui arrivent de côté ou d'en bas, pivotent, se dézooment ; texte qui passe devant les images ;
+// phrase qui s'allume mot à mot ; mot qui se resserre au centre puis s'efface). Moteur : scripts/story.ts.
+// Fin : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant (titre continu).
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
@@ -24,20 +23,21 @@ const N = pad(projects.length);
 const M = media[project.slug];
 const gals = [...(M?.gal ?? [])];
 const vid = (src: string) => /\.(mp4|webm)$/i.test(src);
+// effets d'arrivée des images, en alternance (jamais deux fois le même à la suite)
+const FX = ['sides', 'rise', 'tilt', 'drift', 'zoom'] as const;
 type Ch = { h: string; paras: { t?: string; p: string }[] };
 const chapters: Ch[] = [
   ...(c.text ? [{ h: fr ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) }] : []),
   ...(c.blocks?.length ? [{ h: fr ? 'En bref' : 'In short', paras: c.blocks.map((b) => ({ t: b.k, p: b.v })) }] : []),
   ...c.sections,
 ];
-// images réparties régulièrement sur les chapitres (au plus trois par écran)
-const flat = gals.flat();
-const C = chapters.length, n = flat.length;
-const pics = chapters.map((_, i) => flat.slice(Math.round((i * n) / C), Math.round(((i + 1) * n) / C)).slice(0, 3));
-// l'écran des choix clés : celui dont les paragraphes ont des titres ; les visuels du projet le traversent
-const keyAt = chapters.findIndex((ch) => ch.paras.some((p) => p.t));
-const fly = flat.slice(0, 10);
-const cap = (i: Img) => i.cap?.[lang];
+// répartition : après chaque chapitre, un bloc d'images (les images restantes vont dans le final)
+const per = chapters.length ? Math.max(1, Math.floor(gals.length / (chapters.length + 1))) : gals.length;
+const after = chapters.map(() => gals.splice(0, per).flat()); // un bloc de galerie = 1 ou 2 images
+const rest = gals.flat();
+// le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
+const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
+const words = c.lead.split(' ');
 const im = (i: Img, cls = '') => vid(i.src)
   ? `<video class="${cls}" src="${i.src}" width="${i.w}" height="${i.h}" autoplay muted loop playsinline></video>`
   : `<img class="${cls}" src="${i.src}" width="${i.w}" height="${i.h}" alt="${c.title.replace(/"/g, '')}" loading="lazy" decoding="async" />`;
@@ -60,80 +60,79 @@ const im = (i: Img, cls = '') => vid(i.src)
       });
     </script>
   </Fragment>
-  <div class="screens-host case" data-screens data-next={`/${lang}/work/${next.slug}/`}>
-    <!-- ouverture -->
-    <section class="scr" aria-labelledby="case-title">
-      <div class="in g op">
-        <p class="lab mono mu par">{pad(index + 1)} / {N}</p>
-        {M && <figure class="cv door"><Fragment set:html={im(M.cover, 'cov')} /></figure>}
-        <div class="ttl">
-          <h1 class="case-h1 t56" id="case-title"><span class="vt">{c.title}</span></h1>
-          <p class="mono mu">{c.short} — {project.yearLabel}</p>
-        </div>
+  <main class="story" data-story>
+    <!-- 1. ouverture : le titre passe devant l'image, qui monte plus lentement que lui -->
+    <section class="hero">
+      {M && <div class="hero-img" data-fx="par" data-speed="-0.35"><Fragment set:html={im(M.cover, 'cov')} /></div>}
+      <div class="hero-txt g" data-fx="par" data-speed="0.25">
+        <p class="no mono mu par">{pad(index + 1)} / {N}</p>
+        <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
+        <p class="mono mu sub">{c.short} — {project.yearLabel}</p>
       </div>
     </section>
 
-    <!-- accroche et fiche -->
-    <section class="scr">
-      <div class="in g ld">
-        <p class="lab mono mu par">{fr ? 'en bref' : 'in short'}</p>
-        <p class="lead t56" data-hola>{c.lead}</p>
-        <dl class="fiche mono">
-          <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
-          <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
-          <div><dt class="mu">{t.meta.role}</dt><dd>{c.meta.role}</dd></div>
-          <div><dt class="mu">{t.meta.tools}</dt><dd>{c.meta.tools}</dd></div>
-        </dl>
-      </div>
+    <!-- 2. la phrase s'allume mot à mot pendant qu'on fait défiler (écran épinglé) -->
+    <section class="pin lead-pin" data-pin="words">
+      <div class="stick g"><p class="lead">{words.map((w) => <span class="w">{w} </span>)}</p></div>
     </section>
 
-    <!-- chapitres : texte et images ensemble, la composition change à chaque écran -->
+    <!-- 3. fiche -->
+    <section class="fiche-s g" data-fx="rise-soft">
+      <dl class="fiche mono">
+        <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
+        <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
+        <div><dt class="mu">{t.meta.role}</dt><dd>{c.meta.role}</dd></div>
+        <div><dt class="mu">{t.meta.tools}</dt><dd>{c.meta.tools}</dd></div>
+      </dl>
+    </section>
+
     {chapters.map((ch, i) => (
-      <section class={`scr${i === keyAt ? ' key' : ''}`} data-ch={i}>
-        {i === keyAt && fly.length > 0 && (
-          <div class="fly" aria-hidden="true">{fly.map((g) => <img src={g.src} width={g.w} height={g.h} alt="" loading="lazy" decoding="async" />)}</div>
+      <Fragment>
+        <section class="chap g" data-reveal>
+          <p class="k mono par">{ch.h.toLowerCase()}</p>
+          <div class="v">{ch.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+        </section>
+        {after[i].length > 0 && (
+          <section class={`imgs fx-${FX[i % FX.length]} n${Math.min(after[i].length, 2)}`}>
+            {FX[i % FX.length] === 'drift' && <p class="over" data-fx="par" data-speed="0.9" aria-hidden="true">{ch.h}</p>}
+            {after[i].map((g, k) => <figure data-fx={FX[i % FX.length]} data-k={k}><Fragment set:html={im(g)} /></figure>)}
+          </section>
         )}
-        <div class={`in g chp ${i % 2 ? 'b' : 'a'} n${i === keyAt ? 0 : pics[i].length}`}>
-          <p class="lab mono mu par">{pad(i + 1)} — {ch.h.toLowerCase()}</p>
-          {i === keyAt ? (
-            <ol class="keys">{ch.paras.map((p, k) => <li><span class="mono mu">{pad(k + 1)}</span><p class="t56" data-hola>{p.t?.replace(/\.$/, '')}</p><p class="t28 mu" data-hola>{p.p}</p></li>)}</ol>
-          ) : (
-            <Fragment>
-              <div class="tx t28" data-hola>{ch.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
-              {pics[i].length > 0 && (
-                <div class="pics">{pics[i].map((g) => <figure class="door"><Fragment set:html={im(g)} />{cap(g) && <figcaption class="mono mu">→ {cap(g)}</figcaption>}</figure>)}</div>
-              )}
-            </Fragment>
-          )}
-        </div>
-      </section>
+        {i === Math.floor(chapters.length / 2) && (
+          <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
+        )}
+        {project.generator && i === chapters.length - 2 && (
+          <section class="gen g" data-fx="rise-soft">
+            <p class="k mono par">{fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'}</p>
+            <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+          </section>
+        )}
+      </Fragment>
     ))}
 
-    {project.generator && (
-      <section class="scr">
-        <div class="in g gen">
-          <p class="lab mono mu par">{fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'}</p>
-          <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
-        </div>
+    {rest.length > 0 && (
+      <section class="imgs fx-rest">
+        {rest.map((g, k) => <figure data-fx={k % 2 ? 'right' : 'left'}><Fragment set:html={im(g)} /></figure>)}
       </section>
     )}
 
-    <!-- projet suivant : un geste de plus l'ouvre -->
-    <section class="scr" aria-labelledby="next-l">
-      <div class="in g nx">
-        <p class="lab mono mu par" id="next-l">{t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
-        <a class="tt" href={`/${lang}/work/${next.slug}/`} data-next>
-          <h2 class="next-title t56"><span class="vt">{nc.title}</span></h2>
-          <p class="mono mu">{nc.short} — {next.yearLabel}</p>
-          <span class="mono nxs">{t.nextShort} ↓</span>
-        </a>
-      </div>
+    <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
+    <section class="nx g" aria-labelledby="next-l">
+      <p class="k mono par" id="next-l">{t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
+      <div class="tt"><h2 class="next-title"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
+      <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
+        <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
+        <span class="mono" aria-hidden="true">{t.nextShort}</span>
+      </a>
     </section>
-  </div>
+  </main>
 </Base>
 
 <style is:global>
   @view-transition { navigation: auto; }
+  /* Titre continu : le titre du projet suivant glisse jusqu'à sa place de titre, sans fondu ni déformation
+     (même texte, même taille, une seule ligne : seul le déplacement est animé). L'ancienne page disparaît net,
+     la nouvelle arrive une fois le titre posé. */
   .vt { display: inline-block; white-space: nowrap; }
   ::view-transition-group(case-title) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
   ::view-transition-old(case-title) { animation: none; opacity: 0; }
@@ -146,56 +145,78 @@ const im = (i: Img, cls = '') => vid(i.src)
 </style>
 
 <style>
-  /* grille du site : 12 colonnes, libellé en colonne 1, tout le contenu sur l'axe de la colonne 4 ;
-     trois tailles de texte seulement (mono 12/16, t28 28/36, t56 56/60) */
-  .case .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
-  .case .in { align-content: center; row-gap: 48px; }
-  /* ouverture */
-  .op .cv { grid-column: 4 / 13; margin: 0; }
-  .op .cv :global(.cov) { display: block; width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 260px); object-fit: cover; }
-  .op .ttl { grid-column: 4 / 13; display: grid; row-gap: 12px; }
-  .op .lab { grid-row: 1; }
-  /* accroche */
-  .ld .lead { grid-column: 4 / 12; }
-  .fiche { grid-column: 4 / 13; display: grid; grid-template-columns: subgrid; row-gap: 4px; }
-  .fiche > div { grid-column: span 2; } .fiche > div:last-child { grid-column: span 3; }
+  .story { position: relative; }
+  /* 1. ouverture */
+  .hero { position: relative; height: 140vh; }
+  .hero-img { position: absolute; left: 50%; top: 18vh; width: min(62vw, 980px); translate: -50% 0; z-index: 1; }
+  .hero-img :global(.cov) { display: block; width: 100%; height: auto; max-height: 78vh; object-fit: cover; box-shadow: 0 30px 60px rgba(0, 0, 0, .14); }
+  .hero-txt { position: absolute; left: 0; right: 0; top: 58vh; z-index: 2; row-gap: 10px; mix-blend-mode: difference; color: #f3f3f3; }
+  .hero-txt .no, .hero-txt .sub { grid-column: 1 / -1; color: #f3f3f3; }
+  .case-h1 { grid-column: 1 / -1; font-weight: 500; font-size: clamp(64px, 13vw, 220px); line-height: .9; letter-spacing: -0.05em; }
+  .vt { display: inline-block; white-space: nowrap; }
+  /* 2. phrase épinglée */
+  .pin { position: relative; }
+  .lead-pin { height: 220vh; }
+  .stick { position: sticky; top: 0; height: 100vh; display: grid; align-content: center; }
+  .lead { grid-column: 2 / 12; font-weight: 500; font-size: clamp(30px, 4.2vw, 64px); line-height: 1.08; letter-spacing: -0.03em; }
+  .lead .w { opacity: .12; transition: opacity .25s; }
+  .lead .w.on { opacity: 1; }
+  /* 3. fiche */
+  .fiche-s { padding-block: 10vh 16vh; }
+  .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
   .fiche dd { margin-top: 4px; }
-  /* chapitres : texte en t28 sur 6 colonnes ; images sur la même ligne de base, 3 colonnes chacune */
-  .chp .tx { grid-column: 4 / 10; }
-  .chp .tx p + p { margin-top: 36px; }
-  .chp .tx b { font-weight: 500; }
-  .pics { grid-column: 4 / 13; display: grid; grid-template-columns: subgrid; align-items: start; }
-  .pics figure { grid-column: span 3; margin: 0; }
-  .pics :global(img), .pics :global(video) { display: block; width: 100%; height: auto; max-height: 40vh; object-fit: contain; object-position: left top; }
-  figcaption { margin-top: 8px; }
-  .chp.b .pics { grid-row: 1; } .chp.b .tx { grid-row: 2; } .chp.b .lab { grid-row: 1; }
-  /* une seule image : à droite du texte, alignée en haut */
-  .chp.n1 { align-items: start; }
-  .chp.n1 .tx { grid-column: 4 / 9; grid-row: 1; }
-  .chp.n1 .pics { grid-column: 10 / 13; grid-row: 1; } .chp.n1 .pics figure { grid-column: 1 / -1; }
-  .chp.n0 .tx { grid-column: 4 / 11; }
-  /* choix clés */
-  .keys { grid-column: 4 / 12; display: grid; row-gap: 36px; position: relative; z-index: 1; }
-  .keys li > .mono { display: block; margin-bottom: 8px; }
-  .keys .t28 { margin-top: 8px; }
-  .fly { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
-  .fly img { position: absolute; left: 0; top: 0; width: 22vmin; height: auto; opacity: 0; will-change: transform; }
+  /* chapitres */
+  .chap { padding-block: 18vh; row-gap: 24px; align-items: start; }
+  .chap .k { grid-column: 1 / 4; position: sticky; top: calc(var(--head) + 24px); }
+  .chap .v { grid-column: 4 / 11; font-size: 22px; line-height: 1.42; letter-spacing: -0.01em; }
+  .chap .v p + p { margin-top: 20px; }
+  .chap b { font-weight: 500; }
+  :global(.js-story) [data-reveal] .v:not(:global(.in)) { opacity: 0; }
+  /* images */
+  .imgs { position: relative; padding: 8vh var(--m); display: flex; gap: var(--gut); justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+  .imgs figure { flex: 0 1 auto; will-change: transform; }
+  .imgs :global(img), .imgs :global(video) { display: block; width: 100%; height: auto; max-height: 84vh; object-fit: contain; box-shadow: 0 24px 50px rgba(0, 0, 0, .12); }
+  .imgs.n1 figure { width: min(78vw, 1200px); }
+  .imgs.n2 figure { width: min(40vw, 640px); }
+  .imgs.n2 figure:nth-child(odd) { margin-top: 14vh; } .imgs.n2 figure:nth-child(even) { margin-bottom: 14vh; }
+  .fx-zoom { padding: 0; } .fx-zoom figure { width: 100% !important; } .fx-zoom :global(img) { max-height: 100vh; width: 100%; object-fit: cover; box-shadow: none; }
+  .fx-tilt { perspective: 1400px; }
+  /* le titre du chapitre passe devant les images, plus vite qu'elles */
+  .over { position: absolute; left: 0; right: 0; top: 50%; z-index: 3; text-align: center; white-space: nowrap; font-weight: 500; font-size: clamp(60px, 12vw, 200px); letter-spacing: -0.05em; line-height: 1; mix-blend-mode: difference; color: #f3f3f3; pointer-events: none; }
+  .fx-rest { flex-wrap: wrap; row-gap: 10vh; }
+  .fx-rest figure { width: min(44vw, 700px); }
+  /* le mot qui se resserre au centre, puis s'efface */
+  .close-pin { height: 260vh; }
+  .close-pin .stick { place-items: center; text-align: center; overflow: hidden; }
+  .close { font-weight: 500; font-size: clamp(48px, 9vw, 150px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; will-change: transform, letter-spacing, opacity; }
   /* générateur */
-  .gen iframe { grid-column: 4 / 13; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 140px); border: 1px solid var(--ln); background: #fff; }
-  /* suivant */
-  .nx .tt { grid-column: 4 / 13; display: grid; row-gap: 12px; justify-items: start; }
-  .nxs { margin-top: 36px; }
+  .gen { row-gap: 16px; padding-block: 12vh; }
+  .gen .k { grid-column: 1 / -1; }
+  .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
+  /* fin */
+  .nx { min-height: 100vh; align-items: center; row-gap: 32px; padding-block: 20vh 30vh; }
+  .nx .k { grid-column: 1 / 4; align-self: start; padding-top: 22px; }
+  .nx .tt { grid-column: 4 / 10; }
+  .next-title { font-weight: 500; font-size: 56px; line-height: 60px; letter-spacing: -0.035em; }
+  .nx .tt .mono { margin-top: 12px; }
+  .ring { grid-column: 10 / 13; justify-self: end; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ring circle { fill: none; stroke-width: 1.5; }
+  .ring .track { stroke: var(--ln); }
+  .ring .arc { stroke: var(--fg); stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
   @media (max-width: 760px) {
-    .op .cv, .op .ttl, .ld .lead, .fiche, .chp .tx, .pics, .keys, .gen iframe, .nx .tt, .chp.n1 .tx, .chp.n1 .pics { grid-column: 1 / -1; grid-row: auto; }
-    .fiche > div, .fiche > div:last-child { grid-column: span 2; }
-    .pics figure { grid-column: span 2; }
-    .chp.b .pics, .chp.b .tx { grid-row: auto; }
-    .case .in { row-gap: 24px; }
-    .pics :global(img) { max-height: 26vh; }
+    .hero { height: 120vh; } .hero-img { width: 86vw; top: 16vh; } .hero-txt { top: 52vh; }
+    .lead { grid-column: 1 / -1; } .lead-pin { height: 180vh; }
+    .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .chap { padding-block: 12vh; } .chap .k, .chap .v { grid-column: 1 / -1; position: static; } .chap .v { font-size: 18px; }
+    .imgs { flex-direction: column; min-height: 0; } .imgs.n2 figure, .imgs.n1 figure, .fx-rest figure { width: 100%; margin: 0 !important; }
+    .close-pin { height: 200vh; }
+    .nx .k, .nx .tt { grid-column: 1 / -1; } .next-title { font-size: 9.6vw; line-height: 1.04; }
+    .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
   }
 </style>
 
 <script>
-  import { initCase } from '../../../scripts/story';
-  initCase(document.querySelector<HTMLElement>('[data-screens].case')!);
+  import { initStory } from '../../../scripts/story';
+  initStory(document.querySelector<HTMLElement>('[data-story]')!);
 </script>

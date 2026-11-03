@@ -1,7 +1,6 @@
 // Images des études (générées depuis _sources/ASSETS, WebP). cover = image d'ouverture plein cadre ;
 // gal = écrans de galerie, chacun 1 ou 2 images, intercalés entre les rubriques puis à la suite.
-// cap : fiche du livrable sous l'image (« → format, papier, outil, crédits »), facultative
-export type Img = { src: string; w: number; h: number; cap?: { fr: string; en: string } };
+export type Img = { src: string; w: number; h: number };
 export const media: Record<string, { cover: Img; gal: Img[][] }> = {
   // pages du dummy (02/11) : texte en regard FR / EN, grilles de cent blasons, index des clés
   'algorithmic-heraldry': {
