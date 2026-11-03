@@ -54,7 +54,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <div class="col tr" data-t="3"><p class="k mono par">({S[3]?.h.toLowerCase()})</p><p class="v">{W(txt(3)).map((w) => <span class="w">{w} </span>)}</p></div>
 
       <!-- 5. les pochettes se croisent sous les choix clés -->
-      <div class="pass" data-pass>{pass.map((g, i) => <figure data-p={i} class={i % 3 === 1 ? 'front' : ''}><img src={g.src} width={g.w} height={g.h} alt="" loading="lazy" decoding="async" /></figure>)}</div>
+      <div class="pass" data-pass>{pass.map((g, i) => <figure data-p={i} class={i % 3 === 1 ? 'front' : ''}><img src={g.src} width={g.w} height={g.h} alt="" decoding="async" /></figure>)}</div>
       <div class="keys">{keys.map((k, i) => <div class="key" data-key={i}><p class="kt">{k.t}</p><p class="kp">{k.p}</p></div>)}</div>
       <div class="col c" data-t="5"><p class="k mono par">({S[5]?.h.toLowerCase()})</p><p class="v">{W(txt(5)).map((w) => <span class="w">{w} </span>)}</p></div>
 
@@ -62,14 +62,14 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <div class="grid" data-grid>{imgs.map((g) => <i style={`background-image:url(${g.src})`}></i>)}</div>
       <div class="col b" data-t="6"><p class="k mono par">({S[6]?.h.toLowerCase()})</p><p class="v">{W(txt(6)).map((w) => <span class="w">{w} </span>)}</p></div>
     </div>
-    <p class="cap mono" data-cap><span class="par">({title})</span> <span class="mu">{fr ? `plus de vingt identités, ${years}` : `over twenty identities, ${years}`}</span></p>
+    <p class="cap mono" data-cap><span class="par">{title}</span> <span class="mu">{fr ? `plus de vingt identités, ${years}` : `over twenty identities, ${years}`}</span></p>
   </div>
 </section>
 
 <style>
   .vs { position: relative; }
   .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
-  .world { position: absolute; inset: 0; transform-origin: 50% 50%; background: var(--bg); }
+  .world { position: absolute; inset: 0; transform-origin: 50% 50%; background: var(--bg); overflow: hidden; }
   .world > * { position: absolute; }
   .hud { left: var(--m); top: calc(var(--head) + 14px); z-index: 9; }
   .hud.r { left: auto; right: var(--m); }
