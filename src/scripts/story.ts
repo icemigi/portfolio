@@ -73,7 +73,7 @@ export function initStory(root: HTMLElement) {
   addEventListener('scroll', kick, { passive: true });
   addEventListener('resize', kick);
   if (still) pins.forEach((p) => p.querySelectorAll('.w').forEach((w) => w.classList.add('on')));
-  smooth(still);
+  steps(root, still);
   kick();
 
   // fin de page : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant
@@ -114,4 +114,72 @@ function smooth(still: boolean) {
   }, { passive: false });
   // clavier, barre de défilement, ancres : on repart de la position réelle
   addEventListener('scroll', () => { if (!run && Math.abs(scrollY - cur) > 2) target = cur = scrollY; }, { passive: true });
+}
+
+// Défilement forcé des études (règle du site : un geste = une étape). Les étapes sont des positions de défilement
+// déclarées par data-step (fractions de la course de chaque section). Un geste fait glisser la page jusqu'à l'étape
+// suivante en ~1 s : toutes les animations, pilotées par la position, se jouent pendant le glissement et se
+// rembobinent au retour. Au bout de la page, les gestes remplissent l'anneau du projet suivant (plus haut).
+function steps(root: HTMLElement, still: boolean) {
+  let T: number[] = [];
+  const measure = () => {
+    const H = innerHeight, max = document.documentElement.scrollHeight - H;
+    const set = new Set<number>();
+    root.querySelectorAll<HTMLElement>('[data-step]').forEach((el) => {
+      const top = el.getBoundingClientRect().top + scrollY, run = Math.max(0, el.offsetHeight - H);
+      el.dataset.step!.split(',').forEach((f) => set.add(Math.round(Math.min(max, Math.max(0, top + Number(f) * run)))));
+    });
+    set.add(max);
+    T = [...set].sort((a, b) => a - b).filter((v, i, a) => i === 0 || v - a[i - 1] > 24);
+  };
+  measure();
+  addEventListener('resize', measure);
+  addEventListener('load', measure);
+  let busy = false, lastWheel = 0, raf = 0;
+  const near = () => { let i = 0; T.forEach((t, k) => { if (Math.abs(t - scrollY) < Math.abs(T[i] - scrollY)) i = k; }); return i; };
+  const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const go = (dir: number) => {
+    const y = scrollY;
+    const to = dir > 0 ? T.find((t) => t > y + 2) : [...T].reverse().find((t) => t < y - 2);
+    if (to === undefined) return;
+    if (still) { scrollTo(0, to); return; }
+    const H = innerHeight, d = to - y;
+    const dur = Math.min(1700, Math.max(850, 700 + (Math.abs(d) / H) * 260));
+    const t0 = performance.now();
+    busy = true; cancelAnimationFrame(raf);
+    const tick = (now: number) => {
+      const u = Math.min(1, (now - t0) / dur);
+      scrollTo(0, y + d * ease(u));
+      if (u < 1) raf = requestAnimationFrame(tick); else { busy = false; lastWheel = performance.now(); }
+    };
+    raf = requestAnimationFrame(tick);
+  };
+  const atEnd = () => scrollY >= T[T.length - 1] - 2;
+  addEventListener('wheel', (e) => {
+    if (e.ctrlKey) return;
+    const inFrame = (e.target as Element).closest?.('iframe');
+    if (inFrame) return;
+    const now = performance.now(), fresh = now - lastWheel > 220;
+    lastWheel = now;
+    if (e.deltaY > 0 && atEnd()) return; // l'anneau du projet suivant prend le relais
+    e.preventDefault();
+    if (busy || !fresh || Math.abs(e.deltaY) < 4) return;
+    go(Math.sign(e.deltaY));
+  }, { passive: false });
+  addEventListener('keydown', (e) => {
+    if ((e.target as Element).closest?.('input, textarea, select, [contenteditable]')) return;
+    const k = e.key;
+    const dir = k === 'ArrowDown' || k === 'PageDown' || (k === ' ' && !e.shiftKey) ? 1 : k === 'ArrowUp' || k === 'PageUp' || (k === ' ' && e.shiftKey) ? -1 : 0;
+    if (!dir) return;
+    e.preventDefault(); if (!busy) go(dir);
+  });
+  let ty = 0;
+  addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
+  addEventListener('touchmove', (e) => { if (!(e.target as Element).closest?.('iframe')) e.preventDefault(); }, { passive: false });
+  addEventListener('touchend', (e) => {
+    const dy = ty - e.changedTouches[0].clientY;
+    if (Math.abs(dy) > 40 && !busy) go(Math.sign(dy));
+  }, { passive: true });
+  // arrivée au milieu d'une page (rechargement) : on se cale sur l'étape la plus proche
+  addEventListener('load', () => { if (T.length && Math.abs(T[near()] - scrollY) > 2) scrollTo(0, T[near()]); });
 }

@@ -85,7 +85,7 @@ const im = (i: Img, cls = '') => vid(i.src)
   </Fragment>
   <main class="story" data-story>
     <!-- 1. ouverture : le titre passe devant l'image, qui monte plus lentement que lui -->
-    <section class="hero">
+    <section class="hero" data-step="0">
       {M && <div class="hero-img" data-fx="par" data-speed="-0.35"><Fragment set:html={im(M.cover, 'cov')} /></div>}
       <div class="hero-txt g" data-fx="par" data-speed="0.25">
         <p class="no mono mu par">{pad(index + 1)} / {N}</p>
@@ -95,7 +95,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     </section>
 
     <!-- 2. la phrase s'allume mot à mot pendant qu'on fait défiler (écran épinglé) -->
-    <section class="pin lead-pin" data-pin="words">
+    <section class="pin lead-pin" data-pin="words" data-step="0.02,1">
       <div class="stick g"><p class="lead">{words.map((w) => <span class="w">{w} </span>)}</p></div>
     </section>
 
@@ -115,7 +115,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     {project.slug !== 'music-identities' && scenes.map((sc, i) => {
       return (
         <Fragment>
-          <section class="pin scene" data-pin="words" style={`height:calc(100vh + ${run(sc)}vh)`}>
+          <section class="pin scene" data-pin="words" data-step="0.04,1" style={`height:calc(100vh + ${run(sc)}vh)`}>
             <div class="stick g">
               <div class="txt">
                 <p class="k mono par">{pad(i + 1)} — {sc.h.toLowerCase()}</p>
@@ -133,10 +133,10 @@ const im = (i: Img, cls = '') => vid(i.src)
             })}
           </section>
           {i === mid && (
-            <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
+            <section class="pin close-pin" data-pin="close" data-step="0.45,1"><div class="stick"><p class="close">{key}</p></div></section>
           )}
           {project.generator && i === scenes.length - 2 && (
-            <section class="gen g" data-fx="rise-soft">
+            <section class="gen g" data-fx="rise-soft" data-step="0">
               <p class="k mono par">{fr ? 'générateur — entrez une clé, obtenez son blason' : 'generator — enter a key, get its coat of arms'}</p>
               <iframe src={project.generator} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
             </section>
@@ -146,7 +146,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     })}
 
     <!-- fin : continuer à faire défiler remplit l'anneau et ouvre le projet suivant -->
-    <section class="nx g" aria-labelledby="next-l">
+    <section class="nx g" aria-labelledby="next-l" data-step="0,1">
       <p class="k mono par" id="next-l">{t.next.toLowerCase()} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
       <div class="tt"><h2 class="next-title"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
       <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
