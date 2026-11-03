@@ -165,7 +165,7 @@ export function initVinyl(root: HTMLElement) {
       k.style.opacity = o.toFixed(3);
       k.style.transform = `translate3d(0, ${((1 - o) * (P < a + 0.03 ? 30 : -30)).toFixed(1)}px, 0)`;
     });
-    const c5 = col(5)!; c5.el.style.opacity = fade(P, 0.815, 0.83, 0.86, 0.875).toFixed(3); words(c5, seg(P, 0.82, 0.86));
+    const c5 = col(5)!; c5.el.style.opacity = fade(P, 0.815, 0.83, 0.86, 0.875).toFixed(3); words(c5, seg(P, 0.82, 0.85));
 
     // 6. grille de toutes les pochettes, puis la scène dézoome en vignette
     tiles.forEach((tl, i) => {

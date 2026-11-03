@@ -56,6 +56,8 @@ const run = (sc: { paras: { t?: string; p: string }[]; imgs: Img[] }) => {
   return Math.round(Math.max(110, Math.min(240, nw * 1.3), sc.imgs.length * 70));
 };
 const wordsOf = (str: string) => str.split(' ').filter(Boolean);
+// défilement forcé : temps donné à un chapitre pour s'allumer (environ 55 ms par mot, entre 1,6 et 5 s)
+const readMs = (sc: { paras: { t?: string; p: string }[] }) => Math.min(5000, Math.max(1600, sc.paras.reduce((a, p) => a + wordsOf((p.t ?? '') + ' ' + p.p).length, 0) * 55));
 const mid = Math.floor(scenes.length / 2);
 // le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
 const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
@@ -95,7 +97,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     </section>
 
     <!-- 2. la phrase s'allume mot à mot pendant qu'on fait défiler (écran épinglé) -->
-    <section class="pin lead-pin" data-pin="words" data-step="0.02,1">
+    <section class="pin lead-pin" data-pin="words" data-step={`0.02:900,1:${Math.min(4200, Math.max(1500, words.length * 70))}:l`}>
       <div class="stick g"><p class="lead">{words.map((w) => <span class="w">{w} </span>)}</p></div>
     </section>
 
@@ -115,7 +117,7 @@ const im = (i: Img, cls = '') => vid(i.src)
     {project.slug !== 'music-identities' && scenes.map((sc, i) => {
       return (
         <Fragment>
-          <section class="pin scene" data-pin="words" data-step="0.04,1" style={`height:calc(100vh + ${run(sc)}vh)`}>
+          <section class="pin scene" data-pin="words" data-step={`0.04:1000,1:${readMs(sc)}:l`} style={`height:calc(100vh + ${run(sc)}vh)`}>
             <div class="stick g">
               <div class="txt">
                 <p class="k mono par">{pad(i + 1)} — {sc.h.toLowerCase()}</p>
@@ -133,7 +135,7 @@ const im = (i: Img, cls = '') => vid(i.src)
             })}
           </section>
           {i === mid && (
-            <section class="pin close-pin" data-pin="close" data-step="0.45,1"><div class="stick"><p class="close">{key}</p></div></section>
+            <section class="pin close-pin" data-pin="close" data-step="0.45:1700,1:1200"><div class="stick"><p class="close">{key}</p></div></section>
           )}
           {project.generator && i === scenes.length - 2 && (
             <section class="gen g" data-fx="rise-soft" data-step="0">

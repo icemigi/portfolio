@@ -121,40 +121,55 @@ function smooth(still: boolean) {
 // suivante en ~1 s : toutes les animations, pilotées par la position, se jouent pendant le glissement et se
 // rembobinent au retour. Au bout de la page, les gestes remplissent l'anneau du projet suivant (plus haut).
 function steps(root: HTMLElement, still: boolean) {
-  let T: number[] = [];
+  // data-step="f[:durée ms[:l]]" : f = fraction de la course de la section ; durée = temps pour y arriver
+  // (une lecture longue a le temps de se jouer) ; l = vitesse régulière (lecture), sinon départ et arrivée en douceur
+  let T: { y: number; dur: number; lin: boolean }[] = [];
   const measure = () => {
     const H = innerHeight, max = document.documentElement.scrollHeight - H;
-    const set = new Set<number>();
+    const all: { y: number; dur: number; lin: boolean }[] = [];
     root.querySelectorAll<HTMLElement>('[data-step]').forEach((el) => {
       const top = el.getBoundingClientRect().top + scrollY, run = Math.max(0, el.offsetHeight - H);
-      el.dataset.step!.split(',').forEach((f) => set.add(Math.round(Math.min(max, Math.max(0, top + Number(f) * run)))));
+      el.dataset.step!.split(',').forEach((e) => {
+        const [f, d, l] = e.split(':');
+        all.push({ y: Math.round(Math.min(max, Math.max(0, top + Number(f) * run))), dur: Number(d) || 0, lin: l === 'l' });
+      });
     });
-    set.add(max);
-    T = [...set].sort((a, b) => a - b).filter((v, i, a) => i === 0 || v - a[i - 1] > 24);
+    all.push({ y: max, dur: 0, lin: false });
+    all.sort((a, b) => a.y - b.y);
+    T = all.filter((v, i, a) => i === 0 || v.y - a[i - 1].y > 24);
   };
   measure();
   addEventListener('resize', measure);
   addEventListener('load', measure);
-  let busy = false, raf = 0, aim = -1;
-  const near = () => { let i = 0; T.forEach((t, k) => { if (Math.abs(t - scrollY) < Math.abs(T[i] - scrollY)) i = k; }); return i; };
-  const ease = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-  const go = (dir: number) => {
-    const y = scrollY, base = busy && aim >= 0 ? aim : y; // en plein glissement : on vise l'étape d'après la cible
-    const to = dir > 0 ? T.find((t) => t > base + 2) : [...T].reverse().find((t) => t < base - 2);
-    if (to === undefined) return;
-    if (still) { scrollTo(0, to); return; }
-    const H = innerHeight, d = to - y;
-    const dur = Math.min(1600, Math.max(800, 650 + (Math.abs(d) / H) * 240));
-    const t0 = performance.now();
-    busy = true; aim = to; cancelAnimationFrame(raf);
+  let busy = false, raf = 0, aim = -1, endAt = 0;
+  const near = () => { let i = 0; T.forEach((t, k) => { if (Math.abs(t.y - scrollY) < Math.abs(T[i].y - scrollY)) i = k; }); return i; };
+  const inout = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const soft = (x: number) => { const a = 0.12; return x < a ? (x * x) / (2 * a * (1 - a)) : x > 1 - a ? 1 - ((1 - x) * (1 - x)) / (2 * a * (1 - a)) : (x - a / 2) / (1 - a); };
+  const run = (to: number, dur: number, lin: boolean) => {
+    const y = scrollY, d = to - y, t0 = performance.now();
+    busy = true; aim = to; endAt = t0 + dur; cancelAnimationFrame(raf);
     const tick = (now: number) => {
       const u = Math.min(1, (now - t0) / dur);
-      scrollTo(0, y + d * ease(u));
+      scrollTo(0, y + d * (lin ? soft(u) : inout(u)));
       if (u < 1) raf = requestAnimationFrame(tick); else { busy = false; aim = -1; }
     };
     raf = requestAnimationFrame(tick);
   };
-  const atEnd = () => scrollY >= T[T.length - 1] - 2 && !busy;
+  const go = (dir: number) => {
+    // une longue animation en cours : un geste l'accélère jusqu'à son terme ; le geste suivant passe à l'étape d'après
+    if (busy && endAt - performance.now() > 520 && Math.sign(aim - scrollY) === dir) { run(aim, 420, false); return; }
+    const base = busy && aim >= 0 ? aim : scrollY;
+    const next = dir > 0 ? T.find((t) => t.y > base + 2) : [...T].reverse().find((t) => t.y < base - 2);
+    if (!next) return;
+    if (still) { scrollTo(0, next.y); return; }
+    const H = innerHeight, dist = Math.abs(next.y - scrollY);
+    // en avançant : la durée de l'étape (ou selon la distance) ; en revenant : un rembobinage plus vif
+    const own = dir > 0 ? T.find((t) => t.y === next.y)!.dur : 0;
+    const auto = Math.min(1500, Math.max(800, 650 + (dist / H) * 220));
+    const dur = own ? (dir > 0 ? own : Math.min(1400, Math.max(700, own * 0.45))) : auto;
+    run(next.y, dir > 0 ? dur : Math.min(1400, Math.max(700, (T[T.findIndex((t) => t.y === base)] ?? next).dur * 0.45 || auto)), dir > 0 && T.find((t) => t.y === next.y)!.lin);
+  };
+  const atEnd = () => scrollY >= T[T.length - 1].y - 2 && !busy;
   // détection d'un nouveau geste, comme les écrans du site : pause, changement de sens, ou reprise après l'inertie
   let last = 0, gdir = 0, used = false, armed = false, low = Infinity, lastGo = 0, acc = 0;
   addEventListener('wheel', (e) => {
@@ -189,5 +204,5 @@ function steps(root: HTMLElement, still: boolean) {
     if (Math.abs(dy) > 40 && !busy) go(Math.sign(dy));
   }, { passive: true });
   // arrivée au milieu d'une page (rechargement) : on se cale sur l'étape la plus proche
-  addEventListener('load', () => { if (T.length && Math.abs(T[near()] - scrollY) > 2) scrollTo(0, T[near()]); });
+  addEventListener('load', () => { if (T.length && Math.abs(T[near()].y - scrollY) > 2) scrollTo(0, T[near()].y); });
 }
