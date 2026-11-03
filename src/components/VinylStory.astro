@@ -109,7 +109,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .lt :global(.ch.on) { opacity: 1; }
   .ball { left: 0; top: 0; width: 9vmin; height: 9vmin; margin: -4.5vmin 0 0 -4.5vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
   /* bandes */
-  .bands { left: var(--m); right: var(--m); top: 50%; translate: 0 -50%; display: grid; z-index: 4; }
+  .bands { left: var(--m); right: calc(var(--m) + min(30vw, 440px) + 48px); top: 50%; translate: 0 -50%; display: grid; z-index: 4; }
   .band { opacity: 0; position: relative; height: 15vh; display: grid; grid-template-columns: 64px 1fr; align-items: end; padding-bottom: 2.2vh; will-change: transform, opacity; }
   .bn { align-self: end; padding-bottom: .6em; }
   .bt { display: flex; gap: .6em; font-weight: 500; font-size: clamp(36px, 7.4vh, 96px); line-height: 1; letter-spacing: -0.045em; white-space: nowrap; clip-path: inset(-20% 100% -20% 0); }
@@ -131,7 +131,7 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
     .col, .col.c, .col.b { width: calc(100vw - 2 * var(--m)); }
     .col.l { top: auto; bottom: 8vh; translate: none; }
     .col.tr { top: auto; bottom: 6vh; right: var(--m); }
-    .band { height: 10vh; grid-template-columns: 32px 1fr; } .bt { font-size: 4.4vh; }
+    .bands { right: var(--m); } .band { height: 10vh; grid-template-columns: 32px 1fr; } .bt { font-size: 4.4vh; }
     .col.l2 { display: none; }
     .lens { width: calc(100vw - 2 * var(--m)); }
     .grid { grid-template-columns: repeat(4, 19vw); gap: 2vw; }

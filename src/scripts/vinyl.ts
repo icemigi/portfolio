@@ -142,6 +142,7 @@ export function initVinyl(root: HTMLElement) {
       d.style.opacity = draw >= 1 && u < 1 ? '1' : '0';
       d.style.transform = `translate3d(${px.toFixed(1)}px, 0, 0)`;
       t.style.clipPath = `inset(-20% ${(100 - clamp((px + dw / 2) / bw) * 100).toFixed(2)}% -20% 0)`;
+      t.style.opacity = u > 0 ? '1' : '0';
     });
     const c3 = col(3)!; c3.el.style.opacity = fade(P, 0.48, 0.5, 0.6, 0.62).toFixed(3); words(c3, seg(P, 0.49, 0.6));
 
