@@ -2,6 +2,7 @@
 // p = 0 quand il entre par le bas, 1 quand il sort par le haut. Les écrans [data-pin] sont épinglés (sticky) et
 // pilotés par l'avancement q (0 → 1) à l'intérieur de leur hauteur. Une seule boucle, seulement pendant le défilement.
 import { reduced, letters } from './motion';
+import { smooth } from './smooth';
 
 const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const ease = (x: number) => 1 - Math.pow(1 - clamp(x), 3);
@@ -78,7 +79,8 @@ export function initStory(root: HTMLElement) {
   addEventListener('scroll', kick, { passive: true });
   addEventListener('resize', kick);
   if (still) pins.forEach((p) => p.querySelectorAll('.w').forEach((w) => w.classList.add('on')));
-  steps(root, still);
+  smooth(still); // plan B (03/11) : défilement libre avec inertie ; steps() garde la version en étapes
+  void steps;
   kick();
 
   // fin de page : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant
@@ -99,26 +101,6 @@ export function initStory(root: HTMLElement) {
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
     addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; push = 0; set(); } });
   }
-}
-
-// défilement fluide avec inertie (souris et pavé tactile ; le tactile garde le défilement natif)
-function smooth(still: boolean) {
-  if (still || !matchMedia('(pointer: fine)').matches) return;
-  let target = scrollY, cur = scrollY, run = 0;
-  const max = () => document.documentElement.scrollHeight - innerHeight;
-  const loop = () => {
-    cur += (target - cur) * 0.1;
-    if (Math.abs(target - cur) < 0.5) { cur = target; run = 0; } else run = requestAnimationFrame(loop);
-    scrollTo(0, cur);
-  };
-  addEventListener('wheel', (e) => {
-    if (e.ctrlKey || e.defaultPrevented) return;
-    e.preventDefault();
-    target = Math.min(max(), Math.max(0, target + e.deltaY * (e.deltaMode === 1 ? 16 : 1)));
-    if (!run) run = requestAnimationFrame(loop);
-  }, { passive: false });
-  // clavier, barre de défilement, ancres : on repart de la position réelle
-  addEventListener('scroll', () => { if (!run && Math.abs(scrollY - cur) > 2) target = cur = scrollY; }, { passive: true });
 }
 
 // Défilement forcé des études (règle du site : un geste = une étape). Les étapes sont des positions de défilement

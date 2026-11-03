@@ -17,7 +17,7 @@ const SEEN: string[][] = [['music-identities', 'bms-esport'], ['asaphr', 'music-
 const P = (slug: string) => projects.find((x) => x.slug === slug);
 ---
 <Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">
-  <div class="screens-host" data-screens>
+  <div class="screens-host" data-screens data-flow>
     <section class="scr" aria-labelledby="ab-1">
       <div class="in g">
         <h1 class="lab mono mu par" id="ab-1">{L.about}</h1>

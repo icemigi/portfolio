@@ -181,6 +181,10 @@ html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host
 html:not(.js) .screens-host { position: static; }
 html:not(.js) .scr { position: relative; transform: none; min-height: 100vh; }
 html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
+/* plan B (03/11) : défilement libre — les écrans se suivent dans la page */
+html.flow, html.flow body { height: auto; overflow: visible; overscroll-behavior: auto; }
+html.flow .screens-host { position: relative; inset: auto; overflow: visible; }
+html.flow .screens-host > .scr { position: relative; inset: auto; min-height: 100vh; transform: none; visibility: visible; overflow: visible; will-change: auto; transition: opacity .3s; }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
