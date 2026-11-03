@@ -12,6 +12,19 @@ export function initFlow(host: HTMLElement) {
   const phone = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
   const par = phone ? [] : S.flatMap((s) => [...s.querySelectorAll<HTMLElement>('.im img, .cov, .vi, .door, .mimg, [data-par]')].map((el) => ({ el, s, k: Number(el.dataset.par || 80) })));
   const shown = new Set<HTMLElement>();
+  // transitions entre les anciens écrans : deux grandes parenthèses arrivent des bords, se referment sur le nom de
+  // la section suivante, puis s'ouvrent pour la laisser passer (piloté par la position, rembobinable)
+  const trs = still ? [] : S.slice(1).map((s) => {
+    const lab = s.querySelector<HTMLElement>('.lab, .lab4');
+    const name = (lab?.textContent || '').trim();
+    const tr = document.createElement('div');
+    tr.className = 'ftr'; tr.setAttribute('aria-hidden', 'true');
+    tr.innerHTML = `<div class="fst"><span class="fp l">(</span><span class="fn">${name.replace(/</g, '&lt;')}</span><span class="fp r">)</span></div>`;
+    s.before(tr);
+    return { tr, l: tr.querySelector<HTMLElement>('.l')!, r: tr.querySelector<HTMLElement>('.r')!, n: tr.querySelector<HTMLElement>('.fn')! };
+  });
+  const clamp = (x: number) => Math.min(1, Math.max(0, x));
+  const ease = (x: number) => { x = clamp(x); return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
   let raf = 0;
   const apply = () => {
     raf = 0;
@@ -27,6 +40,27 @@ export function initFlow(host: HTMLElement) {
         // sorti du cadre : il se réécrira au prochain passage
         shown.delete(s); settle(s); if (!s.hasAttribute('data-still') && !still) s.style.opacity = '0';
       }
+    });
+    trs.forEach(({ tr, l, r, n }) => {
+      const b = tr.getBoundingClientRect();
+      if (b.bottom < -H || b.top > 2 * H) return;
+      const p = clamp((H - b.top) / (b.height + H)); // 0 → 1 pendant la traversée
+      const close = ease(p / 0.5), open = ease((p - 0.55) / 0.35);
+      const w = n.offsetWidth / 2 + 24;
+      const far = innerWidth / 2 + 60;
+      const x = far - (far - w) * close + open * far * 0.9;
+      l.style.transform = `translate3d(${(-x).toFixed(1)}px, 0, 0)`;
+      r.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
+      n.style.opacity = String(Math.min(ease((p - 0.25) / 0.2), 1 - ease((p - 0.6) / 0.25)));
+      n.style.letterSpacing = `${(-0.04 + 0.5 * (1 - close)).toFixed(3)}em`;
+    });
+    // l'écran qui s'en va : il s'efface en montant pendant que la transition arrive
+    S.forEach((s) => {
+      if (s.hasAttribute('data-still') || still) return;
+      const r = s.getBoundingClientRect();
+      const q = clamp((H * 0.45 - r.bottom) / (H * 0.4));
+      const inn = s.querySelector<HTMLElement>('.in');
+      if (inn) { inn.style.opacity = q > 0 ? String(1 - q) : ''; inn.style.transform = q > 0 ? `translate3d(0, ${(-q * 60).toFixed(1)}px, 0)` : ''; }
     });
     if (!still) par.forEach(({ el, s, k }) => {
       const r = s.getBoundingClientRect();

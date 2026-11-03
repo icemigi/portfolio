@@ -185,7 +185,15 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
 html.flow, html.flow body { height: auto; overflow: visible; overscroll-behavior: auto; }
 html.flow .screens-host { position: relative; inset: auto; overflow: visible; }
 html.flow .screens-host > .scr { position: relative; inset: auto; min-height: 100vh; transform: none; visibility: visible; overflow: visible; will-change: auto; transition: opacity .3s; }
-html.flow .screens-host > .scr .in { min-height: 100vh; }
+html.flow .screens-host > .scr { min-height: 0; }
+html.flow .screens-host > .scr .in { min-height: 0; align-content: start; padding-top: 6vh; padding-bottom: 6vh; }
+html.flow .screens-host > .scr:first-child .in { min-height: 100vh; align-content: center; padding-top: calc(var(--head) + 24px); }
+html.flow .screens-host > .scr .in .lab { position: sticky; top: calc(var(--head) + 14px); }
+/* transition entre deux écrans : parenthèses qui se referment sur le nom de la section suivante */
+.ftr { position: relative; height: 90vh; pointer-events: none; }
+.ftr .fst { position: sticky; top: 0; height: 100vh; margin-bottom: -10vh; display: grid; place-items: center; overflow: hidden; }
+.ftr .fn { font-weight: 500; font-size: clamp(56px, 10vw, 170px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; opacity: 0; }
+.ftr .fp { position: absolute; left: 50%; top: 50%; font-weight: 300; font-size: clamp(120px, 24vw, 420px); line-height: 1; margin: -.56em 0 0 -.15em; color: var(--ac); will-change: transform; }
 
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
