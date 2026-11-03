@@ -9,6 +9,7 @@ import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media, type Img } from '../../../data/media';
+import VinylStory from '../../../components/VinylStory.astro';
 
 export function getStaticPaths() {
   return languages.flatMap((lang) => projects.map((p) => ({ params: { lang, slug: p.slug } })));
@@ -108,7 +109,10 @@ const im = (i: Img, cls = '') => vid(i.src)
       </dl>
     </section>
 
-    {scenes.map((sc, i) => {
+    {project.slug === 'music-identities' && M && (
+      <VinylStory lang={lang} title={c.title} sections={c.sections} cover={M.cover} imgs={M.gal.flat()} years={project.yearLabel} />
+    )}
+    {project.slug !== 'music-identities' && scenes.map((sc, i) => {
       return (
         <Fragment>
           <section class="pin scene" data-pin="words" style={`height:calc(100vh + ${run(sc)}vh)`}>

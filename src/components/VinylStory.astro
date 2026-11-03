@@ -1,0 +1,140 @@
+---
+// Prototype « une seule scène » pour Identités musicales (03/11) : une scène épinglée de 1100vh, où tout est fonction
+// de l'avancement du défilement (on remonte : tout se rembobine). Déroulé :
+// pochette → le vinyle en sort → il grossit, le texte s'écrit autour au passage de l'aiguille → il devient une boule
+// qui traverse le texte et écarte les lettres → bandes découpées qu'un petit disque dévoile → les pochettes se croisent
+// sous les choix clés → toutes les pochettes se rangent en grille → la scène entière dézoome en vignette.
+// Moteur : scripts/vinyl.ts.
+import type { Img } from '../data/media';
+interface Props { lang: 'fr' | 'en'; title: string; sections: { h: string; paras: { t?: string; p: string }[] }[]; cover: Img; imgs: Img[]; years: string }
+const { lang, title, sections: S, cover, imgs, years } = Astro.props;
+const fr = lang === 'fr';
+const W = (s: string) => s.split(' ').filter(Boolean);
+const txt = (i: number) => S[i]?.paras.map((p) => (p.t ? p.t + ' ' : '') + p.p).join(' ') ?? '';
+const bands = fr
+  ? [['Logotype', 'Lettrage'], ['Cover', 'Dos', 'Tracklist'], ['Merch', 'Presse'], ['Réseaux', 'Billetterie', 'Scène']]
+  : [['Logotype', 'Lettering'], ['Cover', 'Back', 'Tracklist'], ['Merch', 'Press'], ['Socials', 'Ticketing', 'Stage']];
+const ticks = fr ? ['(pochette)', '(dos)', '(merch)', '(billetterie)', '(presse)', '(scène)'] : ['(sleeve)', '(back)', '(merch)', '(ticketing)', '(press)', '(stage)'];
+const keys = S[4]?.paras ?? [];
+const pass = imgs.slice(0, 10);
+const n = S.length;
+const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
+---
+<section class="vs" data-vinyl style="height:1100vh" data-hud={JSON.stringify(hud)}>
+  <div class="stage">
+    <div class="world" data-world>
+      <!-- HUD -->
+      <p class="hud mono" data-hudl>{hud[0]}</p>
+      <p class="hud r mono mu"><span data-hudn>01</span>/{String(n).padStart(2, '0')} — {title}</p>
+
+      <!-- 1. pochette et vinyle -->
+      <div class="sleeve" data-sleeve><img src={cover.src} width={cover.w} height={cover.h} alt="" /></div>
+      <div class="disc" data-disc><i class="lbl" style={`background-image:url(${cover.src})`}></i><i class="hole"></i><i class="shine"></i></div>
+      <div class="col l" data-t="0"><p class="k mono par">({S[0]?.h.toLowerCase()})</p><p class="v">{W(txt(0)).map((w) => <span class="w">{w} </span>)}</p></div>
+
+      <!-- 2. le texte s'écrit autour du disque, au passage de l'aiguille -->
+      <svg class="ring" data-ring viewBox="-90 -90 1180 1180" aria-hidden="true">
+        <defs><path id="vs-c" d="M500,500 m0,-446 a446,446 0 1,1 0,892 a446,446 0 1,1 0,-892" /></defs>
+        <g class="tk">{Array.from({ length: 120 }, (_, i) => <line x1="500" y1={i % 10 ? 18 : 6} x2="500" y2="34" transform={`rotate(${i * 3} 500 500)`} />)}</g>
+        <text class="rt"><textPath href="#vs-c" textLength="2780" lengthAdjust="spacing">{txt(1)}</textPath></text>
+        {ticks.map((l, i) => { const a = (i / ticks.length) * Math.PI * 2 - Math.PI / 2; return <text class="tl mono" x={500 + Math.cos(a) * 560} y={500 + Math.sin(a) * 560 + 8} text-anchor="middle">{l}</text>; })}
+        <line class="nd" data-needle x1="500" y1="500" x2="500" y2="40" />
+      </svg>
+
+      <!-- 3. la boule traverse le texte et écarte les lettres -->
+      <div class="lens" data-lens><p class="k mono par">({S[2]?.h.toLowerCase()})</p><p class="lt" data-lt>{txt(2)}</p></div>
+      <i class="ball" data-ball></i>
+
+      <!-- 4. bandes découpées, un petit disque passe et dévoile les mots -->
+      <div class="bands" data-bands>
+        {bands.map((b, i) => (
+          <div class="band" data-band={i}><p class="bt" data-bt>{b.map((x, k) => <span>{k > 0 && <em class="mu">—</em>}{x}</span>)}</p><i class="bd" data-bd></i></div>
+        ))}
+      </div>
+      <div class="col tr" data-t="3"><p class="k mono par">({S[3]?.h.toLowerCase()})</p><p class="v">{W(txt(3)).map((w) => <span class="w">{w} </span>)}</p></div>
+
+      <!-- 5. les pochettes se croisent sous les choix clés -->
+      <div class="pass" data-pass>{pass.map((g, i) => <figure data-p={i} class={i % 3 === 1 ? 'front' : ''}><img src={g.src} width={g.w} height={g.h} alt="" loading="lazy" decoding="async" /></figure>)}</div>
+      <div class="keys">{keys.map((k, i) => <div class="key" data-key={i}><p class="kt">{k.t}</p><p class="kp">{k.p}</p></div>)}</div>
+      <div class="col c" data-t="5"><p class="k mono par">({S[5]?.h.toLowerCase()})</p><p class="v">{W(txt(5)).map((w) => <span class="w">{w} </span>)}</p></div>
+
+      <!-- 6. toutes les pochettes en grille, puis la scène entière dézoome -->
+      <div class="grid" data-grid>{imgs.map((g) => <i style={`background-image:url(${g.src})`}></i>)}</div>
+      <div class="col b" data-t="6"><p class="k mono par">({S[6]?.h.toLowerCase()})</p><p class="v">{W(txt(6)).map((w) => <span class="w">{w} </span>)}</p></div>
+    </div>
+    <p class="cap mono" data-cap><span class="par">({title})</span> <span class="mu">{fr ? `plus de vingt identités, ${years}` : `over twenty identities, ${years}`}</span></p>
+  </div>
+</section>
+
+<style>
+  .vs { position: relative; }
+  .stage { position: sticky; top: 0; height: 100vh; overflow: hidden; }
+  .world { position: absolute; inset: 0; transform-origin: 50% 50%; background: var(--bg); }
+  .world > * { position: absolute; }
+  .hud { left: var(--m); top: calc(var(--head) + 14px); z-index: 9; }
+  .hud.r { left: auto; right: var(--m); }
+  /* pochette et disque */
+  .sleeve { left: 50%; top: 50%; width: min(50vh, 40vw); aspect-ratio: 1; margin: calc(min(50vh, 40vw) / -2) 0 0 calc(min(50vh, 40vw) / -2); z-index: 3; box-shadow: 0 30px 60px rgba(0, 0, 0, .16); will-change: transform; }
+  .sleeve img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .disc { left: 50%; top: 50%; width: min(48vh, 38vw); aspect-ratio: 1; margin: calc(min(48vh, 38vw) / -2) 0 0 calc(min(48vh, 38vw) / -2); border-radius: 50%; z-index: 2; will-change: transform;
+    background: repeating-radial-gradient(circle at 50% 50%, #121212 0 1.5px, #1d1d1d 1.5px 3px); box-shadow: 0 20px 50px rgba(0, 0, 0, .25); }
+  .disc .lbl { position: absolute; inset: 31%; border-radius: 50%; background-size: cover; background-position: center; }
+  .disc .hole { position: absolute; inset: 48.6%; border-radius: 50%; background: var(--bg); }
+  .disc .shine { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 20deg, transparent 0 8%, rgba(255, 255, 255, .09) 12%, transparent 18% 50%, rgba(255, 255, 255, .07) 62%, transparent 68%); }
+  /* colonnes de texte, mot à mot */
+  .col { width: min(30vw, 440px); z-index: 6; opacity: 0; }
+  .col.l { left: var(--m); top: 50%; translate: 0 -50%; }
+  .col.tr { right: var(--m); top: calc(var(--head) + 70px); }
+  .col.c { left: 50%; top: 50%; translate: -50% -50%; width: min(56vw, 760px); mix-blend-mode: difference; color: #f3f3f3; }
+  .col.c .par { color: inherit; }
+  .col.b { left: 50%; bottom: 7vh; translate: -50% 0; width: min(56vw, 760px); text-align: center; }
+  .col .k { margin-bottom: 14px; }
+  .col .v { font-weight: 500; font-size: clamp(17px, 1.5vw, 24px); line-height: 1.24; letter-spacing: -0.015em; }
+  .col.c .v { font-size: clamp(22px, 2.6vw, 40px); }
+  .w { opacity: .12; } .w.on { opacity: 1; }
+  /* anneau */
+  .ring { left: 50%; top: 50%; width: min(96vh, 80vw); height: min(96vh, 80vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
+  .ring .tk line { stroke: var(--fg); stroke-width: 1.5; }
+  .ring .rt { font-size: 23px; font-weight: 500; fill: var(--fg); letter-spacing: .01em; }
+  .ring .tl { font-size: 22px; fill: var(--mu); }
+  .ring .nd { stroke: var(--fg); stroke-width: 1.5; }
+  /* boule et texte */
+  .lens { left: 50%; top: 50%; translate: -50% -50%; width: min(78vw, 1180px); z-index: 4; opacity: 0; }
+  .lt { font-weight: 500; font-size: clamp(26px, 3.6vw, 60px); line-height: 1.08; letter-spacing: -0.03em; }
+  .lt :global(.ch) { display: inline-block; will-change: transform; opacity: .12; }
+  .lt :global(.ch.on) { opacity: 1; }
+  .ball { left: 0; top: 0; width: 14vmin; height: 14vmin; margin: -7vmin 0 0 -7vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
+  /* bandes */
+  .bands { left: 50%; top: 50%; translate: -50% -50%; width: min(70vw, 1000px); display: grid; gap: 1.6vh; z-index: 4; }
+  .band { position: relative; height: 11vh; border-radius: 6vh; background: #fff; border: 1px solid var(--ln); overflow: hidden; will-change: transform; transform: translateX(120vw); }
+  .bt { position: absolute; inset: 0; display: flex; align-items: center; gap: .5em; padding-inline: 5vh; font-weight: 500; font-size: clamp(24px, 4.6vh, 52px); letter-spacing: -0.03em; white-space: nowrap; clip-path: inset(0 100% 0 0); }
+  .bt em { font-style: normal; margin-right: .5em; }
+  .bd { position: absolute; top: 1.4vh; left: 0; width: 8vh; height: 8vh; border-radius: 50%; background: var(--fg); will-change: transform; }
+  /* pochettes qui se croisent */
+  .pass { inset: 0; z-index: 3; pointer-events: none; }
+  .pass figure { position: absolute; left: 0; top: 0; width: 26vmin; will-change: transform; opacity: 0; }
+  .pass figure.front { z-index: 6; }
+  .pass img { display: block; width: 100%; height: auto; box-shadow: 0 24px 50px rgba(0, 0, 0, .16); }
+  .keys { inset: 0; z-index: 5; pointer-events: none; }
+  .key { position: absolute; left: 50%; top: 50%; translate: -50% -50%; width: min(70vw, 1000px); text-align: center; opacity: 0; mix-blend-mode: difference; color: #f3f3f3; }
+  .kt { font-weight: 500; font-size: clamp(44px, 7.4vw, 124px); line-height: .95; letter-spacing: -0.05em; }
+  .kp { margin: 22px auto 0; max-width: 30em; font-size: clamp(16px, 1.3vw, 21px); line-height: 1.3; }
+  /* grille finale */
+  .grid { left: 50%; top: 44%; translate: -50% -50%; display: grid; grid-template-columns: repeat(6, 11.5vmin); gap: 1.2vmin; z-index: 4; }
+  .grid i { aspect-ratio: 1; background-size: cover; background-position: center; opacity: 0; will-change: transform; }
+  .cap { position: absolute; left: 50%; bottom: 12vh; translate: -50% 0; opacity: 0; white-space: nowrap; }
+  @media (max-width: 760px) {
+    .col, .col.c, .col.b { width: calc(100vw - 2 * var(--m)); }
+    .col.l { top: auto; bottom: 8vh; translate: none; }
+    .col.tr { top: auto; bottom: 6vh; right: var(--m); }
+    .bands { width: calc(100vw - 2 * var(--m)); } .band { height: 8vh; } .bd { width: 5.4vh; height: 5.4vh; top: 1.3vh; } .bt { font-size: 4vh; padding-inline: 3vh; }
+    .lens { width: calc(100vw - 2 * var(--m)); }
+    .grid { grid-template-columns: repeat(4, 19vw); gap: 2vw; }
+    .hud.r { display: none; }
+  }
+</style>
+
+<script>
+  import { initVinyl } from '../scripts/vinyl';
+  document.querySelectorAll<HTMLElement>('[data-vinyl]').forEach(initVinyl);
+</script>
