@@ -160,8 +160,10 @@ const im = (i: Img, cls = '') => vid(i.src)
   .tx p + p { margin-top: 16px; }
   .tx b { font-weight: 500; }
   .chp figure { margin: 0; align-self: center; }
-  .chp :global(img), .chp :global(video) { display: block; width: 100%; height: auto; max-height: 56vh; object-fit: contain; object-position: left center; box-shadow: 0 24px 50px rgba(0, 0, 0, .12); }
+  .chp :global(img), .chp :global(video) { display: block; width: 100%; height: auto; max-height: 34vh; width: auto; max-width: 100%; object-fit: contain; box-shadow: 0 24px 50px rgba(0, 0, 0, .12); }
   figcaption { margin-top: 10px; }
+  .n1 :global(img), .n1 :global(video), .v3 .f1 :global(img), .v1.n1 .f1 :global(img) { max-height: 62vh; }
+  .chp { padding-top: calc(var(--head) + 56px) !important; }
   .n0 .tx { grid-column: 3 / 11; font-size: 30px; line-height: 1.28; font-weight: 500; letter-spacing: -0.02em; }
   .v0 .tx { grid-column: 4 / 8; grid-row: 1 / 3; } .v0 .f1 { grid-column: 8 / 13; grid-row: 1; } .v0 .f2 { grid-column: 9 / 12; grid-row: 2; } .v0 .f3 { grid-column: 1 / 4; grid-row: 2; }
   .v1 .tx { grid-column: 8 / 12; grid-row: 1 / 3; } .v1 .f1 { grid-column: 1 / 7; grid-row: 1 / 3; } .v1 .f2 { grid-column: 12 / 13; display: none; } .v1.n2 .f1 { grid-column: 1 / 5; grid-row: 1; } .v1.n2 .f2 { display: block; grid-column: 4 / 8; grid-row: 2; } .v1 .f3 { display: none; }
