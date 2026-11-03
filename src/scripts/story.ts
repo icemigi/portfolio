@@ -1,7 +1,7 @@
 // Moteur des études de cas en « one scroll ». Chaque élément [data-fx] est piloté par sa position dans l'écran :
 // p = 0 quand il entre par le bas, 1 quand il sort par le haut. Les écrans [data-pin] sont épinglés (sticky) et
 // pilotés par l'avancement q (0 → 1) à l'intérieur de leur hauteur. Une seule boucle, seulement pendant le défilement.
-import { letters, reduced } from './motion';
+import { reduced } from './motion';
 
 const clamp = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const ease = (x: number) => 1 - Math.pow(1 - clamp(x), 3);
@@ -13,6 +13,25 @@ export function initStory(root: HTMLElement) {
   const fx = [...root.querySelectorAll<HTMLElement>('[data-fx]')].map((el) => ({ el, k: el.dataset.fx!, s: Number(el.dataset.speed || 0), i: Number(el.dataset.k || 0) }));
   const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
   const words = pins.filter((p) => p.dataset.pin === 'words').map((p) => [...p.querySelectorAll<HTMLElement>('.w')]);
+  // texte des scènes : chaque lettre devient un <span class="c">, écrite au rythme du défilement
+  const typed = still ? [] : [...root.querySelectorAll<HTMLElement>('[data-type]')].map((v) => {
+    const cs: HTMLElement[] = [];
+    const walk = (n: Node) => {
+      if (n.nodeType === 3) {
+        const frag = document.createDocumentFragment();
+        (n.textContent || '').split(/(\s+)/).forEach((part) => {
+          if (!part) return;
+          if (/^\s+$/.test(part)) { frag.append(part); return; }
+          const wd = document.createElement('span'); wd.className = 'wd';
+          for (const ch of part) { const c = document.createElement('span'); c.className = 'c'; c.textContent = ch; wd.append(c); cs.push(c); }
+          frag.append(wd);
+        });
+        n.parentNode!.replaceChild(frag, n);
+      } else [...n.childNodes].forEach(walk);
+    };
+    walk(v);
+    return { scene: v.closest<HTMLElement>('[data-scene]')!, cs, n: 0 };
+  });
   let raf = 0;
 
   const apply = () => {
@@ -39,6 +58,19 @@ export function initStory(root: HTMLElement) {
       }
       f.el.style.transform = t;
     }
+    for (const ty of typed) {
+      const r = ty.scene.getBoundingClientRect();
+      // commence quand la scène monte au tiers bas de l'écran ; fini aux trois quarts de la scène (ou d'un écran)
+      const run = Math.max(H * 0.7, (r.height - H) * 0.75);
+      const q = clamp((H * 0.72 - r.top) / run);
+      const n = Math.round(q * ty.cs.length);
+      if (n === ty.n) continue;
+      const [a, b] = n > ty.n ? [ty.n, n] : [n, ty.n];
+      for (let i = a; i < b; i++) ty.cs[i].classList.toggle('on', n > ty.n);
+      ty.cs[ty.n - 1]?.classList.remove('cur');
+      if (n > 0 && n < ty.cs.length) ty.cs[n - 1].classList.add('cur');
+      ty.n = n;
+    }
     pins.forEach((pin) => {
       const r = pin.getBoundingClientRect();
       const q = clamp(-r.top / Math.max(1, r.height - H));
@@ -62,11 +94,6 @@ export function initStory(root: HTMLElement) {
   addEventListener('resize', kick);
   if (still) pins.forEach((p) => p.querySelectorAll('.w').forEach((w) => w.classList.add('on')));
   kick();
-
-  // les chapitres s'écrivent lettre par lettre à leur arrivée (comme partout sur le site), une fois
-  if (!still) root.classList.add('js-story'); // le texte des chapitres attend son tour (pas de texte qui clignote avant d'apparaître)
-  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { io.unobserve(e.target); e.target.classList.add('in'); letters(e.target, 60); } }), { threshold: 0.2 });
-  ((window as any).kkReady ?? Promise.resolve()).then(() => root.querySelectorAll('[data-reveal] .v').forEach((el) => io.observe(el)));
 
   // fin de page : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant
   const ring = root.querySelector<HTMLAnchorElement>('[data-next]');
