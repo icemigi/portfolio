@@ -14,10 +14,11 @@ export function initVinyl(root: HTMLElement) {
   const stage = $('.stage'), world = $('[data-world]');
   const sleeve = $('[data-sleeve]'), disc = $('[data-disc]'), ring = $<SVGSVGElement>('[data-ring]'), needle = $<SVGLineElement>('[data-needle]');
   const lens = $('[data-lens]'), lt = $('[data-lt]'), ball = $('[data-ball]');
-  const bands = $$('[data-band]').map((b) => ({ b, t: b.querySelector<HTMLElement>('[data-bt]')!, d: b.querySelector<HTMLElement>('[data-bd]')! }));
+  const bands = $$('[data-band]').map((b) => ({ b, t: b.querySelector<HTMLElement>('[data-bt]')!, d: b.querySelector<HTMLElement>('[data-bd]')!, l: b.querySelector<HTMLElement>('[data-rule]')! }));
   const pass = $$('[data-pass] figure'), keys = $$('[data-key]'), tiles = $$('[data-grid] i');
   const cols = $$('[data-t]').map((el) => ({ el, ws: [...el.querySelectorAll<HTMLElement>('.w')], n: -1 }));
-  const hudL = $('[data-hudl]'), hudN = $('[data-hudn]'), cap = $('[data-cap]');
+  const hudL = $('[data-hudl]'), hudN = $('[data-hudn]');
+  const col = (t: number) => cols.find((c) => c.el.dataset.t === String(t));
   const hud: string[] = JSON.parse(root.dataset.hud || '[]');
   const still = reduced();
 
@@ -39,6 +40,8 @@ export function initVinyl(root: HTMLElement) {
   const scatter = tiles.map((_, i) => ({ x: (rnd(i) - 0.5) * 120, y: (rnd(i + 50) - 0.5) * 110, r: (rnd(i + 99) - 0.5) * 40 }));
 
   let lensBox = { l: 0, t: 0, w: 0, h: 0 };
+  // lignes du texte (la boule les lit dans l'ordre, de gauche à droite)
+  let lines: { y: number; x0: number; x1: number; a: number; b: number; s: number }[] = [], total = 1;
   const measure = () => {
     chars.forEach((c) => (c.el.style.transform = ''));
     const sr = stage.getBoundingClientRect();
@@ -46,6 +49,14 @@ export function initVinyl(root: HTMLElement) {
     const lr = lt.getBoundingClientRect();
     lensBox = { l: lr.left - sr.left, t: lr.top - sr.top, w: lr.width, h: lr.height };
     chars.forEach((c) => { const r = c.el.getBoundingClientRect(); c.x = r.left - sr.left + r.width / 2; c.y = r.top - sr.top + r.height / 2; c.d = false; });
+    lines = []; total = 0;
+    chars.forEach((c, i) => {
+      const L = lines[lines.length - 1];
+      if (!L || Math.abs(c.y - L.y) > 4) lines.push({ y: c.y, x0: c.x, x1: c.x, a: i, b: i, s: 0 });
+      else { L.x1 = c.x; L.b = i; }
+    });
+    lines.forEach((L) => { L.s = total; total += L.x1 - L.x0 + 40; });
+    total = Math.max(1, total);
     world.style.transform = prev;
   };
 
@@ -79,7 +90,8 @@ export function initVinyl(root: HTMLElement) {
     const dx = lerp(9 * VW + S * 0.62 * outD, 0, big);
     disc.style.transform = `translate3d(${dx.toFixed(1)}px, ${((1 - out(seg(P, 0, 0.03))) * 40 * VH).toFixed(1)}px, 0) scale(${dScale.toFixed(4)}) rotate(${rot.toFixed(1)}deg)`;
     disc.style.opacity = P > 0.32 ? '0' : '1';
-    cols[0].el.style.opacity = fade(P, 0.01, 0.035, 0.12, 0.14).toFixed(3); words(cols[0], seg(P, 0.025, 0.12));
+    const c0 = col(0)!; c0.el.style.opacity = fade(P, 0.01, 0.035, 0.12, 0.14).toFixed(3); words(c0, seg(P, 0.025, 0.12));
+    const c1 = col(1); if (c1) { c1.el.style.opacity = fade(P, 0.2, 0.22, 0.28, 0.3).toFixed(3); words(c1, seg(P, 0.205, 0.28)); }
 
     // 2. anneau : l'aiguille fait le tour, le texte s'écrit derrière elle
     const ro = fade(P, 0.17, 0.2, 0.28, 0.3);
@@ -96,38 +108,42 @@ export function initVinyl(root: HTMLElement) {
     lens.style.opacity = lo.toFixed(3);
     const bo = P >= 0.31 && P < 0.47 ? 1 - seg(P, 0.455, 0.47) : 0;
     ball.style.opacity = String(bo);
-    let bx = -999, by = -999;
-    if (bo > 0 || chars.some((c) => c.d)) {
+    if (bo > 0 || chars.some((c) => c.d) || (P > 0.3 && P < 0.47)) {
       const cx = stage.offsetWidth / 2, cy = stage.offsetHeight / 2;
-      const sx = lensBox.l - 12 * VM, ex = lensBox.l + lensBox.w + 12 * VM;
-      const u = seg(P, 0.33, 0.45);
-      const tx = lerp(sx, ex, u), ty = lensBox.t + lensBox.h * (0.5 + 0.38 * Math.sin(u * Math.PI * 3.2));
-      const g = ease(seg(P, 0.31, 0.33));
-      bx = lerp(cx, tx, g); by = lerp(cy, ty, g);
+      // la boule suit les lignes une à une ; les lettres apparaissent une fois qu'elle les a dépassées
+      const u = seg(P, 0.335, 0.45), dist = u * total;
+      let li = lines.length - 1; for (let k = 0; k < lines.length; k++) if (dist < lines[k].s + lines[k].x1 - lines[k].x0 + 40) { li = k; break; }
+      const L = lines[li] ?? { y: cy, x0: cx, x1: cx, s: 0, a: 0, b: -1 };
+      const tx = Math.min(L.x1 + 20, L.x0 + Math.max(0, dist - L.s)), ty = L.y;
+      const g = ease(seg(P, 0.31, 0.335));
+      const bx = lerp(cx, P < 0.335 ? L.x0 - ballD : tx, g), by = lerp(cy, ty, g);
       ball.style.transform = `translate3d(${bx.toFixed(1)}px, ${by.toFixed(1)}px, 0)`;
-      const R = ballD * 1.35;
-      for (const c of chars) {
-        c.el.classList.toggle('on', u > 0 && c.x < tx);
+      const R = ballD * 1.5;
+      chars.forEach((c, i) => {
+        c.el.classList.toggle('on', u > 0 && (i < L.a || (i <= L.b && c.x < tx) || (u >= 1)));
         const ddx = c.x - bx, ddy = c.y - by, d = Math.hypot(ddx, ddy);
         if (bo > 0 && d < R) {
-          const k = Math.pow(1 - d / R, 1.6) * R * 0.62, nx = ddx / (d || 1), ny = ddy / (d || 1);
-          c.el.style.transform = `translate3d(${(nx * k).toFixed(1)}px, ${(ny * k).toFixed(1)}px, 0) rotate(${(nx * k * 0.25).toFixed(1)}deg)`;
+          const k = Math.pow(1 - d / R, 1.6) * R * 0.5, nx = ddx / (d || 1), ny = ddy / (d || 1);
+          c.el.style.transform = `translate3d(${(nx * k).toFixed(1)}px, ${(ny * k).toFixed(1)}px, 0) rotate(${(nx * k * 0.2).toFixed(1)}deg)`;
           c.d = true;
         } else if (c.d) { c.el.style.transform = ''; c.d = false; }
-      }
+      });
     }
 
     // 4. bandes découpées : un petit disque passe et dévoile les mots
-    bands.forEach(({ b, t, d }, i) => {
-      const s = i % 2 ? -1 : 1;
-      const x = s * 120 * VW * (1 - out(seg(P, 0.47 + i * 0.012, 0.505 + i * 0.012))) - s * 120 * VW * ease(seg(P, 0.6, 0.625));
-      b.style.transform = `translate3d(${x.toFixed(1)}px, 0, 0)`;
-      const bw = b.offsetWidth, dw = d.offsetWidth, u = ease(seg(P, 0.505 + i * 0.022, 0.555 + i * 0.022));
-      const px = lerp(-dw, bw, u);
-      d.style.transform = `translate3d(${px.toFixed(1)}px, 0, 0) rotate(${(u * 540).toFixed(0)}deg)`;
-      t.style.clipPath = `inset(0 ${(100 - clamp((px + dw / 2) / bw) * 100).toFixed(2)}% 0 0)`;
+    bands.forEach(({ b, t, d, l }, i) => {
+      const o = 1 - seg(P, 0.6 + i * 0.004, 0.62 + i * 0.004);
+      b.style.opacity = o.toFixed(3);
+      b.style.transform = o < 1 ? `translate3d(0, ${((1 - o) * -30).toFixed(1)}px, 0)` : '';
+      const draw = out(seg(P, 0.47 + i * 0.01, 0.5 + i * 0.01));
+      l.style.transform = `scaleX(${draw.toFixed(4)})`;
+      const bw = b.offsetWidth, dw = d.offsetWidth, u = ease(seg(P, 0.5 + i * 0.022, 0.55 + i * 0.022));
+      const px = lerp(0, bw - dw, u);
+      d.style.opacity = draw >= 1 && u < 1 ? '1' : '0';
+      d.style.transform = `translate3d(${px.toFixed(1)}px, 0, 0)`;
+      t.style.clipPath = `inset(-20% ${(100 - clamp((px + dw / 2) / bw) * 100).toFixed(2)}% -20% 0)`;
     });
-    cols[1].el.style.opacity = fade(P, 0.48, 0.5, 0.6, 0.62).toFixed(3); words(cols[1], seg(P, 0.49, 0.6));
+    const c3 = col(3)!; c3.el.style.opacity = fade(P, 0.48, 0.5, 0.6, 0.62).toFixed(3); words(c3, seg(P, 0.49, 0.6));
 
     // 5. les pochettes se croisent sous les choix clés
     pass.forEach((f, i) => {
@@ -148,7 +164,7 @@ export function initVinyl(root: HTMLElement) {
       k.style.opacity = o.toFixed(3);
       k.style.transform = `translate3d(0, ${((1 - o) * (P < a + 0.03 ? 30 : -30)).toFixed(1)}px, 0)`;
     });
-    cols[2].el.style.opacity = fade(P, 0.815, 0.83, 0.86, 0.875).toFixed(3); words(cols[2], seg(P, 0.82, 0.86));
+    const c5 = col(5)!; c5.el.style.opacity = fade(P, 0.815, 0.83, 0.86, 0.875).toFixed(3); words(c5, seg(P, 0.82, 0.86));
 
     // 6. grille de toutes les pochettes, puis la scène dézoome en vignette
     tiles.forEach((tl, i) => {
@@ -156,11 +172,7 @@ export function initVinyl(root: HTMLElement) {
       tl.style.opacity = u > 0 ? '1' : '0';
       tl.style.transform = u >= 1 ? '' : `translate3d(${((1 - u) * s.x).toFixed(2)}vw, ${((1 - u) * s.y).toFixed(2)}vh, 0) rotate(${((1 - u) * s.r).toFixed(1)}deg) scale(${(0.6 + 0.4 * u).toFixed(3)})`;
     });
-    cols[3].el.style.opacity = out(seg(P, 0.885, 0.905)).toFixed(3); words(cols[3], seg(P, 0.89, 0.94));
-    const z = ease(seg(P, 0.95, 1));
-    world.style.transform = z > 0 ? `scale(${(1 - 0.7 * z).toFixed(4)})` : '';
-    world.style.boxShadow = z > 0 ? `0 0 0 ${(1 / (1 - 0.7 * z)).toFixed(2)}px rgba(0,0,0,.18), 0 40px 90px rgba(0,0,0,${(0.12 * z).toFixed(3)})` : '';
-    cap.style.opacity = seg(P, 0.97, 1).toFixed(3);
+    const c6 = col(6)!; c6.el.style.opacity = out(seg(P, 0.885, 0.905)).toFixed(3); words(c6, seg(P, 0.89, 0.96));
   };
 
   const kick = () => { if (!raf) raf = requestAnimationFrame(draw); };

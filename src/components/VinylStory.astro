@@ -2,8 +2,8 @@
 // Prototype « une seule scène » pour Identités musicales (03/11) : une scène épinglée de 1100vh, où tout est fonction
 // de l'avancement du défilement (on remonte : tout se rembobine). Déroulé :
 // pochette → le vinyle en sort → il grossit, le texte s'écrit autour au passage de l'aiguille → il devient une boule
-// qui traverse le texte et écarte les lettres → bandes découpées qu'un petit disque dévoile → les pochettes se croisent
-// sous les choix clés → toutes les pochettes se rangent en grille → la scène entière dézoome en vignette.
+// qui lit le texte ligne à ligne en écartant les lettres → des filets se tracent, un petit disque roule dessus et
+// dévoile les mots → les pochettes se croisent sous les choix clés → toutes les pochettes se rangent en grille.
 // Moteur : scripts/vinyl.ts.
 import type { Img } from '../data/media';
 interface Props { lang: 'fr' | 'en'; title: string; sections: { h: string; paras: { t?: string; p: string }[] }[]; cover: Img; imgs: Img[]; years: string }
@@ -14,13 +14,16 @@ const txt = (i: number) => S[i]?.paras.map((p) => (p.t ? p.t + ' ' : '') + p.p).
 const bands = fr
   ? [['Logotype', 'Lettrage'], ['Cover', 'Dos', 'Tracklist'], ['Merch', 'Presse'], ['Réseaux', 'Billetterie', 'Scène']]
   : [['Logotype', 'Lettering'], ['Cover', 'Back', 'Tracklist'], ['Merch', 'Press'], ['Socials', 'Ticketing', 'Stage']];
-const ticks = fr ? ['(pochette)', '(dos)', '(merch)', '(billetterie)', '(presse)', '(scène)'] : ['(sleeve)', '(back)', '(merch)', '(ticketing)', '(press)', '(stage)'];
 const keys = S[4]?.paras ?? [];
+// anneau : seulement la première phrase du problème, répétée tout autour ; la suite s'allume à côté
+const p1 = txt(1); const cut = p1.indexOf('. ');
+const hook = cut > 0 ? p1.slice(0, cut + 1) : p1; const rest = cut > 0 ? p1.slice(cut + 2) : '';
+const ringTxt = `${hook} — ${hook} — `;
 const pass = imgs.slice(0, 10);
 const n = S.length;
 const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
 ---
-<section class="vs" data-vinyl style="height:1100vh" data-hud={JSON.stringify(hud)}>
+<section class="vs" data-vinyl style="height:1050vh" data-hud={JSON.stringify(hud)}>
   <div class="stage">
     <div class="world" data-world>
       <!-- HUD -->
@@ -35,20 +38,21 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <!-- 2. le texte s'écrit autour du disque, au passage de l'aiguille -->
       <svg class="ring" data-ring viewBox="-90 -90 1180 1180" aria-hidden="true">
         <defs><path id="vs-c" d="M500,500 m0,-446 a446,446 0 1,1 0,892 a446,446 0 1,1 0,-892" /></defs>
-        <g class="tk">{Array.from({ length: 120 }, (_, i) => <line x1="500" y1={i % 10 ? 18 : 6} x2="500" y2="34" transform={`rotate(${i * 3} 500 500)`} />)}</g>
-        <text class="rt"><textPath href="#vs-c" textLength="2780" lengthAdjust="spacing">{txt(1)}</textPath></text>
-        {ticks.map((l, i) => { const a = (i / ticks.length) * Math.PI * 2 - Math.PI / 2; return <text class="tl mono" x={500 + Math.cos(a) * 560} y={500 + Math.sin(a) * 560 + 8} text-anchor="middle">{l}</text>; })}
+        <g class="tk">{Array.from({ length: 60 }, (_, i) => <line x1="500" y1={i % 5 ? 22 : 10} x2="500" y2="34" transform={`rotate(${i * 6} 500 500)`} />)}</g>
+        <text class="rt"><textPath href="#vs-c" textLength="2780" lengthAdjust="spacing">{ringTxt}</textPath></text>
         <line class="nd" data-needle x1="500" y1="500" x2="500" y2="40" />
       </svg>
+
+      {rest && <div class="col l2" data-t="1"><p class="v">{W(rest).map((w) => <span class="w">{w} </span>)}</p></div>}
 
       <!-- 3. la boule traverse le texte et écarte les lettres -->
       <div class="lens" data-lens><p class="k mono par">{S[2]?.h.toLowerCase()}</p><p class="lt" data-lt>{txt(2)}</p></div>
       <i class="ball" data-ball></i>
 
-      <!-- 4. bandes découpées, un petit disque passe et dévoile les mots -->
+      <!-- 4. des filets se tracent, un petit disque roule dessus et dévoile les mots (entre parenthèses) -->
       <div class="bands" data-bands>
         {bands.map((b, i) => (
-          <div class="band" data-band={i}><p class="bt" data-bt>{b.map((x, k) => <span>{k > 0 && <em class="mu">—</em>}{x}</span>)}</p><i class="bd" data-bd></i></div>
+          <div class="band" data-band={i}><span class="bn mono mu">{String(i + 1).padStart(2, '0')}</span><p class="bt" data-bt>{b.map((x) => <span class="par">{x}</span>)}</p><i class="rule" data-rule></i><i class="bd" data-bd></i></div>
         ))}
       </div>
       <div class="col tr" data-t="3"><p class="k mono par">{S[3]?.h.toLowerCase()}</p><p class="v">{W(txt(3)).map((w) => <span class="w">{w} </span>)}</p></div>
@@ -62,7 +66,6 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
       <div class="grid" data-grid>{imgs.map((g) => <i style={`background-image:url(${g.src})`}></i>)}</div>
       <div class="col b" data-t="6"><p class="k mono par">{S[6]?.h.toLowerCase()}</p><p class="v">{W(txt(6)).map((w) => <span class="w">{w} </span>)}</p></div>
     </div>
-    <p class="cap mono" data-cap><span class="par">{title}</span> <span class="mu">{fr ? `plus de vingt identités, ${years}` : `over twenty identities, ${years}`}</span></p>
   </div>
 </section>
 
@@ -83,7 +86,9 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .disc .shine { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 20deg, transparent 0 8%, rgba(255, 255, 255, .09) 12%, transparent 18% 50%, rgba(255, 255, 255, .07) 62%, transparent 68%); }
   /* colonnes de texte, mot à mot */
   .col { width: min(30vw, 440px); z-index: 6; opacity: 0; }
-  .col.l { left: var(--m); top: 50%; translate: 0 -50%; }
+  .col.l, .col.l2 { left: var(--m); top: 50%; translate: 0 -50%; }
+  .col.l2 { width: min(22vw, 320px); }
+  .col.l2 .v { font-size: clamp(15px, 1.15vw, 18px); }
   .col.tr { right: var(--m); top: calc(var(--head) + 70px); }
   .col.c { left: 50%; top: 50%; translate: -50% -50%; width: min(56vw, 760px); mix-blend-mode: difference; color: #f3f3f3; }
   .col.c .par { color: inherit; }
@@ -94,22 +99,22 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   .w { opacity: .12; } .w.on { opacity: 1; }
   /* anneau */
   .ring { left: 50%; top: 50%; width: min(86vh, 76vw); height: min(86vh, 76vw); translate: -50% -50%; z-index: 4; opacity: 0; overflow: visible; }
-  .ring .tk line { stroke: var(--fg); stroke-width: 1.5; }
-  .ring .rt { font-size: 23px; font-weight: 500; fill: var(--fg); letter-spacing: .01em; }
-  .ring .tl { font-size: 22px; fill: var(--mu); }
+  .ring .tk line { stroke: var(--ln); stroke-width: 1.5; }
+  .ring .rt { font-size: 50px; font-weight: 500; fill: var(--fg); letter-spacing: -0.02em; }
   .ring .nd { stroke: var(--fg); stroke-width: 1.5; }
   /* boule et texte */
   .lens { left: 50%; top: 50%; translate: -50% -50%; width: min(78vw, 1180px); z-index: 4; opacity: 0; }
   .lt { font-weight: 500; font-size: clamp(26px, 3.6vw, 60px); line-height: 1.08; letter-spacing: -0.03em; }
-  .lt :global(.ch) { display: inline-block; will-change: transform; opacity: .12; }
+  .lt :global(.ch) { display: inline-block; will-change: transform; opacity: 0; transition: opacity .18s; }
   .lt :global(.ch.on) { opacity: 1; }
-  .ball { left: 0; top: 0; width: 14vmin; height: 14vmin; margin: -7vmin 0 0 -7vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
+  .ball { left: 0; top: 0; width: 9vmin; height: 9vmin; margin: -4.5vmin 0 0 -4.5vmin; border-radius: 50%; background: var(--fg); z-index: 5; opacity: 0; will-change: transform; }
   /* bandes */
-  .bands { left: var(--m); top: 50%; translate: 0 -50%; width: min(58vw, 880px); display: grid; gap: 1.6vh; z-index: 4; }
-  .band { position: relative; height: 11vh; border-radius: 6vh; background: #fff; border: 1px solid var(--ln); overflow: hidden; will-change: transform; transform: translateX(120vw); }
-  .bt { position: absolute; inset: 0; display: flex; align-items: center; gap: .5em; padding-inline: 5vh; font-weight: 500; font-size: clamp(24px, 4.6vh, 52px); letter-spacing: -0.03em; white-space: nowrap; clip-path: inset(0 100% 0 0); }
-  .bt em { font-style: normal; margin-right: .5em; }
-  .bd { position: absolute; top: 1.4vh; left: 0; width: 8vh; height: 8vh; border-radius: 50%; background: var(--fg); will-change: transform; }
+  .bands { left: var(--m); right: var(--m); top: 50%; translate: 0 -50%; display: grid; z-index: 4; }
+  .band { position: relative; height: 15vh; display: grid; grid-template-columns: 64px 1fr; align-items: end; padding-bottom: 2.2vh; will-change: transform, opacity; }
+  .bn { align-self: end; padding-bottom: .6em; }
+  .bt { display: flex; gap: .6em; font-weight: 500; font-size: clamp(36px, 7.4vh, 96px); line-height: 1; letter-spacing: -0.045em; white-space: nowrap; clip-path: inset(-20% 100% -20% 0); }
+  .rule { position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--fg); transform-origin: 0 0; transform: scaleX(0); }
+  .bd { position: absolute; left: 0; bottom: 0; width: 2.4vh; height: 2.4vh; margin-bottom: -1.2vh; border-radius: 50%; background: var(--fg); will-change: transform; }
   /* pochettes qui se croisent */
   .pass { inset: 0; z-index: 3; pointer-events: none; }
   .pass figure { position: absolute; left: 0; top: 0; width: 26vmin; will-change: transform; opacity: 0; }
@@ -122,12 +127,12 @@ const hud = S.map((s, i) => `(${String(i + 1).padStart(2, '0')}) ${s.h}`);
   /* grille finale */
   .grid { left: 50%; top: 44%; translate: -50% -50%; display: grid; grid-template-columns: repeat(6, 11.5vmin); gap: 1.2vmin; z-index: 4; }
   .grid i { aspect-ratio: 1; background-size: cover; background-position: center; opacity: 0; will-change: transform; }
-  .cap { position: absolute; left: 50%; bottom: 12vh; translate: -50% 0; opacity: 0; white-space: nowrap; }
   @media (max-width: 760px) {
     .col, .col.c, .col.b { width: calc(100vw - 2 * var(--m)); }
     .col.l { top: auto; bottom: 8vh; translate: none; }
     .col.tr { top: auto; bottom: 6vh; right: var(--m); }
-    .bands { width: calc(100vw - 2 * var(--m)); } .band { height: 8vh; } .bd { width: 5.4vh; height: 5.4vh; top: 1.3vh; } .bt { font-size: 4vh; padding-inline: 3vh; }
+    .band { height: 10vh; grid-template-columns: 32px 1fr; } .bt { font-size: 4.4vh; }
+    .col.l2 { display: none; }
     .lens { width: calc(100vw - 2 * var(--m)); }
     .grid { grid-template-columns: repeat(4, 19vw); gap: 2vw; }
     .hud.r { display: none; }
