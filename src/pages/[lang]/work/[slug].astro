@@ -1,8 +1,8 @@
 ---
 // Étude de cas en « one scroll » : la page défile librement et chaque bloc s'anime selon sa position dans l'écran.
-// Ouverture (titre devant l'image) → phrase qui s'allume mot à mot → fiche → scènes : le texte du chapitre,
-// épinglé d'un côté, s'écrit au rythme du défilement pendant que ses images arrivent de l'autre côté
-// (du bord, d'en bas, en pivotant), chacune avec sa fiche « → » → plein cadre et mot qui se resserre au milieu.
+// Ouverture (titre devant l'image) → phrase qui s'allume mot à mot → fiche → scènes : le texte de chaque chapitre,
+// centré et épinglé, s'allume mot à mot comme l'accroche, pendant que ses images passent en parallaxe sur les bords,
+// devant et derrière lui, chacune avec sa fiche « → » → mot qui se resserre au milieu.
 // Moteur : scripts/story.ts.
 // Fin : continuer à faire défiler remplit l'anneau, puis ouvre le projet suivant (titre continu).
 import Base from '../../../layouts/Base.astro';
@@ -31,14 +31,26 @@ const chapters: Ch[] = [
   ...(c.blocks?.length ? [{ h: fr ? 'En bref' : 'In short', paras: c.blocks.map((b) => ({ t: b.k, p: b.v })) }] : []),
   ...c.sections,
 ];
-// toutes les images vont dans les scènes : texte d'un côté, images de l'autre (côté alterné à chaque chapitre).
-// Une image, la plus large, est gardée pour le plein cadre du milieu.
+// toutes les images vont dans les scènes : elles passent en parallaxe devant et derrière le texte, sur les bords
 const flat = gals.flat();
-const wideAt = flat.reduce((best, g, i) => (g.w / g.h > flat[best].w / flat[best].h ? i : best), 0);
-const wide = flat.length > 2 ? flat.splice(wideAt, 1)[0] : undefined;
 const C = chapters.length, n = flat.length; // répartition régulière : 8 images sur 7 chapitres → 1,1,1,1,1,1,2
 const scenes = chapters.map((ch, i) => ({ ...ch, imgs: flat.slice(Math.round((i * n) / C), Math.round(((i + 1) * n) / C)) }));
-const FX = ['out', 'rise', 'tilt'] as const; // arrivée des images : du bord extérieur, d'en bas, en pivotant
+// placement des images d'une scène : bords gauche / droit en alternance, une sur deux devant le texte (plus rapide),
+// l'autre derrière (plus lente) ; jamais en pleine largeur
+const place = (i: number, k: number, m: number, g: Img) => {
+  const left = (i + k) % 2 === 0;
+  const front = k % 2 === 1;
+  const w = (g.h > g.w * 1.15 ? 15 : 22) * (front ? 0.85 : 1);
+  const x = left ? 3 + ((i * 7 + k * 5) % 6) : 100 - w - 3 - ((i * 5 + k * 7) % 6);
+  const y = 14 + ((k + 0.5) / m) * 62;
+  return { style: `--x:${x}vw;--y:${y.toFixed(1)}%;--w:${w}vw`, front, speed: front ? -0.45 : 0.25 };
+};
+// longueur d'une scène : assez pour allumer tous les mots, et pour laisser passer ses images
+const run = (sc: { paras: { t?: string; p: string }[]; imgs: Img[] }) => {
+  const nw = sc.paras.reduce((a, p) => a + ((p.t ?? '') + ' ' + p.p).split(/\s+/).length, 0);
+  return Math.round(Math.max(110, Math.min(240, nw * 1.3), sc.imgs.length * 70));
+};
+const wordsOf = (str: string) => str.split(' ').filter(Boolean);
 const mid = Math.floor(scenes.length / 2);
 // le mot qui se resserre au centre : le premier « choix clé », sinon le sous-titre du projet
 const key = c.sections.flatMap((s) => s.paras).find((x) => x.t)?.t?.replace(/[.:]$/, '') || c.short;
@@ -93,31 +105,25 @@ const im = (i: Img, cls = '') => vid(i.src)
     </section>
 
     {scenes.map((sc, i) => {
-      const side = i % 2 ? 'r' : 'l'; // côté du texte
-      const fx = FX[i % FX.length];
       return (
         <Fragment>
-          <section class={`scene g t-${side} ${sc.imgs.length ? 'has' : 'solo'}`} data-scene>
-            <div class="txt">
-              <p class="k mono par">({pad(i + 1)} — {sc.h.toLowerCase()})</p>
-              <div class="v" data-type>{sc.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
-            </div>
-            {sc.imgs.length > 0 && (
-              <div class="pics">
-                {sc.imgs.map((g, k) => (
-                  <figure data-fx={fx === 'out' ? (side === 'l' ? 'right' : 'left') : fx} data-k={k} class={g.h > g.w * 1.15 ? 'tall' : ''}>
-                    <Fragment set:html={im(g)} />
-                    {cap(g) && <figcaption class="mono">→ {cap(g)}</figcaption>}
-                  </figure>
-                ))}
+          <section class="pin scene" data-pin="words" style={`height:calc(100vh + ${run(sc)}vh)`}>
+            <div class="stick g">
+              <div class="txt">
+                <p class="k mono par">({pad(i + 1)} — {sc.h.toLowerCase()})</p>
+                <div class="v">{sc.paras.map((p) => <p>{p.t && <b>{wordsOf(p.t).map((w) => <span class="w">{w} </span>)}</b>}{wordsOf(p.p).map((w) => <span class="w">{w} </span>)}</p>)}</div>
               </div>
-            )}
+            </div>
+            {sc.imgs.map((g, k) => {
+              const pl = place(i, k, sc.imgs.length, g);
+              return (
+                <figure class={`fl ${pl.front ? 'front' : 'back'}`} style={pl.style} data-fx="par" data-speed={pl.speed}>
+                  <Fragment set:html={im(g)} />
+                  {cap(g) && <figcaption class="mono">→ {cap(g)}</figcaption>}
+                </figure>
+              );
+            })}
           </section>
-          {i === mid && wide && (
-            <section class="full-img" aria-hidden="false">
-              <figure data-fx="zoom"><Fragment set:html={im(wide, 'fi')} />{cap(wide) && <figcaption class="mono">→ {cap(wide)}</figcaption>}</figure>
-            </section>
-          )}
           {i === mid && (
             <section class="pin close-pin" data-pin="close"><div class="stick"><p class="close">{key}</p></div></section>
           )}
@@ -180,41 +186,31 @@ const im = (i: Img, cls = '') => vid(i.src)
   .fiche-s { padding-block: 4vh 6vh; }
   .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
   .fiche dd { margin-top: 4px; }
-  /* scènes : le texte (épinglé) s'écrit au défilement d'un côté, les images arrivent de l'autre */
-  .scene { position: relative; padding-block: 14vh; row-gap: 32px; align-items: start; overflow-x: clip; }
-  .txt { position: sticky; top: calc(var(--head) + 7vh); }
-  .t-l .txt { grid-column: 1 / 6; } .t-l .pics { grid-column: 7 / 13; }
-  .t-r .txt { grid-column: 8 / 13; grid-row: 1; } .t-r .pics { grid-column: 1 / 7; grid-row: 1; }
-  .solo .txt { position: static; grid-column: 3 / 11; }
-  .txt .k { margin-bottom: 20px; }
-  .txt .v { font-size: 20px; line-height: 1.42; letter-spacing: -0.01em; }
-  .solo .txt .v { font-size: 24px; }
-  .txt .v p + p { margin-top: 18px; }
-  .txt b { font-weight: 500; }
-  /* écriture pilotée par le défilement : les lettres pas encore écrites gardent leur place */
-  .v :global(.c) { opacity: 0; }
-  .v :global(.c.on) { opacity: 1; }
-  .v :global(.c.cur) { position: relative; }
-  .v :global(.c.cur)::after { content: ''; position: absolute; left: 100%; top: .12em; bottom: .08em; width: .5em; background: currentColor; }
-  .v :global(.wd) { white-space: nowrap; }
-  .pics { display: flex; flex-direction: column; gap: 12vh; padding-block: 6vh 10vh; }
-  .pics figure { will-change: transform; }
-  .pics figure.tall { width: 72%; } .t-l .pics figure.tall:nth-child(even), .t-r .pics figure.tall:nth-child(odd) { align-self: flex-end; }
-  .pics :global(img), .pics :global(video), .full-img :global(img) { display: block; width: 100%; height: auto; box-shadow: 0 24px 50px rgba(0, 0, 0, .12); }
-  .pics :global(img), .pics :global(video) { max-height: 86vh; object-fit: contain; }
-  figcaption { margin-top: 12px; color: var(--mu); }
-  .full-img { height: 100vh; overflow: clip; }
-  .full-img figure { height: 100%; }
-  .full-img :global(.fi) { height: 100%; object-fit: cover; box-shadow: none; }
-  .full-img figcaption { position: absolute; left: var(--m); bottom: 20px; color: #f3f3f3; mix-blend-mode: difference; }
+  /* scènes : le texte, centré et épinglé, s'allume mot à mot ; les images passent en parallaxe
+     devant (plus vite) et derrière (plus lentement), sur les bords, jamais en pleine largeur */
+  .scene { overflow-x: clip; }
+  .scene .stick { z-index: 2; pointer-events: none; }
+  .txt { grid-column: 3 / 11; }
+  .txt .k { margin-bottom: 22px; }
+  .txt .v { font-weight: 500; font-size: clamp(20px, 1.85vw, 30px); line-height: 1.22; letter-spacing: -0.02em; }
+  .txt .v p + p { margin-top: .7em; }
+  .txt .v b { font-weight: 500; }
+  .txt .v b .w.on { color: var(--mu); }
+  .v .w { opacity: .12; transition: opacity .25s; }
+  .v .w.on { opacity: 1; }
+  .fl { position: absolute; left: var(--x); top: var(--y); width: var(--w); z-index: 1; will-change: transform; }
+  .fl.front { z-index: 3; }
+  .fl :global(img), .fl :global(video) { display: block; width: 100%; height: auto; box-shadow: 0 24px 50px rgba(0, 0, 0, .14); }
+  .fl.back :global(img), .fl.back :global(video) { box-shadow: 0 12px 30px rgba(0, 0, 0, .08); }
+  figcaption { margin-top: 10px; color: var(--mu); }
   /* le mot qui se resserre au centre, puis s'efface */
   .close-pin { height: 190vh; }
   .close-pin .stick { place-items: center; text-align: center; overflow: hidden; }
   .close { font-weight: 500; font-size: clamp(48px, 9vw, 150px); line-height: 1; letter-spacing: -0.04em; white-space: nowrap; will-change: transform, letter-spacing, opacity; }
   /* générateur */
   .gen { row-gap: 16px; padding-block: 12vh; }
-  .gen .k { grid-column: 1 / -1; }
-  .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
+  .gen .k { grid-column: 2 / 12; }
+  .gen iframe { grid-column: 2 / 12; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
   /* fin */
   .nx { min-height: 100vh; align-items: center; row-gap: 32px; padding-block: 20vh 30vh; }
   .nx .k { grid-column: 1 / 4; align-self: start; padding-top: 22px; }
@@ -230,8 +226,9 @@ const im = (i: Img, cls = '') => vid(i.src)
     .hero { height: 120vh; } .hero-img { width: 86vw; top: 16vh; } .hero-txt { top: 52vh; }
     .lead { grid-column: 1 / -1; } .lead-pin { height: 180vh; }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-    .scene { padding-block: 10vh; } .scene .txt, .scene .pics { grid-column: 1 / -1 !important; grid-row: auto !important; position: static; } .txt .v, .solo .txt .v { font-size: 18px; }
-    .pics { gap: 6vh; padding-block: 2vh 0; } .pics figure.tall { width: 100%; }
+    .txt { grid-column: 1 / -1; } .txt .v { font-size: 17px; }
+    .fl { --w: 34vw !important; } .fl.front { --w: 28vw !important; }
+    .gen .k, .gen iframe { grid-column: 1 / -1; }
     .close-pin { height: 200vh; }
     .nx .k, .nx .tt { grid-column: 1 / -1; } .next-title { font-size: 9.6vw; line-height: 1.04; }
     .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }

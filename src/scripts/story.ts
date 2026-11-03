@@ -12,26 +12,8 @@ export function initStory(root: HTMLElement) {
   const header = document.querySelector<HTMLElement>('.site-header');
   const fx = [...root.querySelectorAll<HTMLElement>('[data-fx]')].map((el) => ({ el, k: el.dataset.fx!, s: Number(el.dataset.speed || 0), i: Number(el.dataset.k || 0) }));
   const pins = [...root.querySelectorAll<HTMLElement>('[data-pin]')];
-  const words = pins.filter((p) => p.dataset.pin === 'words').map((p) => [...p.querySelectorAll<HTMLElement>('.w')]);
-  // texte des scènes : chaque lettre devient un <span class="c">, écrite au rythme du défilement
-  const typed = still ? [] : [...root.querySelectorAll<HTMLElement>('[data-type]')].map((v) => {
-    const cs: HTMLElement[] = [];
-    const walk = (n: Node) => {
-      if (n.nodeType === 3) {
-        const frag = document.createDocumentFragment();
-        (n.textContent || '').split(/(\s+)/).forEach((part) => {
-          if (!part) return;
-          if (/^\s+$/.test(part)) { frag.append(part); return; }
-          const wd = document.createElement('span'); wd.className = 'wd';
-          for (const ch of part) { const c = document.createElement('span'); c.className = 'c'; c.textContent = ch; wd.append(c); cs.push(c); }
-          frag.append(wd);
-        });
-        n.parentNode!.replaceChild(frag, n);
-      } else [...n.childNodes].forEach(walk);
-    };
-    walk(v);
-    return { scene: v.closest<HTMLElement>('[data-scene]')!, cs, n: 0 };
-  });
+  const wordPins = pins.filter((p) => p.dataset.pin === 'words');
+  const words = wordPins.map((p) => [...p.querySelectorAll<HTMLElement>('.w')]);
   let raf = 0;
 
   const apply = () => {
@@ -58,24 +40,12 @@ export function initStory(root: HTMLElement) {
       }
       f.el.style.transform = t;
     }
-    for (const ty of typed) {
-      const r = ty.scene.getBoundingClientRect();
-      // commence quand la scène monte au tiers bas de l'écran ; fini aux trois quarts de la scène (ou d'un écran)
-      const run = Math.max(H * 0.7, (r.height - H) * 0.75);
-      const q = clamp((H * 0.72 - r.top) / run);
-      const n = Math.round(q * ty.cs.length);
-      if (n === ty.n) continue;
-      const [a, b] = n > ty.n ? [ty.n, n] : [n, ty.n];
-      for (let i = a; i < b; i++) ty.cs[i].classList.toggle('on', n > ty.n);
-      ty.cs[ty.n - 1]?.classList.remove('cur');
-      if (n > 0 && n < ty.cs.length) ty.cs[n - 1].classList.add('cur');
-      ty.n = n;
-    }
     pins.forEach((pin) => {
       const r = pin.getBoundingClientRect();
       const q = clamp(-r.top / Math.max(1, r.height - H));
       if (pin.dataset.pin === 'words') {
-        const ws = words[pins.filter((x) => x.dataset.pin === 'words').indexOf(pin)];
+        if (r.bottom < 0 || r.top > H) return;
+        const ws = words[wordPins.indexOf(pin)];
         const n = Math.round(q * 1.25 * ws.length);
         ws.forEach((w, i) => w.classList.toggle('on', i < n));
       } else if (pin.dataset.pin === 'close') {
