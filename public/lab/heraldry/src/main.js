@@ -44,7 +44,7 @@ class HeraldicApp {
     this.currentSeedString = "";
     this.rng = Math.random;
 
-    this.isLightMode = false;
+    this.isLightMode = true; // fond blanc par défaut, comme les pages du livre
     this.showPartitions = true;
 
     this.ecuCache = {};
@@ -488,6 +488,7 @@ class HeraldicApp {
     defs.appendChild(clipPath);
 
     // Seul le fond de canvas bascule entre Noir et Blanc
+    document.body.classList.toggle("light-mode", this.isLightMode);
     const canvasBgColor = this.isLightMode ? this.COLOR_WHITE : this.COLOR_BLACK;
 
     Object.keys(this.meubleCache).forEach(name => {
