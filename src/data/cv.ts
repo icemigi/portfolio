@@ -27,7 +27,7 @@ export const cv: Record<Lang, Cv> = {
       { id: 'profil', cmd: ['profil', 'profile', 'whoami'], title: 'profil',
         intro: 'Designer graphique et typographe, avec un bagage de code. Je pars toujours de la lettre, et je passe au code quand la main ne suffit plus (rarement l’inverse). Fil rouge : les systèmes et les grilles, qu’ils soient typographiques, génératifs ou éditoriaux.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'expériences', entries: [
-        { when: '2020 — 2026', what: 'Designer indépendant — Mechka® Studio', where: 'Paris, Bordeaux & remote · 5 à 9 clients par an · réouverture sous (ChâteauStudio)®', items: [
+        { when: '2020 — 2026', what: 'Designer indépendant', where: 'Paris, Bordeaux & remote · 5 à 9 clients par an · réouverture sous (ChâteauStudio)™', items: [
           'Identités musicales, seul de bout en bout, pour des artistes de rap underground, d’électro et d’hyperpop : logotypes et lettrages toujours dessinés à la main, pochettes CD et vinyle (relief et découpe réellement produits), univers de tournée, merchandising, fichiers d’exécution print (sérigraphie, héliogravure).',
           'Méthode : le projet écouté en boucle, brief et références, puis deux pistes radicalement différentes ; l’objet physique est pensé en premier.',
           'Visuels live ponctuels : boucles et contenus temps réel sous TouchDesigner, dont des prestations d’artistes à la Gaîté Lyrique.',
@@ -116,7 +116,7 @@ export const cv: Record<Lang, Cv> = {
       { id: 'profil', cmd: ['profile', 'profil', 'whoami'], title: 'profile',
         intro: 'Graphic designer and typographer with a coding background. I always start from the letter, and switch to code when the hand isn’t enough (rarely the other way round). Common thread: systems and grids, whether typographic, generative or editorial.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'experience', entries: [
-        { when: '2020 — 2026', what: 'Independent designer — Mechka® Studio', where: 'Paris, Bordeaux & remote · 5 to 9 clients a year · reopening as (ChâteauStudio)®', items: [
+        { when: '2020 — 2026', what: 'Independent designer', where: 'Paris, Bordeaux & remote · 5 to 9 clients a year · reopening as (ChâteauStudio)™', items: [
           'Music identities, solo from start to finish, for underground rap, electronic and hyperpop artists: logotypes and lettering always hand-drawn, CD and vinyl sleeves (embossing and die-cuts actually produced), tour universes, merchandise, print production files (screen printing, photogravure).',
           'Method: the record on repeat, brief and references, then two radically different directions; the physical object comes first.',
           'Occasional live visuals: loops and real-time content in TouchDesigner, including artists’ shows at La Gaîté Lyrique.',

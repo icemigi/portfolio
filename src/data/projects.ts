@@ -1,4 +1,4 @@
-// Études de cas, dans l'ordre choisi le 02/11 : Heraldry, ASAPHR, (ChâteauStudio)®, Identités musicales, BMS, HOTSHOT, Sports Aventure. Même gabarit pour toutes :
+// Études de cas, dans l'ordre choisi le 02/11 : Heraldry, ASAPHR, (ChâteauStudio)™, Identités musicales, BMS, HOTSHOT, Sports Aventure. Même gabarit pour toutes :
 // en-tête (meta) · accroche (lead) · sections (Point de départ, Ce qui a été fait / Méthode, Choix clés, Résultat, Statut).
 // `draft: true` affiche un badge « à valider » tant que le texte n'est pas validé.
 
@@ -128,7 +128,7 @@ const all: Project[] = [
     object: 'rook',
     draft: true,
     fr: {
-      title: '(ChâteauStudio)®',
+      title: '(ChâteauStudio)™',
       short: "Identité d'un studio",
       meta: {
         year: '2026',
@@ -160,7 +160,7 @@ const all: Project[] = [
       ],
     },
     en: {
-      title: '(ChâteauStudio)®',
+      title: '(ChâteauStudio)™',
       short: 'Studio identity',
       meta: {
         year: '2026',
