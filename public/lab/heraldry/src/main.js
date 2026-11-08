@@ -562,7 +562,7 @@ class HeraldicApp {
       const textEl = this.createSvgElement("text", {
         x: g.x, y: g.y,
         fill: this.COLOR_WHITE,
-        "font-family": "sans-serif",
+        "font-family": "Geist, sans-serif",
         "font-weight": "bold",
         "font-size": g.size || "130",
         "text-anchor": "middle",

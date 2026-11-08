@@ -1,3 +1,12 @@
+/* La police des devises : la même sur toutes les machines */
+@font-face {
+  font-family: "Geist";
+  src: url("/fonts/Geist-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
 /* Réinitialisation de base */
 * {
   box-sizing: border-box;
