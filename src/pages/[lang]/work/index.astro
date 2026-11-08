@@ -16,7 +16,7 @@ const t = ui[lang];
 // centre de l'objet en % de la scène, taille en % de la largeur, rotation, profondeur (parallaxe)
 const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [80, 28, 10, 8, 0.9], [27, 72, 14, -4, 0.7], [50, 66, 10, 4, 0.8], [70, 70, 12, -5, 0.45], [88, 60, 11, 6, 1]];
 ---
-<Base lang={lang} title={t.nav.work} description={projects.map((p) => p[lang].title).join(' · ')} path="work/" active="work">
+<Base lang={lang} title={t.nav.work} description={`${lang === 'fr' ? 'Études de cas de kerningkastle, type designer et créatif digital : identités, typographie, génératif, web' : 'Case studies by kerningkastle, type designer and digital creative: identities, type, generative, web'} — ${projects.map((p) => p[lang].title).join(' · ')}.`} path="work/" active="work">
   <div class="screens-host" data-screens>
     <section class="scr" data-still aria-labelledby="pj-t">
       <div class="page">

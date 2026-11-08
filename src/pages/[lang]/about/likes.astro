@@ -12,7 +12,7 @@ const t = ui[lang];
 const fr = lang === 'fr';
 const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, cm: l.cm, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
 ---
-<Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac.' : 'Things I love, in no particular order.'} path="about/likes/" active="about">
+<Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac : Le Seigneur des anneaux, One Piece, films d\'horreur, rando, escalade, course, pignon fixe, jeu vidéo, musique et code. À attraper, lancer, ouvrir.' : 'Things I love, in no particular order: The Lord of the Rings, One Piece, horror films, hiking, climbing, running, fixed gear, video games, music and code. Grab, throw, open.'} path="about/likes/" active="about">
   <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
   <div class="likes" data-likes data-own-wheel>
     <p class="ttl"><a class="bp hit" href={`/${lang}/about/`}>{fr ? 'retour' : 'back'}</a></p>

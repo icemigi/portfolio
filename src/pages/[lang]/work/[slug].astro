@@ -46,6 +46,10 @@ c.sections.forEach((s, i) => {
 if (!c.sections.length && !gals.length) push(gallery('pair'));
 while (gi < gals.length) push(gallery('full'));
 const tall = (i: Img) => i.h > i.w * 2;
+// textes alternatifs distincts : « titre — visuel 3 / 12 » (numéro dans l'ordre de la galerie)
+const allImgs = gals.flat();
+const imgTotal = allImgs.length;
+const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
 const workLd = {
@@ -57,7 +61,7 @@ const workLd = {
   creator: { '@id': `${home}#me` }, isPartOf: { '@id': `${home}#site` },
 };
 ---
-<Base lang={lang} title={c.title} description={c.lead} path={`work/${project.slug}/`} active="work">
+<Base lang={lang} title={c.title} description={c.lead.length < 110 ? `${c.lead} ${c.meta.role} · ${c.meta.tools}.` : c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(workLd)} />
     <script is:inline>
@@ -95,7 +99,7 @@ const workLd = {
     <section class="scr open" data-still aria-label={t.opening}>
       {M ? (vid(M.cover.src)
            ? <video class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} autoplay muted loop playsinline aria-label={c.title}></video>
-           : <img class="bleed cov" src={M.cover.src} srcset={ss(M.cover)} sizes="100vw" width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />)
+           : <img class="bleed cov" src={M.cover.src} srcset={ss(M.cover)} sizes="100vw" width={M.cover.w} height={M.cover.h} alt={`${c.title} — ${c.short}`} decoding="async" fetchpriority="high" />)
          : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
     </section>
 
@@ -119,7 +123,7 @@ const workLd = {
           <div data-enter class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
             {b.imgs.map((im) => vid(im.src)
               ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
-              : <img class="md" src={im.src} srcset={ss(im)} sizes="(max-width: 760px) 100vw, 50vw" width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
+              : <img class="md" src={im.src} srcset={ss(im)} sizes="(max-width: 760px) 100vw, 50vw" width={im.w} height={im.h} alt={`${c.title} — ${lang === 'fr' ? 'visuel' : 'visual'} ${imgNo(im)} / ${imgTotal}`} loading="lazy" decoding="async" />)}
           </div>
         </section>
       ) : b.kind === 'gen' ? (

@@ -13,7 +13,7 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i].year})` : ''); // catégorie (année)
 ---
-<Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? 'Direction artistique musicale, projets concepts, lettrages et logos.' : 'Music art direction, concept projects, lettering and logos.'} path="archive/" active="archive">
+<Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? `Archive de kerningkastle, 2020 à 2025 : ${pieces.length} pièces de direction artistique musicale (pochettes), projets concepts, lettrages et logos, en pile à feuilleter.` : `kerningkastle archive, 2020 to 2025: ${pieces.length} pieces of music art direction (covers), concept projects, lettering and logos, in a pile to flip through.`} path="archive/" active="archive">
   <div class="arc pile" data-arc data-own-wheel>
     <section class="band">
       <h1 class="ttl mono mu par">{t.archiveCount} {pad(pieces.length)}</h1>

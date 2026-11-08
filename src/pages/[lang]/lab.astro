@@ -30,7 +30,7 @@ const tiles = [
 ];
 const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tiles.slice(k * 4, k * 4 + 4));
 ---
-<Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab : expériences, générateurs et fontes, sur un faux bureau.' : 'The Lab: experiments, generators and typefaces, on a fake desktop.'} path="lab/" active="lab">
+<Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent, type modulaire), générateur héraldique, quiz et Letteroastd, sur un faux bureau.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters, modular type), heraldry generator, quiz and Letteroastd, on a fake desktop.'} path="lab/" active="lab">
   <div class="boot" data-boot aria-hidden="true"><img src="/logo-coin.webp" alt="" width="84" height="80" /><span class="pb"><i data-pb></i></span></div>
   <h1 class="sr">Lab</h1>
   <!-- téléphone : défilement par écrans, comme le reste du site (intro, pièces par quatre, pied de page) -->
