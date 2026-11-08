@@ -1,78 +1,216 @@
 ---
-// Silhouettes provisoires des 8 objets (à remplacer par les images 2D détourées, plans séparés).
-interface Props { kind: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'bottle' | 'compass' | 'feather' }
+// Objets de la page Projets (un par étude), dessinés en SVG : volumes en niveaux de gris, lumière venant d'en haut à gauche.
+// book : Algorithmic Heraldry (le livre de 500 pages) · rook : (ChâteauStudio)™ · vinyl : Identités musicales
+// rock : ASAPHR (écriture gravée) · backpack : kern.outdoor · stick : BMS E-Sport (jeux de combat) · compass : Sports Aventure
+// (controller, bottle et feather : anciens objets, gardés pour compatibilité)
+export type ObjectKind = 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack';
+interface Props { kind: ObjectKind }
 const { kind } = Astro.props;
-const id = `g-${kind}`;
+const u = (n: string) => `${kind}-${n}`; // identifiants uniques par objet (plusieurs objets par page)
+const f = (n: string) => `url(#${u(n)})`;
 ---
 <svg class="shape" viewBox="0 0 200 200" aria-hidden="true">
-  <defs>
-    <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#d4d4d4" /><stop offset="1" stop-color="#ababab" />
-    </linearGradient>
-  </defs>
   {kind === 'book' && (
     <g>
-      <rect x="40" y="22" width="122" height="156" rx="3" fill="#9d9d9d" />
-      <rect x="44" y="26" width="118" height="148" fill="#ececec" />
-      <rect x="34" y="18" width="124" height="158" rx="3" fill={`url(#${id})`} />
-      <rect x="34" y="18" width="12" height="158" fill="#a3a3a3" />
-      <rect x="66" y="58" width="64" height="2" fill="#8f8f8f" /><rect x="74" y="66" width="48" height="2" fill="#8f8f8f" />
+      <defs>
+        <linearGradient id={u('cv')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2e2e2" /><stop offset=".55" stop-color="#c4c4c4" /><stop offset="1" stop-color="#a9a9a9" /></linearGradient>
+        <linearGradient id={u('pg')} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f4f4f4" /><stop offset="1" stop-color="#d6d6d6" /></linearGradient>
+        <linearGradient id={u('sp')} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8e8e8e" /><stop offset=".5" stop-color="#b5b5b5" /><stop offset="1" stop-color="#9a9a9a" /></linearGradient>
+        <linearGradient id={u('em')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f2f2f2" /><stop offset="1" stop-color="#b0b0b0" /></linearGradient>
+      </defs>
+      {/* bloc de pages (épaisseur à droite et en bas) */}
+      <path d="M150 26 L166 34 L166 182 L150 176 Z" fill={f('pg')} />
+      <path d="M44 176 L150 176 L166 182 L60 182 Z" fill="#cfcfcf" />
+      <g stroke="#b9b9b9" stroke-width=".6">
+        <path d="M152 40 L164 46" /><path d="M152 60 L164 66" /><path d="M152 80 L164 86" /><path d="M152 100 L164 106" /><path d="M152 120 L164 126" /><path d="M152 140 L164 146" /><path d="M152 160 L164 166" />
+      </g>
+      {/* couverture et dos */}
+      <rect x="38" y="20" width="114" height="158" rx="4" fill={f('cv')} />
+      <rect x="38" y="20" width="16" height="158" rx="4" fill={f('sp')} />
+      <path d="M54 20 V178" stroke="#7f7f7f" stroke-width="1.2" opacity=".6" />
+      <path d="M57 20 V178" stroke="#fff" stroke-width="1" opacity=".45" />
+      {/* filet doré gaufré + écu */}
+      <rect x="66" y="32" width="76" height="134" rx="2" fill="none" stroke="#9c9c9c" stroke-width="1.2" />
+      <rect x="69" y="35" width="70" height="128" rx="1.5" fill="none" stroke="#fff" stroke-width=".6" opacity=".5" />
+      <path d="M86 64 h40 v30 c0 17 -10 28 -20 32 c-10 -4 -20 -15 -20 -32 z" fill={f('em')} stroke="#8a8a8a" stroke-width="1.5" />
+      <path d="M106 64 v62 M86 86 h40" stroke="#8a8a8a" stroke-width="1.5" />
+      <path d="M90 68 h12 v14 h-12 z M110 90 h12 v12 c0 6 -3 11 -8 14 l-4 -4 z" fill="#a2a2a2" />
+      <rect x="84" y="140" width="44" height="3" rx="1.5" fill="#9a9a9a" /><rect x="92" y="148" width="28" height="2" rx="1" fill="#a8a8a8" />
+      {/* reflet */}
+      <path d="M60 22 L100 22 L62 120 Z" fill="#fff" opacity=".14" />
     </g>
   )}
-  {kind === 'rock' && (
+  {kind === 'rook' && (
     <g>
-      <path d="M30 150 L44 74 L86 34 L140 40 L176 92 L168 156 L112 176 L56 172 Z" fill={`url(#${id})`} />
-      <path d="M44 74 L86 34 L96 88 L56 120 Z" fill="#fff" opacity=".18" />
-      <path d="M96 70 L96 140 M96 92 L124 74 M96 112 L124 130" stroke="#7d7d7d" stroke-width="5" stroke-linecap="round" fill="none" />
+      <defs>
+        <linearGradient id={u('b')} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#a6a6a6" /><stop offset=".28" stop-color="#ededed" /><stop offset=".55" stop-color="#c9c9c9" /><stop offset="1" stop-color="#8d8d8d" /></linearGradient>
+        <linearGradient id={u('t')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f3f3" /><stop offset="1" stop-color="#cfcfcf" /></linearGradient>
+      </defs>
+      <ellipse cx="100" cy="182" rx="56" ry="7" fill="#000" opacity=".08" />
+      {/* socle à moulures */}
+      <path d="M46 164 h108 v12 c0 4 -4 6 -8 6 h-92 c-4 0 -8 -2 -8 -6 z" fill={f('b')} />
+      <path d="M54 152 h92 l8 12 h-108 z" fill={f('b')} />
+      <rect x="58" y="146" width="84" height="7" rx="3.5" fill={f('b')} />
+      {/* fût légèrement galbé */}
+      <path d="M68 146 C 72 120 74 96 72 74 H128 C 126 96 128 120 132 146 Z" fill={f('b')} />
+      <rect x="64" y="66" width="72" height="9" rx="4" fill={f('b')} />
+      {/* créneaux */}
+      <path d="M60 30 h18 v14 h12 v-14 h20 v14 h12 v-14 h18 v36 h-80 z" fill={f('b')} />
+      <path d="M60 30 h18 v4 h-18 z M90 30 h20 v4 h-20 z M122 30 h18 v4 h-18 z" fill={f('t')} />
+      <path d="M78 44 h12 M110 44 h12" stroke="#7d7d7d" stroke-width="1" opacity=".5" />
+      {/* meurtrière */}
+      <path d="M97 92 h6 v26 h-6 z" fill="#8a8a8a" /><path d="M97 92 h2 v26 h-2 z" fill="#6f6f6f" />
+      <path d="M86 146 C 88 120 88 96 86 76" stroke="#fff" stroke-width="3" opacity=".35" fill="none" stroke-linecap="round" />
     </g>
   )}
   {kind === 'vinyl' && (
     <g>
-      <circle cx="100" cy="100" r="84" fill="#2b2b2b" />
-      <circle cx="100" cy="100" r="74" fill="none" stroke="#3a3a3a" stroke-width="1" />
-      <circle cx="100" cy="100" r="62" fill="none" stroke="#3a3a3a" stroke-width="1" />
-      <circle cx="100" cy="100" r="50" fill="none" stroke="#3a3a3a" stroke-width="1" />
-      <circle cx="100" cy="100" r="28" fill={`url(#${id})`} />
-      <circle cx="100" cy="100" r="3" fill="#2b2b2b" />
-      <path d="M40 60 A 70 70 0 0 1 90 32" stroke="#fff" stroke-opacity=".12" stroke-width="6" fill="none" />
+      <defs>
+        <linearGradient id={u('sl')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6e6e6" /><stop offset="1" stop-color="#bdbdbd" /></linearGradient>
+        <radialGradient id={u('d')} cx=".5" cy=".5" r=".5"><stop offset=".3" stop-color="#2a2a2a" /><stop offset=".97" stop-color="#1a1a1a" /><stop offset="1" stop-color="#3a3a3a" /></radialGradient>
+        <linearGradient id={u('lb')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0f0f0" /><stop offset="1" stop-color="#b4b4b4" /></linearGradient>
+        <linearGradient id={u('sh')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0" /><stop offset=".45" stop-color="#fff" stop-opacity=".22" /><stop offset=".55" stop-color="#fff" stop-opacity=".22" /><stop offset="1" stop-color="#fff" stop-opacity="0" /></linearGradient>
+      </defs>
+      <circle cx="128" cy="100" r="64" fill={f('d')} />
+      <g fill="none" stroke="#3b3b3b" stroke-width=".7">
+        <circle cx="128" cy="100" r="58" /><circle cx="128" cy="100" r="53" /><circle cx="128" cy="100" r="48" /><circle cx="128" cy="100" r="43" /><circle cx="128" cy="100" r="38" /><circle cx="128" cy="100" r="33" /><circle cx="128" cy="100" r="28" />
+      </g>
+      <circle cx="128" cy="100" r="62" fill={f('sh')} />
+      <circle cx="128" cy="100" r="21" fill={f('lb')} />
+      <circle cx="128" cy="100" r="21" fill="none" stroke="#8d8d8d" stroke-width=".8" />
+      <path d="M116 94 h24 M119 100 h18" stroke="#9a9a9a" stroke-width="1.6" stroke-linecap="round" />
+      <circle cx="128" cy="100" r="2.6" fill="#1a1a1a" />
+      {/* pochette par-dessus : le disque en sort par la droite */}
+      <rect x="6" y="44" width="112" height="112" rx="3" fill={f('sl')} />
+      <rect x="6" y="44" width="112" height="112" rx="3" fill="none" stroke="#9e9e9e" stroke-width="1" />
+      <path d="M118 52 V148" stroke="#fff" stroke-width="1" opacity=".5" />
+      <path d="M20 58 h50 M20 66 h32" stroke="#9a9a9a" stroke-width="3" stroke-linecap="round" />
     </g>
   )}
-  {kind === 'rook' && (
-    <g fill={`url(#${id})`}>
-      <path d="M62 28 h16 v14 h14 v-14 h16 v14 h14 v-14 h16 v34 l-12 10 v62 l14 14 v16 h-92 v-16 l14 -14 v-62 l-12 -10 z" />
-      <rect x="54" y="168" width="92" height="12" rx="2" fill="#a3a3a3" />
-    </g>
-  )}
-  {kind === 'controller' && (
+  {kind === 'rock' && (
     <g>
-      <path d="M52 66 h96 c22 0 36 18 40 44 l6 36 c3 20 -18 30 -32 14 l-20 -24 h-84 l-20 24 c-14 16 -35 6 -32 -14 l6 -36 c4 -26 18 -44 40 -44 z" fill={`url(#${id})`} />
-      <path d="M58 92 v24 M46 104 h24" stroke="#7d7d7d" stroke-width="7" stroke-linecap="round" />
-      <circle cx="140" cy="96" r="6" fill="#7d7d7d" /><circle cx="154" cy="110" r="6" fill="#7d7d7d" />
+      <defs>
+        <linearGradient id={u('a')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dcdcdc" /><stop offset="1" stop-color="#9f9f9f" /></linearGradient>
+        <linearGradient id={u('s')} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8a8a8a" /><stop offset="1" stop-color="#a8a8a8" /></linearGradient>
+      </defs>
+      <ellipse cx="102" cy="180" rx="66" ry="8" fill="#000" opacity=".08" />
+      {/* stèle taillée : face, flanc droit, dessus */}
+      <path d="M44 172 L40 50 C 42 36 60 26 96 24 C 130 24 150 34 152 48 L156 172 Z" fill={f('a')} />
+      <path d="M152 48 L168 58 L172 170 L156 172 Z" fill={f('s')} />
+      <path d="M96 24 C 130 24 150 34 152 48 L168 58 C 164 42 140 30 104 28 Z" fill="#cfcfcf" />
+      {/* écriture inventée, gravée (creux sombre + lèvre claire) */}
+      <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+        <g stroke="#6d6d6d" stroke-width="4.2">
+          <path d="M64 62 v22 M64 73 l12 -8 M64 73 l12 9" /><path d="M88 60 c10 0 10 24 0 24" /><path d="M106 62 l8 22 l8 -22" /><path d="M134 60 v24 M128 66 h12" />
+          <path d="M62 102 h14 M69 102 v22" /><path d="M88 102 c-6 10 6 12 0 22" /><path d="M104 104 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0 M112 112 v12" /><path d="M132 102 l10 10 l-10 10" />
+          <path d="M64 142 l10 18 l10 -18" /><path d="M96 142 v18 h12" /><path d="M120 146 h18 M120 156 h18 M129 140 v22" />
+        </g>
+        <g stroke="#ededed" stroke-width="1.2" opacity=".7" transform="translate(1.4 1.6)">
+          <path d="M64 62 v22 M64 73 l12 -8 M64 73 l12 9" /><path d="M88 60 c10 0 10 24 0 24" /><path d="M106 62 l8 22 l8 -22" /><path d="M134 60 v24 M128 66 h12" />
+          <path d="M62 102 h14 M69 102 v22" /><path d="M88 102 c-6 10 6 12 0 22" /><path d="M104 104 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0 M112 112 v12" /><path d="M132 102 l10 10 l-10 10" />
+          <path d="M64 142 l10 18 l10 -18" /><path d="M96 142 v18 h12" /><path d="M120 146 h18 M120 156 h18 M129 140 v22" />
+        </g>
+      </g>
+      {/* éclats et grain */}
+      <path d="M40 50 L48 60 L42 96 Z" fill="#fff" opacity=".18" />
+      <path d="M150 120 L156 112 L157 150 Z" fill="#000" opacity=".1" />
+      <g fill="#7d7d7d" opacity=".35"><circle cx="58" cy="132" r="1" /><circle cx="140" cy="92" r="1.2" /><circle cx="118" cy="168" r="1" /><circle cx="78" cy="40" r=".9" /><circle cx="146" cy="160" r="1" /></g>
     </g>
   )}
-  {kind === 'bottle' && (
+  {kind === 'backpack' && (
     <g>
-      <rect x="86" y="16" width="28" height="22" rx="3" fill="#9d9d9d" />
-      <path d="M90 38 h20 v22 c0 8 26 18 26 44 v70 c0 6 -4 10 -10 10 h-52 c-6 0 -10 -4 -10 -10 v-70 c0 -26 26 -36 26 -44 z" fill={`url(#${id})`} />
-      <rect x="70" y="108" width="60" height="50" fill="#8f8f8f" opacity=".55" />
-      <path d="M78 52 c-4 30 -10 60 -10 110" stroke="#fff" stroke-opacity=".25" stroke-width="5" fill="none" />
+      <defs>
+        <linearGradient id={u('bd')} x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#9d9d9d" /><stop offset=".35" stop-color="#d9d9d9" /><stop offset="1" stop-color="#a2a2a2" /></linearGradient>
+        <linearGradient id={u('lid')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7e7e7" /><stop offset="1" stop-color="#b3b3b3" /></linearGradient>
+        <linearGradient id={u('pk')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cbcbcb" /><stop offset="1" stop-color="#9b9b9b" /></linearGradient>
+      </defs>
+      <ellipse cx="100" cy="186" rx="52" ry="7" fill="#000" opacity=".08" />
+      {/* bretelles visibles derrière */}
+      <path d="M58 70 C 40 90 40 140 52 176" stroke="#8b8b8b" stroke-width="9" fill="none" stroke-linecap="round" />
+      <path d="M142 70 C 160 90 160 140 148 176" stroke="#8b8b8b" stroke-width="9" fill="none" stroke-linecap="round" />
+      {/* corps */}
+      <path d="M58 56 C 58 44 70 38 100 38 C 130 38 142 44 142 56 L148 170 C 148 178 140 182 130 182 H70 C 60 182 52 178 52 170 Z" fill={f('bd')} />
+      {/* rabat */}
+      <path d="M56 50 C 56 36 72 28 100 28 C 128 28 144 36 144 50 L 146 78 C 130 86 70 86 54 78 Z" fill={f('lid')} />
+      <path d="M62 74 C 80 80 120 80 138 74" stroke="#8f8f8f" stroke-width="1.4" stroke-dasharray="3 3" fill="none" />
+      <path d="M92 28 c0 -8 16 -8 16 0" stroke="#7e7e7e" stroke-width="4" fill="none" stroke-linecap="round" />
+      {/* sangles de compression + boucles */}
+      <path d="M84 80 V120 M116 80 V120" stroke="#7f7f7f" stroke-width="6" />
+      <rect x="79" y="108" width="10" height="9" rx="1.5" fill="#5f5f5f" /><rect x="111" y="108" width="10" height="9" rx="1.5" fill="#5f5f5f" />
+      {/* poche avant */}
+      <path d="M66 126 C 66 120 72 118 100 118 C 128 118 134 120 134 126 L136 166 C 136 172 130 174 122 174 H78 C 70 174 64 172 64 166 Z" fill={f('pk')} />
+      <path d="M70 134 H130" stroke="#6f6f6f" stroke-width="1.6" fill="none" />
+      <path d="M124 134 v9" stroke="#5f5f5f" stroke-width="3" stroke-linecap="round" />
+      <path d="M74 150 H126 M74 158 H126" stroke="#8a8a8a" stroke-width="1" stroke-dasharray="2.5 2.5" />
+      {/* mousqueton */}
+      <path d="M140 96 c10 0 12 18 2 22 c-8 3 -12 -4 -10 -10" stroke="#6a6a6a" stroke-width="3.2" fill="none" stroke-linecap="round" />
+      {/* reflet */}
+      <path d="M66 52 C 64 90 64 130 68 168" stroke="#fff" stroke-width="5" opacity=".22" fill="none" stroke-linecap="round" />
+    </g>
+  )}
+  {kind === 'stick' && (
+    <g>
+      <defs>
+        <linearGradient id={u('tp')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9e9e9" /><stop offset="1" stop-color="#c2c2c2" /></linearGradient>
+        <linearGradient id={u('fr')} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9c9c9c" /><stop offset="1" stop-color="#7c7c7c" /></linearGradient>
+        <radialGradient id={u('ball')} cx=".35" cy=".3" r=".75"><stop offset="0" stop-color="#ffffff" /><stop offset=".35" stop-color="#bdbdbd" /><stop offset="1" stop-color="#4d4d4d" /></radialGradient>
+        <radialGradient id={u('btn')} cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#f5f5f5" /><stop offset="1" stop-color="#8f8f8f" /></radialGradient>
+      </defs>
+      <ellipse cx="100" cy="166" rx="88" ry="10" fill="#000" opacity=".08" />
+      {/* boîtier vu de trois quarts : dessus et face avant */}
+      <path d="M22 104 L52 74 H186 L172 104 Z" fill={f('tp')} />
+      <path d="M22 104 H172 V150 C 172 156 168 158 162 158 H32 C 26 158 22 156 22 150 Z" fill={f('fr')} />
+      <path d="M172 104 L186 74 V120 L172 150 Z" fill="#8a8a8a" />
+      <path d="M22 104 H172" stroke="#fff" stroke-width="1.2" opacity=".5" />
+      {/* levier */}
+      <ellipse cx="66" cy="92" rx="14" ry="5" fill="#9a9a9a" />
+      <rect x="63" y="56" width="6" height="36" rx="2" fill="#6e6e6e" />
+      <circle cx="66" cy="50" r="15" fill={f('ball')} />
+      {/* 8 boutons en arc */}
+      <g>
+        <ellipse cx="112" cy="84" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="130" cy="80" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="148" cy="80" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="166" cy="82" rx="7.5" ry="3.6" fill={f('btn')} />
+        <ellipse cx="106" cy="96" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="124" cy="92" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="142" cy="92" rx="7.5" ry="3.6" fill={f('btn')} /><ellipse cx="160" cy="94" rx="7.5" ry="3.6" fill={f('btn')} />
+      </g>
+      <g fill="#6a6a6a"><circle cx="40" cy="132" r="2" /><circle cx="48" cy="132" r="2" /></g>
+      <path d="M120 124 h36" stroke="#6a6a6a" stroke-width="2" stroke-linecap="round" />
     </g>
   )}
   {kind === 'compass' && (
     <g>
-      <rect x="92" y="14" width="16" height="16" rx="8" fill="none" stroke="#9d9d9d" stroke-width="6" />
-      <circle cx="100" cy="108" r="78" fill={`url(#${id})`} />
-      <circle cx="100" cy="108" r="62" fill="#ececec" />
-      <path d="M100 58 L112 108 L100 158 L88 108 Z" fill="#8f8f8f" />
-      <path d="M100 58 L112 108 L88 108 Z" fill="#5d5d5d" />
-      <circle cx="100" cy="108" r="5" fill="#ececec" />
+      <defs>
+        <linearGradient id={u('bz')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f0f0f0" /><stop offset=".5" stop-color="#b2b2b2" /><stop offset="1" stop-color="#8c8c8c" /></linearGradient>
+        <radialGradient id={u('fc')} cx=".45" cy=".4" r=".7"><stop offset="0" stop-color="#fbfbfb" /><stop offset="1" stop-color="#dcdcdc" /></radialGradient>
+        <linearGradient id={u('gl')} x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55" /><stop offset=".4" stop-color="#fff" stop-opacity="0" /></linearGradient>
+      </defs>
+      <ellipse cx="100" cy="186" rx="64" ry="8" fill="#000" opacity=".08" />
+      {/* anneau de suspension */}
+      <circle cx="100" cy="22" r="9" fill="none" stroke="#9a9a9a" stroke-width="5" />
+      <rect x="93" y="28" width="14" height="10" rx="3" fill="#a5a5a5" />
+      {/* boîtier, lunette crantée, cadran */}
+      <circle cx="100" cy="108" r="76" fill={f('bz')} />
+      <circle cx="100" cy="108" r="68" fill="#8f8f8f" />
+      <circle cx="100" cy="108" r="64" fill={f('fc')} />
+      <g stroke="#7a7a7a" stroke-width="1.2">
+        {Array.from({ length: 36 }, (_, i) => { const a = (i * 10 * Math.PI) / 180, r1 = i % 9 === 0 ? 50 : 56; return <line x1={100 + Math.sin(a) * r1} y1={108 - Math.cos(a) * r1} x2={100 + Math.sin(a) * 61} y2={108 - Math.cos(a) * 61} />; })}
+      </g>
+      <g font-family="Geist, sans-serif" font-weight="600" font-size="12" fill="#5a5a5a" text-anchor="middle">
+        <text x="100" y="66">N</text>
+      </g>
+      {/* aiguille : nord sombre, sud clair */}
+      <path d="M100 68 L110 108 L90 108 Z" fill="#3d3d3d" />
+      <path d="M100 148 L110 108 L90 108 Z" fill="#bdbdbd" />
+      <circle cx="100" cy="108" r="6" fill="#9a9a9a" /><circle cx="100" cy="108" r="2.4" fill="#eee" />
+      {/* verre */}
+      <circle cx="100" cy="108" r="64" fill={f('gl')} />
     </g>
   )}
+  {kind === 'controller' && (
+    <g fill="#b5b5b5"><path d="M52 66 h96 c22 0 36 18 40 44 l6 36 c3 20 -18 30 -32 14 l-20 -24 h-84 l-20 24 c-14 16 -35 6 -32 -14 l6 -36 c4 -26 18 -44 40 -44 z" /></g>
+  )}
+  {kind === 'bottle' && (
+    <g fill="#b5b5b5"><path d="M90 38 h20 v22 c0 8 26 18 26 44 v70 c0 6 -4 10 -10 10 h-52 c-6 0 -10 -4 -10 -10 v-70 c0 -26 26 -36 26 -44 z" /></g>
+  )}
   {kind === 'feather' && (
-    <g>
-      <path d="M150 24 C 96 34 54 84 46 160 L 58 162 C 72 104 104 66 150 24 Z" fill={`url(#${id})`} />
-      <path d="M150 24 C 160 80 120 140 58 162 C 92 120 122 76 150 24 Z" fill="#b9b9b9" />
-      <path d="M150 24 C 110 74 74 124 40 184" stroke="#8f8f8f" stroke-width="4" stroke-linecap="round" fill="none" />
-    </g>
+    <g fill="#b5b5b5"><path d="M150 24 C 96 34 54 84 46 160 L 58 162 C 72 104 104 66 150 24 Z" /></g>
   )}
 </svg>

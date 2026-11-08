@@ -22,7 +22,7 @@ export type Project = {
   preview?: string;   // image ou vidéo (.mp4) d'aperçu au survol, dans /public/previews/
   tags: Tag[];        // I identité · T type · G génératif · W web · E édition · P print
   yearLabel: string;  // année affichée dans les listes
-  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'bottle' | 'compass' | 'feather'; // objet de la page Projets
+  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack'; // objet de la page Projets
   generator?: string; // générateur jouable intégré à l'étude
   en: Content;
   fr: Content;
@@ -226,7 +226,7 @@ const all: Project[] = [
     years: [2023],
     tags: ['I', 'E'],
     yearLabel: '2023 —',
-    object: 'feather',
+    object: 'backpack',
     draft: true,
     fr: {
       title: 'kern.outdoor',
@@ -275,7 +275,7 @@ const all: Project[] = [
     years: [2023],
     tags: ['W', 'I'],
     yearLabel: '2023',
-    object: 'controller',
+    object: 'stick',
     draft: false,
     fr: {
       title: 'BMS E-Sport',
