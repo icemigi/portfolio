@@ -1,4 +1,4 @@
-# Mise en ligne sur GitHub Pages (icemigi.github.io/portfolio/) à chaque push sur main.
+# Mise en ligne sur GitHub Pages (kerningkastle.com, domaine personnalisé) à chaque push sur main.
 # Réglage unique sur GitHub : Settings → Pages → Source : « GitHub Actions ».
 name: Mise en ligne
 
@@ -26,8 +26,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci || npm install
-      # build:pages = astro build + tools/rebase.mjs (sert le site sous /portfolio/)
-      - run: npm run build:pages
+      # le site est servi à la racine du domaine : plus de préfixe /portfolio/
+      - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
