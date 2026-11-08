@@ -32,7 +32,7 @@ save(a('62','50','31','26','42','01'),'v-logo',700)
 save(a('04','49','52','32'),'v-lettre',800)
 save(sh(*range(14)),'v-code',420)
 save(a('24','47','56','64','58'),'v-pochette',700)
-save(w('bms-esport/cover.webp','bms-esport/02.webp','sports-aventure/cover.webp','sports-aventure/03.webp','hotshot/cover.webp'),'v-site',900)
+save(w('bms-esport/cover.webp','bms-esport/02.webp','sports-aventure/cover.webp','sports-aventure/03.webp','../archive/hotshot-cover.webp'),'v-site',900)
 names=['h-lettres','h-identites','h-images','h-main-code','h-clients','v-logo','v-lettre','v-code','v-pochette','v-site']
 board=Image.new('RGB',(10+6*(W+10),len(names)*(H+10)+10),'white')
 for r,n in enumerate(names):

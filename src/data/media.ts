@@ -13,19 +13,7 @@ export const media: Record<string, { cover: Img; gal: Img[][] }> = {
       [{ src: '/work/algorithmic-heraldry/09.webp', w: 1223, h: 1400 }],
     ],
   },
-  'hotshot': {
-    cover: { src: '/work/hotshot/cover.webp', w: 2149, h: 1600 },
-    gal: [
-      [{ src: '/work/hotshot/01.webp', w: 1400, h: 1400 }, { src: '/work/hotshot/02.webp', w: 1400, h: 1400 }],
-      [{ src: '/work/hotshot/03.webp', w: 2200, h: 1100 }],
-      [{ src: '/work/hotshot/04.webp', w: 2200, h: 1446 }],
-      [{ src: '/work/hotshot/05.webp', w: 2200, h: 1433 }],
-      [{ src: '/work/hotshot/06.webp', w: 2200, h: 1446 }],
-      [{ src: '/work/hotshot/07.webp', w: 2200, h: 1460 }],
-      [{ src: '/work/hotshot/08.webp', w: 1400, h: 2489 }, { src: '/work/hotshot/09.webp', w: 1400, h: 3035 }],
-      [{ src: '/work/hotshot/10.webp', w: 1512, h: 982 }],
-    ],
-  },
+
   'sports-aventure': {
     cover: { src: '/work/sports-aventure/cover.webp', w: 1728, h: 1117 },
     gal: [

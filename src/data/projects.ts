@@ -1,4 +1,4 @@
-// Études de cas, dans l'ordre choisi le 02/11 : Heraldry, ASAPHR, (ChâteauStudio)™, Identités musicales, BMS, HOTSHOT, Sports Aventure. Même gabarit pour toutes :
+// Études de cas, dans l'ordre choisi le 08/11 : Heraldry, (ChâteauStudio)™, Identités musicales, ASAPHR, kern.outdoor, BMS, Sports Aventure. Même gabarit pour toutes :
 // en-tête (meta) · accroche (lead) · sections (Point de départ, Ce qui a été fait / Méthode, Choix clés, Résultat, Statut).
 // `draft: true` affiche un badge « à valider » tant que le texte n'est pas validé.
 
@@ -79,49 +79,9 @@ const all: Project[] = [
       ],
     },
   },
-  // ---------------------------------------------------------------- asaphr
-  {
-    slug: 'asaphr',
-    years: [2026],
-    tags: ['T', 'E'],
-    yearLabel: '2026',
-    object: 'rock',
-    draft: false,
-    fr: {
-      title: 'ASAPHR',
-      short: 'Écriture inventée',
-      meta: { year: '2026 —', context: 'Recherche personnelle', role: "Système d'écriture, dessin de caractères", tools: 'Glyphs 4' },
-      lead: "Une écriture inventée pour comprendre comment fonctionne une écriture.",
-      sections: [
-        { h: 'Contexte', paras: [{ p: 'Une recherche personnelle, ouverte en 2026. Après des alphabets latins et des fontes classiques, l\'envie d\'aller un cran plus loin : non plus dessiner des lettres, mais inventer l\'écriture entière, celle qui décide de ce qu\'est une lettre, et la langue qui va avec.' }] },
-        { h: 'Le problème', paras: [{ p: 'Qu\'est-ce qui fait qu\'une écriture en est une ? Un support, un sens de lecture, une phonologie, une grammaire, un tracé. ASAPHR reprend chacun de ces points et le prend à contre-courant, pour voir ce qui tient encore quand on retire les habitudes.' }] },
-        { h: 'La démarche', paras: [{ p: 'D\'abord regarder : les runes, les écritures inventées, celles qui ont été pensées par des linguistes avant de l\'être par des typographes. Puis dessiner à la main, longtemps, jusqu\'à ce que les signes se répondent. La langue s\'est écrite en même temps que les signes, dans un codex qui fixe tout, du support à la ponctuation. Glyphs n\'est venu qu\'après, pour fixer un système qui existait déjà sur le papier.' }] },
-        { h: 'Le système', paras: [{ p: 'Le support est un disque. Tout énoncé naît au bord de sa perforation centrale, le zéro sémantique, et se déploie vers l\'extérieur le long de seize rayons, un tous les 22,5°. On lit la branche à midi, du centre vers le bord, puis on tourne le disque dans le sens des aiguilles d\'une montre pour amener la suivante.' }, { p: 'La langue tient en soixante syllabes maîtresses, quinze par quadrant : la matière, le mouvement, l\'état, la relation. Chaque glyphe s\'inscrit dans une grille de 3 × 5 unités, en trait monoline ; la rangée du haut reste vide, sauf pour les chiffres, qui portent un chapeau. Le rôle d\'un mot dépend de sa seule place sur le rayon : aucun accent, aucune déclinaison.' }, { p: 'Au bout de chaque rayon, un sceau ferme la phrase et dit deux choses à la fois : d\'où vient l\'information (carré pour le constaté, losange pour le déduit, cercle pour le rapporté) et ce qu\'on en fait (fermé pour affirmer, fendu pour douter, fléché pour ordonner).' }] },
-        { h: 'Choix clés', paras: [{ t: 'Le centre comme origine.', p: 'La lecture centrifuge change tout : la page n\'a plus de haut ni de bas, et un texte devient une figure.' }, { t: 'La place plutôt que l\'accent.', p: 'La grammaire est entièrement spatiale : qui agit, sur quoi, se lit à la position sur le rayon.' }, { t: 'Dire d\'où l\'on sait.', p: 'Le sceau rend l\'origine de chaque affirmation visible au premier coup d\'œil. Une écriture qui ne permet pas de mentir sur sa source.' }, { t: 'La main d\'abord.', p: 'Les signes viennent du geste, pas de la grille ; la grille n\'arrive qu\'au moment de les rendre cohérents.' }] },
-        { h: 'En situation', paras: [{ p: 'Un disque pour les textes courts ; pour les textes longs, une bande coupée sur un rayon et enroulée en hélice, chaque tour gardant la lecture radiale. À l\'écran, c\'est le défilement qui fait tourner le disque, une branche après l\'autre. Lire ASAPHR devient une manipulation autant qu\'une lecture.' }] },
-        { h: 'Résultat et suite', paras: [{ p: 'Le codex est écrit et le système est fixé ; les glyphes sont en finition. Viendront l\'objet-livre à disques, et une fonte pour écrire ASAPHR au clavier.' }] },
-      ],
-    },
-    en: {
-      title: 'ASAPHR',
-      short: 'Invented script',
-      meta: { year: '2026 —', context: 'Personal research', role: 'Writing system, type design', tools: 'Glyphs 4' },
-      lead: 'An invented script, made to understand how a script works.',
-      sections: [
-        { h: 'Context', paras: [{ p: 'A personal research project started in 2026. After Latin alphabets and classic typefaces, the urge to go one step further: no longer drawing letters, but inventing the whole writing system, the one that decides what a letter is, and the language that comes with it.' }] },
-        { h: 'The problem', paras: [{ p: 'What makes a script a script? A medium, a reading direction, a phonology, a grammar, a stroke. ASAPHR takes each of these and turns it against the grain, to see what still holds once habits are removed.' }] },
-        { h: 'Process', paras: [{ p: 'Looking first: runes, invented scripts, the ones conceived by linguists before typographers. Then drawing by hand, for a long time, until the signs answered one another. The language was written alongside the signs, in a codex that fixes everything from medium to punctuation. Glyphs only came afterwards, to set down a system that already existed on paper.' }] },
-        { h: 'The system', paras: [{ p: 'The medium is a disc. Every statement is born at the edge of its central hole, the semantic zero, and unfolds outwards along sixteen spokes, one every 22.5°. You read the branch at twelve o\'clock, from the centre to the edge, then turn the disc clockwise to bring the next one up.' }, { p: 'The language rests on sixty master syllables, fifteen per quadrant: matter, motion, state, relation. Each glyph sits in a 3 × 5 grid, in a monoline stroke; the top row stays empty, except for numbers, which wear a hat. A word\'s role depends only on its position along the spoke: no accents, no inflections.' }, { p: 'At the end of each spoke, a seal closes the sentence and says two things at once: where the information comes from (square for witnessed, diamond for inferred, circle for reported) and what to do with it (closed to assert, split to doubt, arrowed to command).' }] },
-        { h: 'Key decisions', paras: [{ t: 'The centre as origin.', p: 'Centrifugal reading changes everything: the page no longer has a top or a bottom, and a text becomes a figure.' }, { t: 'Position rather than accent.', p: 'The grammar is entirely spatial: who acts, on what, is read from the place on the spoke.' }, { t: 'Saying how you know.', p: 'The seal makes the source of every statement visible at a glance. A script that won\'t let you lie about your source.' }, { t: 'Hand first.', p: 'The signs come from the gesture, not the grid; the grid only arrives to make them consistent.' }] },
-        { h: 'In context', paras: [{ p: 'A disc for short texts; for long ones, a strip cut along a spoke and wound into a helix, each turn keeping the radial reading. On screen, scrolling turns the disc, one branch after another. Reading ASAPHR becomes a handling as much as a reading.' }] },
-        { h: 'Outcome and next', paras: [{ p: 'The codex is written and the system is set; the glyphs are being finished. Next come the disc object-book, and a font to type ASAPHR on a keyboard.' }] },
-      ],
-    },
-  },
   // ---------------------------------------------------------------- chateau-studio
   {
     slug: 'chateau-studio',
-    hidden: true, // rien n'est encore dessiné (03/11) : l'étude revient quand l'identité existe
     years: [2026],
     tags: ['I'],
     yearLabel: '2026',
@@ -134,26 +94,15 @@ const all: Project[] = [
         year: '2026',
         context: 'Identité de studio',
         role: 'Naming, identité, typographie',
-        tools: '[À compléter]',
+        tools: '—', // à compléter quand l'identité sera dessinée
       },
-      lead: "[À valider] L'identité d'un studio de design graphique, construite comme une commande : brief, contraintes, pistes, choix.",
+      lead: "L'identité d'un studio de design graphique, construite comme une commande : brief, contraintes, pistes, choix.",
       sections: [
         {
           h: 'Point de départ',
           paras: [
-            { p: "Un nom qui fonctionne dans deux langues : château en français, castle en anglais. [À compléter : le brief que tu te fixes — positionnement, cible, supports]." },
+            { p: "Un nom qui fonctionne dans deux langues : château en français, castle en anglais." },
             { p: "Contrainte réelle : plusieurs « chateau » existent déjà en ligne, dans d'autres secteurs et d'autres pays. L'identité doit se distinguer sans changer de nom." },
-          ],
-        },
-        {
-          h: 'Ce qui a été fait',
-          paras: [{ p: '[À compléter] Logotype, caractère dessiné sur mesure (si oui), système de déclinaisons : devis, factures, réseaux, site.' }],
-        },
-        {
-          h: 'Choix clés',
-          paras: [
-            { t: '[À compléter]', p: 'Les pistes explorées puis écartées, et pourquoi.' },
-            { t: '[À compléter]', p: 'Le choix typographique.' },
           ],
         },
         { h: 'Statut', paras: [{ p: 'En cours.' }] },
@@ -166,23 +115,15 @@ const all: Project[] = [
         year: '2026',
         context: 'Studio identity',
         role: 'Naming, identity, type',
-        tools: '[To complete]',
+        tools: '—', // à compléter quand l'identité sera dessinée
       },
-      lead: '[To validate] The identity of a graphic design studio, approached as a real commission: brief, constraints, directions, decisions.',
+      lead: 'The identity of a graphic design studio, approached as a real commission: brief, constraints, directions, decisions.',
       sections: [
         {
           h: 'Starting point',
           paras: [
-            { p: 'A name that works in two languages: château in French, castle in English. [To complete: the brief — positioning, audience, formats].' },
+            { p: 'A name that works in two languages: château in French, castle in English.' },
             { p: 'A real constraint: several “chateau” accounts already exist online, in other sectors and countries. The identity has to stand apart without changing the name.' },
-          ],
-        },
-        { h: 'What was made', paras: [{ p: '[To complete] Logotype, custom typeface (if any), roll-out system: quotes, invoices, social, website.' }] },
-        {
-          h: 'Key decisions',
-          paras: [
-            { t: '[To complete]', p: 'Directions explored then dropped, and why.' },
-            { t: '[To complete]', p: 'The typographic choice.' },
           ],
         },
         { h: 'Status', paras: [{ p: 'In progress.' }] },
@@ -238,6 +179,45 @@ const all: Project[] = [
       ],
     },
   },
+  // ---------------------------------------------------------------- asaphr
+  {
+    slug: 'asaphr',
+    years: [2026],
+    tags: ['T', 'E'],
+    yearLabel: '2026',
+    object: 'rock',
+    draft: false,
+    fr: {
+      title: 'ASAPHR',
+      short: 'Écriture inventée',
+      meta: { year: '2026 —', context: 'Recherche personnelle', role: "Système d'écriture, dessin de caractères", tools: 'Glyphs 4' },
+      lead: "Une écriture inventée pour comprendre comment fonctionne une écriture.",
+      sections: [
+        { h: 'Contexte', paras: [{ p: 'Une recherche personnelle, ouverte en 2026. Après des alphabets latins et des fontes classiques, l\'envie d\'aller un cran plus loin : non plus dessiner des lettres, mais inventer l\'écriture entière, celle qui décide de ce qu\'est une lettre, et la langue qui va avec.' }] },
+        { h: 'Le problème', paras: [{ p: 'Qu\'est-ce qui fait qu\'une écriture en est une ? Un support, un sens de lecture, une phonologie, une grammaire, un tracé. ASAPHR reprend chacun de ces points et le prend à contre-courant, pour voir ce qui tient encore quand on retire les habitudes.' }] },
+        { h: 'La démarche', paras: [{ p: 'D\'abord regarder : les runes, les écritures inventées, celles qui ont été pensées par des linguistes avant de l\'être par des typographes. Puis dessiner à la main, longtemps, jusqu\'à ce que les signes se répondent. La langue s\'est écrite en même temps que les signes, dans un codex qui fixe tout, du support à la ponctuation. Glyphs n\'est venu qu\'après, pour fixer un système qui existait déjà sur le papier.' }] },
+        { h: 'Le système', paras: [{ p: 'Le support est un disque. Tout énoncé naît au bord de sa perforation centrale, le zéro sémantique, et se déploie vers l\'extérieur le long de seize rayons, un tous les 22,5°. On lit la branche à midi, du centre vers le bord, puis on tourne le disque dans le sens des aiguilles d\'une montre pour amener la suivante.' }, { p: 'La langue tient en soixante syllabes maîtresses, quinze par quadrant : la matière, le mouvement, l\'état, la relation. Chaque glyphe s\'inscrit dans une grille de 3 × 5 unités, en trait monoline ; la rangée du haut reste vide, sauf pour les chiffres, qui portent un chapeau. Le rôle d\'un mot dépend de sa seule place sur le rayon : aucun accent, aucune déclinaison.' }, { p: 'Au bout de chaque rayon, un sceau ferme la phrase et dit deux choses à la fois : d\'où vient l\'information (carré pour le constaté, losange pour le déduit, cercle pour le rapporté) et ce qu\'on en fait (fermé pour affirmer, fendu pour douter, fléché pour ordonner).' }] },
+        { h: 'Choix clés', paras: [{ t: 'Le centre comme origine.', p: 'La lecture centrifuge change tout : la page n\'a plus de haut ni de bas, et un texte devient une figure.' }, { t: 'La place plutôt que l\'accent.', p: 'La grammaire est entièrement spatiale : qui agit, sur quoi, se lit à la position sur le rayon.' }, { t: 'Dire d\'où l\'on sait.', p: 'Le sceau rend l\'origine de chaque affirmation visible au premier coup d\'œil. Une écriture qui ne permet pas de mentir sur sa source.' }, { t: 'La main d\'abord.', p: 'Les signes viennent du geste, pas de la grille ; la grille n\'arrive qu\'au moment de les rendre cohérents.' }] },
+        { h: 'En situation', paras: [{ p: 'Un disque pour les textes courts ; pour les textes longs, une bande coupée sur un rayon et enroulée en hélice, chaque tour gardant la lecture radiale. À l\'écran, c\'est le défilement qui fait tourner le disque, une branche après l\'autre. Lire ASAPHR devient une manipulation autant qu\'une lecture.' }] },
+        { h: 'Résultat et suite', paras: [{ p: 'Le codex est écrit et le système est fixé ; les glyphes sont en finition. Viendront l\'objet-livre à disques, et une fonte pour écrire ASAPHR au clavier.' }] },
+      ],
+    },
+    en: {
+      title: 'ASAPHR',
+      short: 'Invented script',
+      meta: { year: '2026 —', context: 'Personal research', role: 'Writing system, type design', tools: 'Glyphs 4' },
+      lead: 'An invented script, made to understand how a script works.',
+      sections: [
+        { h: 'Context', paras: [{ p: 'A personal research project started in 2026. After Latin alphabets and classic typefaces, the urge to go one step further: no longer drawing letters, but inventing the whole writing system, the one that decides what a letter is, and the language that comes with it.' }] },
+        { h: 'The problem', paras: [{ p: 'What makes a script a script? A medium, a reading direction, a phonology, a grammar, a stroke. ASAPHR takes each of these and turns it against the grain, to see what still holds once habits are removed.' }] },
+        { h: 'Process', paras: [{ p: 'Looking first: runes, invented scripts, the ones conceived by linguists before typographers. Then drawing by hand, for a long time, until the signs answered one another. The language was written alongside the signs, in a codex that fixes everything from medium to punctuation. Glyphs only came afterwards, to set down a system that already existed on paper.' }] },
+        { h: 'The system', paras: [{ p: 'The medium is a disc. Every statement is born at the edge of its central hole, the semantic zero, and unfolds outwards along sixteen spokes, one every 22.5°. You read the branch at twelve o\'clock, from the centre to the edge, then turn the disc clockwise to bring the next one up.' }, { p: 'The language rests on sixty master syllables, fifteen per quadrant: matter, motion, state, relation. Each glyph sits in a 3 × 5 grid, in a monoline stroke; the top row stays empty, except for numbers, which wear a hat. A word\'s role depends only on its position along the spoke: no accents, no inflections.' }, { p: 'At the end of each spoke, a seal closes the sentence and says two things at once: where the information comes from (square for witnessed, diamond for inferred, circle for reported) and what to do with it (closed to assert, split to doubt, arrowed to command).' }] },
+        { h: 'Key decisions', paras: [{ t: 'The centre as origin.', p: 'Centrifugal reading changes everything: the page no longer has a top or a bottom, and a text becomes a figure.' }, { t: 'Position rather than accent.', p: 'The grammar is entirely spatial: who acts, on what, is read from the place on the spoke.' }, { t: 'Saying how you know.', p: 'The seal makes the source of every statement visible at a glance. A script that won\'t let you lie about your source.' }, { t: 'Hand first.', p: 'The signs come from the gesture, not the grid; the grid only arrives to make them consistent.' }] },
+        { h: 'In context', paras: [{ p: 'A disc for short texts; for long ones, a strip cut along a spoke and wound into a helix, each turn keeping the radial reading. On screen, scrolling turns the disc, one branch after another. Reading ASAPHR becomes a handling as much as a reading.' }] },
+        { h: 'Outcome and next', paras: [{ p: 'The codex is written and the system is set; the glyphs are being finished. Next come the disc object-book, and a font to type ASAPHR on a keyboard.' }] },
+      ],
+    },
+  },
   // ---------------------------------------------------------------- bms-esport
   {
     slug: 'bms-esport',
@@ -274,46 +254,6 @@ const all: Project[] = [
         { h: 'Key decisions', paras: [{ t: 'A bolder tone.', p: 'Sharp typography and a straightforward layout, in tune with competition. The palette follows the club\'s colours.' }, { t: 'Players as characters.', p: 'Each player has a sheet built like a select screen: stats, game, rank.' }, { t: 'Make people dig.', p: 'The design stays playful and lively: every page invites you to go further.' }, { t: 'A light mode.', p: 'Added at the club\'s request, alongside the dark mode, for comfortable reading anywhere.' }] },
         { h: 'In context', paras: [{ p: 'Home, news, player sheets, partners and the store, across desktop and mobile.' }] },
         { h: 'Outcome and next', paras: [{ p: 'The design was delivered to the club, which changed direction before launch: the site was never put online. What remains is a complete system, ready to be built.' }] },
-      ],
-    },
-  },
-  // ---------------------------------------------------------------- HOT
-  {
-    slug: 'hotshot',
-    hidden: true, // 03/11 : brief trop attendu (marque fictive de sauce) ; les images passent dans l'archive
-    years: [2024],
-    tags: ['I', 'T', 'P'],
-    yearLabel: '2024',
-    object: 'bottle',
-    draft: true,
-    fr: {
-      title: 'Hotshot®',
-      short: 'De la sauce piquante au restaurant',
-      meta: { year: '2024', context: 'Concept de marque', role: 'Naming, identité, logotype, mascotte', tools: 'Illustrator, Procreate' },
-      lead: "Une marque de sauce piquante qui grandit jusqu'au restaurant. Un concept, mené comme une vraie commande.",
-      sections: [
-        { h: 'Contexte', paras: [{ p: 'Un exercice personnel, mené comme une vraie commande : montrer une identité complète, du produit jusqu\'au lieu. Le point de départ est une sauce piquante ; l\'arrivée, le restaurant qui va avec.' }] },
-        { h: 'Le problème', paras: [{ p: 'Une marque assez forte pour tenir sur une étiquette de bouteille comme sur une devanture, sans jamais changer de voix. Et se faire remarquer dans un rayon où toutes les sauces jouent déjà le feu, le rouge et la tête de mort.' }] },
-        { h: 'La démarche', paras: [{ p: 'Le nom d\'abord : Hotshot, emprunté au monde du cocktail, où le shot est une petite dose qu\'on avale d\'un coup. Ici, littéralement, une petite dose brûlante. Puis la mascotte, cherchée en croquis dans Procreate, plusieurs personnages testés avant le bon, pensé dès le départ pour être décliné en poses. Le logotype et le système sont venus ensuite, dans Illustrator.' }] },
-        { h: 'Le système', paras: [{ p: 'Un logotype dessiné sur mesure, une mascotte, une signature, deux rouges, et toutes les déclinaisons : bouteilles, menu, sous-verres, baguettes, papier d\'emballage, réseaux, site et devanture.' }] },
-        { h: 'Choix clés', paras: [{ t: 'Un logotype en bloc.', p: 'Des lettres condensées et anguleuses, empilées en carré, avec une bouteille qui s\'invite dans le lettrage. Il tient en tampon, en étiquette comme en enseigne.' }, { t: 'Deux rouges.', p: 'Un rouge vif pour la brûlure, un bordeaux profond pour le fond. La couleur fait le travail avant même la lecture.' }, { t: 'Une mascotte rétro.', p: 'Un piment au trait épais, façon vieux cartoon, qui ajoute une dose d\'insolence au sérieux du titrage.' }, { t: 'Un ton.', p: '« Because mild is overrated. » La signature devient un titrage à part entière, sur les affiches comme sur les murs.' }] },
-        { h: 'En situation', paras: [{ p: 'La bouteille, la table (menu, sous-verres, baguettes), l\'emballage, la rue (devanture, affiches) et l\'écran (réseaux, site) : la même voix d\'un bout à l\'autre.' }] },
-        { h: 'Résultat et suite', paras: [{ p: 'Une identité complète, du produit au lieu, qui n\'attend plus qu\'un restaurant. Concept personnel, non commandé.' }] },
-      ],
-    },
-    en: {
-      title: 'Hotshot®',
-      short: 'From hot sauce to restaurant',
-      meta: { year: '2024', context: 'Brand concept', role: 'Naming, identity, logotype, mascot', tools: 'Illustrator, Procreate' },
-      lead: 'A hot sauce brand that grows into a restaurant. A concept, handled like a real commission.',
-      sections: [
-        { h: 'Context', paras: [{ p: 'A personal exercise, run like a real commission: showing a complete identity, from product all the way to place. It starts with a hot sauce and ends with the restaurant that goes with it.' }] },
-        { h: 'The problem', paras: [{ p: 'A brand strong enough to hold on a bottle label as on a shopfront, without ever changing its voice. And to stand out on a shelf where every sauce already plays fire, red and skulls.' }] },
-        { h: 'Process', paras: [{ p: 'The name first: Hotshot, borrowed from the cocktail world, where a shot is a small dose taken in one go. Here, quite literally, a small burning dose. Then the mascot, sketched in Procreate, several characters tried before the right one, designed from the start to be posed and declined. The logotype and the system came next, in Illustrator.' }] },
-        { h: 'The system', paras: [{ p: 'A custom-drawn logotype, a mascot, a tagline, two reds, and every roll-out: bottles, menu, coasters, chopsticks, wrapping paper, social media, website and shopfront.' }] },
-        { h: 'Key decisions', paras: [{ t: 'A block logotype.', p: 'Condensed, angular letters stacked into a square, with a bottle slipping into the lettering. It works as a stamp, a label and a sign.' }, { t: 'Two reds.', p: 'A bright red for the burn, a deep burgundy for the ground. Colour does the work before reading even starts.' }, { t: 'A retro mascot.', p: 'A thick-lined chilli, old-cartoon style, adding a dose of cheek to the seriousness of the type.' }, { t: 'A tone.', p: '\'Because mild is overrated.\' The tagline becomes a headline in its own right, on posters as on walls.' }] },
-        { h: 'In context', paras: [{ p: 'The bottle, the table (menu, coasters, chopsticks), the wrapping, the street (shopfront, posters) and the screen (social, website): the same voice from end to end.' }] },
-        { h: 'Outcome and next', paras: [{ p: 'A complete identity, from product to place, just waiting for a restaurant. Personal concept, not commissioned.' }] },
       ],
     },
   },

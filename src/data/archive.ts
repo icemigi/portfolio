@@ -82,10 +82,10 @@ const raw: Piece[] = [
   { src: '/archive/65.webp', w: 1400, h: 1400, year: '2024', cat: C.poster },
   { src: '/archive/66.webp', w: 1400, h: 1400, year: '2024', cat: C.logo },
   // Hotshot® (retiré des projets le 03/11) : images seules
-  { src: '/work/hotshot/cover.webp', w: 2149, h: 1600, year: '', cat: C.brand },
-  { src: '/work/hotshot/01.webp', w: 1400, h: 1400, year: '', cat: C.brand },
-  { src: '/work/hotshot/02.webp', w: 1400, h: 1400, year: '', cat: C.brand },
-  { src: '/work/hotshot/08.webp', w: 1400, h: 2489, year: '', cat: C.brand },
+  { src: '/archive/hotshot-cover.webp', w: 2149, h: 1600, year: '', cat: C.brand },
+  { src: '/archive/hotshot-01.webp', w: 1400, h: 1400, year: '', cat: C.brand },
+  { src: '/archive/hotshot-02.webp', w: 1400, h: 1400, year: '', cat: C.brand },
+  { src: '/archive/hotshot-08.webp', w: 1400, h: 2489, year: '', cat: C.brand },
 ];
 
 // tri par année, de la plus récente à la plus ancienne ; les pièces sans année restent à la fin, dans l'ordre de la liste
