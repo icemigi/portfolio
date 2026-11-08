@@ -27,14 +27,14 @@ export const cv: Record<Lang, Cv> = {
       { id: 'profil', cmd: ['profil', 'profile', 'whoami'], title: 'profil',
         intro: 'Designer graphique et typographe, avec un bagage de code. Je pars toujours de la lettre, et je passe au code quand la main ne suffit plus (rarement l’inverse). Fil rouge : les systèmes et les grilles, qu’ils soient typographiques, génératifs ou éditoriaux.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'expériences', entries: [
-        { when: '2020 — 2026', what: 'Designer indépendant', where: 'Paris, Bordeaux & remote · 5 à 9 clients par an · réouverture sous (ChâteauStudio)™', items: [
+        { when: '2020 — auj.', what: 'Directeur artistique freelance — (ChâteauStudio)™', where: 'Paris & remote · 5 à 9 clients par an', items: [
           'Identités musicales, seul de bout en bout, pour des artistes de rap underground, d’électro et d’hyperpop : logotypes et lettrages toujours dessinés à la main, pochettes CD et vinyle (relief et découpe réellement produits), univers de tournée, merchandising, fichiers d’exécution print (sérigraphie, héliogravure).',
           'Méthode : le projet écouté en boucle, brief et références, puis deux pistes radicalement différentes ; l’objet physique est pensé en premier.',
           'Visuels live ponctuels : boucles et contenus temps réel sous TouchDesigner, dont des prestations d’artistes à la Gaîté Lyrique.',
           'Identités de marque : direction artistique, logos, identités visuelles et chartes pour le commerce, la culture et l’associatif.',
           'Web & digital : direction artistique et UX/UI de sites, déclinaisons réseaux sociaux, intégration (HTML/CSS/JS).',
         ] },
-        { when: '2025 — auj.', what: 'Conseiller spécialisé randonnée & matériel technique', where: 'Commerce de sport · Bordeaux', items: [
+        { when: '2025 — auj.', what: 'Conseiller spécialisé randonnée & matériel technique', where: 'Commerce de sport', items: [
           'Expertise produit et conseil technique sur l’équipement outdoor (randonnée, bivouac, textile technique).',
         ] },
         { when: '2018 — 2020', what: 'Designer web & graphique (alternance et stage)', where: 'Agence DOERS · Paris', items: [
@@ -116,14 +116,14 @@ export const cv: Record<Lang, Cv> = {
       { id: 'profil', cmd: ['profile', 'profil', 'whoami'], title: 'profile',
         intro: 'Graphic designer and typographer with a coding background. I always start from the letter, and switch to code when the hand isn’t enough (rarely the other way round). Common thread: systems and grids, whether typographic, generative or editorial.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'experience', entries: [
-        { when: '2020 — 2026', what: 'Independent designer', where: 'Paris, Bordeaux & remote · 5 to 9 clients a year · reopening as (ChâteauStudio)™', items: [
+        { when: '2020 — now', what: 'Freelance art director — (ChâteauStudio)™', where: 'Paris & remote · 5 to 9 clients a year', items: [
           'Music identities, solo from start to finish, for underground rap, electronic and hyperpop artists: logotypes and lettering always hand-drawn, CD and vinyl sleeves (embossing and die-cuts actually produced), tour universes, merchandise, print production files (screen printing, photogravure).',
           'Method: the record on repeat, brief and references, then two radically different directions; the physical object comes first.',
           'Occasional live visuals: loops and real-time content in TouchDesigner, including artists’ shows at La Gaîté Lyrique.',
           'Brand identities: art direction, logos, visual identities and guidelines for retail, culture and nonprofits.',
           'Web & digital: website art direction and UX/UI, social adaptations, integration (HTML/CSS/JS).',
         ] },
-        { when: '2025 — now', what: 'Hiking & technical gear specialist advisor', where: 'Sports retail · Bordeaux', items: [
+        { when: '2025 — now', what: 'Hiking & technical gear specialist advisor', where: 'Sports retail', items: [
           'Product expertise and technical advice on outdoor equipment (hiking, bivouac, technical apparel).',
         ] },
         { when: '2018 — 2020', what: 'Web & graphic designer (work-study and internship)', where: 'DOERS agency · Paris', items: [
