@@ -14,6 +14,7 @@ const N = rooms.length;
 const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
 ---
 <Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
+  <h1 class="sr">{r.title}</h1>
   <div class="lab" data-room={room.kind}>
     <div class:list={['room', room.kind]}>
       {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} />}
