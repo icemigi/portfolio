@@ -4,6 +4,10 @@ import { initScreens } from './screens';
 import { reveal } from './motion';
 import './sound';
 import { initHola } from './hola';
+import { initAscii } from './ascii';
+
+// médias : chargement en ASCII (trame de caractères, puis deux rendus ASCII de l'image, puis l'image)
+initAscii();
 
 // Email : clic = adresse copiée avec confirmation ; l'adresse reste sélectionnable.
 document.addEventListener('click', (e) => {
