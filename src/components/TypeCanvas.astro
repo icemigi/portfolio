@@ -8,6 +8,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
 <canvas class:list={['type-canvas', cls]} data-text={text} data-cols={cols} data-align={align} role="img" aria-label={label}></canvas>
 
 <script>
+  import { reduced as isReduced } from '../scripts/motion';
   // Glyphes 5 × 7 (1 = module plein)
   const GLYPHS: Record<string, string[]> = {
     K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
@@ -35,7 +36,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const text = (canvas.dataset.text || 'KERNINGKASTLE').toUpperCase();
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = isReduced();
 
     let W = 0, H = 0, s = 0;
     let cells: Cell[] = [];

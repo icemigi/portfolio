@@ -105,13 +105,13 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
 </style>
 
 <script>
+  import { reduced } from '../../scripts/motion';
   const root = document.querySelector<HTMLElement>('[data-arc]')!;
   const track = document.querySelector<HTMLElement>('[data-track]')!;
   const bar = document.querySelector<HTMLElement>('[data-bar]')!;
   const prog = document.querySelector<HTMLElement>('[data-prog]')!;
   const count = document.querySelector<HTMLElement>('[data-count]')!;
   const items = [...track.querySelectorAll<HTMLElement>('.pc')];
-  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const desktop = () => true; // la pile vaut aussi sur téléphone (essai du 02/11)
   const phone = () => matchMedia('(max-width: 760px)').matches;
   const P = (n: number) => String(n).padStart(2, '0');

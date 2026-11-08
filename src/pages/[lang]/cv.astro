@@ -95,6 +95,7 @@ const PS = 'xavier@kerningkastle ~ %';
 </style>
 
 <script>
+  import { reduced } from '../../scripts/motion';
   type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
   const root = document.querySelector<HTMLElement>('[data-term]')!;
   const d: D = JSON.parse(root.dataset.cv!);
@@ -102,7 +103,7 @@ const PS = 'xavier@kerningkastle ~ %';
   const form = root.querySelector<HTMLFormElement>('[data-form]')!;
   const input = root.querySelector<HTMLInputElement>('[data-in]')!;
   const PS = 'xavier@kerningkastle ~ %';
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = reduced();
   const wait = (ms: number) => new Promise((r) => setTimeout(r, still ? 0 : ms));
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let busy = false;

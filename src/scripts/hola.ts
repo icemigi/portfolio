@@ -3,6 +3,7 @@
 // Indépendant de l'apparition lettre par lettre : chaque caractère est enveloppé une fois pour toutes dans un span .hc
 // (décalage par top/left, crénage intact) ; l'apparition anime ses propres spans .ch à l'intérieur, les deux décalages s'additionnent.
 // Cibles : [data-hola] ; réglages par cible : data-hola="poussée écart rayon". Ordinateur seulement ; rien si « Réduire les animations ».
+import { reduced } from './motion';
 const DEF = { A: 0.26, SPREAD: 0.06, SIGMA: 90 }; // poussée verticale (em), écart horizontal (em), rayon (px)
 const SKIP = '.note, .bp, .vi, .door, .mono, svg, [data-copy]';
 const SOLID = '.vi, .door'; // images : bougent d'un bloc
@@ -57,7 +58,7 @@ export function initHola() {
       raf = requestAnimationFrame(loop);
     };
     el.addEventListener('pointerenter', (e) => {
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      if (reduced()) return;
       inside = true; mx = e.clientX; my = e.clientY; measure();
       if (!raf) raf = requestAnimationFrame(loop);
     });

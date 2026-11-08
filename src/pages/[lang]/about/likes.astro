@@ -84,14 +84,14 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
 </style>
 
 <script>
-  import { letters } from '../../../scripts/motion';
+  import { letters, reduced } from '../../../scripts/motion';
   const M = (window as any).Matter;
   const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; cm: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
   const root = document.querySelector<HTMLElement>('[data-likes]')!;
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const card = root.querySelector<HTMLElement>('[data-card]')!;
   const big = root.querySelector<HTMLElement>('[data-big]')!;
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = reduced();
   const small = matchMedia('(max-width: 760px)').matches;
   const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
   // plus d'itérations du solveur : les objets empilés ne s'enfoncent plus les uns dans les autres

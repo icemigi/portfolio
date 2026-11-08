@@ -41,10 +41,11 @@ const { items } = Astro.props;
 </style>
 
 <script>
+  import { reduced } from '../scripts/motion';
   type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; sh: Float32Array };
   const C = 8, R = 22; // colonnes × rangées de points par fanion
   const root = document.querySelector<HTMLElement>('[data-fanions]');
-  const still = matchMedia('(prefers-reduced-motion: reduce), (max-width: 760px)').matches;
+  const still = reduced() || matchMedia('(max-width: 760px)').matches;
   const cv = root?.querySelector<HTMLCanvasElement>('canvas.gl');
   const gl = !still && cv ? cv.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true }) : null;
   if (root && cv && gl) {

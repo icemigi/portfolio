@@ -95,13 +95,14 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
 </style>
 
 <script>
+  import { reduced } from '../../scripts/motion';
   // portrait qui suit la souris au survol du texte d'intro : position amortie, inclinaison selon la vitesse,
   // entrée en grandissant avec un léger rebond, sortie en se rétractant
   const pt = document.querySelector<HTMLImageElement>('[data-pt]');
   const zone = document.querySelector<HTMLElement>('[data-pt-zone]');
   if (pt && zone && matchMedia('(hover: hover) and (pointer: fine)').matches) {
     document.body.appendChild(pt); // hors des écrans (transformés) : position fixe = fenêtre
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const still = reduced();
     let tx = 0, ty = 0, x = 0, y = 0, r = 0, s = 0.6, vs = 0, on = false, raf = 0;
     const OFF = 14; // le pointeur se tient au coin supérieur gauche du portrait, à quelques pixels
     const tick = () => {

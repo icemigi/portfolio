@@ -89,13 +89,14 @@ const POS = [[17, 40, 13, -6, 0.6], [38, 25, 14, 5, 1], [58, 33, 12, -3, 0.5], [
 </style>
 
 <script>
+  import { reduced } from '../../../scripts/motion';
   // M1 Flottement : chaque objet monte et descend à son rythme ; la souris les décale selon leur profondeur ;
   // survol = l'objet se soulève de 14 px. Les objets se prennent à la main (glisser-déposer) et restent où on les pose.
   // Un clic sans déplacement ouvre l'étude.
   const stage = document.querySelector<HTMLElement>('[data-stage]');
   // téléphone : la scène est masquée (liste à la place), on ne lance rien
   if (stage && stage.offsetParent !== null) {
-    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const still = reduced();
     const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
     const O = [...stage.querySelectorAll<HTMLElement>('.obj')].map((el, i) => ({
       el, a: el.querySelector('a')!, f: el.querySelector<HTMLElement>('.float')!, z: Number(el.dataset.depth),
