@@ -55,6 +55,8 @@ export function initScreens(host: HTMLElement): Screens {
   };
   const emit = (name: string, detail: object) => host.dispatchEvent(new CustomEvent(name, { detail }));
   S.forEach((s) => s.addEventListener('scroll', solid, { passive: true }));
+  // le conteneur ne défile jamais lui-même : un focus (tabulation, champ) peut le faire glisser et décaler toute la bande
+  host.addEventListener('scroll', () => { if (host.scrollTop || host.scrollLeft) { host.scrollTop = 0; host.scrollLeft = 0; } }, { passive: true });
 
   // un écran ne se lit à l'intérieur que s'il défile vraiment (overflow:hidden = débord voulu, ex. le nom de l'accueil)
   const canScroll = (s: HTMLElement, dir: number) =>
@@ -166,10 +168,11 @@ export function initScreens(host: HTMLElement): Screens {
   // L'inertie du trackpad envoie encore des dizaines d'événements après le geste : on n'accepte un nouveau passage
   // que si (a) le flux s'est interrompu (> 180 ms sans événement), ou (b) l'inertie est presque retombée (< 6)
   // puis repart franchement (un vrai nouveau coup de doigt). Jamais deux passages à moins de 450 ms.
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, low = Infinity, armed = true;
+  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, low = Infinity, armed = true;
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
+    if (e.ctrlKey) return; // pincement du pavé (zoom) : pas un défilement
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     const now = performance.now();
     const dir = Math.sign(e.deltaY);
@@ -185,7 +188,12 @@ export function initScreens(host: HTMLElement): Screens {
     if (fresh) { acc = 0; used = false; gdir = dir; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
     if (used || !edge) return;
     acc += e.deltaY;
-    if (Math.abs(acc) > 30) { used = true; armed = false; low = Infinity; lastGo = now; step(dir); }
+    // molette à crans : deux crans rapprochés ne font pas sauter deux écrans (420 ms minimum entre deux passages dans le même sens)
+    if (Math.abs(acc) > 30) {
+      used = true; armed = false; low = Infinity;
+      if (dir === lastDir && now - lastGo < 420) return;
+      lastGo = now; lastDir = dir; step(dir);
+    }
   };
   addEventListener('wheel', onWheel, { passive: true });
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : on écoute aussi sa molette
@@ -214,25 +222,26 @@ export function initScreens(host: HTMLElement): Screens {
   });
 
   // doigt : le glissement fait passer d'écran quand l'écran courant est déjà à son bord
-  let y0 = 0, t0 = 0, up = false, down = false;
+  let y0 = 0, x0 = 0, t0 = 0, up = false, down = false;
   addEventListener('touchstart', (e) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-touch]')) { y0 = NaN; return; }
-    y0 = e.touches[0].clientY; t0 = performance.now();
+    y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = performance.now();
     down = !canScroll(S[cur], 1); up = !canScroll(S[cur], -1);
   }, { passive: true });
   // le passage part dès que le doigt a glissé de 36 px (sans attendre qu'il quitte l'écran) : plus de latence
   let fired = false;
-  const swipe = (yNow: number) => {
+  const swipe = (yNow: number, xNow: number) => {
     if (Number.isNaN(y0) || fired) return;
     const d = y0 - yNow;
     if (Math.abs(d) < 36 || performance.now() - t0 > 900) return;
+    if (Math.abs(x0 - xNow) > Math.abs(d)) return; // glissement surtout horizontal : pas un changement d'écran
     if (d > 0 && (down || busy)) { fired = true; step(1); }
     if (d < 0 && (up || busy)) { fired = true; step(-1); }
   };
   addEventListener('touchstart', () => { fired = false; }, { passive: true });
-  addEventListener('touchmove', (e) => swipe(e.touches[0].clientY), { passive: true });
-  addEventListener('touchend', (e) => swipe(e.changedTouches[0].clientY), { passive: true });
+  addEventListener('touchmove', (e) => swipe(e.touches[0].clientY, e.touches[0].clientX), { passive: true });
+  addEventListener('touchend', (e) => swipe(e.changedTouches[0].clientY, e.changedTouches[0].clientX), { passive: true });
 
   // tabulation : le focus amène son écran
   host.addEventListener('focusin', (e) => {
@@ -250,7 +259,14 @@ export function initScreens(host: HTMLElement): Screens {
 
   addEventListener('pagehide', save);
   let rz = 0;
-  const relayout = () => { measure(); if (!busy) scroll = T[cur]; render(); };
+  // la hauteur change (barre d'adresse du téléphone qui apparaît ou disparaît) : en plein glissement, la course est remise
+  // à l'échelle de la nouvelle hauteur au lieu de sauter vers une position calculée avec l'ancienne
+  const relayout = () => {
+    const h0 = H; measure();
+    if (!busy) scroll = T[cur];
+    else if (h0 && H !== h0) { const k = H / h0; scroll *= k; if (mv) { mv.p0 *= k; mv.v0 *= k; } vel *= k; }
+    render();
+  };
   addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(relayout); });
   document.fonts?.ready.then(relayout);
   measure(); scroll = T[cur]; tgt = cur; place(); render();
