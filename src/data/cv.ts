@@ -12,7 +12,7 @@ export const cv: Record<Lang, Cv> = {
   fr: {
     name: 'Xavier M. Diez',
     role: 'Type designer & digital creative',
-    meta: 'Bordeaux → Paris · remote · à l’écoute',
+    meta: 'Paris · remote · à l’écoute',
     ui: {
       boot: 'Dernière connexion',
       help: 'commandes',
@@ -101,7 +101,7 @@ export const cv: Record<Lang, Cv> = {
   en: {
     name: 'Xavier M. Diez',
     role: 'Type designer & digital creative',
-    meta: 'Bordeaux → Paris · remote · open to offers',
+    meta: 'Paris · remote · open to offers',
     ui: {
       boot: 'Last login',
       help: 'commands',

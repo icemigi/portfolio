@@ -81,7 +81,7 @@ export const aboutLabels = {
 
 // Coordonnées — À COMPLÉTER (adresse et CV provisoires)
 export const contact = {
-  email: 'hello@kerningkastle.com', // TODO : adresse réelle
+  email: 'hello@kerningkastle.com',
   instagram: 'https://www.instagram.com/kerningkastle/',
   behance: 'https://www.behance.net/icemigi',
 };

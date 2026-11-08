@@ -100,7 +100,7 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   const start = vignettes(frame, delay);
   fadeMono(frame, delay);
   const end = letters(frame, start, extraSkip);
-  afterText(frame, end);
+  afterText(frame, end, start);
   return end;
 }
 
@@ -123,11 +123,10 @@ function type(el: HTMLElement, delay: number): number {
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
   return delay + k * TYPE;
 }
-function afterText(frame: Element, end: number) {
+function afterText(frame: Element, end: number, start = end) {
   if (reduced()) return;
-  // les apartés se tapent pendant que le bouton arrive : rien n'attend la fin d'une autre animation
-  let t = end - 80;
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n) => { t = type(n, t) + 60; });
+  // les apartés se tapent en même temps que le texte (07/11 : ils arrivaient trop tard), en parallèle
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, start + 120 + i * 90); });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
     b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
     b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });

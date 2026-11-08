@@ -1,6 +1,6 @@
 ---
 // Mentions légales (obligatoires en France, loi pour la confiance dans l'économie numérique).
-// Les éléments entre crochets sont à compléter.
+// SIRET : à compléter dès réception (07/11).
 import Base from '../../layouts/Base.astro';
 import Footer from '../../components/Footer.astro';
 import { languages, getLangFromParam } from '../../data/ui';
@@ -11,19 +11,19 @@ const lang = getLangFromParam(Astro.params.lang);
 const fr = lang === 'fr';
 const S = fr
   ? [
-      ['Éditeur', `[Prénom Nom], entrepreneur individuel (kerningkastle) · SIRET [numéro] · [adresse ou domiciliation] · ${contact.email}`],
-      ['Directeur de la publication', '[Prénom Nom]'],
-      ['Hébergeur', '[Nom de l\'hébergeur] · [adresse] · [téléphone]'],
-      ['Propriété intellectuelle', 'Les textes, images, caractères et codes présentés sur ce site sont la propriété de kerningkastle ou de leurs ayants droit. Toute reproduction sans accord écrit est interdite.'],
-      ['Données personnelles', 'Ce site ne dépose aucun cookie et ne mesure pas l\'audience. Seuls deux réglages (langue, son) sont gardés dans votre navigateur et ne sont transmis à personne. Les messages envoyés par email ne servent qu\'à vous répondre.'],
+      ['Éditeur', `Xavier Mediavilla Diez, entrepreneur individuel (kerningkastle) · SIRET [en cours] · adresse communiquée sur demande · ${contact.email}`],
+      ['Directeur de la publication', 'Xavier Mediavilla Diez'],
+      ['Hébergeur', 'GitHub, Inc. · 88 Colin P Kelly Jr St, San Francisco, CA 94107, États-Unis · support@github.com'],
+      ['Propriété intellectuelle', 'Les textes, images, caractères et codes présentés sur ce site appartiennent à kerningkastle ou à leurs ayants droit. Toute reproduction sans accord écrit est interdite.'],
+      ['Données personnelles', 'Ce site ne dépose aucun cookie. La fréquentation est mesurée par GoatCounter, sans cookie et sans donnée permettant de vous identifier. Seuls deux réglages (langue, son) sont gardés dans votre navigateur et ne sont transmis à personne. Les messages envoyés par email ne servent qu\'à vous répondre.'],
       ['Crédits', 'Conception, design et code : kerningkastle. Caractère Geist (licence SIL Open Font License).'],
     ]
   : [
-      ['Publisher', `[First name Last name], sole trader (kerningkastle) · SIRET [number] · [address] · ${contact.email}`],
-      ['Publication director', '[First name Last name]'],
-      ['Hosting', '[Host name] · [address] · [phone]'],
+      ['Publisher', `Xavier Mediavilla Diez, sole trader (kerningkastle) · SIRET [pending] · address available upon request · ${contact.email}`],
+      ['Publication director', 'Xavier Mediavilla Diez'],
+      ['Hosting', 'GitHub, Inc. · 88 Colin P Kelly Jr St, San Francisco, CA 94107, USA · support@github.com'],
       ['Intellectual property', 'Texts, images, typefaces and code shown on this site belong to kerningkastle or their rights holders. Any reproduction without written consent is prohibited.'],
-      ['Personal data', 'This site sets no cookies and runs no analytics. Only two settings (language, sound) are kept in your browser and shared with no one. Emails you send are only used to reply to you.'],
+      ['Personal data', 'This site sets no cookies. Visits are counted by GoatCounter, without cookies and without any data that could identify you. Only two settings (language, sound) are kept in your browser and shared with no one. Emails you send are only used to reply to you.'],
       ['Credits', 'Concept, design and code: kerningkastle. Geist typeface (SIL Open Font License).'],
     ];
 ---

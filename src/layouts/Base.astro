@@ -68,6 +68,10 @@ const ogImage = new URL(`/og/${lang}-${ogKey}.png`, site).href;
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <slot name="head" />
+    <!-- mesure d'audience sans cookie (GoatCounter), seulement sur le site en ligne -->
+    {import.meta.env.PROD && (
+      <script is:inline data-goatcounter="https://kern.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
+    )}
   </head>
   <body>
     {!bare && <div class="ld" data-ld aria-hidden="true">
