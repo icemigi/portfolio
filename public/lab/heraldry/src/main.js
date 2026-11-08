@@ -70,6 +70,22 @@ class HeraldicApp {
     };
   }
 
+  // Clés à 10 caractères : état de 128 bits (sfc32) alimenté par la clé entière.
+  // L'ancien tirage ne garde que 32 bits de la clé, il reste réservé aux clés d'autres longueurs pour qu'elles redonnent le même écu.
+  createWideRandom(seed) {
+    let a = seed % 4294967296, b = Math.floor(seed / 4294967296), c = 0x9E3779B9, d = 1;
+    const next = () => {
+      const t = ((a + b | 0) + d) | 0;
+      d = d + 1 | 0;
+      a = b ^ b >>> 9;
+      b = c + (c << 3) | 0;
+      c = (c << 21 | c >>> 11) + t | 0;
+      return (t >>> 0) / 4294967296;
+    };
+    for (let i = 0; i < 16; i++) next();
+    return next;
+  }
+
   shuffleSeeded(array) {
     const arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -124,7 +140,7 @@ class HeraldicApp {
       if (value.length > 0) {
         const parsedSeed = parseInt(value, 36);
         if (!isNaN(parsedSeed)) {
-          this.generate(parsedSeed);
+          this.generate(parsedSeed, /^[0-9a-z]+$/.test(value) ? value : null);
           seedInput.value = "";
           seedInput.blur();
         }
@@ -201,15 +217,19 @@ class HeraldicApp {
     }));
   }
 
-  generate(targetSeedNumber = null) {
+  generate(targetSeedNumber = null, typedKey = null) {
     if (targetSeedNumber !== null) {
       this.currentNumericSeed = Math.abs(Math.floor(targetSeedNumber));
     } else {
-      this.currentNumericSeed = Math.floor(Math.random() * 9e17 + 1e17);
+      // exactement 10 caractères en Base36 : assez pour toutes les compositions, et un entier que JavaScript représente sans perte
+      this.currentNumericSeed = Math.floor(Math.random() * (36 ** 10 - 36 ** 9) + 36 ** 9);
     }
 
-    this.currentSeedString = this.currentNumericSeed.toString(36).toUpperCase();
-    this.rng = this.createSeededRandom(this.currentNumericSeed);
+    // la clé saisie reste affichée telle quelle : la réécrire depuis un très grand nombre pourrait la modifier
+    this.currentSeedString = (typedKey ?? this.currentNumericSeed.toString(36)).toUpperCase();
+    this.rng = this.currentSeedString.length === 10
+      ? this.createWideRandom(this.currentNumericSeed)
+      : this.createSeededRandom(this.currentNumericSeed);
 
     const availableEcus = Object.keys(this.ecuCache).sort();
     const randomEcuName = availableEcus[Math.floor(this.rng() * availableEcus.length)];
