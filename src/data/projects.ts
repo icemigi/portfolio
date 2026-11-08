@@ -218,6 +218,57 @@ const all: Project[] = [
       ],
     },
   },
+  // ---------------------------------------------------------------- kern-outdoor
+  // Brouillon du 08/11, rédigé d'après la « Note de cadrage — étude de cas kern.outdoor » (v1.0, à valider).
+  // Ne jamais citer ni montrer l'employeur. Chiffres à compléter avec les statistiques natives datées.
+  {
+    slug: 'kern-outdoor',
+    years: [2023],
+    tags: ['I', 'E'],
+    yearLabel: '2023 —',
+    object: 'feather',
+    draft: true,
+    fr: {
+      title: 'kern.outdoor',
+      short: "Direction artistique d'un média outdoor",
+      meta: { year: '2023 —', context: 'Projet personnel, autoproduit, non commercial', role: 'Direction artistique, identité, écriture, tournage, montage', tools: '—' },
+      lead: "La direction artistique d'un média outdoor que je tiens seul, de l'écriture au montage : un système reconnaissable au premier coup d'œil, et plus de 20 000 abonnés sans un euro de publicité.",
+      sections: [
+        { h: 'Contexte', paras: [{ p: "kern.outdoor existe depuis 2023. La montagne depuis l'enfance, le Pays basque, la préparation du diplôme d'accompagnateur en moyenne montagne : le compte partage ce terrain. Pendant deux ans, il publie sans direction artistique." }] },
+        { h: 'Le problème', paras: [{ p: "Le contenu outdoor est saturé de paysages interchangeables et de tests de matériel qui ressemblent à des publicités. Sans direction artistique, le compte se perdait dans le flux. La question : devenir reconnaissable au premier coup d'œil, sans budget." }] },
+        { h: 'La démarche', paras: [{ p: "En 2025, partir de ce qui marchait déjà, les conseils techniques, pour définir une direction artistique, puis la décliner sur tous les formats : tests de matériel, prises de position, tendances, et sujets engagés sur la nature." }] },
+        { h: 'Le système', paras: [{ p: "Un wordmark, une typographie et une palette fixes. Des gabarits de posts et de carrousels. Un habillage vidéo complet : titres, sous-titres, ouverture et fin. De quoi produire vite, sans perdre la cohérence." }] },
+        { h: 'Choix clés', paras: [
+          { t: 'Le conseil avant le produit.', p: 'Utile d\'abord, jamais publicitaire.' },
+          { t: 'Une série, pas des posts.', p: 'Chaque publication se reconnaît dans la grille.' },
+          { t: 'La rigueur du terrain.', p: 'Des informations vérifiées d\'accompagnateur, pas d\'influenceur.' },
+          { t: 'Tout fait seul.', p: 'Écriture, tournage, montage, graphisme.' },
+        ] },
+        { h: 'En situation', paras: [{ p: "La grille du profil, des carrousels complets, des vidéos et leurs couvertures en série, et l'avant 2025 à côté de l'après." }] },
+        { h: 'Résultat et suite', paras: [{ p: "Depuis la direction artistique : plus d'enregistrements et de partages, un compte reconnaissable et une image plus professionnelle. Plus de 20 000 abonnés, tous organiques. Le compte continue." }] },
+      ],
+    },
+    en: {
+      title: 'kern.outdoor',
+      short: 'Art direction for an outdoor media',
+      meta: { year: '2023 —', context: 'Personal project, self-produced, non-commercial', role: 'Art direction, identity, writing, filming, editing', tools: '—' },
+      lead: 'Art direction for an outdoor media I run on my own, from writing to editing: a system recognisable at first glance, and over 20,000 followers without spending a cent on ads.',
+      sections: [
+        { h: 'Context', paras: [{ p: 'kern.outdoor has existed since 2023. Mountains since childhood, the Basque Country, training for the French mountain leader diploma: the account shares that ground. For two years, it posted without any art direction.' }] },
+        { h: 'The problem', paras: [{ p: 'Outdoor content is saturated with interchangeable landscapes and gear reviews that look like ads. Without art direction, the account got lost in the feed. The question: how to become recognisable at first glance, with no budget.' }] },
+        { h: 'The approach', paras: [{ p: 'In 2025, start from what already worked, the technical advice, to define an art direction, then roll it out to every format: gear tests, opinions, trends, and committed pieces about nature.' }] },
+        { h: 'The system', paras: [{ p: 'A fixed wordmark, typeface and palette. Templates for posts and carousels. A full video package: titles, subtitles, opening and ending. Enough to produce fast without losing consistency.' }] },
+        { h: 'Key decisions', paras: [
+          { t: 'Advice before product.', p: 'Useful first, never an ad.' },
+          { t: 'A series, not posts.', p: 'Every post is recognisable in the grid.' },
+          { t: 'Field rigour.', p: 'Information checked by a mountain leader, not an influencer.' },
+          { t: 'All done alone.', p: 'Writing, filming, editing, design.' },
+        ] },
+        { h: 'In context', paras: [{ p: 'The profile grid, full carousels, videos and their covers as a series, and before 2025 next to after.' }] },
+        { h: 'Outcome and next', paras: [{ p: 'Since the art direction: more saves and shares, a recognisable account and a more professional image. Over 20,000 followers, all organic. The account goes on.' }] },
+      ],
+    },
+  },
   // ---------------------------------------------------------------- bms-esport
   {
     slug: 'bms-esport',
