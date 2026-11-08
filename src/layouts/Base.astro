@@ -3,6 +3,8 @@ import '../styles/global.css';
 import Header from '../components/Header.astro';
 import DevMode from '../components/DevMode.astro';
 import { ui, type Lang } from '../data/ui';
+import { cv } from '../data/cv';
+import { contact } from '../data/about';
 
 interface Props {
   lang: Lang;
@@ -23,6 +25,20 @@ const seg = path.split('/').filter(Boolean);
 const ogRaw = !seg.length ? 'home' : seg[0] === 'work' && seg[1] ? `work-${seg[1]}` : seg[0];
 const ogKey = ['home', 'work', 'lab', 'archive', 'about'].includes(ogRaw) || ogRaw.startsWith('work-') ? ogRaw : 'home';
 const ogImage = new URL(`/og/${lang}-${ogKey}.png`, site).href;
+// données structurées (schema.org) : le site et la personne derrière, pour les moteurs de recherche
+const home = new URL('/', site).href;
+const ld = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${home}#site`, url: home, name: 'kerningkastle', inLanguage: ['fr', 'en'], publisher: { '@id': `${home}#me` } },
+    {
+      '@type': 'Person', '@id': `${home}#me`, name: 'kerningkastle', jobTitle: cv[lang].role, // nom d'usage seulement : le nom civil reste sur la page CV, pas mis en avant
+      url: home, image: new URL('/portrait-720.webp', site).href, email: `mailto:${contact.email}`,
+      address: { '@type': 'PostalAddress', addressLocality: 'Paris', addressCountry: 'FR' },
+      sameAs: [contact.instagram, contact.behance],
+    },
+  ],
+};
 ---
 <!doctype html>
 <html lang={lang}>
@@ -67,6 +83,7 @@ const ogImage = new URL(`/og/${lang}-${ogKey}.png`, site).href;
     <meta name="twitter:title" content={fullTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
+    <script type="application/ld+json" set:html={JSON.stringify(ld)} />
     <slot name="head" />
     <!-- mesure d'audience sans cookie (GoatCounter), seulement sur le site en ligne -->
     {import.meta.env.PROD && (

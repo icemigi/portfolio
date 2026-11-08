@@ -7,7 +7,8 @@ import { resolve } from 'node:path';
 
 const root = resolve(new URL('..', import.meta.url).pathname);
 const font = (f) => `data:font/woff2;base64,${readFileSync(`${root}/public/fonts/${f}`).toString('base64')}`;
-const logo = `data:image/svg+xml;base64,${readFileSync(`${root}/public/logo-kerningkastle-dark.svg`).toString('base64')}`;
+// logo : la pièce d'argent (8/11/2026)
+const logo = `data:image/webp;base64,${readFileSync(`${root}/public/logo-coin.webp`).toString('base64')}`;
 const src = readFileSync(`${root}/src/data/projects.ts`, 'utf8');
 // slugs et titres, dans l'ordre du site
 const projects = [...src.matchAll(/slug: '([^']+)'[\s\S]*?fr: \{\s*title: '((?:[^'\\]|\\.)*)'[\s\S]*?en: \{\s*title: '((?:[^'\\]|\\.)*)'/g)]
@@ -28,7 +29,7 @@ const html = (p) => `<!doctype html><meta charset="utf-8"><style>
 @font-face{font-family:M;src:url(${font('GeistMono-Regular.woff2')})}
 *{margin:0}html,body{width:1200px;height:630px;background:#f3f3f3;color:#111}
 body{position:relative;font-family:G}
-img{position:absolute;left:56px;top:48px;width:52px;height:52px}
+img{position:absolute;left:50px;top:40px;width:72px;height:auto}
 .n{position:absolute;right:56px;top:62px;font:22px M;color:#777}
 h1{position:absolute;left:52px;bottom:104px;font-weight:500;font-size:${p.t.length > 16 ? 96 : 128}px;letter-spacing:-.045em;line-height:.9;white-space:nowrap}
 .t{position:absolute;left:56px;bottom:52px;font:22px M}

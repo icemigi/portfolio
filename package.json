@@ -9,8 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro",
-    "build:pages": "astro build && node tools/rebase.mjs /portfolio"
+    "astro": "astro"
   },
   "dependencies": {
     "astro": "^7.4.1"

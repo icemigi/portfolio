@@ -46,9 +46,20 @@ c.sections.forEach((s, i) => {
 if (!c.sections.length && !gals.length) push(gallery('pair'));
 while (gi < gals.length) push(gallery('full'));
 const tall = (i: Img) => i.h > i.w * 2;
+// données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
+const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
+const workLd = {
+  '@context': 'https://schema.org', '@type': 'CreativeWork',
+  name: c.title, description: c.lead, inLanguage: lang,
+  url: new URL(`/${lang}/work/${project.slug}/`, home).href,
+  ...(M ? { image: new URL(M.cover.src, home).href } : {}),
+  ...(project.years.length ? { dateCreated: String(project.years[0]) } : {}),
+  creator: { '@id': `${home}#me` }, isPartOf: { '@id': `${home}#site` },
+};
 ---
 <Base lang={lang} title={c.title} description={c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(workLd)} />
     <script is:inline>
       // arrivée par « Projet suivant » : drapeau lu tout de suite, puis effacé
       try { window.kkArriving = sessionStorage.getItem('kk-next') === '1'; sessionStorage.removeItem('kk-next'); } catch (e) { window.kkArriving = false; }
