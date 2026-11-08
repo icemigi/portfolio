@@ -93,7 +93,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const small = matchMedia('(max-width: 760px)').matches;
   const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
   // pas de temps fixe de 1/120 s (voir la boucle) : les piles restent stables sans pousser les itérations du solveur
-  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 6 : 8, velocityIterations: small ? 4 : 6, constraintIterations: 3 });
+  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 8 : 12, velocityIterations: small ? 6 : 8, constraintIterations: 4 });
   let W = innerWidth, H = innerHeight;
 
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
@@ -134,7 +134,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.34 : 0.4)) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
     const u = (i * 0.37) % 1, x = small ? W * (0.12 + 0.76 * u) : Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, tr.left + tr.width * (0.5 + 0.8 * (u - 0.5)))), y = -h - 20;
-    const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.01, angle: (Math.random() - 0.5) * 0.25 };
+    const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.05, angle: (Math.random() - 0.5) * 0.25 };
     // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
     let body: any, ox = 0, oy = 0;
     if (d.shape === 'circle') body = Bodies.circle(x, y, w / 2, opt);
@@ -168,8 +168,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const mouse = Mouse.create(stage);
   mouse.pixelRatio = 1;
   stage.removeEventListener('wheel', mouse.mousewheel); stage.removeEventListener('mousewheel', mouse.mousewheel); stage.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-  // prise plus franche (moins d'élastique) ; l'objet tenu peut tourner librement autour du point de prise
-  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.1, damping: 0.06, angularStiffness: 0, render: { visible: false } } });
+  // prise plus franche (moins d'élastique) ; l'objet tenu garde son orientation (sinon il pivote dès qu'on clique dessus)
+  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.1, damping: 0.06, render: { visible: false } } });
   Composite.add(engine.world, mc);
   let down = { x: 0, y: 0, t: 0 };
   Events.on(mc, 'startdrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })));
@@ -197,10 +197,12 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const tween = (it: (typeof items)[number], tx: number, ty: number, ts: number, ta = 0, done?: () => void) => {
     const b = it.body, x0 = b.position.x, y0 = b.position.y, a0 = b.angle, s0 = it.s, t0 = performance.now(), dur = still ? 1 : 700, tok = ++it.tw;
     const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    // rotation par le plus court chemin : un objet qui a roulé a un angle de plusieurs tours, il ne doit pas les refaire
+    const TAU = Math.PI * 2, da = ((((ta - a0) % TAU) + TAU + Math.PI) % TAU) - Math.PI;
     const step = (now: number) => {
       if (tok !== it.tw) return; // un nouveau mouvement a pris le relais
       const p = ease(Math.min(1, (now - t0) / dur));
-      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 + (ta - a0) * p); it.s = s0 + (ts - s0) * p;
+      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 + da * p); it.s = s0 + (ts - s0) * p;
       if (p < 1) requestAnimationFrame(step); else done?.();
     };
     requestAnimationFrame(step);
@@ -210,7 +212,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     if (!sel) return;
     const it = sel, h = it.home!; sel = null;
     it.el.classList.remove('sel');
-    const land = () => { if (sel === it || !it.body.isStatic) return; Body.setPosition(it.body, { x: h.x, y: h.y }); Body.setAngle(it.body, h.a); it.s = 1; Body.setStatic(it.body, false); Body.setVelocity(it.body, { x: 0, y: 0 }); if (!sel) paused = false; };
+    const land = () => { if (sel === it || !it.body.isStatic) return; Body.setPosition(it.body, { x: h.x, y: h.y }); Body.setAngle(it.body, h.a); it.s = 1; Body.setStatic(it.body, false); Body.setVelocity(it.body, { x: 0, y: 0 }); Body.setAngularVelocity(it.body, 0); if (!sel) paused = false; };
     tween(it, h.x, h.y, 1, h.a, land);
     setTimeout(land, still ? 0 : 760); // filet de sécurité si l'animation est suspendue (onglet en arrière-plan)
   };
