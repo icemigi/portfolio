@@ -45,10 +45,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
   .big > span { display: inline-block; text-align: center; }
-  /* téléphone : le titre en colonne, un mot par ligne, centré, même taille ; il n'arrête plus les objets (décor derrière la pile) */
-  @media (max-width: 760px) {
-    .big .w { display: block; }
-  }
+  /* titre sur une seule ligne, partout ; sur téléphone il n'arrête pas les objets (décor derrière la pile) */
+  .big > span { white-space: nowrap; }
   .big[hidden] { display: none; }
   .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; }
   .stage:active { cursor: grabbing; }
@@ -94,9 +92,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const still = reduced();
   const small = matchMedia('(max-width: 760px)').matches;
   const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
-  // plus d'itérations du solveur : les objets empilés ne s'enfoncent plus les uns dans les autres
-  // (téléphone : un peu moins, la pile y est plus petite et le processeur plus faible)
-  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 10 : 14, velocityIterations: small ? 7 : 10, constraintIterations: 4 });
+  // pas de temps fixe de 1/120 s (voir la boucle) : les piles restent stables sans pousser les itérations du solveur
+  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 6 : 8, velocityIterations: small ? 4 : 6, constraintIterations: 3 });
   let W = innerWidth, H = innerHeight;
 
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
@@ -171,7 +168,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const mouse = Mouse.create(stage);
   mouse.pixelRatio = 1;
   stage.removeEventListener('wheel', mouse.mousewheel); stage.removeEventListener('mousewheel', mouse.mousewheel); stage.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.12, damping: 0.12, render: { visible: false } } });
+  // prise plus franche (moins d'élastique) ; l'objet tenu peut tourner librement autour du point de prise
+  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.1, damping: 0.06, angularStiffness: 0, render: { visible: false } } });
   Composite.add(engine.world, mc);
   let down = { x: 0, y: 0, t: 0 };
   Events.on(mc, 'startdrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })));
@@ -277,11 +275,15 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     const tf = `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${body.angle.toFixed(4)}rad) scale(${sc.toFixed(3)})`;
     if (tf !== it.tf) { it.tf = tf; el.style.transform = tf; }
   });
-  if (still) { setTimeout(() => { for (let i = 0; i < 600; i++) Engine.update(engine, 1000 / 60); }, 10); }
-  let last = performance.now();
+  // pas fixe : Matter avance toujours de 1/120 s, autant de fois que le temps écoulé l'exige (écran 60, 120 ou 144 Hz,
+  // image en retard) ; un pas variable donnait des à-coups et des piles qui tremblent
+  const STEP = 1000 / 120;
+  if (still) { setTimeout(() => { for (let i = 0; i < 1200; i++) Engine.update(engine, STEP); }, 10); }
+  let last = performance.now(), acc = 0;
   const tick = (now: number) => {
-    const dt = Math.min(32, now - last); last = now;
-    if (!document.hidden && !paused) Engine.update(engine, dt);
+    acc += Math.min(100, now - last); last = now;
+    if (document.hidden || paused) acc = 0;
+    else { let n = 0; while (acc >= STEP && n++ < 12) { Engine.update(engine, STEP); acc -= STEP; } }
     draw(); requestAnimationFrame(tick);
   };
   draw(); requestAnimationFrame(tick);
