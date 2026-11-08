@@ -45,7 +45,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
   .big > span { display: inline-block; text-align: center; }
-  /* téléphone : le titre en colonne, un mot par ligne, centré, même taille (moins large : les objets pleuvent autour, quelques-uns restent dessus) */
+  /* téléphone : le titre en colonne, un mot par ligne, centré, même taille ; il n'arrête plus les objets (décor derrière la pile) */
   @media (max-width: 760px) {
     .big .w { display: block; }
   }
@@ -95,7 +95,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const small = matchMedia('(max-width: 760px)').matches;
   const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
   // plus d'itérations du solveur : les objets empilés ne s'enfoncent plus les uns dans les autres
-  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: 14, velocityIterations: 10, constraintIterations: 4 });
+  // (téléphone : un peu moins, la pile y est plus petite et le processeur plus faible)
+  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 10 : 14, velocityIterations: small ? 7 : 10, constraintIterations: 4 });
   let W = innerWidth, H = innerHeight;
 
   // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
@@ -115,13 +116,14 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
   const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
   const area = real.reduce((a, [w, h]) => a + w * h, 0);
-  const K = Math.sqrt(((small ? 0.24 : 0.24) * innerWidth * innerHeight) / area);
+  const K = Math.sqrt((0.24 * innerWidth * innerHeight) / area);
   // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
-  // une étagère par mot (sur téléphone les mots sont en colonne : chacun retient ce qui tombe dessus)
+  // une étagère par mot. Téléphone : pas d'étagère, le titre reste un décor derrière les objets, qui tombent jusqu'au sol
   const tr = big.querySelector('span')!.getBoundingClientRect();
   let shelves: any[] = [];
   const buildShelf = () => {
     Composite.remove(engine.world, shelves);
+    if (small) { shelves = []; return; }
     shelves = [...big.querySelectorAll<HTMLElement>('.w')].map((w) => {
       const r = w.getBoundingClientRect(), t = r.top + r.height * (small ? 0.24 : 0.12), b = r.bottom - r.height * (small ? 0.1 : 0.06);
       return Bodies.rectangle(r.left + r.width / 2, (t + b) / 2, r.width, b - t, { isStatic: true, friction: 1, frictionStatic: 10, restitution: 0 });

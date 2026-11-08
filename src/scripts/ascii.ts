@@ -65,6 +65,18 @@ export function initAscii(root: ParentNode = document) {
     && Number(im.getAttribute('width') || 0) >= 160,
   );
   if (!imgs.length) return;
+  // téléphone : pas de rendus ASCII (deux toiles par image, coûteux sur un petit processeur) ; un simple fondu à l'arrivée
+  if (matchMedia('(max-width: 760px)').matches) {
+    imgs.forEach((im) => {
+      im.style.opacity = '0';
+      im.style.transition = 'opacity .5s var(--out, ease-out)';
+      const show = () => { im.style.opacity = ''; };
+      im.addEventListener('load', show, { once: true });
+      im.addEventListener('error', show, { once: true });
+      if (im.complete) show();
+    });
+    return;
+  }
   const io = new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return;
     io.unobserve(e.target);
