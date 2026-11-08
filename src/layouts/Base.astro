@@ -19,18 +19,19 @@ const t = ui[lang];
 const fullTitle = title === 'kerningkastle' ? `kerningkastle — ${t.tagline}` : `${title} — kerningkastle`;
 const site = Astro.site ?? new URL('https://kerningkastle.com');
 const canonical = new URL(`/${lang}/${path}`, site).href;
-const alt = (l: Lang) => new URL(`/${l}/${path}`, site).href;
+// référencement : seul l'accueil anglais doit sortir dans les moteurs de recherche. Les autres pages restent explorables, leurs liens comptent.
+const indexable = lang === 'en' && path === '';
 // image d'aperçu au partage : /og/<langue>-<page>.png (générées, 1200 × 630)
 const seg = path.split('/').filter(Boolean);
 const ogRaw = !seg.length ? 'home' : seg[0] === 'work' && seg[1] ? `work-${seg[1]}` : seg[0];
 const ogKey = ['home', 'work', 'lab', 'archive', 'about'].includes(ogRaw) || ogRaw.startsWith('work-') ? ogRaw : 'home';
 const ogImage = new URL(`/og/${lang}-${ogKey}.png`, site).href;
 // données structurées (schema.org) : le site et la personne derrière, pour les moteurs de recherche
-const home = new URL('/', site).href;
+const home = new URL('/en/', site).href;
 const ld = {
   '@context': 'https://schema.org',
   '@graph': [
-    { '@type': 'WebSite', '@id': `${home}#site`, url: home, name: 'kerningkastle', inLanguage: ['fr', 'en'], publisher: { '@id': `${home}#me` } },
+    { '@type': 'WebSite', '@id': `${home}#site`, url: home, name: 'kerningkastle', alternateName: 'kerning kastle', inLanguage: ['fr', 'en'], publisher: { '@id': `${home}#me` } },
     {
       '@type': 'Person', '@id': `${home}#me`, name: 'kerningkastle', jobTitle: cv[lang].role, // nom d'usage seulement : le nom civil reste sur la page CV, pas mis en avant
       url: home, image: new URL('/portrait-720.webp', site).href, email: `mailto:${contact.email}`,
@@ -49,9 +50,7 @@ const ld = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
-    <link rel="alternate" hreflang="en" href={alt('en')} />
-    <link rel="alternate" hreflang="fr" href={alt('fr')} />
-    <link rel="alternate" hreflang="x-default" href={alt('en')} />
+    {!indexable && <meta name="robots" content="noindex, follow" />}
     <!-- favicon : noir sur navigateur clair, clair sur navigateur sombre (SVG qui suit le thème) ; .ico pour les anciens navigateurs -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
