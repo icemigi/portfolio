@@ -21,7 +21,8 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
     <section class="scr" aria-labelledby="ab-1">
       <div class="in g">
         <h1 class="lab mono mu par" id="ab-1">{L.about}</h1>
-        <div class="bd"><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} /></div>
+        <div class="bd intro" data-pt-zone><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} /></div>
+        <img class="pt" src="/portrait-360.webp" srcset="/portrait-360.webp 360w, /portrait-720.webp 720w" sizes="(max-width: 760px) 50vw, 240px" alt={lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame'} width="360" height="492" decoding="async" data-pt data-no-ascii />
       </div>
     </section>
 
@@ -75,6 +76,14 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
   @media (hover: hover) { .svc .seen .lk:hover { transform: none; color: var(--ac); } }
   @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } }
   .cvl { margin-top: 40px; }
+  /* portrait : à la souris, il apparaît au survol du texte d'intro et suit le pointeur (ressort, inclinaison selon la vitesse).
+     Écran tactile : posé au-dessus du texte. */
+  .pt { grid-column: 1 / -1; order: -1; margin: 0 0 20px; width: min(50%, 180px); height: auto; }
+  @media (hover: hover) and (pointer: fine) {
+    .pt { position: fixed; left: 0; top: 0; z-index: 60; width: min(240px, 30dvh); margin: 0; pointer-events: none;
+      opacity: 0; transform-origin: 0 0; transition: opacity .35s var(--out); will-change: transform, opacity; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .18)); }
+    .pt.on { opacity: 1; }
+  }
 
 
   @media (max-width: 760px) {
@@ -84,3 +93,44 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
     .svc .seen { grid-column: 2; grid-row: auto; margin-top: 6px; }
   }
 </style>
+
+<script>
+  // portrait qui suit la souris au survol du texte d'intro : position amortie, inclinaison selon la vitesse,
+  // entrée en grandissant avec un léger rebond, sortie en se rétractant
+  const pt = document.querySelector<HTMLImageElement>('[data-pt]');
+  const zone = document.querySelector<HTMLElement>('[data-pt-zone]');
+  if (pt && zone && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    document.body.appendChild(pt); // hors des écrans (transformés) : position fixe = fenêtre
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let tx = 0, ty = 0, x = 0, y = 0, r = 0, s = 0.6, vs = 0, on = false, raf = 0;
+    const OFF = 14; // le pointeur se tient au coin supérieur gauche du portrait, à quelques pixels
+    const tick = () => {
+      const k = still ? 1 : 0.16;
+      const px = x; x += (tx - x) * k; y += (ty - y) * k;
+      const rt = still ? 0 : Math.max(-14, Math.min(14, (x - px) * 0.9));
+      r += (rt - r) * 0.12;
+      // ressort pour l'échelle : un peu de rebond à l'entrée
+      const st = on ? 1 : 0.6;
+      if (still) s = st; else { vs = (vs + (st - s) * 0.14) * 0.72; s += vs; }
+      const w = pt.offsetWidth, h = pt.offsetHeight;
+      // coin supérieur gauche au pointeur ; près des bords droit et bas, le portrait se cale pour rester visible
+      const left = Math.min(x + OFF, innerWidth - w - 12);
+      const top = Math.min(y + OFF, innerHeight - h - 12);
+      pt.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(${r.toFixed(2)}deg) scale(${s.toFixed(3)})`;
+      const moving = Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || Math.abs(st - s) > 0.002 || Math.abs(vs) > 0.002 || Math.abs(r - rt) > 0.05;
+      raf = moving ? requestAnimationFrame(tick) : 0;
+    };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
+    zone.addEventListener('pointerenter', (e) => {
+      tx = e.clientX; ty = e.clientY;
+      if (!on && s <= 0.61) { x = tx; y = ty; } // apparaît sous le pointeur, sans glisser depuis l'ancien endroit
+      on = true; pt.classList.add('on'); kick();
+    });
+    zone.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; kick(); });
+    const hide = () => { on = false; pt.classList.remove('on'); kick(); };
+    zone.addEventListener('pointerleave', hide);
+    addEventListener('blur', hide);
+    // changement d'écran (molette) : le texte s'en va, le portrait aussi
+    addEventListener('wheel', () => { if (on && !zone.matches(':hover')) hide(); }, { passive: true });
+  }
+</script>

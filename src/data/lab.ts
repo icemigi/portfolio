@@ -47,3 +47,36 @@ const all: Room[] = [
 // pièces vides (kind 'slot') masquées tant qu'elles ne sont pas intégrées (décision du 03/11)
 export const rooms: Room[] = all.filter((r) => r.kind !== 'slot' && !(r.kind === 'font' && !r.file));
 export const allRooms = all;
+
+// Apps autonomes (pages complètes dans /public/lab/) : ouvertes dans une fenêtre du bureau,
+// sans salle /xx/lab/<id>/. Seule source de vérité pour le bureau, la grille mobile et le compteur du menu.
+export type LabApp = {
+  id: string;
+  year: string;
+  src: string;
+  w: number; // taille de la fenêtre sur le bureau
+  h: number;
+  en: { title: string; cat: string };
+  fr: { title: string; cat: string };
+};
+
+export const labApps: LabApp[] = [
+  {
+    id: 'heraldry', year: '2025', src: '/lab/heraldry/index.html', w: 980, h: 640,
+    fr: { title: 'Algorithmic Heraldry', cat: 'Générateur' },
+    en: { title: 'Algorithmic Heraldry', cat: 'Generator' },
+  },
+  {
+    id: 'quiz', year: '2026', src: '/lab/quiz/index.html', w: 1040, h: 700,
+    fr: { title: 'Quiz Arcade', cat: 'Jeu' },
+    en: { title: 'Quiz Arcade', cat: 'Game' },
+  },
+  {
+    id: 'letteroastd', year: '2026', src: '/lab/letteroastd/index.html', w: 1000, h: 700,
+    fr: { title: 'Letteroastd', cat: 'Test de cinéphilie' },
+    en: { title: 'Letteroastd', cat: 'Film-buff test' },
+  },
+];
+
+// nombre de pièces visibles dans le Lab (salles + apps)
+export const labCount = rooms.length + labApps.length;

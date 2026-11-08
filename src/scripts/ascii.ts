@@ -46,6 +46,18 @@ function render(img: HTMLImageElement, cols: number, W: number, H: number) {
   return c.toDataURL('image/png');
 }
 
+// image avec srcset : le changement de src n'aurait aucun effet (srcset l'emporte). On choisit nous-mêmes la
+// version adaptée à la largeur affichée, puis on retire srcset pour que la trame et les rendus ASCII s'affichent.
+function pick(im: HTMLImageElement) {
+  const ss = im.getAttribute('srcset');
+  if (!ss) return im.currentSrc || im.src;
+  const need = (im.getBoundingClientRect().width || Number(im.getAttribute('width')) || 0) * (devicePixelRatio || 1);
+  const c = ss.split(',').map((x) => { const [u, w] = x.trim().split(/\s+/); return { u, w: parseInt(w, 10) || 0 }; }).sort((a, b) => a.w - b.w);
+  const best = c.find((x) => x.w >= need) || c[c.length - 1];
+  im.removeAttribute('srcset'); im.removeAttribute('sizes');
+  return best ? new URL(best.u, location.href).href : im.src;
+}
+
 export function initAscii(root: ParentNode = document) {
   if (reduced()) return;
   const imgs = [...root.querySelectorAll<HTMLImageElement>('main img, .screens-host img')].filter((im) =>
@@ -59,7 +71,7 @@ export function initAscii(root: ParentNode = document) {
     load(e.target as HTMLImageElement);
   }), { rootMargin: '60% 0px' });
   imgs.forEach((im) => {
-    const real = im.currentSrc || im.src;
+    const real = pick(im);
     const W = Number(im.getAttribute('width')), H = Number(im.getAttribute('height')) || W;
     im.dataset.real = real;
     im.removeAttribute('loading');

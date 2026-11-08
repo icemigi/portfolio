@@ -3,20 +3,20 @@
 // Téléphone : « (menu) » ouvre un plein écran (rubriques en grand, numérotées, langue en bas) ; Échap ou un lien le referme.
 import { ui, pad, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
-import { rooms } from '../data/lab';
+import { labCount } from '../data/lab';
 import { pieces } from '../data/archive';
 interface Props { lang: Lang; path: string; active?: string }
 const { lang, path, active } = Astro.props;
 const t = ui[lang];
 const items = [
   { key: 'work', href: `/${lang}/work/`, count: pad(projects.length) },
-  { key: 'lab', href: `/${lang}/lab/`, count: pad(rooms.length + 3) },
+  { key: 'lab', href: `/${lang}/lab/`, count: pad(labCount) },
   { key: 'archive', href: `/${lang}/archive/`, count: String(pieces.length) },
   { key: 'about', href: `/${lang}/about/`, count: '' },
 ] as const;
 ---
 <header class="site-header g mono">
-  <a class="home" href={`/${lang}/`} aria-label={t.home}><img src="/logo-kerningkastle-dark.svg" alt="" width="34" height="34" /></a>
+  <a class="home" href={`/${lang}/`} aria-label={t.home}><img src="/logo-coin-128.webp" alt="" width="52" height="50" /></a>
   <nav id="site-nav" aria-label={lang === 'fr' ? 'Menu principal' : 'Main menu'} data-own-wheel data-own-touch>
     <ul>
       {items.map((i, k) => (

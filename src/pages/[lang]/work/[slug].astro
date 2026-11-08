@@ -26,6 +26,8 @@ type Block =
   | { kind: 'img'; imgs: Img[] }
   | { kind: 'gen'; src: string };
 const M = media[project.slug];
+// grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
+const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(/\.webp$/, '-800.webp')} 800w, ${im.src} ${im.w}w` : undefined);
 const vid = (src: string) => /\.(mp4|webm)$/i.test(src); // boucle vidéo = « GIF » léger
 const gals = M?.gal ?? [];
 let gi = 0;
@@ -82,7 +84,7 @@ const tall = (i: Img) => i.h > i.w * 2;
     <section class="scr open" data-still aria-label={t.opening}>
       {M ? (vid(M.cover.src)
            ? <video class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} autoplay muted loop playsinline aria-label={c.title}></video>
-           : <img class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />)
+           : <img class="bleed cov" src={M.cover.src} srcset={ss(M.cover)} sizes="100vw" width={M.cover.w} height={M.cover.h} alt={c.title} decoding="async" />)
          : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
     </section>
 
@@ -106,7 +108,7 @@ const tall = (i: Img) => i.h > i.w * 2;
           <div data-enter class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
             {b.imgs.map((im) => vid(im.src)
               ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
-              : <img class="md" src={im.src} width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
+              : <img class="md" src={im.src} srcset={ss(im)} sizes="(max-width: 760px) 100vw, 50vw" width={im.w} height={im.h} alt={c.title} loading="lazy" decoding="async" />)}
           </div>
         </section>
       ) : b.kind === 'gen' ? (

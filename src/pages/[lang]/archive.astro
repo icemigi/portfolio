@@ -2,10 +2,9 @@
 // Archive. Ordinateur : une pile d'affiches jetées sur la table — chaque cran de molette (pavé, flèches) en jette une
 // de plus, à une place et un angle fixes (tirés au sort une fois pour toutes), sur toute la largeur de l'écran ;
 // remonter les reprend une à une ; barre de progression cliquable + compteur ;
-// au bout de la bande, le geste suivant découvre le pied de page. Pièce ouverte en grand, adresse propre (#01).
-// Téléphone : colonne verticale puis pied de page.
+// Pièce ouverte en grand, adresse propre (#01).
+// Téléphone : la même pile, au doigt. Pas de pied de page.
 import Base from '../../layouts/Base.astro';
-import Footer from '../../components/Footer.astro';
 import { ui, languages, getLangFromParam, pad } from '../../data/ui';
 import { pieces } from '../../data/archive';
 
@@ -35,7 +34,6 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
         <span class="bar" data-bar></span><em class="mono mu" data-count>01 / {pad(pieces.length)}</em>
       </div>
     </section>
-    <Footer lang={lang} top={false} />
   </div>
 
   <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={t.archiveCount}>
@@ -77,7 +75,6 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   .prog::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ln); }
   .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--ac); transform-origin: 0 50%; transform: scaleX(0); }
   .prog em { position: absolute; right: 0; top: -8px; font-style: normal; }
-  .arc :global(.ft) { position: absolute; left: 0; right: 0; top: 100dvh; }
 
   /* ---------- ordinateur : la pile, dessinée sur deux toiles (dessous figé + affiches en mouvement) ---------- */
   .pst { display: none; }
@@ -113,13 +110,12 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const bar = document.querySelector<HTMLElement>('[data-bar]')!;
   const prog = document.querySelector<HTMLElement>('[data-prog]')!;
   const count = document.querySelector<HTMLElement>('[data-count]')!;
-  const ft = root.querySelector<HTMLElement>('.ft')!;
   const items = [...track.querySelectorAll<HTMLElement>('.pc')];
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   const desktop = () => true; // la pile vaut aussi sur téléphone (essai du 02/11)
   const phone = () => matchMedia('(max-width: 760px)').matches;
   const P = (n: number) => String(n).padStart(2, '0');
-  let x = 0, target = 0, foot = 0, footTarget = 0, raf = 0;
+  let x = 0, target = 0, raf = 0;
 
   // ---------- la pile ----------
   // Dessinée sur deux toiles : la pile posée est peinte une fois sur la toile du dessous (elle ne coûte plus rien,
@@ -140,10 +136,11 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   let lifted = -1, dirty = false, W = 0, H = 0, dpr = 1, raf2 = 0, shown = 0;
   const cards: Card[] = items.map((_, i) => {
     const img = new Image(); img.decoding = 'async';
-    if (K.srcs[i]) img.src = K.srcs[i].replace('/archive/', '/archive/s/');
     img.onload = () => { if (order.includes(i)) { dirty = true; go(); } };
     return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img };
   });
+  // vignettes chargées au fil de la pile (celles posées + les 4 suivantes), pas toutes à l'ouverture de la page
+  const want = (i: number) => { const c = cards[i]; if (c && !c.img.src && K.srcs[i]) c.img.src = K.srcs[i].replace('/archive/', '/archive/s/'); };
   const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * (phone() ? .42 : .52)) * r, innerWidth * (phone() ? .62 : .34)); return [w, w / r]; };
   // sur téléphone, la pile se resserre vers le centre (les affiches y sont plus grandes que l'écran n'est large)
   const pos = (c: Card) => [(phone() ? .5 + (c.x0 - .5) * .45 : c.x0) * W + c.dx, c.y0 * H + c.dy];
@@ -164,8 +161,6 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
   const fit = () => { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1); for (const cv of [base, fly]) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } dirty = true; go(); };
   const go = () => { if (!raf2) raf2 = requestAnimationFrame(tick); };
-  // la boîte fixe s'allonge de la hauteur du pied de page : sinon, remonté par translateY, il est rogné (overflow:hidden)
-  const tall = () => { if (desktop()) { root.style.bottom = 'auto'; root.style.height = `calc(100dvh + ${ft.offsetHeight}px)`; } else { root.style.bottom = ''; root.style.height = ''; } };
   const ease = (p: number) => 1 - Math.pow(1 - p, 3);
   function tick(now: number) {
     raf2 = 0;
@@ -192,6 +187,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const pile = () => {
     if (!desktop()) return;
     const n = index() + 1, now = performance.now();
+    for (let i = 0; i < Math.min(items.length, n + 4); i++) want(i);
     if (n > shown) for (let i = shown; i < n; i++) { order = order.filter((o) => o !== i); order.push(i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (i - shown) * 45, kind: 'in' }); else dirty = true; }
     else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (shown - 1 - i) * 30, kind: 'out' }); dirty = true; }
     shown = n; go();
@@ -230,72 +226,51 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   fly.addEventListener('pointerup', drop);
   fly.addEventListener('pointercancel', drop);
   fly.addEventListener('pointerleave', () => { if (!hold) fly.classList.remove('stage'); });
-  tall(); if (desktop()) fit();
-  addEventListener('resize', () => { tall(); if (desktop()) fit(); });
+  if (desktop()) fit();
+  addEventListener('resize', () => { if (desktop()) fit(); });
 
   let lastK = 0;
   const render = () => {
-    root.style.transform = `translateY(${-foot}px)`;
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
     const k = index() + 1;
     if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;
-    x += (target - x) * ease; foot += (footTarget - foot) * ease;
+    x += (target - x) * ease;
     if (Math.abs(target - x) < 0.5) x = target;
-    if (Math.abs(footTarget - foot) < 0.5) foot = footTarget;
     render();
-    raf = x !== target || foot !== footTarget ? requestAnimationFrame(loop) : 0;
+    raf = x !== target ? requestAnimationFrame(loop) : 0;
   };
   const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
   const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
 
-  // molette : avance la bande ; au bout, un nouveau geste découvre le pied de page
-  let last = 0, atEndAtStart = false, atStartFoot = false, footHold = false, push = 0;
+  // molette : avance la bande
   addEventListener('wheel', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
     const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-    const now = performance.now();
-    // un geste = une suite d'événements sans pause de plus de 200 ms (l'inertie du pavé en fait partie)
-    if (now - last > 200) { atEndAtStart = target >= max() - 1; atStartFoot = footTarget > 0; footHold = false; push = 0; }
-    last = now;
-    if (footHold) return; // le geste qui a refermé le pied de page s'arrête là
-    // le pied de page ne s'ouvre que sur un NOUVEAU geste vers le bas, commencé alors que la dernière affiche est déjà posée,
-    // et franc (au moins 60 px cumulés) : ni l'inertie, ni un petit retour de pavé, ni un geste vers le haut ne l'ouvrent
-    if (d > 0 && atEndAtStart && footTarget === 0) { push += d; if (push > 60) { footTarget = ft.offsetHeight; kick(); } return; }
-    if (d > 0 && footTarget > 0) return;
-    if (d < 0 && footTarget > 0) { footTarget = 0; footHold = true; kick(); return; } // vers le haut : il se referme, et le geste s'arrête là
-    if (d < 0) push = 0;
     seek(target + d);
   }, { passive: true });
   addEventListener('keydown', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
     const step = STEP;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); target >= max() - 1 ? (footTarget = ft.offsetHeight, kick()) : seek(target + step); }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); footTarget > 0 ? (footTarget = 0, kick()) : seek(target - step); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); seek(target + step); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); seek(target - step); }
     if (e.key === 'Home') seek(0);
     if (e.key === 'End') seek(max());
   });
   // pavé tactile / doigt horizontal sur ordinateur tactile
   let tx = 0;
-  // doigt : glisser vers le haut jette des affiches, vers le bas les reprend ; au bout, un nouveau glissé ouvre le pied de page
-  let ty = 0, t0y = 0, endAtStart = false;
-  root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; ty = t0y = e.touches[0].clientY; endAtStart = target >= max() - 1; }, { passive: true });
+  // doigt : glisser vers le haut jette des affiches, vers le bas les reprend
+  let ty = 0;
+  root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
   root.addEventListener('touchmove', (e) => {
     if (document.querySelector('[data-lb]:not([hidden])')) return;
     const ny = e.touches[0].clientY, d = (ty - ny) * 1.6; ty = ny;
-    if (footTarget > 0 || (endAtStart && t0y - ny > 0)) return;
     seek(target + d);
-  }, { passive: true });
-  root.addEventListener('touchend', () => {
-    const dy = t0y - ty;
-    if (footTarget === 0 && endAtStart && dy > 60) { footTarget = ft.offsetHeight; kick(); }
-    else if (footTarget > 0 && dy < -40) { footTarget = 0; kick(); }
   }, { passive: true });
   prog.addEventListener('click', (e) => { const r = prog.getBoundingClientRect(); seek(((e.clientX - r.left) / r.width) * max()); });
   addEventListener('resize', () => { seek(target); render(); });
-  document.querySelector('.ft [data-go]')?.remove();
 
   // pièce ouverte
   const A = (window as any).kkArchive as { caps: string[]; ratios: number[]; srcs: string[] };
