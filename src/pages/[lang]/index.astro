@@ -16,7 +16,7 @@ const t = ui[lang];
   <div class="screens-host" data-screens>
     <section class="scr s1" aria-label="kerningkastle">
       <div class="hero g">
-        <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span class="l2" aria-hidden="true"><span>—ing</span><span>kast</span></span><span aria-hidden="true">le</span><span class="sr mono">kerningkastle</span></h1></div>
+        <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span class="l2" aria-hidden="true"><span>—ing</span><span>kast</span></span><span aria-hidden="true" data-le>le</span><span class="sr mono">kerningkastle</span></h1></div>
       </div>
       <p class="phrase t28" data-par="60" set:html={t.phrase.replace(' + ', ' <span class="ac">+</span> ')} />
     </section>
@@ -85,7 +85,7 @@ const t = ui[lang];
     const fs = Math.floor(((100 * W) / w) * 100 * k) / 100;
     n.style.fontSize = `${fs}px`;
     // ligne de base de « le » et hauteur d'x de la fonte, mesurées
-    const last = n.lastElementChild as HTMLElement;
+    const last = n.querySelector<HTMLElement>('[data-le]')!;
     const probe = document.createElement('i'); probe.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
     last.appendChild(probe);
     const ctx = document.createElement('canvas').getContext('2d')!;
@@ -106,7 +106,8 @@ const t = ui[lang];
     if (phone && k === 1 && H - need < min) return place(Math.max(0.6, (H - min) / need));
     const pad = Math.max(min, H - need);
     hero.style.paddingTop = `${pad}px`;
-    if (phone || pad - head > ph.offsetHeight + 140) { ph.style.top = `${Math.round(pad - ph.offsetHeight - 24)}px`; ph.style.bottom = 'auto'; }
+    // ordinateur : la phrase reste toujours en bas, à gauche de la flèche (position CSS), quelle que soit la taille de la fenêtre
+    if (phone) { ph.style.top = `${Math.round(pad - ph.offsetHeight - 24)}px`; ph.style.bottom = 'auto'; }
     else { ph.style.top = ''; ph.style.bottom = ''; }
   };
   // placé tout de suite (polices préchargées), puis recalé une fois les polices prêtes ; le nom reste caché
