@@ -262,6 +262,7 @@ class HeraldicApp {
     };
 
     this.renderSVG();
+    this.updateUI();
   }
 
   calculateMeublesPlacement() {
