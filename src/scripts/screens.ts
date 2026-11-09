@@ -109,7 +109,7 @@ export function initScreens(host: HTMLElement): Screens {
     for (let n = 0; n < 24; n++) { const v = X(t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
     return Y(t);
   };
-  const DUR = 560; // départ plus franc (courbe .45,0,.15,1) : le geste répond tout de suite, l'arrivée reste douce
+  const DUR = 480; // départ plus franc (courbe .45,0,.15,1) : le geste répond tout de suite, l'arrivée reste douce
   const arrive = () => {
     mv = null; busy = false; vel = 0; scroll = T[tgt]; pend = null;
     cur = tgt; place(); save();
@@ -167,9 +167,10 @@ export function initScreens(host: HTMLElement): Screens {
   // molette / pavé tactile : un geste = un écran.
   // L'inertie du trackpad envoie encore des dizaines d'événements après le geste, et repart d'un coup quand le doigt se lève :
   // on n'accepte un nouveau passage que si le flux s'est vraiment interrompu (> 260 ms), si le sens s'inverse, ou si l'amplitude
-  // monte plusieurs fois de suite (un vrai nouveau coup de doigt, pas le sursaut isolé de l'élan). Jamais deux passages à moins de 700 ms.
-  const LOCK = 700;
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0;
+  // retombe puis remonte plusieurs fois de suite (un vrai nouveau coup de doigt, pas le sursaut isolé de l'élan).
+  // Un vrai nouveau coup peut relancer après 200 ms (le glissement est interruptible) ; dans tous les autres cas, 440 ms minimum.
+  const LOCK = 440, PUSH = 200;
+  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0, peak = 0, dip = false;
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
@@ -184,14 +185,17 @@ export function initScreens(host: HTMLElement): Screens {
     last = now;
     rise = abs > prev * 1.15 && abs > 12 ? rise + 1 : 0;
     prev = abs;
-    const fresh = pause || dir !== gdir || (used && rise >= 3 && abs > 30 && now - lastGo > LOCK);
-    if (fresh) { acc = 0; used = false; gdir = dir; rise = 0; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
+    peak = Math.max(peak, abs);
+    if (abs < peak * 0.55) dip = true; // l'élan est retombé : une remontée franche sera un nouveau geste
+    const push = used && dip && rise >= 3 && abs > 30 && now - lastGo > PUSH;
+    const fresh = pause || dir !== gdir || push;
+    if (fresh) { acc = 0; used = false; gdir = dir; rise = 0; peak = abs; dip = false; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
     if (used || !edge) return;
     acc += e.deltaY;
     // molette à crans : deux crans rapprochés ne font pas sauter deux écrans
     if (Math.abs(acc) > 30) {
       used = true;
-      if (dir === lastDir && now - lastGo < LOCK) return;
+      if (!push && dir === lastDir && now - lastGo < LOCK) return;
       lastGo = now; lastDir = dir; step(dir);
     }
   };
