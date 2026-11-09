@@ -85,6 +85,7 @@ const ld = {
     <script type="application/ld+json" set:html={JSON.stringify(ld)} />
     <slot name="head" />
     <!-- mesure d'audience sans cookie (GoatCounter), seulement sur le site en ligne -->
+    {import.meta.env.PROD && <link rel="preconnect" href="https://kern.goatcounter.com" />}
     {import.meta.env.PROD && (
       <script is:inline data-goatcounter="https://kern.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>
     )}

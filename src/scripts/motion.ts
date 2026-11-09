@@ -30,6 +30,20 @@ export function settle(root: Element) {
   for (const [el, fn] of pending) if (root === el || root.contains(el)) { fn(); pending.delete(el); }
 }
 
+// Grand titre : une lettre en ligne ne peut pas monter par transform, et monter par « top » compte comme un décalage de mise
+// en page. Ses lettres passent donc en inline-block, le crénage perdu étant mesuré puis reporté : rien ne bouge d'un pixel.
+function holdKerning(chars: HTMLElement[]) {
+  const before = chars.map((c) => c.getBoundingClientRect());
+  chars.forEach((c) => (c.style.display = 'inline-block'));
+  const after = chars.map((c) => c.getBoundingClientRect());
+  const fs = parseFloat(getComputedStyle(chars[0]).fontSize);
+  chars.forEach((c, i) => {
+    if (!i || Math.abs(before[i].top - before[i - 1].top) > fs / 2) return; // première lettre de sa ligne
+    const gap = before[i].left - before[i - 1].left - (after[i].left - after[i - 1].left);
+    if (Math.abs(gap) > 0.01) c.style.marginLeft = `${(gap / fs).toFixed(4)}em`;
+  });
+}
+
 export function letters(root: Element, delay = 300, extraSkip?: string): number {
   if (reduced()) return 0;
   settle(root);
@@ -38,21 +52,26 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   if (!total) return 0;
   const step = Math.min(10, 700 / total);
   const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
+  const lifted: HTMLElement[] = [];
   let k = 0;
   for (const n of nodes) {
     const text = n.nodeValue!;
+    const isTitle = !PHONE && !!n.parentElement?.closest('.name');
     const f = document.createDocumentFragment();
     for (const c of text) {
       if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); continue; }
       const sp = document.createElement('span');
       sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
       f.appendChild(sp);
-      sp.animate(PHONE ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }], { duration: PHONE ? 360 : 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
+      const rise = isTitle ? [{ opacity: 0, transform: 'translateY(.35em)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }];
+      sp.animate(PHONE ? [{ opacity: 0 }, { opacity: 1 }] : rise, { duration: PHONE ? 360 : 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
+      if (isTitle) lifted.push(sp);
     }
     const first = f.firstChild!, last = f.lastChild!;
     n.replaceWith(f);
     groups.push({ text, first, last });
   }
+  if (lifted.length) holdKerning(lifted);
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
   const end = delay + k * step + 440;

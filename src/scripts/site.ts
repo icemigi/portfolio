@@ -54,7 +54,7 @@ if (host) {
   // l'apparition attend la fin du chargement d'entrée (s'il y en a un)
   if (!(window as any).kkArriving) {
     const first = api.el(api.current());
-    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => reveal(first, 150));
+    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => document.fonts.ready).then(() => reveal(first, 150));
   }
   document.dispatchEvent(new Event('kk:screens'));
 }
