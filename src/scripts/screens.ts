@@ -165,33 +165,33 @@ export function initScreens(host: HTMLElement): Screens {
   }
 
   // molette / pavé tactile : un geste = un écran.
-  // L'inertie du trackpad envoie encore des dizaines d'événements après le geste : on n'accepte un nouveau passage
-  // que si (a) le flux s'est interrompu (> 180 ms sans événement), ou (b) l'inertie est presque retombée (< 6)
-  // puis repart franchement (un vrai nouveau coup de doigt). Jamais deux passages à moins de 450 ms.
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, low = Infinity, armed = true;
+  // L'inertie du trackpad envoie encore des dizaines d'événements après le geste, et repart d'un coup quand le doigt se lève :
+  // on n'accepte un nouveau passage que si le flux s'est vraiment interrompu (> 260 ms), si le sens s'inverse, ou si l'amplitude
+  // monte plusieurs fois de suite (un vrai nouveau coup de doigt, pas le sursaut isolé de l'élan). Jamais deux passages à moins de 700 ms.
+  const LOCK = 700;
+  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0;
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
     if (e.ctrlKey) return; // pincement du pavé (zoom) : pas un défilement
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
-    const now = performance.now();
+    // l'heure du geste, pas celle du traitement : si la page se fige un instant, l'inertie n'a pas l'air d'une pause (donc d'un nouveau geste)
+    const now = e.timeStamp + ((e.view as Window | null)?.performance.timeOrigin ?? performance.timeOrigin) - performance.timeOrigin;
     const dir = Math.sign(e.deltaY);
     if (!dir) return;
     const abs = Math.abs(e.deltaY);
-    const pause = now - last > 180;
+    const pause = now - last > 260;
     last = now;
-    if (used) {
-      low = Math.min(low, abs);
-      if (low < 6 && abs > 24) armed = true; // l'inertie était retombée, un nouveau geste arrive
-    }
-    const fresh = pause || dir !== gdir || (used && armed && now - lastGo > 450);
-    if (fresh) { acc = 0; used = false; gdir = dir; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
+    rise = abs > prev * 1.15 && abs > 12 ? rise + 1 : 0;
+    prev = abs;
+    const fresh = pause || dir !== gdir || (used && rise >= 3 && abs > 30 && now - lastGo > LOCK);
+    if (fresh) { acc = 0; used = false; gdir = dir; rise = 0; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
     if (used || !edge) return;
     acc += e.deltaY;
-    // molette à crans : deux crans rapprochés ne font pas sauter deux écrans (420 ms minimum entre deux passages dans le même sens)
+    // molette à crans : deux crans rapprochés ne font pas sauter deux écrans
     if (Math.abs(acc) > 30) {
-      used = true; armed = false; low = Infinity;
-      if (dir === lastDir && now - lastGo < 420) return;
+      used = true;
+      if (dir === lastDir && now - lastGo < LOCK) return;
       lastGo = now; lastDir = dir; step(dir);
     }
   };
