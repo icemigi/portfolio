@@ -32,11 +32,13 @@ body {
   justify-content: center;
   align-items: center;
   touch-action: manipulation;
+  padding-bottom: 10vh;
+  box-sizing: border-box;
 }
 
 svg {
   max-width: 85vw;
-  max-height: 70vh;
+  max-height: 60vh;
   display: block;
 }
 
@@ -57,6 +59,18 @@ svg {
   z-index: 10;
   width: max-content;
   max-width: 95vw;
+}
+
+/* Le blasonnement de l'écu, au-dessus de la clé */
+#blazon {
+  margin: 0 0 4px;
+  max-width: min(620px, 90vw);
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0.2px;
+  text-wrap: balance;
 }
 
 /* Empêche le texte de la seed de se casser sur plusieurs lignes */

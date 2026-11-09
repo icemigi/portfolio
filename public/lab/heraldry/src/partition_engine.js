@@ -7,7 +7,8 @@
 
 export class PartitionEngine {
   constructor() {
-    // Liste de tous les types de découpages héraldiques pris en charge
+    // Ne pas modifier cette liste : l'écu de chaque clé dépend de son ordre et de sa longueur.
+    // sautoir, chape, chausse, embrasse et emanche n'ont pas de tracé propre : ils s'affichent comme un parti.
     this.partitionTypes = [
       'parti', 'coupe', 'tranche', 'taille', 
       'ecartele','fasce', 'pal', 'bande', 'barre',

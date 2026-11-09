@@ -22,13 +22,13 @@
   --m: 40px;
   --gut: 24px;
   --cols: 12;
-  --head: 56px;
+  --head: 76px;
   --slide: cubic-bezier(.7, 0, .2, 1);
   --out: cubic-bezier(.2, .7, .2, 1);
   color-scheme: light;
 }
 @media (max-width: 760px) {
-  :root { --m: 16px; --gut: 12px; --cols: 4; --head: 60px; }
+  :root { --m: 16px; --gut: 12px; --cols: 4; --head: 68px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -85,7 +85,7 @@ input, textarea, [contenteditable] { cursor: text; }
 .site-header.solid { background: var(--bg); }
 /* le cavalier seul : c'est la signature */
 .site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; }
-.site-header .home img { width: 52px; height: auto; margin-block: -4px; translate: 0 12px; flex: none; transition: rotate .5s var(--out); }
+.site-header .home img { width: 52px; height: auto; margin-block: -4px; flex: none; transition: rotate .5s var(--out); }
 @media (hover: hover) { .site-header .home:hover img { rotate: -10deg; } }
 .site-header .nn, .site-header .lang-m, .site-header .burger { display: none; }
 .site-header nav { grid-column: 7 / 10; }
@@ -103,7 +103,7 @@ input, textarea, [contenteditable] { cursor: text; }
 @media (max-width: 760px) {
   /* une seule ligne : cavalier à gauche, son et « (menu) » à droite */
   .site-header .home { grid-column: 1 / 3; }
-  .site-header .home img { width: 42px; margin-block: -2px; translate: 0 8px; }
+  .site-header .home img { width: 42px; margin-block: -2px; }
   .site-header .r { grid-column: 3 / 5; justify-content: flex-end; gap: 20px; }
   .site-header .r .lang { display: none; }
   /* « (menu) + » au centre de la barre du haut (en bas, il passait sur les textes) ; il devient « (fermer) × » au même endroit */

@@ -4,6 +4,7 @@
  */
 
 import { PartitionEngine } from './partition_engine.js';
+import { describeBlazon } from './blazon.js';
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
@@ -138,9 +139,8 @@ class HeraldicApp {
       const value = seedInput.value.trim().toLowerCase();
       
       if (value.length > 0) {
-        const parsedSeed = parseInt(value, 36);
-        if (!isNaN(parsedSeed)) {
-          this.generate(parsedSeed, /^[0-9a-z]+$/.test(value) ? value : null);
+        if (/^[0-9a-z]+$/.test(value)) {
+          this.generate(parseInt(value, 36), value);
           seedInput.value = "";
           seedInput.blur();
         }
@@ -262,7 +262,6 @@ class HeraldicApp {
     };
 
     this.renderSVG();
-    this.updateUI();
   }
 
   calculateMeublesPlacement() {
@@ -337,8 +336,9 @@ class HeraldicApp {
 
       let offsetX = 0;
       let offsetY = 0;
-      if (showPartitions && partitionName !== 'plein') {
-        const shiftAmount = (this.rng() > 0.5 ? 1 : -1) * (Math.floor(this.rng() * 80) + 40);
+      // tirés dans tous les cas : afficher ou masquer les partitions ne doit jamais changer l'écu d'une clé
+      const shiftAmount = (this.rng() > 0.5 ? 1 : -1) * (Math.floor(this.rng() * 80) + 40);
+      if (showPartitions) {
         if (partitionName === 'parti' || partitionName === 'tranche') offsetX = shiftAmount;
         if (partitionName === 'coupe' || partitionName === 'barre') offsetY = shiftAmount;
       }
@@ -452,6 +452,7 @@ class HeraldicApp {
     });
 
     for (let x = -diag; x < diag * 2; x += gap) {
+      if (Math.abs(x - cx) > diag / 2 + strokeWidth) continue; // hors du rectangle, quel que soit l'angle
       const line = this.createSvgElement("line", {
         x1: x, y1: -diag,
         x2: x, y2: diag * 2,
@@ -491,7 +492,7 @@ class HeraldicApp {
     document.body.classList.toggle("light-mode", this.isLightMode);
     const canvasBgColor = this.isLightMode ? this.COLOR_WHITE : this.COLOR_BLACK;
 
-    Object.keys(this.meubleCache).forEach(name => {
+    new Set(placedMeubles.map(m => m.name)).forEach(name => {
       if (this.meubleCache[name]) {
         const symbol = this.createSvgElement("symbol", {
           id: `meuble-${name}`,
@@ -610,9 +611,6 @@ class HeraldicApp {
 
     svg.appendChild(gDifference);
     container.appendChild(svg);
-  }
-
-  applyThemeStyles() {
     this.updateUI();
   }
 
@@ -645,6 +643,8 @@ class HeraldicApp {
     if (seedDisplay) {
       seedDisplay.innerText = this.currentSeedString;
     }
+    const blazonEl = document.getElementById("blazon");
+    if (blazonEl) blazonEl.textContent = describeBlazon(this);
   }
 
   exportSVG() {
