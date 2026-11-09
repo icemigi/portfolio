@@ -81,7 +81,7 @@ const workLd = {
     </script>
   </Fragment>
 
-  <div class="screens-host" data-screens>
+  <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
         <p class="no mono mu par">{pad(index + 1)} / {N}</p>
@@ -174,21 +174,29 @@ const workLd = {
 </style>
 
 <style>
-  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 32px; padding-top: calc(var(--head) + 32px); padding-bottom: 40px; }
-  .no, .case-h1 { grid-column: 1 / -1; }
-  .case-h1 { align-self: end; }
-  .lead { grid-column: 1 / 8; }
-  .fiche { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--gut); }
+  /* Gabarit projet : un seul squelette du début à la fin. Libellé en colonnes 1 à 3, contenu sur l'axe de la colonne 4,
+     chaque module commence à la même hauteur ; toutes les positions viennent de la grille du site. */
+  .open { overflow: hidden; }
+  @media (min-width: 761px) { .case .in { align-content: start; } }
+
+  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 32px; padding-top: calc(var(--head) + 24px); padding-bottom: 40px; }
+  .no { grid-column: 1 / 4; grid-row: 1; align-self: first baseline; }
+  .case-h1 { grid-column: 4 / -1; grid-row: 1; align-self: first baseline; }
+  .lead { grid-column: 4 / 11; grid-row: 3; }
+  .fiche { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding-top: 12px; }
+  .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
 
   .bleed { position: absolute; inset: 0; }
 
-  .rub { row-gap: 24px; }
-  .rub .k { grid-column: 1 / 4; align-self: start; padding-top: 4px; }
+  .rub { row-gap: 24px; align-items: first baseline; }
+  .rub .k { grid-column: 1 / 4; }
   .rub .v { grid-column: 4 / 10; }
   .rub .v p + p { margin-top: 16px; }
   .rub b { font-weight: 500; }
-  .blk div { display: grid; grid-template-columns: 2fr 4fr; column-gap: var(--gut); border-top: 1px solid var(--ln); padding: 12px 0; }
+  .blk { display: grid; grid-template-columns: subgrid; }
+  .blk div { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding: 12px 0; }
+  .blk dt { grid-column: span 2; } .blk dd { grid-column: span 4; }
   .blk div:last-child { border-bottom: 1px solid var(--ln); }
 
   .gal { row-gap: var(--gut); }
@@ -196,28 +204,25 @@ const workLd = {
   .gal .h { grid-column: span 6; aspect-ratio: 4 / 3; }
 
   .cov { top: var(--head); width: 100%; height: calc(100% - var(--head)); object-fit: cover; }
-  .im { align-items: center; }
-  .im img { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; }
+  .im { align-items: start; }
+  /* une image plus petite que sa case reste calée sur l'angle supérieur gauche de sa colonne */
+  .im img { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; object-position: left top; }
   .im.n1 img { grid-column: 1 / -1; }
   .im.n2 img { grid-column: span 6; }
   .im.tall img { max-height: none; }
-  .im.n1.tall img { grid-column: 3 / 11; }
-  .im .md { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; transform-style: preserve-3d; transition: transform .6s cubic-bezier(.2,.7,.2,1); }
-  .im.n1 .md { grid-column: 1 / -1; } .im.n2 .md { grid-column: span 6; } .im.tall .md { max-height: none; } .im.n1.tall .md { grid-column: 3 / 11; }
-  .im { perspective: 1400px; }
-  /* image d'ouverture : elle respire (zoom lent, aller-retour) */
-  @media (prefers-reduced-motion: no-preference) { .cov { animation: kk-breathe 18s ease-in-out infinite alternate; } }
-  @keyframes kk-breathe { from { transform: scale(1); } to { transform: scale(1.06); } }
+  .im.n1.tall img { grid-column: 4 / 12; }
+  .im .md { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; object-position: left top; }
+  .im.n1 .md { grid-column: 1 / -1; } .im.n2 .md { grid-column: span 6; } .im.tall .md { max-height: none; } .im.n1.tall .md { grid-column: 4 / 12; }
 
   .gen { row-gap: 16px; }
   .gen .k { grid-column: 1 / -1; }
   .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
 
-  .nx .in { align-items: center; row-gap: 32px; }
-  .nx .k { grid-column: 1 / 4; align-self: start; padding-top: 22px; }
+  .nx .in { align-items: first baseline; row-gap: 32px; }
+  .nx .k { grid-column: 1 / 4; }
   .nx .tt { grid-column: 4 / 10; }
   .nx .tt .mono { margin-top: 12px; }
-  .ring { grid-column: 10 / 13; justify-self: end; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  .ring { grid-column: 10 / 13; justify-self: end; align-self: start; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
   .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ring circle { fill: none; stroke-width: 1.5; }
   .ring .track { stroke: var(--ln); }
@@ -225,12 +230,21 @@ const workLd = {
 
   @media (max-width: 760px) {
     .s1 .head { padding-top: calc(var(--head) + 24px); }
-    .lead { grid-column: 1 / -1; }
-    .fiche { grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+    .no, .case-h1, .lead { grid-column: 1 / -1; }
+    .case-h1 { grid-row: 2; align-self: end; }
+    .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
+    .fiche > div { grid-column: auto; }
     .rub .k, .rub .v { grid-column: 1 / -1; }
-    .blk div { grid-template-columns: 1fr; row-gap: 4px; }
+    /* le texte courant suit la hauteur visible : une rubrique tient toujours dans son écran */
+    .rub .v { font-size: clamp(13px, 2.1dvh, 16px); line-height: 1.45; }
+    .rub .v p + p { margin-top: min(16px, 1.8dvh); }
+    .blk { display: block; }
+    .blk div { grid-template-columns: 1fr; row-gap: 4px; padding: min(12px, 1.3dvh) 0; }
+    .blk dt, .blk dd { grid-column: auto; }
     .gal .h { grid-column: 1 / -1; }
     .im.n2 img, .im.n1.tall img, .im.n2 .md, .im.n1.tall .md { grid-column: 1 / -1; }
+    /* deux images empilées : chacune prend une moitié de l'écran visible, le module reste verrouillé sur un écran */
+    .im.n2:not(.tall) img, .im.n2:not(.tall) .md { max-height: calc((100dvh - var(--head) - min(56px, 7dvh) - min(72px, 9dvh) - var(--gut)) / 2); }
     .nx .k, .nx .tt { grid-column: 1 / -1; }
     .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
   }
@@ -271,30 +285,18 @@ const workLd = {
     };
     host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
 
-    // ---------- les images n'arrivent jamais deux fois de la même façon ----------
-    // chaque bloc d'images a son entrée (rideau, zoom, cartes jetées, volet), jouée pendant la fin du glissement
+    // ---------- entrée des images ----------
+    // une seule entrée, en transform et opacity seulement (animées sans repeindre l'image), jouée pendant la fin du glissement
     const OUT = 'cubic-bezier(.2,.7,.2,1)';
-    const enters = [
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(100% 0 0 0)', transform: 'translateY(60px)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1000, delay: i * 140, easing: OUT, fill: 'backwards' }),
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(18% 18% 18% 18%)', transform: 'scale(1.18)', opacity: 0 }, { clipPath: 'inset(0 0 0 0)', transform: 'none', opacity: 1 }], { duration: 1100, delay: i * 160, easing: OUT, fill: 'backwards' }),
-      (m: HTMLElement, i: number) => { const s = i % 2 ? 1 : -1; return m.animate([{ transform: `translate(${s * 90}px, 160px) rotate(${s * 7}deg)`, opacity: 0 }, { opacity: 1, offset: .35 }, { transform: 'none', opacity: 1 }], { duration: 1050, delay: i * 180, easing: OUT, fill: 'backwards' }); },
-      (m: HTMLElement, i: number) => m.animate([{ clipPath: 'inset(0 100% 0 0)', transform: 'scale(1.08)' }, { clipPath: 'inset(0 0 0 0)', transform: 'none' }], { duration: 1100, delay: i * 150, easing: 'cubic-bezier(.7,0,.2,1)', fill: 'backwards' }),
-    ];
-    const blocks = [...host.querySelectorAll<HTMLElement>('[data-enter]')];
+    const STAGGER = 120, ENTER = 640;
     const play = (scr: HTMLElement, delay: number) => {
       if (reduced()) return;
-      const b = scr.querySelector<HTMLElement>('[data-enter]'); if (!b) return;
-      const fx = enters[blocks.indexOf(b) % enters.length];
-      b.querySelectorAll<HTMLElement>('.md').forEach((m, i) => { const a = fx(m, i); a.startTime = (document.timeline.currentTime as number) + delay; });
+      scr.querySelector<HTMLElement>('[data-enter]')?.querySelectorAll<HTMLElement>('.md').forEach((m, i) => {
+        const a = m.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: ENTER, delay: i * STAGGER, easing: OUT, fill: 'backwards' });
+        a.startTime = (document.timeline.currentTime as number) + delay;
+      });
     };
     host.addEventListener('screens:leave', (e) => { const to = (e as CustomEvent).detail.to; const el = api.el(to); if (el) play(el, 220); });
-    // l'image suit la souris (légère inclinaison en 3D) : elle se laisse regarder
-    if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reduced()) {
-      host.querySelectorAll<HTMLElement>('.im .md').forEach((m) => {
-        m.addEventListener('pointermove', (e) => { const r = m.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5; m.style.transform = `rotateY(${x * 6}deg) rotateX(${-y * 6}deg) scale(1.015)`; });
-        m.addEventListener('pointerleave', () => { m.style.transform = ''; });
-      });
-    }
     host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
     host.addEventListener('screens:beyond', open);
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });

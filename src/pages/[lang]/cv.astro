@@ -10,7 +10,8 @@ export function getStaticPaths() { return languages.map((lang) => ({ params: { l
 const lang = getLangFromParam(Astro.params.lang);
 const c = cv[lang];
 const other = lang === 'fr' ? 'en' : 'fr';
-const full = headHtml(c) + c.sections.map(sectionHtml).join('');
+const portrait = '<pre class="t-portrait" data-portrait aria-hidden="true"></pre>'; // rempli par le script (le portrait en ASCII)
+const full = headHtml(c) + portrait + c.sections.map(sectionHtml).join('');
 const data = {
   lang, other, full,
   ui: c.ui,
@@ -74,6 +75,8 @@ const PS = 'xavier@kerningkastle ~ %';
   .out :global(.t-p) { max-width: 72ch; }
   .out :global(.t-err) { color: #e0806a; }
   .out :global(.t-wait) { visibility: hidden; }
+  .out :global(.t-portrait) { margin: 22px 0 6px; font-family: var(--mono); white-space: pre; overflow: hidden; font-kerning: none; font-variant-ligatures: none; -webkit-user-select: none; user-select: none; }
+  .out :global(.t-portrait:empty) { display: none; }
   .out :global(a) { text-decoration: underline; text-underline-offset: 3px; }
   .ps { color: var(--ac); white-space: nowrap; }
   .in { display: flex; gap: 10px; align-items: baseline; padding: 6px 0 4px; flex: none; }
@@ -95,6 +98,7 @@ const PS = 'xavier@kerningkastle ~ %';
 
 <script>
   import { reduced } from '../../scripts/motion';
+  import { paintPortrait } from '../../scripts/portrait-ascii';
   type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
   const root = document.querySelector<HTMLElement>('[data-term]')!;
   const d: D = JSON.parse(root.dataset.cv!);
@@ -132,7 +136,9 @@ const PS = 'xavier@kerningkastle ~ %';
     const tmp = document.createElement('div'); tmp.innerHTML = html;
     let held = false;
     for (const el of [...tmp.children]) {
-      out.appendChild(el); follow();
+      out.appendChild(el);
+      if (el.matches('[data-portrait]')) await paintPortrait(el as HTMLElement).catch(() => {});
+      follow();
       if (!held && el.getBoundingClientRect().top < out.getBoundingClientRect().bottom - 24) { write(el); await wait(gap); }
       else { held = true; el.classList.add('t-wait'); io.observe(el); }
     }
@@ -198,9 +204,14 @@ const PS = 'xavier@kerningkastle ~ %';
   // un clic dans le terminal (hors lien / sélection) redonne la main au clavier
   out.addEventListener('click', (e) => { if (!(e.target as Element).closest('a') && !String(getSelection())) input.focus({ preventScroll: true }); });
 
+  // le portrait se recalcule quand la largeur change (rotation, fenêtre)
+  const portraits = () => out.querySelectorAll<HTMLElement>('[data-portrait]').forEach((p) => { paintPortrait(p).catch(() => {}); });
+  let rw = innerWidth, rt = 0;
+  addEventListener('resize', () => { if (innerWidth === rw) return; rw = innerWidth; clearTimeout(rt); rt = window.setTimeout(portraits, 120); });
+
   // ouverture : la session se rejoue (le CV écrit dans la page est remplacé par la même chose, tapée)
   (async () => {
-    if (still) { input.focus({ preventScroll: true }); return; }
+    if (still) { portraits(); input.focus({ preventScroll: true }); return; }
     busy = true; out.innerHTML = '';
     const now = new Date();
     await print(`<p class="t-p t-m">${d.ui.boot}: ${now.toDateString()} ${now.toTimeString().slice(0, 8)} on ttys001</p>`, 0);

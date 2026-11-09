@@ -17,26 +17,28 @@ const L = aboutLabels[lang];
       <a class="lk hit" href={contact.instagram} rel="me noopener" target="_blank">Instagram <span class="ac">↗</span></a>
       <span class="mu">{t.available}</span>
     </div>
-    <div class="seal-w"><img class="seal" src="/seal-wax-280.webp" srcset="/seal-wax-168.webp 168w, /seal-wax-280.webp 280w" sizes="(max-width: 760px) 84px, 140px" alt="" width="160" height="152" loading="lazy" decoding="async" /></div>
+    <div class="seal-w"><img class="seal" src="/seal-wax-280.webp" srcset="/seal-wax-168.webp 168w, /seal-wax-280.webp 280w, /seal-wax.webp 420w" sizes="(max-width: 760px) 100px, 15vw" alt="" width="160" height="152" loading="lazy" decoding="async" /></div>
   </div>
   <Footer lang={lang} class="line" />
 </section>
 
 <style>
-  .last { display: flex; flex-direction: column; }
-  .ct { flex: 1; align-content: end; padding-bottom: 72px; padding-top: calc(var(--head) + 24px); position: relative; }
-  .lab4 { grid-column: 1 / -1; margin-bottom: 24px; }
-  .mailp { grid-column: 1 / -1; }
+  /* le cachet est ancré au sommet de sa section et défile avec elle ; la première rangée lui réserve sa hauteur : il reste au-dessus de l'adresse sans jamais la toucher */
+  .last { --seal: calc(2 * var(--col) + var(--gut)); --seal-top: calc(var(--head) + 24px); display: flex; flex-direction: column; }
+  .ct { flex: 1; grid-template-rows: minmax(calc(var(--seal) * .95 + 16px), 1fr) auto auto auto; padding-bottom: 72px; padding-top: var(--seal-top); }
+  .lab4 { grid-column: 1 / -1; grid-row: 2; margin-bottom: 24px; }
+  .mailp { grid-column: 1 / -1; grid-row: 3; }
   .mail { font-weight: 500; letter-spacing: -0.05em; white-space: nowrap; line-height: .85; font-size: calc((100vw - 2 * var(--m)) * .118); }
   .mail::after { height: 3px; bottom: -6px; }
-  .links { grid-column: 1 / -1; display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap; }
-  .seal-w { position: absolute; right: calc(var(--m) + 2%); top: calc(var(--head) + 6%); width: 140px; }
+  .links { grid-column: 1 / -1; grid-row: 4; display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap; }
+  .seal-w { position: absolute; top: var(--seal-top); right: var(--m); z-index: 2; width: var(--seal); } /* exactement deux colonnes de large */
   .seal-w .seal { display: block; width: 100%; height: auto; transition: rotate .6s var(--out); }
   @media (hover: hover) { .seal-w:hover .seal { rotate: -8deg; } }
   @media (max-width: 760px) {
-    .links { flex-direction: column; gap: 8px; }
-    .seal-w { width: 84px; top: calc(var(--head) + 8px); }
-    .ct { padding-bottom: 48px; }
+    .last { --seal: min(100px, 12dvh); --seal-top: calc(var(--head) + 8px); }
+    .links { flex-direction: column; gap: 8px; margin-top: min(32px, 3.5dvh); }
+    .ct { padding-bottom: min(48px, 4dvh); }
+    .lab4 { margin-bottom: min(24px, 2.5dvh); }
   }
 </style>
 

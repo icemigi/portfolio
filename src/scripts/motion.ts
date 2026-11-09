@@ -7,7 +7,8 @@ export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
 export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
 // Texte non animé : libellés Geist Mono, vignettes, menus, médias, champs.
-const SKIP = '.mono, .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
+const SKIP = '.mono, .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style, .parenthesis-reveal';
+const PAREN_STAGGER = 120; // écart entre deux parenthèses, une fois le texte écrit
 
 function textNodes(root: Element, extraSkip?: string) {
   const skip = extraSkip ? `${SKIP}, ${extraSkip}` : SKIP;
@@ -20,7 +21,7 @@ function textNodes(root: Element, extraSkip?: string) {
 }
 
 // Lettre par lettre : chaque lettre reste un span en ligne (crénage exact), monte de .35em.
-// 10 ms d'écart, 420 ms par lettre ; sur un long texte, l'écart se resserre pour finir en ~0,7 s.
+// 28 ms d'écart (la cascade se voit), 420 ms par lettre ; sur un long texte, l'écart régulier se resserre pour finir en ~1,4 s.
 // Renvoie la fin de l'animation (ms). À la fin, le texte est rassemblé en nœuds de texte.
 // Rassemblement différé : sur Safari (WebKit), un texte découpé en spans perd son crénage ; le recoller à la fin
 // de l'animation ferait sauter les lettres d'un coup. On garde donc les spans tant que le texte est à l'écran,
@@ -50,7 +51,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   const nodes = textNodes(root, extraSkip);
   const total = nodes.reduce((n, t) => n + t.nodeValue!.replace(/\s/g, '').length, 0);
   if (!total) return 0;
-  const step = Math.min(10, 700 / total);
+  const step = Math.min(28, 1400 / total);
   const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
   const lifted: HTMLElement[] = [];
   let k = 0;
@@ -74,7 +75,11 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   if (lifted.length) holdKerning(lifted);
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
-  const end = delay + k * step + 440;
+  const textEnd = delay + k * step + 440;
+  // les parenthèses du texte courant viennent après le texte, une à une
+  const parens = [...root.querySelectorAll<HTMLElement>('.parenthesis-reveal')];
+  parens.forEach((p, i) => p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: textEnd + i * PAREN_STAGGER, easing: EASE_OUT, fill: 'backwards' }));
+  const end = textEnd + parens.length * PAREN_STAGGER;
   pending.set(root, () => {
     root.getAnimations({ subtree: true }).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
@@ -87,8 +92,15 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   return end;
 }
 
-// Libellés Geist Mono : pas de fondu (validé) — ils sont là d'emblée.
-export function fadeMono(_root: Element, _delay = 300) {}
+// Libellés Geist Mono et cachet : ils ouvrent la cascade, en fondu, à intervalles réguliers. Renvoie le départ des lettres (ms).
+export function fadeMono(root: Element, delay = 300): number {
+  if (reduced()) return delay;
+  const items = [...root.querySelectorAll<HTMLElement>('.mono:not(.note):not(.bp), .seal-w')];
+  if (!items.length) return delay;
+  const gap = Math.min(60, 480 / items.length);
+  items.forEach((el, i) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, delay: delay + i * gap, easing: EASE_OUT, fill: 'backwards' }));
+  return delay + 120;
+}
 
 // Vignettes-images : empilées et agrandies au centre de l'écran, elles rejoignent leur place l'une après l'autre
 // (900 ms, 80 ms d'écart). `frame` = l'écran qui glisse (ses coordonnées servent de repère).
@@ -96,7 +108,7 @@ export function fadeMono(_root: Element, _delay = 300) {}
 export function vignettes(frame: Element, delay = 300): number {
   if (reduced()) return delay;
   frame.querySelectorAll<HTMLElement>('.vi.lg').forEach((v, i) => v.animate(
-    [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1.08)', offset: 0.7 }, { opacity: 1, transform: 'scale(1)' }],
+    [{ opacity: 0, transform: 'scale(.4)' }, { opacity: 1, transform: 'scale(1)' }],
     { duration: 380, delay: delay + 120 + i * 35, easing: EASE_OUT, fill: 'backwards' },
   ));
   const vis = [...frame.querySelectorAll<HTMLElement>('.vi:not(.lg), .door')];
@@ -116,8 +128,7 @@ export function vignettes(frame: Element, delay = 300): number {
 
 // Apparition d'un écran : vignettes d'abord s'il y en a, puis les lettres.
 export function reveal(frame: Element, delay = 300, extraSkip?: string) {
-  const start = vignettes(frame, delay);
-  fadeMono(frame, delay);
+  const start = Math.max(vignettes(frame, delay), fadeMono(frame, delay));
   const end = letters(frame, start, extraSkip);
   afterText(frame, end, start);
   return end;
@@ -144,8 +155,8 @@ function type(el: HTMLElement, delay: number): number {
 }
 function afterText(frame: Element, end: number, start = end) {
   if (reduced()) return;
-  // les apartés se tapent en même temps que le texte (07/11 : ils arrivaient trop tard), en parallèle
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, start + 120 + i * 90); });
+  // les apartés entre parenthèses se tapent une fois le texte écrit, à intervalles réguliers
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, end + i * PAREN_STAGGER); });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
     b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
     b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });

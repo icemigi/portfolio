@@ -12,14 +12,19 @@ export function getStaticPaths() { return languages.map((lang) => ({ params: { l
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i].year})` : ''); // catégorie (année)
+// téléphone : le paquet de cartes reprend les angles de la pile d'ordinateur (même tirage), resserrés pour rester dans l'écran ; le décalage vertical revient tous les 6
+const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toFixed(2);
 ---
 <Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? `Archive de kerningkastle, 2020 à 2025 : ${pieces.length} pièces de direction artistique musicale (pochettes), projets concepts, lettrages et logos, en pile à feuilleter.` : `kerningkastle archive, 2020 to 2025: ${pieces.length} pieces of music art direction (covers), concept projects, lettering and logos, in a pile to flip through.`} path="archive/" active="archive">
   <div class="arc pile" data-arc data-own-wheel>
     <section class="band">
       <h1 class="ttl mono mu par">{t.archiveCount} {pad(pieces.length)}</h1>
       <ol class="track" data-track>
+        {/* téléphone : repères de calage, fixes (le calage se trompe de cible sur un élément sticky) */}
+        {pieces.map((_, i) => <li class="sn" style={`--i:${i}`} aria-hidden="true"></li>)}
         {pieces.map((p, i) => (
-          <li class="pc" id={pad(i + 1)}>
+          <li class="pc" id={pad(i + 1)} style={`--o:${i % 6};--a:${tilt(i)}deg`}>
             <a href={`#${pad(i + 1)}`} data-open={i} aria-label={cap(i)}>
               <span class="ph im" style={`--r:${p.w / p.h}`}></span>
               <span class="mono mu c">{cap(i)}</span>
@@ -96,9 +101,16 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   [data-step='-1'] { left: var(--m); } [data-step='1'] { right: var(--m); }
 
 
-  /* téléphone (essai) : la même pile, qu'on fait avancer en glissant le doigt vers le haut */
+  /* téléphone : paquet de cartes — chaque pièce vient se poser sur la précédente (sticky), un geste = exactement une carte */
   @media (max-width: 760px) {
-    .pst { bottom: 72px; }
+    .pst { display: none; }
+    .track { display: block; touch-action: none; left: 0; right: 0; top: calc(var(--head) + 40px); bottom: 72px; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: contain; scrollbar-width: none; will-change: auto; }
+    .track::-webkit-scrollbar { display: none; }
+    .sn { position: absolute; left: 0; width: 1px; height: 100%; top: calc(var(--i) * 100%); scroll-snap-align: start; scroll-snap-stop: always; pointer-events: none; }
+    .pc { position: sticky; top: calc(var(--o) * 5px); height: 100%; padding-inline: var(--m); align-items: center; }
+    .pc a { width: 100%; transform: rotate(var(--a)); }
+    .c { display: none; } /* la légende de la carte du dessus est dans le compteur : les légendes ne s'empilent pas */
+    .im { height: auto; margin-inline: auto; width: min(calc(100% - 16px), calc((100dvh - var(--head) - 172px) * var(--r))); box-shadow: 0 10px 22px rgba(0, 0, 0, .14); }
     .big { height: auto; width: calc(100vw - 2 * var(--m)); max-width: none; }
     .arw { bottom: 20px; }
   }
@@ -112,8 +124,8 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   const prog = document.querySelector<HTMLElement>('[data-prog]')!;
   const count = document.querySelector<HTMLElement>('[data-count]')!;
   const items = [...track.querySelectorAll<HTMLElement>('.pc')];
-  const desktop = () => true; // la pile vaut aussi sur téléphone (essai du 02/11)
   const phone = () => matchMedia('(max-width: 760px)').matches;
+  const desktop = () => !phone(); // téléphone : une pièce par écran, en défilement verrouillé (voir plus bas)
   const P = (n: number) => String(n).padStart(2, '0');
   let x = 0, target = 0, raf = 0;
 
@@ -265,11 +277,15 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   let ty = 0;
   root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
   root.addEventListener('touchmove', (e) => {
-    if (document.querySelector('[data-lb]:not([hidden])')) return;
+    if (phone() || document.querySelector('[data-lb]:not([hidden])')) return;
     const ny = e.touches[0].clientY, d = (ty - ny) * 1.6; ty = ny;
     seek(target + d);
   }, { passive: true });
-  prog.addEventListener('click', (e) => { const r = prog.getBoundingClientRect(); seek(((e.clientX - r.left) / r.width) * max()); });
+  prog.addEventListener('click', (e) => {
+    const r = prog.getBoundingClientRect(), p = (e.clientX - r.left) / r.width;
+    if (phone()) { track.scrollTo({ top: Math.round(p * (items.length - 1)) * track.clientHeight, behavior: reduced() ? 'auto' : 'smooth' }); return; }
+    seek(p * max());
+  });
   addEventListener('resize', () => { seek(target); render(); });
 
   // pièce ouverte
@@ -343,5 +359,56 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
   });
   const h = Number(location.hash.slice(1));
   if (h >= 1 && h <= A.caps.length) show(h - 1, false);
+  // téléphone : images en haute définition, chargées à l'approche de leur écran ; le compteur suit la pièce verrouillée
+  if (phone()) {
+    const near = new IntersectionObserver((seen) => seen.forEach((e) => {
+      if (!e.isIntersecting) return;
+      near.unobserve(e.target);
+      const i = items.indexOf(e.target as HTMLElement), box = items[i].querySelector<HTMLElement>('.im')!;
+      if (K.srcs[i] && !box.firstChild) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.dataset.noAscii = ''; im.src = K.srcs[i]; box.appendChild(im); }
+    }), { root: track, rootMargin: '150% 0px' });
+    items.forEach((it) => near.observe(it));
+    track.addEventListener('scroll', () => {
+      const k = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / track.clientHeight)));
+      if (k * STEP === target) return;
+      target = x = k * STEP; render();
+      items.forEach((it, i) => { it.style.visibility = i < k - 4 ? 'hidden' : ''; }); // cartes enfouies : plus rien à peindre
+    }, { passive: true });
+
+    // le doigt : la carte le suit, sans inertie, et un geste ne peut jamais dépasser la carte voisine
+    // (même lancé fort, scroll-snap-stop seul laissait passer deux cartes)
+    let from = 0, y0 = 0, t0 = 0, anim = 0, touching = false;
+    const H = () => track.clientHeight;
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    const glide = (to: number) => {
+      const p0 = track.scrollTop, start = performance.now(), D = reduced() ? 0 : 360;
+      const tick = (now: number) => {
+        const p = D ? Math.min(1, (now - start) / D) : 1;
+        track.scrollTop = p0 + (to - p0) * (1 - (1 - p) ** 3);
+        if (p < 1) anim = requestAnimationFrame(tick); else { anim = 0; track.style.scrollSnapType = ''; }
+      };
+      anim = requestAnimationFrame(tick);
+    };
+    track.addEventListener('touchstart', (e) => {
+      if (touching) return;
+      cancelAnimationFrame(anim); touching = true;
+      track.style.scrollSnapType = 'none'; // le calage reprend à la fin du geste : il corrigerait sinon chaque position du doigt
+      from = Math.round(track.scrollTop / H()); y0 = e.touches[0].clientY; t0 = performance.now();
+    }, { passive: true });
+    track.addEventListener('touchmove', (e) => {
+      if (!touching) return;
+      const h = H();
+      track.scrollTop = clamp(from * h + y0 - e.touches[0].clientY, Math.max(0, from - 1) * h, Math.min(items.length - 1, from + 1) * h);
+    }, { passive: true });
+    const release = (e: TouchEvent) => {
+      if (!touching) return;
+      touching = false;
+      const d = y0 - e.changedTouches[0].clientY, quick = Math.abs(d) / Math.max(1, performance.now() - t0) > 0.35;
+      const step = Math.abs(d) > H() * 0.18 || (Math.abs(d) > 16 && quick) ? Math.sign(d) : 0;
+      glide(clamp(from + step, 0, items.length - 1) * H());
+    };
+    track.addEventListener('touchend', release, { passive: true });
+    track.addEventListener('touchcancel', release, { passive: true });
+  }
   render();
 </script>

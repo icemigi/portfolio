@@ -4,6 +4,7 @@ import { initScreens } from './screens';
 import { reveal } from './motion';
 import './sound';
 import { initHola } from './hola';
+import { initParens } from './parens';
 import { initAscii } from './ascii';
 
 // médias : chargement en ASCII (trame de caractères, puis deux rendus ASCII de l'image, puis l'image)
@@ -41,6 +42,9 @@ document.querySelectorAll<HTMLElement>('.bp:not(.d)').forEach((b) => {
   b.querySelector('.bl')!.textContent = label;
   b.classList.add('d');
 });
+
+// Parenthèses du texte courant : isolées avant toute découpe en lettres.
+initParens();
 
 // Évitement du curseur : découpe faite avant toute apparition, pour que les deux animations se cumulent.
 initHola();

@@ -29,7 +29,7 @@ const S = fr
 ---
 <Base lang={lang} title={fr ? 'Mentions légales' : 'Legal notice'} description={fr ? 'Mentions légales de kerningkastle.com : éditeur, hébergement (GitHub Pages), données personnelles (aucun cookie, mesure d\'audience GoatCounter) et crédits.' : 'Legal notice for kerningkastle.com: publisher, hosting (GitHub Pages), personal data (no cookies, GoatCounter analytics) and credits.'} path="legal/">
   <div class="screens-host" data-screens>
-    <section class="scr">
+    <section class="scr all">
       <div class="page">
         <div class="g body">
           <h1 class="k mono mu par">{fr ? 'Mentions légales' : 'Legal notice'}</h1>
@@ -38,15 +38,41 @@ const S = fr
         <Footer lang={lang} />
       </div>
     </section>
+    {/* téléphone : le même texte réparti en écrans, pour qu'aucun ne demande de défiler (masqués sur ordinateur) */}
+    {[S.slice(0, 3), S.slice(3, 5)].map((part, i) => (
+      <section class="scr part">
+        <div class="in g">
+          <p class="k mono mu par">{fr ? 'Mentions légales' : 'Legal notice'} {i + 1}/3</p>
+          <dl class="v">{part.map(([k, v]) => <div><dt class="mono mu">{k}</dt><dd>{v}</dd></div>)}</dl>
+        </div>
+      </section>
+    ))}
+    <section class="scr part end">
+      <div class="in g">
+        <p class="k mono mu par">{fr ? 'Mentions légales' : 'Legal notice'} 3/3</p>
+        <dl class="v">{S.slice(5).map(([k, v]) => <div><dt class="mono mu">{k}</dt><dd>{v}</dd></div>)}</dl>
+      </div>
+      <Footer lang={lang} class="line" />
+    </section>
   </div>
 </Base>
 
 <style>
   .page { min-height: 100%; display: flex; flex-direction: column; }
-  .body { flex: 1; padding-top: calc(var(--head) + 72px); padding-bottom: 96px; align-content: start; row-gap: 24px; }
-  .k { grid-column: 1 / 4; padding-top: 4px; }
+  .part { display: none; }
+  .body { flex: 1; padding-top: calc(var(--head) + 24px); padding-bottom: 40px; align-content: start; align-items: first baseline; row-gap: 24px; }
+  .k { grid-column: 1 / 4; }
   .v { grid-column: 4 / 10; }
   .v div + div { margin-top: 24px; }
   .v dd { margin-top: 4px; }
-  @media (max-width: 760px) { .k, .v { grid-column: 1 / -1; } }
+  @media (max-width: 760px) {
+    .all { display: none; }
+    .part { display: block; }
+    .part.end { display: flex; flex-direction: column; }
+    .part.end .in { flex: 1; min-height: 0; }
+    .k, .v { grid-column: 1 / -1; }
+    .k { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
+    .v { font-size: clamp(13px, 2.1dvh, 16px); line-height: 1.4; }
+    .v div + div { margin-top: min(20px, 2.2dvh); }
+  }
 </style>

@@ -114,9 +114,10 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
     .mac, .boot { display: none !important; }
     .lgrid { display: block; }
     .lg-i { grid-column: 1 / -1; }
-    .lg-l { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 12px; }
+    .lg-l { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: min(24px, 2.4dvh) var(--gut); }
     .lg-l a { display: block; }
-    .lg-v { display: grid; place-items: center; aspect-ratio: 1; background: rgba(0, 0, 0, .045); transition: background .3s; }
+    /* carré quand la hauteur le permet, sinon la rangée de quatre pièces se resserre pour tenir dans l'écran visible */
+    .lg-v { display: grid; place-items: center; height: min(calc((100vw - 2 * var(--m) - var(--gut)) / 2), 19dvh); background: rgba(0, 0, 0, .045); transition: background .3s; }
     .lg-l a:active .lg-v { background: rgba(0, 0, 0, .08); }
     .lg-v .ai { width: 42%; height: 42%; filter: grayscale(1); } /* en gris, comme les objets de la page Projets */
     .lg-n { display: block; margin-top: 10px; font-size: 12px; }

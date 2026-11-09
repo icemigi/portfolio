@@ -54,7 +54,7 @@ const t = ui[lang];
   .name > span:nth-child(2) { margin-left: -.06em; }
   .name .l2 > span { display: inline; }
   /* la phrase sur la même ligne que la flèche de défilement (centrée sur elle), juste à sa gauche */
-  .phrase { position: absolute; right: calc(var(--m) + 30px); bottom: 30px; text-align: right; }
+  .phrase { position: absolute; right: calc(var(--m) + var(--col) + var(--gut)); bottom: 30px; text-align: right; } /* finit sur le bord droit de la colonne 11 ; la flèche occupe la 12 */
 
   .big, .pj { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
   .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }

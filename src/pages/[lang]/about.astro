@@ -22,7 +22,13 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
       <div class="in g">
         <h1 class="lab mono mu par" id="ab-1">{L.about}</h1>
         <div class="bd intro" data-pt-zone><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} /></div>
-        <img class="pt" src="/portrait-360.webp" srcset="/portrait-360.webp 360w, /portrait-720.webp 720w" sizes="(max-width: 760px) 50vw, 240px" alt={lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame'} width="360" height="492" decoding="async" data-pt data-no-ascii />
+      </div>
+    </section>
+
+    {/* écran tactile : le portrait a son propre écran, calé sur la grille ; à la souris, le script le sort d'ici et il suit le pointeur */}
+    <section class="scr pts" data-still aria-label={lang === 'fr' ? 'Portrait' : 'Portrait'}>
+      <div class="in g">
+        <img class="pt" src="/portrait-720.webp" srcset="/portrait-360.webp 360w, /portrait-720.webp 720w" sizes="(max-width: 760px) 100vw, 240px" alt={lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame'} width="360" height="492" decoding="async" data-pt data-no-ascii />
       </div>
     </section>
 
@@ -61,70 +67,74 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
 </Base>
 
 <style>
-  .lab { grid-column: 1 / 4; align-self: start; padding-top: 14px; }
-  .bd { grid-column: 4 / 12; }
-  /* services : un index — numéro, grand mot, ce qu'il contient, et les projets où le voir */
-  .svc { display: grid; row-gap: 22px; }
-  .svc > li { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr); column-gap: var(--gut); row-gap: 4px; align-items: baseline; }
-  .svc .n { font-size: 12px; grid-row: 1 / 3; }
-  .svc h3 { grid-column: 2; transition: translate .5s var(--out); }
-  .svc .dl { grid-column: 2; font-size: 12px; }
-  .svc .seen { grid-column: 3; grid-row: 1 / 3; align-self: center; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
+  /* libellé et texte partagent la même ligne de base : aucune marge posée à l'œil */
+  .lab { grid-column: 1 / 4; align-self: first baseline; }
+  .bd { grid-column: 4 / 12; align-self: first baseline; }
+  /* services : un index — numéro, grand mot, ce qu'il contient, et les projets où le voir ; chaque élément tombe sur une colonne du site */
+  .svc { display: grid; grid-template-columns: subgrid; row-gap: 22px; }
+  .svc > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
+  .svc .n { font-size: 12px; grid-column: 1; grid-row: 1 / 3; }
+  .svc h3 { grid-column: 2 / 6; transition: translate .5s var(--out); }
+  .svc .dl { grid-column: 2 / 6; font-size: 12px; }
+  .svc .seen { grid-column: 6 / -1; grid-row: 1 / 3; align-self: center; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; }
   .svc .seen .mu { width: 100%; }
   /* 07/11 : au survol, le lien passe à l'orange au lieu de glisser */
   .svc .seen .lk { transition: color .2s; }
   @media (hover: hover) { .svc .seen .lk:hover { transform: none; color: var(--ac); } }
   @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } }
   .cvl { margin-top: 40px; }
-  /* portrait : à la souris, il apparaît au survol du texte d'intro et suit le pointeur (ressort, inclinaison selon la vitesse).
-     Écran tactile : posé au-dessus du texte. */
-  .pt { grid-column: 1 / -1; order: -1; margin: 0 0 20px; width: min(50%, 180px); height: auto; }
+  /* portrait, écran tactile : sur l'axe de la colonne 4, pleine largeur sur téléphone, jamais plus haut que l'écran visible */
+  .pt { grid-column: 4 / 10; width: min(100%, calc((100dvh - var(--head) - 88px) * .7317)); height: auto; }
+  /* à la souris : il apparaît au survol du texte d'intro et suit le pointeur. Entrée sèche, sans rebond (power3.out) */
   @media (hover: hover) and (pointer: fine) {
+    .pts { display: none; }
     .pt { position: fixed; left: 0; top: 0; z-index: 60; width: min(240px, 30dvh); margin: 0; pointer-events: none;
-      opacity: 0; transform-origin: 0 0; transition: opacity .35s var(--out); will-change: transform, opacity; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .18)); }
-    .pt.on { opacity: 1; }
+      opacity: 0; scale: .6; transform-origin: 0 0; transition: opacity .32s cubic-bezier(.215, .61, .355, 1), scale .42s cubic-bezier(.215, .61, .355, 1); will-change: transform, opacity, scale; filter: drop-shadow(0 18px 30px rgba(0, 0, 0, .18)); }
+    .pt.on { opacity: 1; scale: 1; }
   }
 
 
   @media (max-width: 760px) {
     .lab, .bd { grid-column: 1 / -1; }
-    .lab { margin-bottom: 20px; padding-top: 0; }
-    .svc > li { grid-template-columns: 32px 1fr; }
-    .svc .seen { grid-column: 2; grid-row: auto; margin-top: 6px; }
+    .lab { margin-bottom: 20px; }
+    .pt { grid-column: 1 / -1; }
+    /* services : une seule colonne, trois niveaux seulement — le mot, ce qu'il contient, les projets */
+    .svc { grid-template-columns: minmax(0, 1fr); row-gap: min(16px, 1.8dvh); }
+    .svc > li { grid-column: 1; grid-template-columns: minmax(0, 1fr); row-gap: 2px; border-top: 1px solid var(--ln); padding-top: min(10px, 1.2dvh); }
+    .svc .n, .svc .seen .mu { display: none; }
+    .svc h3, .svc .dl, .svc .seen { grid-column: 1; grid-row: auto; }
+    .svc .seen { margin-top: min(6px, .7dvh); }
   }
 </style>
 
 <script>
   import { reduced } from '../../scripts/motion';
-  // portrait qui suit la souris au survol du texte d'intro : position amortie, inclinaison selon la vitesse,
-  // entrée en grandissant avec un léger rebond, sortie en se rétractant
+  // portrait qui suit la souris au survol du texte d'intro : position amortie, inclinaison selon la vitesse ;
+  // entrée et sortie en CSS (échelle et opacité, sans rebond)
   const pt = document.querySelector<HTMLImageElement>('[data-pt]');
   const zone = document.querySelector<HTMLElement>('[data-pt-zone]');
   if (pt && zone && matchMedia('(hover: hover) and (pointer: fine)').matches) {
     document.body.appendChild(pt); // hors des écrans (transformés) : position fixe = fenêtre
     const still = reduced();
-    let tx = 0, ty = 0, x = 0, y = 0, r = 0, s = 0.6, vs = 0, on = false, raf = 0;
+    let tx = 0, ty = 0, x = 0, y = 0, r = 0, on = false, raf = 0;
     const OFF = 14; // le pointeur se tient au coin supérieur gauche du portrait, à quelques pixels
     const tick = () => {
       const k = still ? 1 : 0.16;
       const px = x; x += (tx - x) * k; y += (ty - y) * k;
       const rt = still ? 0 : Math.max(-14, Math.min(14, (x - px) * 0.9));
       r += (rt - r) * 0.12;
-      // ressort pour l'échelle : un peu de rebond à l'entrée
-      const st = on ? 1 : 0.6;
-      if (still) s = st; else { vs = (vs + (st - s) * 0.14) * 0.72; s += vs; }
       const w = pt.offsetWidth, h = pt.offsetHeight;
       // coin supérieur gauche au pointeur ; près des bords droit et bas, le portrait se cale pour rester visible
       const left = Math.min(x + OFF, innerWidth - w - 12);
       const top = Math.min(y + OFF, innerHeight - h - 12);
-      pt.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(${r.toFixed(2)}deg) scale(${s.toFixed(3)})`;
-      const moving = Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || Math.abs(st - s) > 0.002 || Math.abs(vs) > 0.002 || Math.abs(r - rt) > 0.05;
+      pt.style.transform = `translate3d(${left}px, ${top}px, 0) rotate(${r.toFixed(2)}deg)`;
+      const moving = Math.abs(tx - x) > 0.3 || Math.abs(ty - y) > 0.3 || Math.abs(r - rt) > 0.05;
       raf = moving ? requestAnimationFrame(tick) : 0;
     };
     const kick = () => { if (!raf) raf = requestAnimationFrame(tick); };
     zone.addEventListener('pointerenter', (e) => {
       tx = e.clientX; ty = e.clientY;
-      if (!on && s <= 0.61) { x = tx; y = ty; } // apparaît sous le pointeur, sans glisser depuis l'ancien endroit
+      if (!on && getComputedStyle(pt).opacity === '0') { x = tx; y = ty; } // apparaît sous le pointeur, sans glisser depuis l'ancien endroit
       on = true; pt.classList.add('on'); kick();
     });
     zone.addEventListener('pointermove', (e) => { tx = e.clientX; ty = e.clientY; kick(); });
