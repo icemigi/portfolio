@@ -74,6 +74,9 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .likes.open .it:not(.sel) { opacity: .08; }
   /* téléphone : le texte s'ouvre en feuille au bas de l'écran */
   @media (max-width: 760px) {
+    /* une ombre floue recalculée sur une image qui grossit fait saccader un téléphone */
+    .it img { transition: none; }
+    .it.sel img { filter: none; }
     .card { position: fixed; inset: auto 0 0 0; display: block; max-height: 56dvh; overflow-y: auto; overscroll-behavior: contain; padding: 40px var(--m) calc(24px + env(safe-area-inset-bottom)); background: linear-gradient(to bottom, transparent, var(--bg) 32px); }
     .card .in { grid-column: auto; }
     .card .txt { max-width: none; }
@@ -219,6 +222,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   // le titre s'écrit lettre à lettre ; le texte apparaît d'un bloc (découper un paragraphe en lettres le fait sauter de ligne)
   const reveal = () => {
     if (still) return;
+    // téléphone : une seule animation, une fois l'objet presque posé (lettres et blocs par-dessus sa fin le faisaient saccader)
+    if (small) { card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 620, easing: 'ease-out', fill: 'backwards' }); return; }
     letters(card.querySelector('[data-title]')!, 200);
     card.querySelectorAll<HTMLElement>('.sub, .txt, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: 260 + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
   };
@@ -229,12 +234,14 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     card.querySelector('[data-sub]')!.textContent = d.sub;
     const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
     lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
-    // lecteur intégré (iPod) : chargé seulement à l'ouverture, dans l'écran de l'objet
-    const emb = it.el.querySelector<HTMLElement>('[data-emb]');
-    if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
-    // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions
-    // (assez haut pour que Spotify affiche aussi la liste des morceaux)
-    if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.width = '300px'; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; }
+    // lecteur intégré (iPod) : chargé une fois l'objet posé, pour ne pas alourdir son arrivée
+    const mount = () => {
+      const emb = it.el.querySelector<HTMLElement>('[data-emb]');
+      if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions
+      // (assez haut pour que Spotify affiche aussi la liste des morceaux)
+      if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.width = '300px'; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; }
+    };
     card.querySelector('[data-title]')!.textContent = d.title;
     card.querySelector('[data-text]')!.textContent = d.text;
     card.hidden = false;
@@ -247,11 +254,11 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     if (small) {
       // téléphone : l'objet se pose au centre de l'espace libre au-dessus de la feuille
       const t0 = top(), room = r.top - t0 - 32;
-      tween(it, W / 2, t0 + 16 + room / 2, Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w));
+      tween(it, W / 2, t0 + 16 + room / 2, Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w), 0, mount);
     } else {
       // ordinateur : l'objet au centre de la moitié gauche, le texte à droite (colonnes 7 à 10)
       const room = Math.min(r.left - 2 * 48, H - 2 * 140);
-      tween(it, r.left / 2, H / 2, Math.min(d.embed ? 3.6 : 2.6, room / Math.max(it.w, it.h) * (d.embed ? 1.15 : 1)));
+      tween(it, r.left / 2, H / 2, Math.min(d.embed ? 3.6 : 2.6, room / Math.max(it.w, it.h) * (d.embed ? 1.15 : 1)), 0, mount);
     }
     reveal();
     if (push) history.replaceState(null, '', `#${id}`);
