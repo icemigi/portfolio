@@ -1,7 +1,8 @@
 // Défilement forcé (règle site entier) : un geste = un écran entier.
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; le saut reprend à son bord.
-// Passage : glissement 680 ms, cubic-bezier(.7,0,.2,1), interruptible sans à-coup. « Réduire les animations » : passage instantané.
+// Passage : glissement 480 ms, cubic-bezier(.45,0,.15,1), interruptible sans à-coup. « Réduire les animations » : passage instantané.
 import { reduced, reveal, settle } from './motion';
+import { wheelGesture } from './gesture';
 
 export type Screens = {
   go: (to: number) => void;
@@ -101,7 +102,7 @@ export function initScreens(host: HTMLElement): Screens {
       else if (parOn[i]) { parEls[i].forEach(({ el }) => (el.style.translate = '')); parOn[i] = false; }
     });
   };
-  // courbe du glissement (cubic-bezier .7,0,.2,1) ; la vitesse héritée s'éteint par u(1-u)^3
+  // courbe du glissement (cubic-bezier .45,0,.15,1) ; la vitesse héritée s'éteint par u(1-u)^3
   const bez = (x: number) => {
     const X = (t: number) => 3 * (1 - t) * (1 - t) * t * 0.45 + 3 * (1 - t) * t * t * 0.15 + t * t * t;
     const Y = (t: number) => 3 * (1 - t) * t * t + t * t * t;
@@ -164,13 +165,8 @@ export function initScreens(host: HTMLElement): Screens {
     }
   }
 
-  // molette / pavé tactile : un geste = un écran.
-  // L'inertie du trackpad envoie encore des dizaines d'événements après le geste, et repart d'un coup quand le doigt se lève :
-  // on n'accepte un nouveau passage que si le flux s'est vraiment interrompu (> 260 ms), si le sens s'inverse, ou si l'amplitude
-  // retombe puis remonte plusieurs fois de suite (un vrai nouveau coup de doigt, pas le sursaut isolé de l'élan).
-  // Un vrai nouveau coup peut relancer après 200 ms (le glissement est interruptible) ; dans tous les autres cas, 440 ms minimum.
-  const LOCK = 440, PUSH = 200;
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0, peak = 0, dip = false;
+  // molette / pavé tactile : un geste = un écran (règles dans gesture.ts)
+  const gesture = wheelGesture((dir) => !canScroll(busy ? S[tgt] : S[cur], dir) || busy);
   const onWheel = (e: WheelEvent) => {
     const t = e.target as Element | null;
     if (t?.closest?.('[data-own-wheel]')) return;
@@ -178,26 +174,8 @@ export function initScreens(host: HTMLElement): Screens {
     if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
     // l'heure du geste, pas celle du traitement : si la page se fige un instant, l'inertie n'a pas l'air d'une pause (donc d'un nouveau geste)
     const now = e.timeStamp + ((e.view as Window | null)?.performance.timeOrigin ?? performance.timeOrigin) - performance.timeOrigin;
-    const dir = Math.sign(e.deltaY);
-    if (!dir) return;
-    const abs = Math.abs(e.deltaY);
-    const pause = now - last > 260;
-    last = now;
-    rise = abs > prev * 1.15 && abs > 12 ? rise + 1 : 0;
-    prev = abs;
-    peak = Math.max(peak, abs);
-    if (abs < peak * 0.55) dip = true; // l'élan est retombé : une remontée franche sera un nouveau geste
-    const push = used && dip && rise >= 3 && abs > 30 && now - lastGo > PUSH;
-    const fresh = pause || dir !== gdir || push;
-    if (fresh) { acc = 0; used = false; gdir = dir; rise = 0; peak = abs; dip = false; edge = !canScroll(busy ? S[tgt] : S[cur], dir) || busy; }
-    if (used || !edge) return;
-    acc += e.deltaY;
-    // molette à crans : deux crans rapprochés ne font pas sauter deux écrans
-    if (Math.abs(acc) > 30) {
-      used = true;
-      if (!push && dir === lastDir && now - lastGo < LOCK) return;
-      lastGo = now; lastDir = dir; step(dir);
-    }
+    const dir = gesture(now, e.deltaY);
+    if (dir) step(dir);
   };
   addEventListener('wheel', onWheel, { passive: true });
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : on écoute aussi sa molette
@@ -229,14 +207,14 @@ export function initScreens(host: HTMLElement): Screens {
   let y0 = 0, x0 = 0, t0 = 0, up = false, down = false;
   addEventListener('touchstart', (e) => {
     const t = e.target as Element | null;
-    if (t?.closest?.('[data-own-touch]')) { y0 = NaN; return; }
+    if (e.touches.length > 1 || t?.closest?.('[data-own-touch]')) { y0 = NaN; return; }
     y0 = e.touches[0].clientY; x0 = e.touches[0].clientX; t0 = performance.now();
     down = !canScroll(S[cur], 1); up = !canScroll(S[cur], -1);
   }, { passive: true });
   // le passage part dès que le doigt a glissé de 36 px (sans attendre qu'il quitte l'écran) : plus de latence
   let fired = false;
   const swipe = (yNow: number, xNow: number) => {
-    if (Number.isNaN(y0) || fired) return;
+    if (Number.isNaN(y0) || fired || (visualViewport?.scale ?? 1) > 1.05) return; // page zoomée : le doigt s'y déplace, il ne change pas d'écran
     const d = y0 - yNow;
     if (Math.abs(d) < 36 || performance.now() - t0 > 900) return;
     if (Math.abs(x0 - xNow) > Math.abs(d)) return; // glissement surtout horizontal : pas un changement d'écran

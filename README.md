@@ -10,6 +10,7 @@ npm install
 npm run dev       # http://localhost:4321
 npm run build     # génère ./dist (site statique)
 npm run preview   # sert ./dist
+npm test          # règles du geste molette / pavé
 ```
 
 Node ≥ 22.22.
@@ -17,8 +18,8 @@ Node ≥ 22.22.
 ## Principes
 
 - **Défilement forcé** : la plupart des pages sont des écrans plein cadre ; un geste (molette, pavé, doigt, clavier) = un écran. Un écran plus haut que la fenêtre se lit librement à l'intérieur.
-- **Mouvement** : apparition lettre par lettre, évitement du curseur sur les grands textes, curseur flèche maison, parallaxe au passage des écrans, titre continu entre deux études. Tout respecte « Réduire les animations ».
-- **Fluidité** : chargement d'entrée une seule fois par visite, pages préchargées dès que leur lien est visible (`prefetch`), images des écrans voisins chargées d'avance, images en WebP.
+- **Mouvement** : apparition lettre par lettre, évitement du curseur sur les grands textes, curseur gantelet en CSS, parallaxe au passage des écrans, titre continu entre deux études. Tout respecte « Réduire les animations ».
+- **Fluidité** : chargement d'entrée une seule fois par visite, pages préchargées au survol de leur lien (`prefetch`), images des écrans voisins chargées d'avance, images en WebP.
 - **Son** : synthétisé en Web Audio, aucun fichier, actif par défaut (démarre au premier geste), coupé par le haut-parleur du menu.
 - **Téléphone** : échelle d'affiche (texte proportionnel à la largeur), menu plein écran « (menu) ».
 - **Accessibilité** : navigation clavier complète, focus visible, lien d'évitement, textes alternatifs, `prefers-reduced-motion`.
@@ -40,7 +41,7 @@ src/
   layouts/Base.astro
   pages/[lang]/     index · work/ · work/[slug] · lab (bureau) · lab/[room] · archive · about · about/likes · legal
   scripts/          site (point d'entrée), screens (défilement forcé), motion (lettres, vignettes),
-                    hola (évitement du curseur), cursor, loader, sound
+                    hola (évitement du curseur), gesture (molette / pavé), loader, sound
   styles/global.css système : couleurs, grille 12 colonnes, typo, écrans
 public/
   fonts/            Geist et Geist Mono (OFL)

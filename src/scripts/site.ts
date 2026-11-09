@@ -15,7 +15,8 @@ document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
   a.addEventListener('click', () => { try { localStorage.setItem('kk-lang', a.dataset.lang!); } catch { /* */ } }),
 );
 
-// curseur : le gantelet est posé en CSS (global.css) ; l'ancienne flèche dessinée en JS est retirée
+// écrans et mode téléphone sont décidés au chargement : on recharge si la rotation franchit le seuil (sauf dans une fenêtre du Lab, qui perdrait la pièce ouverte)
+if (!document.documentElement.classList.contains('embed')) matchMedia('(max-width: 760px)').addEventListener('change', () => location.reload());
 
 // Boutons « (mot) + » : le signe devient un élément à part (il tourne au survol, le + devient × en fermant)
 document.querySelectorAll<HTMLElement>('.bp:not(.d)').forEach((b) => {

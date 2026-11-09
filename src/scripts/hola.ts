@@ -44,6 +44,7 @@ export function initHola() {
         it.cx = b.left + b.width / 2 - it.x * fs; it.cy = b.top + b.height / 2 - it.y * fs;
       }
     };
+    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
     const loop = () => {
       let moving = false;
       for (const it of items) {
@@ -51,19 +52,20 @@ export function initHola() {
         const g = inside ? Math.exp(-(dx * dx + dy * dy * 2.2) / (2 * SIGMA * SIGMA)) : 0;
         const ty = A * g * Math.tanh(dy / 18) * it.k, tx = SPREAD * g * Math.tanh(dx / 30) * it.k;
         it.y += (ty - it.y) * 0.15; it.x += (tx - it.x) * 0.15;
-        if (Math.abs(it.y) > 0.002 || Math.abs(it.x) > 0.002 || g > 0.01) moving = true;
+        if (Math.abs(ty - it.y) > 0.002 || Math.abs(tx - it.x) > 0.002) moving = true;
         it.el.style.top = `${it.y.toFixed(3)}em`; it.el.style.left = `${it.x.toFixed(3)}em`;
       }
-      if (!moving && !inside) { for (const it of items) { it.el.style.top = ''; it.el.style.left = ''; } raf = 0; return; }
-      raf = requestAnimationFrame(loop);
+      raf = 0;
+      if (moving) kick(); // souris immobile, lettres posées : la boucle s'arrête, pointermove la relance
+      else if (!inside) for (const it of items) { it.el.style.top = ''; it.el.style.left = ''; }
     };
     el.addEventListener('pointerenter', (e) => {
       if (reduced()) return;
       inside = true; mx = e.clientX; my = e.clientY; measure();
-      if (!raf) raf = requestAnimationFrame(loop);
+      kick();
     });
-    el.addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; });
-    el.addEventListener('pointerleave', () => { inside = false; });
+    el.addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; if (inside) kick(); });
+    el.addEventListener('pointerleave', () => { inside = false; kick(); });
     // l'écran glisse : on remesure au prochain passage
     addEventListener('resize', () => inside && measure());
   });

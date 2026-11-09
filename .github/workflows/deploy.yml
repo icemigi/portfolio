@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci || npm install
+      - run: npm ci
       # le site est servi à la racine du domaine : plus de préfixe /portfolio/
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3

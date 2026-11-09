@@ -294,6 +294,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   const big = lb.querySelector<HTMLElement>('[data-big]')!;
   const cap = lb.querySelector<HTMLElement>('[data-cap]')!;
   let cur = -1, opener: HTMLElement | null = null;
+  const behind = [...document.querySelectorAll<HTMLElement>('.skip, .site-header, [data-arc]')];
   const show = (i: number, push = true) => {
     cur = (i + A.caps.length) % A.caps.length;
     big.style.aspectRatio = String(A.ratios[cur]);
@@ -304,13 +305,14 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     if (A.srcs[cur]) {
       const k = cur, im = document.createElement('img');
       im.alt = A.caps[cur]; im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-      im.src = cards[cur]?.img.complete ? cards[cur].img.src : small;
+      im.src = cards[cur]?.img.src || small;
       big.appendChild(im);
       const hi = new Image(); hi.src = A.srcs[cur];
       hi.decode().then(() => { if (cur === k) im.src = hi.src; }).catch(() => {});
     }
     cap.textContent = `${P(cur + 1)} — ${A.caps[cur]}`;
     lb.hidden = false;
+    behind.forEach((el) => (el.inert = true));
     if (push) history.replaceState(null, '', `#${P(cur + 1)}`);
     lb.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
   };
@@ -332,8 +334,10 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     lb.animate([{ backgroundColor: 'rgba(243,243,243,0)' }, { backgroundColor: 'rgba(243,243,243,1)' }], { duration: 420, easing: 'ease-out' });
     chrome().forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' }));
   };
+  // clavier : Entrée sur la barre ouvre l'affiche du dessus (sur ordinateur, la pile est un dessin sans liens)
+  prog.addEventListener('keydown', (e) => { if (e.key === 'Enter') { opener = prog; open(index()); } });
   const close = () => {
-    const done = () => { lifted = -1; if (desktop()) bake(); lb.hidden = true; cur = -1; history.replaceState(null, '', location.pathname); opener?.focus(); };
+    const done =() => { lifted = -1; if (desktop()) bake(); lb.hidden = true; behind.forEach((el) => (el.inert = false)); cur = -1; history.replaceState(null, '', location.pathname); opener?.focus(); };
     if (reduced() || lb.hidden) { done(); return; }
     const t = fromCard(cur), back = !!cardAt(cur);
     chrome().forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));

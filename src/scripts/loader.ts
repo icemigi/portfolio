@@ -1,5 +1,5 @@
 // Chargement d'entrée : une seule fois par visite. Le cavalier se remplit de bas en haut au rythme du chargement
-// (polices, page, toutes les images et vignettes, autres rubriques), le compteur suit, puis l'écran de chargement monte comme un écran du site.
+// (polices, page, images immédiates et vignettes, autres rubriques), le compteur suit, puis l'écran de chargement monte comme un écran du site.
 // Les pages suivantes s'ouvrent sans chargement (déjà en cache, et préchargées par Astro).
 import { reduced, EASE_SLIDE } from './motion';
 
@@ -11,12 +11,11 @@ const seen = document.documentElement.classList.contains('ld-skip');
 window.kkReady = new Promise<void>((resolve) => {
   if (!ld || seen) { ld?.remove(); resolve(); return; }
   const fill = ld.querySelector<HTMLElement>('[data-ld-fill]')!, num = ld.querySelector<HTMLElement>('[data-ld-n]')!;
-  // tout ce dont la page a besoin, pas seulement le premier écran : polices, page, toutes les images (y compris
-  // celles en chargement différé), les vignettes animées, puis les autres rubriques du site (pages en cache)
+  // polices, page, images immédiates, vignettes animées, puis les autres rubriques du site (pages en cache) ;
+  // les images différées suivent à l'approche de leur écran : une galerie entière ne se télécharge pas en 4G avant la première image
   const jobs: Promise<unknown>[] = [document.fonts.ready, new Promise((r) => (document.readyState === 'complete' ? r(0) : addEventListener('load', r, { once: true })))];
   const pic = (src: string) => new Promise((r) => { const im = new Image(); im.decoding = 'async'; im.onload = im.onerror = () => r(0); im.src = src; });
-  document.querySelectorAll<HTMLImageElement>('img').forEach((i) => {
-    if (i.loading === 'lazy') i.loading = 'eager';
+  document.querySelectorAll<HTMLImageElement>('img:not([loading="lazy"])').forEach((i) => {
     jobs.push(i.complete ? (i.decode?.().catch(() => {}) ?? Promise.resolve()) : new Promise((r) => { i.addEventListener('load', () => i.decode().catch(() => {}).then(r), { once: true }); i.addEventListener('error', r, { once: true }); }));
   });
   document.querySelectorAll<HTMLElement>('[style*="--vi"]').forEach((v) => {

@@ -5,6 +5,7 @@ from PIL import Image, ImageStat
 import os
 W,H=288,162; PAD=10
 A='public/archive/'; O='public/vig/'
+os.makedirs(O,exist_ok=True)
 def edge(im):
     w,h=im.size; px=[im.getpixel((x,y)) for x in range(0,w,max(1,w//40)) for y in (0,h-1)]+[im.getpixel((x,y)) for y in range(0,h,max(1,h//40)) for x in (0,w-1)]
     return tuple(sorted(c[i] for c in px)[len(px)//2] for i in range(3))

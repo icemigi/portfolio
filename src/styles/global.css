@@ -273,15 +273,6 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-coin-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
 
-/* ---------- curseur (sobre) ---------- */
-.has-cursor, .has-cursor * { cursor: none !important; }
-.has-cursor :is(input, textarea, [contenteditable], select) { cursor: text !important; }
-.has-cursor iframe { cursor: auto !important; }
-.cu { position: fixed; left: 0; top: 0; z-index: 400; width: 22px; height: 22px; margin: -2px 0 0 -2px; pointer-events: none; transform-origin: 2px 2px; opacity: 0; transition: opacity .2s; will-change: transform; filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, .18)); }
-.cu svg { display: block; }
-.cu-on .cu { opacity: 1; }
-.cu-text .cu { opacity: 0 !important; }
-
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }
 .more-arrow[hidden] { display: grid; opacity: 0; pointer-events: none; }
@@ -291,4 +282,4 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 
 
 /* ---------- pièce du Lab ouverte dans une fenêtre du bureau (?embed) ---------- */
-.embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .cu, .embed .lab .dots, .embed .lab .arw { display: none !important; }
+.embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .lab .dots, .embed .lab .arw { display: none !important; }
