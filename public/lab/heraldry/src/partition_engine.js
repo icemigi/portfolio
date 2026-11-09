@@ -29,6 +29,16 @@ export class PartitionEngine {
     return this.partitionTypes[randomIndex];
   }
 
+  /** Lignes droites horizontales et verticales de la partition réellement tracée. */
+  getAxisLines(type) {
+    if (['tranche', 'taille', 'bande', 'barre'].includes(type)) return { x: [], y: [] };
+    if (type === 'coupe') return { x: [], y: [1000] };
+    if (type === 'ecartele') return { x: [1000], y: [1000] };
+    if (type === 'fasce') return { x: [], y: [200 + 1600 / 3, 200 + 3200 / 3] };
+    if (type === 'pal') return { x: [300 + 1400 / 3, 300 + 2800 / 3], y: [] };
+    return { x: [1000], y: [] };
+  }
+
   /**
    * Génère les coordonnées SVG (<path d="...">) selon le type de découpe demandé.
    * 

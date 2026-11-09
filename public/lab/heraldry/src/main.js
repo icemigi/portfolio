@@ -26,6 +26,18 @@ class HeraldicApp {
     this.PRESET_ANGLES = [0, 45, 90, 135];
     this.ROTATION_ANGLES = [0, 90, 180, 270];
 
+    // Écart minimal entre deux bords parallèles : en dessous, ils coïncident exactement.
+    this.MIN_EDGE_GAP = 48;
+    // Bords droits de chaque écu, là où il en a.
+    this.ECU_EDGES = {
+      anglais: { x: [], y: [200] },
+      espagnol: { x: [300, 1700], y: [200] },
+      francais_ancien: { x: [300, 1700], y: [200] },
+      francais_moderne: { x: [300, 1700], y: [200] },
+      normand: { x: [], y: [218] },
+      suisse: { x: [300, 1700], y: [] }
+    };
+
     this.ECU_NAMES = ['anglais', 'espagnol', 'francais_ancien', 'francais_moderne', 'normand', 'suisse'];
     this.MEUBLES_ANCIENS = ['leopard', 'key', 'dragon', 'castle', 'fire'];
     this.MEUBLES_CONTEMPORAINS = ['star', 'cross', 'heart', 'orb', 'hand', 'sword'];
@@ -243,6 +255,7 @@ class HeraldicApp {
     const placedMeubles = this.calculateMeublesPlacement();
     const randomDevise = this.DEVISES[Math.floor(this.rng() * this.DEVISES.length)];
     const colorShapes = this.generateColorShapes(showPart, partitionName, masterHatchAngle);
+    const edgeRefs = this.snapShapes(colorShapes, showPart, partitionName, randomEcuName);
 
     const glyphsData = this.getBlockGridZLayout(
       randomDevise, 
@@ -258,7 +271,8 @@ class HeraldicApp {
       showPartitions: showPart,
       placedMeubles,
       glyphsData,
-      colorShapes
+      colorShapes,
+      edgeRefs
     };
 
     this.renderSVG();
@@ -360,6 +374,29 @@ class HeraldicApp {
     return shapes;
   }
 
+  // Pas de faux alignement : deux bords parallèles coïncident, ou s'écartent franchement.
+  snapShapes(shapes, showPartitions, partitionName, ecuName) {
+    const edges = this.ECU_EDGES[ecuName] || { x: [], y: [] };
+    const axes = showPartitions ? this.partitionEngine.getAxisLines(partitionName) : { x: [], y: [] };
+    const refX = [...edges.x, ...axes.x], refY = [...edges.y, ...axes.y];
+    const snap = (value, refs) => {
+      let best = value;
+      for (const r of refs) {
+        if (Math.abs(r - value) < this.MIN_EDGE_GAP && (best === value || Math.abs(r - value) < Math.abs(best - value))) best = r;
+      }
+      return best;
+    };
+    for (const s of shapes) {
+      const x0 = snap(s.x + s.offsetX, refX), x1 = snap(s.x + s.offsetX + s.width, refX);
+      const y0 = snap(s.y + s.offsetY, refY), y1 = snap(s.y + s.offsetY + s.height, refY);
+      if (x1 - x0 >= this.MIN_EDGE_GAP) { s.x = x0 - s.offsetX; s.width = x1 - x0; }
+      if (y1 - y0 >= this.MIN_EDGE_GAP) { s.y = y0 - s.offsetY; s.height = y1 - y0; }
+      refX.push(s.x + s.offsetX, s.x + s.offsetX + s.width);
+      refY.push(s.y + s.offsetY, s.y + s.offsetY + s.height);
+    }
+    return { x: refX, y: refY };
+  }
+
   getBlockGridZLayout(text, viewX, viewY, viewWidth, viewHeight) {
     const letters = text.split('');
     const items = [];
@@ -431,7 +468,7 @@ class HeraldicApp {
     return items;
   }
 
-  createHatchGroup(defs, id, width, height, angle, strokeWidth, gap) {
+  createHatchGroup(defs, id, width, height, angle, strokeWidth, gap, origin = 0, refs = []) {
     const clipId = `${id}-clip`;
     const clipPath = this.createSvgElement("clipPath", { id: clipId });
     const clipRect = this.createSvgElement("rect", { width, height });
@@ -451,8 +488,39 @@ class HeraldicApp {
       transform: `rotate(${angle}, ${cx}, ${cy})`
     });
 
-    for (let x = -diag; x < diag * 2; x += gap) {
-      if (Math.abs(x - cx) > diag / 2 + strokeWidth) continue; // hors du rectangle, quel que soit l'angle
+    // Seuls des traits entiers : aucun n'est rogné en filet par le bord du rectangle ou par un angle.
+    const axial = angle === 0 || angle === 90;
+    const span = angle === 0 ? width : height;
+    const reach = axial ? span / 2 : (width + height) / (2 * Math.SQRT2) - strokeWidth;
+    const whole = (x) => Math.abs(x - cx) + strokeWidth / 2 <= reach;
+
+    // Les traits droits s'écartent des autres bords de l'écu : on décale la trame si l'un d'eux en frôle un.
+    const clearance = (shift) => {
+      let min = Infinity;
+      for (let x = -diag + shift; x < diag * 2; x += gap) {
+        if (!whole(x)) continue;
+        const p = span / 2 + (x - cx);
+        for (const edge of [p - strokeWidth / 2, p + strokeWidth / 2]) {
+          for (const r of refs) min = Math.min(min, Math.abs(origin + edge - r));
+        }
+      }
+      return min;
+    };
+    let shift = 0;
+    if (axial && refs.length && clearance(0) < this.MIN_EDGE_GAP / 2) {
+      let best = clearance(0);
+      for (let k = 1; k < 16; k++) {
+        const candidate = (k * gap) / 16, c = clearance(candidate);
+        if (c > best) { best = c; shift = candidate; }
+      }
+    }
+
+    for (let x = -diag + shift; x < diag * 2; x += gap) {
+      if (!whole(x)) continue;
+      if (axial) { // si aucun décalage ne suffit, on retire ce trait plutôt que de laisser un filet
+        const p = span / 2 + (x - cx);
+        if (refs.some((r) => [p - strokeWidth / 2, p + strokeWidth / 2].some((e) => { const d = Math.abs(origin + e - r); return d > 0 && d < 6; }))) continue;
+      }
       const line = this.createSvgElement("line", {
         x1: x, y1: -diag,
         x2: x, y2: diag * 2,
@@ -473,7 +541,7 @@ class HeraldicApp {
     if (!container) return;
     container.innerHTML = "";
 
-    const { pathD, partitionName, showPartitions, placedMeubles, glyphsData, colorShapes } = this.currentGenerationState;
+    const { pathD, partitionName, showPartitions, placedMeubles, glyphsData, colorShapes, edgeRefs } = this.currentGenerationState;
 
     const vX = -this.CANVAS_PAD;
     const vY = -this.CANVAS_PAD;
@@ -594,7 +662,12 @@ class HeraldicApp {
           shape.height, 
           shape.hatchAngle, 
           shape.patternStrokeWidth, 
-          shape.patternGap
+          shape.patternGap,
+          shape.hatchAngle === 0 ? posX : posY,
+          (shape.hatchAngle === 0 ? edgeRefs.x : edgeRefs.y).filter((r) => {
+            const start = shape.hatchAngle === 0 ? posX : posY;
+            return r !== start && r !== start + (shape.hatchAngle === 0 ? shape.width : shape.height);
+          })
         );
         gShape.appendChild(hatchGroup);
       } else {
