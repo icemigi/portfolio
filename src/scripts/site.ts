@@ -10,24 +10,6 @@ import { initAscii } from './ascii';
 // médias : chargement en ASCII (trame de caractères, puis deux rendus ASCII de l'image, puis l'image)
 initAscii();
 
-// Email : clic = adresse copiée avec confirmation ; l'adresse reste sélectionnable.
-document.addEventListener('click', (e) => {
-  const a = (e.target as Element).closest?.('[data-copy]') as HTMLElement | null;
-  if (!a) return;
-  if (String(getSelection() || '').length) return;
-  e.preventDefault();
-  const addr = a.dataset.copy!;
-  navigator.clipboard?.writeText(addr).catch(() => {});
-  const label = a.querySelector<HTMLElement>('[data-label]') || a;
-  if (label.dataset.busy) return;
-  const old = label.textContent;
-  label.dataset.busy = '1';
-  label.textContent = a.dataset.copied || 'Copié ✓';
-  const live = document.getElementById('live');
-  if (live) live.textContent = a.dataset.copied || 'Copié';
-  setTimeout(() => { label.textContent = old; delete label.dataset.busy; }, 1400);
-});
-
 // Langue : le choix est mémorisé.
 document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) =>
   a.addEventListener('click', () => { try { localStorage.setItem('kk-lang', a.dataset.lang!); } catch { /* */ } }),

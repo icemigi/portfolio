@@ -98,12 +98,13 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
     .lab, .bd { grid-column: 1 / -1; }
     .lab { margin-bottom: 20px; }
     .pt { grid-column: 1 / -1; }
-    /* services : une seule colonne, trois niveaux seulement — le mot, ce qu'il contient, les projets */
-    .svc { grid-template-columns: minmax(0, 1fr); row-gap: min(16px, 1.8dvh); }
-    .svc > li { grid-column: 1; grid-template-columns: minmax(0, 1fr); row-gap: 2px; border-top: 1px solid var(--ln); padding-top: min(10px, 1.2dvh); }
-    .svc .n, .svc .seen .mu { display: none; }
-    .svc h3, .svc .dl, .svc .seen { grid-column: 1; grid-row: auto; }
-    .svc .seen { margin-top: min(6px, .7dvh); }
+    /* services : quatre modules égaux qui remplissent l'écran, sur la grille de 4 colonnes — le mot en haut, son numéro à droite, ce qu'il contient en bas */
+    .svc { row-gap: 0; height: calc(100dvh - var(--head) - min(56px, 7dvh) - min(72px, 9dvh)); grid-template-rows: repeat(4, minmax(0, 1fr)); }
+    .svc > li { grid-template-rows: auto minmax(0, 1fr); row-gap: 0; border-top: 1px solid var(--ln); padding: min(14px, 1.7dvh) 0; }
+    .svc h3 { grid-column: 1 / 4; grid-row: 1; }
+    .svc .n { grid-column: 4; grid-row: 1; justify-self: end; }
+    .svc .dl { grid-column: 1 / -1; grid-row: 2; align-self: end; }
+    .svc .seen { display: none; }
   }
 </style>
 

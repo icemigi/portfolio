@@ -8,7 +8,8 @@ export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
 // Texte non animé : libellés Geist Mono, vignettes, menus, médias, champs.
 const SKIP = '.mono, .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style, .parenthesis-reveal';
-const PAREN_STAGGER = 120; // écart entre deux parenthèses, une fois le texte écrit
+const PAREN_GAP = 90; // petit silence entre deux parenthèses, une fois le texte écrit
+const PAREN_FADE = 280;
 
 function textNodes(root: Element, extraSkip?: string) {
   const skip = extraSkip ? `${SKIP}, ${extraSkip}` : SKIP;
@@ -78,8 +79,8 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   const textEnd = delay + k * step + 440;
   // les parenthèses du texte courant viennent après le texte, une à une
   const parens = [...root.querySelectorAll<HTMLElement>('.parenthesis-reveal')];
-  parens.forEach((p, i) => p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: textEnd + i * PAREN_STAGGER, easing: EASE_OUT, fill: 'backwards' }));
-  const end = textEnd + parens.length * PAREN_STAGGER;
+  parens.forEach((p, i) => p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: PAREN_FADE, delay: textEnd + i * (PAREN_FADE + PAREN_GAP), easing: EASE_OUT, fill: 'backwards' }));
+  const end = textEnd + parens.length * (PAREN_FADE + PAREN_GAP);
   pending.set(root, () => {
     root.getAnimations({ subtree: true }).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
@@ -137,7 +138,8 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
 // Une fois le texte écrit : les apartés entre parenthèses se tapent à la machine, caractère par caractère (Geist Mono,
 // chasse fixe : rien ne bouge autour), puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans,
 // et son + fait un tour pour attirer l'œil.
-const TYPE = 26; // ms par caractère
+const TYPE = 18; // ms par caractère
+const NOTE_STAGGER = 220; // écart entre les départs de deux apartés
 function type(el: HTMLElement, delay: number): number {
   const text = (el.dataset.txt ??= el.textContent || '');
   el.textContent = '';
@@ -155,8 +157,8 @@ function type(el: HTMLElement, delay: number): number {
 }
 function afterText(frame: Element, end: number, start = end) {
   if (reduced()) return;
-  // les apartés entre parenthèses se tapent une fois le texte écrit, à intervalles réguliers
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, end + i * PAREN_STAGGER); });
+  // les apartés entre parenthèses suivent le texte en cascade : chacun démarre peu après le précédent, sans attendre sa fin
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, end - 200 + i * NOTE_STAGGER); });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
     b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
     b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });

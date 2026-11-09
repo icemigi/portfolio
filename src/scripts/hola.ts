@@ -5,7 +5,7 @@
 // Cibles : [data-hola] ; réglages par cible : data-hola="poussée écart rayon". Ordinateur seulement ; rien si « Réduire les animations ».
 import { reduced } from './motion';
 const DEF = { A: 0.26, SPREAD: 0.06, SIGMA: 90 }; // poussée verticale (em), écart horizontal (em), rayon (px)
-const SKIP = '.note, .bp, .vi, .door, .mono, svg, [data-copy]';
+const SKIP = '.note, .bp, .vi, .door, .mono, svg';
 const SOLID = '.vi, .door'; // images : bougent d'un bloc
 
 type It = { el: HTMLElement; k: number; cx: number; cy: number; y: number; x: number };

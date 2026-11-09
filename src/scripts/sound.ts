@@ -33,7 +33,6 @@ const S: Record<string, (o: Opt) => void> = {
     const n = Math.max(3, Math.min(18, Math.round(span / 0.045)));
     for (let i = 0; i < n; i++) noise({ f: 3800 + Math.random() * 1500, q: 10, a: 0.002, r: 0.014, v: 0.016, at: at + (span * i) / n + Math.random() * 0.012 });
   },
-  copy: () => tone(988, { a: 0.004, r: 0.14, v: 0.018 }),
   pick: () => tone(120, { a: 0.02, r: 0.14, v: 0.03, to: 160 }),
   drop: () => tone(120, { a: 0.003, r: 0.09, v: 0.035, to: 80 }),
   ring: () => tone(220, { a: 3.3, r: 0.2, v: 0.012, to: 330 }),
@@ -57,7 +56,7 @@ if (on) addEventListener('pointerdown', () => init(), { once: true, capture: tru
 if (on) addEventListener('keydown', () => init(), { once: true, capture: true });
 
 // micro-interactions
-const TARGET = 'a, button, [role="button"], [data-copy]';
+const TARGET = 'a, button, [role="button"]';
 document.addEventListener('pointerover', (e) => {
   if ((e as PointerEvent).pointerType !== 'mouse') return;
   const el = (e.target as Element).closest?.(TARGET);
@@ -67,7 +66,7 @@ document.addEventListener('pointerover', (e) => {
 document.addEventListener('click', (e) => {
   const el = (e.target as Element).closest?.(TARGET);
   if (!el || el.matches('[data-sound]')) return;
-  if (el.matches('[data-copy]')) play('copy'); else play('click');
+  play('click');
 });
 addEventListener('kk:sound', (e) => { const d = (e as CustomEvent).detail; if (typeof d === 'string') play(d); else play(d.name, d); });
 document.addEventListener('visibilitychange', () => { if (!ctx) return; document.hidden ? ctx.suspend() : ctx.resume(); });

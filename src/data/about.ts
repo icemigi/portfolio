@@ -74,8 +74,8 @@ export const pathVigs: Vig[] = [
 ];
 
 export const aboutLabels = {
-  fr: { about: 'À propos', services: 'Services', stack: 'Stack', path: 'Parcours', contact: 'Contact — cliquer pour copier' },
-  en: { about: 'About', services: 'Services', stack: 'Stack', path: 'Background', contact: 'Contact — click to copy' },
+  fr: { about: 'À propos', services: 'Services', stack: 'Stack', path: 'Parcours', contact: 'Contact' },
+  en: { about: 'About', services: 'Services', stack: 'Stack', path: 'Background', contact: 'Contact' },
 };
 
 // Coordonnées — À COMPLÉTER (adresse et CV provisoires)

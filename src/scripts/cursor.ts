@@ -11,7 +11,7 @@ export function initCursor() {
   cu.innerHTML = '<svg viewBox="0 0 22 22" width="22" height="22"><path d="M2 2 L19 9.2 L11.2 11.2 L9.2 19 Z" fill="#111" stroke="#f3f3f3" stroke-width="1.4" stroke-linejoin="round"/></svg>';
   document.body.append(cu);
   root.classList.add('has-cursor');
-  const LINK = 'a, button, [role="button"], [data-copy], label, summary, [data-go], [data-stage], .obj';
+  const LINK = 'a, button, [role="button"], label, summary, [data-go], [data-stage], .obj';
   const TEXT = 'input, textarea, [contenteditable], select, iframe';
   let x = -100, y = -100, s = 1, ts = 1, r = 0, tr = 0, raf = 0;
   const loop = () => {

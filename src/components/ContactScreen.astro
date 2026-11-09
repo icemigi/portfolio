@@ -1,5 +1,5 @@
 ---
-// Dernier écran « Contact » : l'adresse à toute largeur (clic = copiée), liens, le cavalier, pied de page.
+// Dernier écran « Contact » : l'adresse à toute largeur (clic = ouvre la messagerie), liens, le cavalier, pied de page.
 // Partagé par l'À propos et l'accueil (même écran, à l'identique).
 import Footer from './Footer.astro';
 import { ui, type Lang } from '../data/ui';
@@ -12,7 +12,7 @@ const L = aboutLabels[lang];
 <section class="scr last" aria-labelledby={id}>
   <div class="ct g">
     <h2 class="lab4 mono mu par" id={id}>{L.contact}</h2>
-    <p class="mailp"><a class="mail uline" href={`mailto:${contact.email}`} data-copy={contact.email} data-copied={t.copied} data-fit><span data-label>{contact.email}</span></a></p>
+    <p class="mailp"><a class="mail uline" href={`mailto:${contact.email}`} data-fit>{contact.email}</a></p>
     <div class="links mono">
       <a class="lk hit" href={contact.instagram} rel="me noopener" target="_blank">Instagram <span class="ac">↗</span></a>
       <span class="mu">{t.available}</span>
