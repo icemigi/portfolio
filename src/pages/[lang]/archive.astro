@@ -384,8 +384,12 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     const set = (i: number, k: number) => {
       const it = items[i], box = boxes[i]; if (!it) return;
       const vis = i < k - 4 ? 'hidden' : ''; if (it.style.visibility !== vis) it.style.visibility = vis;
-      if (i < k - 4 || i > k + 2) { if (box.firstChild) box.textContent = ''; return; }
-      if (K.srcs[i] && !box.firstChild) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.dataset.noAscii = ''; im.src = K.srcs[i]; box.appendChild(im); }
+      // une seule <img> par carte, gardée : on ne vide que sa source (recréer des images à chaque carte déclenchait le ramasse-miettes)
+      let im = box.firstElementChild as HTMLImageElement | null;
+      if (i < k - 4 || i > k + 2) { if (im?.hasAttribute('src')) im.removeAttribute('src'); return; }
+      if (!K.srcs[i]) return;
+      if (!im) { im = new Image(); im.alt = ''; im.decoding = 'async'; im.dataset.noAscii = ''; box.appendChild(im); }
+      if (!im.hasAttribute('src')) im.src = K.srcs[i];
     };
     const near = (k: number) => {
       if (k === at) return;
