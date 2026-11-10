@@ -16,7 +16,7 @@ const cap = (i: number) => pieces[i].cat[lang] + (pieces[i].year ? ` (${pieces[i
 const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
 const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toFixed(2);
 ---
-<Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? `Archive de kerningkastle, 2020 à 2025 : ${pieces.length} pièces de direction artistique musicale (pochettes), projets concepts, lettrages et logos, en pile à feuilleter.` : `kerningkastle archive, 2020 to 2025: ${pieces.length} pieces of music art direction (covers), concept projects, lettering and logos, in a pile to flip through.`} path="archive/" active="archive">
+<Base lang={lang} title={t.nav.archive} description={lang === 'fr' ? `Archive de kerningkastle, 2020 à 2026 : ${pieces.length} pièces de direction artistique musicale (pochettes), projets concepts, lettrages et logos, en pile à feuilleter.` : `kerningkastle archive, 2020 to 2026: ${pieces.length} pieces of music art direction (covers), concept projects, lettering and logos, in a pile to flip through.`} path="archive/" active="archive">
   <div class="arc pile" data-arc data-own-wheel>
     <section class="band">
       <h1 class="ttl mono mu par">{t.archiveCount} {pad(pieces.length)}</h1>
@@ -141,18 +141,23 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const base = stage.querySelector<HTMLCanvasElement>('.cv-base')!, fly = stage.querySelector<HTMLCanvasElement>('.cv-fly')!;
   const bx = base.getContext('2d')!, fx = fly.getContext('2d')!;
-  type Card = { i: number; x0: number; y0: number; rot: number; dx: number; dy: number; img: HTMLImageElement };
+  type Card = { i: number; x0: number; y0: number; rot: number; dx: number; dy: number; img: HTMLImageElement; ok: boolean };
   let order: number[] = []; // affiches posées, de dessous à dessus
   let air: { i: number; t0: number; kind: 'in' | 'out' }[] = [];
   let hold: { i: number; sx: number; sy: number; dx0: number; dy0: number; moved: boolean } | null = null;
   let lifted = -1, dirty = false, W = 0, H = 0, dpr = 1, raf2 = 0, shown = 0;
   const cards: Card[] = items.map((_, i) => {
     const img = new Image(); img.decoding = 'async';
-    img.onload = () => { if (order.includes(i)) { dirty = true; go(); } };
-    return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img };
+    return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img, ok: false };
   });
-  // vignettes chargées au fil de la pile (celles posées + les 4 suivantes), pas toutes à l'ouverture de la page
-  const want = (i: number) => { const c = cards[i]; if (c && !c.img.src && K.srcs[i]) c.img.src = K.srcs[i].replace('/archive/', '/archive/s/'); };
+  // vignettes chargées au fil de la pile ; la toile décode chaque image sur le fil principal à son premier dessin :
+  // les vignettes sont donc en JPEG (2 à 3 fois plus rapide à décoder que le WebP), aplaties sur le gris de la carte (#d4d4d4)
+  const thumb = (src: string) => src.replace('/archive/', '/archive/s/').replace(/\.webp$/, '.jpg');
+  const want = (i: number) => {
+    const c = cards[i]; if (!c || c.img.src || !K.srcs[i]) return;
+    c.img.src = thumb(K.srcs[i]);
+    c.img.decode().then(() => { c.ok = true; if (order.indexOf(i) >= order.length - DEPTH) { dirty = true; go(); } }).catch(() => {});
+  };
   const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * (phone() ? .42 : .52)) * r, innerWidth * (phone() ? .62 : .34)); return [w, w / r]; };
   // sur téléphone, la pile se resserre vers le centre (les affiches y sont plus grandes que l'écran n'est large)
   const pos = (c: Card) => [(phone() ? .5 + (c.x0 - .5) * .45 : c.x0) * W + c.dx, c.y0 * H + c.dy];
@@ -162,7 +167,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     g.shadowColor = 'rgba(0,0,0,.14)'; g.shadowBlur = 22; g.shadowOffsetY = 10; g.fillStyle = '#d4d4d4'; g.fillRect(-w / 2, -h / 2, w, h);
     g.shadowColor = 'transparent';
     const im = c.img;
-    if (im.complete && im.naturalWidth) {
+    if (c.ok) {
       const ir = im.naturalWidth / im.naturalHeight, r = w / h; let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0;
       if (ir > r) { sw = sh * r; sx = (im.naturalWidth - sw) / 2; } else { sh = sw / r; sy = (im.naturalHeight - sh) / 2; }
       g.drawImage(im, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
@@ -170,7 +175,10 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     g.restore();
   };
   const off = (i: number) => i === lifted || hold?.i === i || air.some((a) => a.i === i && a.kind === 'in');
-  const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
+  // repeindre la pile ne coûte que ses DEPTH affiches du dessus : en dessous, tout est recouvert (≈ 0,02 % de surface visible),
+  // sinon chaque retour en arrière repeignait les 150 affiches et leurs ombres
+  const DEPTH = 40;
+  const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order.slice(-DEPTH)) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
   const fit = () => { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1); for (const cv of [base, fly]) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } dirty = true; go(); };
   const go = () => { if (!raf2) raf2 = requestAnimationFrame(tick); };
   const ease = (p: number) => 1 - Math.pow(1 - p, 3);
@@ -199,9 +207,12 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   const pile = () => {
     if (!desktop()) return;
     const n = index() + 1, now = performance.now();
-    for (let i = 0; i < Math.min(items.length, n + 4); i++) want(i);
+    // vignettes chargées d'avance (12) : une vignette qui arrive sous d'autres affiches oblige à repeindre la pile
+    for (let i = Math.max(0, n - DEPTH); i < Math.min(items.length, n + 12); i++) want(i);
     if (n > shown) for (let i = shown; i < n; i++) { order = order.filter((o) => o !== i); order.push(i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (i - shown) * 45, kind: 'in' }); else dirty = true; }
     else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (shown - 1 - i) * 30, kind: 'out' }); dirty = true; }
+    // geste rapide : au plus 8 affiches en vol à la fois ; les plus anciennes se posent directement (sinon des dizaines d'ombres par image)
+    for (const kind of ['in', 'out'] as const) { const k = air.filter((a) => a.kind === kind); if (k.length > 8) { const drop = new Set(k.slice(0, k.length - 8)); air = air.filter((a) => !drop.has(a)); dirty = true; } }
     shown = n; go();
   };
   // quelle affiche est sous le pointeur (la plus haute)
@@ -299,7 +310,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     cur = (i + A.caps.length) % A.caps.length;
     big.style.aspectRatio = String(A.ratios[cur]);
     // l'image réduite (déjà chargée) s'affiche tout de suite, la grande prend le relais
-    const small = A.srcs[cur] ? A.srcs[cur].replace('/archive/', '/archive/s/') : '';
+    const small = A.srcs[cur] ? thumb(A.srcs[cur]) : '';
     big.style.background = '#d4d4d4';
     big.innerHTML = '';
     if (A.srcs[cur]) {
@@ -365,18 +376,28 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   if (h >= 1 && h <= A.caps.length) show(h - 1, false);
   // téléphone : images en haute définition, chargées à l'approche de leur écran ; le compteur suit la pièce verrouillée
   if (phone()) {
-    const near = new IntersectionObserver((seen) => seen.forEach((e) => {
-      if (!e.isIntersecting) return;
-      near.unobserve(e.target);
-      const i = items.indexOf(e.target as HTMLElement), box = items[i].querySelector<HTMLElement>('.im')!;
+    // fenêtre glissante : seules les cartes autour de celle du dessus ont une image (les cartes passées restent collées à l'écran,
+    // un IntersectionObserver les gardait toutes, ~150 images HD décodées en mémoire) ; les autres sont vidées et ne se peignent plus
+    // seules les cartes qui changent d'état sont touchées (toucher les 150 à chaque carte forçait un recalcul complet de la page)
+    const boxes = items.map((it) => it.querySelector<HTMLElement>('.im')!);
+    let at = -1;
+    const set = (i: number, k: number) => {
+      const it = items[i], box = boxes[i]; if (!it) return;
+      const vis = i < k - 4 ? 'hidden' : ''; if (it.style.visibility !== vis) it.style.visibility = vis;
+      if (i < k - 4 || i > k + 2) { if (box.firstChild) box.textContent = ''; return; }
       if (K.srcs[i] && !box.firstChild) { const im = new Image(); im.alt = ''; im.decoding = 'async'; im.dataset.noAscii = ''; im.src = K.srcs[i]; box.appendChild(im); }
-    }), { root: track, rootMargin: '150% 0px' });
-    items.forEach((it) => near.observe(it));
+    };
+    const near = (k: number) => {
+      if (k === at) return;
+      const lo = at < 0 ? 0 : Math.min(at, k) - 6, hi = at < 0 ? items.length - 1 : Math.max(at, k) + 4;
+      at = k; for (let i = Math.max(0, lo); i <= hi; i++) set(i, k);
+    };
+    near(0);
     track.addEventListener('scroll', () => {
       const k = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / track.clientHeight)));
+      near(k);
       if (k * STEP === target) return;
       target = x = k * STEP; render();
-      items.forEach((it, i) => { it.style.visibility = i < k - 4 ? 'hidden' : ''; }); // cartes enfouies : plus rien à peindre
     }, { passive: true });
 
     // le doigt : la carte le suit, sans inertie, et un geste ne peut jamais dépasser la carte voisine

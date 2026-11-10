@@ -10,7 +10,7 @@ export function getStaticPaths() { return languages.map((lang) => ({ params: { l
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const fr = lang === 'fr';
-const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, cm: l.cm, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
+const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
 ---
 <Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac : Le Seigneur des anneaux, One Piece, films d\'horreur, rando, escalade, course, pignon fixe, jeu vidéo, musique et code. À attraper, lancer, ouvrir.' : 'Things I love, in no particular order: The Lord of the Rings, One Piece, horror films, hiking, climbing, running, fixed gear, video games, music and code. Grab, throw, open.'} path="about/likes/" active="about">
   <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
@@ -87,7 +87,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
 <script>
   import { letters, reduced } from '../../../scripts/motion';
   const M = (window as any).Matter;
-  const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; cm: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
+  const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
   const root = document.querySelector<HTMLElement>('[data-likes]')!;
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const card = root.querySelector<HTMLElement>('[data-card]')!;
@@ -112,14 +112,11 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   };
   buildWalls();
 
-  // échelle commune : chaque objet à sa taille réelle, fortement rapprochées (les petits objets comme l'iPod restent lisibles, la roue et le sac ne grossissent pas),
-  // puis le tout ajusté pour couvrir ~44 % de l'écran (32 % sur téléphone) : une page pleine
-  const real = D.map((d) => { const c = Math.pow(d.cm, 0.3), r = d.w / d.h; return r >= 1 ? [c, c / r] : [c * r, c]; });
-  const area = real.reduce((a, [w, h]) => a + w * h, 0);
-  const K = Math.sqrt((0.24 * innerWidth * innerHeight) / area);
+  // pas d'échelle réelle : chaque objet a la même surface (seules ses proportions changent), le tout couvre ~32 % de l'écran
+  const real = D.map((d) => { const r = Math.sqrt(d.w / d.h); return [r, 1 / r]; });
+  const K = Math.sqrt((0.32 * innerWidth * innerHeight) / D.length);
   // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
   // une étagère par mot. Téléphone : pas d'étagère, le titre reste un décor derrière les objets, qui tombent jusqu'au sol
-  const tr = big.querySelector('span')!.getBoundingClientRect();
   let shelves: any[] = [];
   const buildShelf = () => {
     Composite.remove(engine.world, shelves);
@@ -134,9 +131,10 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const items = D.map((d, i) => {
     const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
     let [w, h] = real[i].map((v) => v * K);
-    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.34 : 0.4)) / w); w *= cap; h *= cap;
+    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.5 : 0.4)) / w); w *= cap; h *= cap;
     el.style.width = `${w}px`; el.style.height = `${h}px`;
-    const u = (i * 0.37) % 1, x = small ? W * (0.12 + 0.76 * u) : Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, tr.left + tr.width * (0.5 + 0.8 * (u - 0.5)))), y = -h - 20;
+    // points de chute répartis sur toute la largeur de l'écran, l'objet entier reste entre les murs
+    const u = (i * 0.37) % 1, x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, W * (0.06 + 0.88 * u))), y = -h - 20;
     const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.05, angle: (Math.random() - 0.5) * 0.25 };
     // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
     let body: any, ox = 0, oy = 0;
@@ -214,7 +212,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   const release = () => {
     if (!sel) return;
     const it = sel, h = it.home!; sel = null;
-    it.el.classList.remove('sel');
+    it.el.classList.remove('sel'); it.el.style.willChange = '';
     const land = () => { if (sel === it || !it.body.isStatic) return; Body.setPosition(it.body, { x: h.x, y: h.y }); Body.setAngle(it.body, h.a); it.s = 1; Body.setStatic(it.body, false); Body.setVelocity(it.body, { x: 0, y: 0 }); Body.setAngularVelocity(it.body, 0); if (!sel) paused = false; };
     tween(it, h.x, h.y, 1, h.a, land);
     setTimeout(land, still ? 0 : 760); // filet de sécurité si l'animation est suspendue (onglet en arrière-plan)
@@ -236,6 +234,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
     // lecteur intégré (iPod) : chargé une fois l'objet posé, pour ne pas alourdir son arrivée
     const mount = () => {
+      it.el.style.willChange = 'auto'; // un calque will-change garde la résolution de sa petite taille : sans lui, l'objet agrandi est redessiné net
       const emb = it.el.querySelector<HTMLElement>('[data-emb]');
       if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
       // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions

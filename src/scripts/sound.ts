@@ -51,9 +51,12 @@ btn?.addEventListener('click', () => {
   on = !on; try { localStorage.setItem('kk-sound', on ? 'on' : 'off'); } catch { /* */ }
   label(); if (on) { init(); play('click'); }
 });
-// son déjà activé lors d'une visite précédente : le navigateur exige un geste avant de jouer
-if (on) addEventListener('pointerdown', () => init(), { once: true, capture: true });
-if (on) addEventListener('keydown', () => init(), { once: true, capture: true });
+// le contexte audio est créé à l'avance, dans un temps mort (le créer pendant le premier geste figeait ce geste ~200 ms sur téléphone) ;
+// il naît suspendu, et le navigateur exige un geste pour le réveiller : le premier geste ne fait plus que ce réveil, instantané
+if (on) { const warm = () => init(); 'requestIdleCallback' in window ? requestIdleCallback(warm, { timeout: 3000 }) : setTimeout(warm, 1500); }
+const wake = () => { init(); if (ctx!.state === 'suspended') ctx!.resume(); };
+if (on) addEventListener('pointerdown', wake, { once: true, capture: true });
+if (on) addEventListener('keydown', wake, { once: true, capture: true });
 
 // micro-interactions
 const TARGET = 'a, button, [role="button"]';
