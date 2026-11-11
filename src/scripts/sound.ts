@@ -64,14 +64,24 @@ const label = () => { if (!btn) return; btn.setAttribute('aria-pressed', String(
 label();
 btn?.addEventListener('click', () => {
   on = !on; try { localStorage.setItem('kk-sound', on ? 'on' : 'off'); } catch { /* */ }
-  label(); if (on) { init(); play('click'); }
+  label(); if (on) { init(); ctx!.resume().then(() => play('click')).catch(() => {}); } // le clic sur le bouton est lui-même le geste qui réveille
 });
 // le contexte audio est créé à l'avance, dans un temps mort (le créer pendant le premier geste figeait ce geste ~200 ms sur téléphone) ;
 // il naît suspendu, et le navigateur exige un geste pour le réveiller : le premier geste ne fait plus que ce réveil, instantané
 if (on) { const warm = () => init(); 'requestIdleCallback' in window ? requestIdleCallback(warm, { timeout: 3000 }) : setTimeout(warm, 1500); }
-const wake = () => { init(); if (ctx!.state === 'suspended') ctx!.resume(); };
-if (on) addEventListener('pointerdown', wake, { once: true, capture: true });
-if (on) addEventListener('keydown', wake, { once: true, capture: true });
+// Réveil : le navigateur n'accepte de lancer le son qu'après un vrai geste (clic, touche, doigt levé). Un appui du doigt
+// (pointerdown) n'en est pas encore un : l'écoute reste donc en place à chaque geste tant que le son ne tourne pas vraiment
+// (avant, elle partait au premier appui et le son restait muet jusqu'au rechargement). La molette ne compte jamais comme geste.
+const WAKE = ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown'] as const;
+const wake = () => {
+  if (!on) return;
+  init();
+  if (ctx!.state === 'running') { WAKE.forEach((t) => removeEventListener(t, wake, true)); return; }
+  ctx!.resume().then(() => { if (ctx!.state === 'running') WAKE.forEach((t) => removeEventListener(t, wake, true)); }).catch(() => {});
+};
+WAKE.forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
+// retour arrière (page servie depuis le cache du navigateur) : le contexte audio revient endormi, on le relance
+addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && ctx && on && !document.hidden) ctx.resume().catch(() => {}); });
 
 // micro-interactions
 const TARGET = 'a, button, [role="button"]';
@@ -98,4 +108,4 @@ document.addEventListener('scroll', (e) => {
   if (r.a >= CRAN) { r.a %= CRAN; play('tick', { v: 0.55 }); }
 }, { capture: true, passive: true });
 addEventListener('kk:sound', (e) => { const d = (e as CustomEvent).detail; if (typeof d === 'string') play(d); else play(d.name, d); });
-document.addEventListener('visibilitychange', () => { if (!ctx) return; document.hidden ? ctx.suspend() : ctx.resume(); });
+document.addEventListener('visibilitychange', () => { if (!ctx) return; (document.hidden ? ctx.suspend() : ctx.resume()).catch(() => {}); });

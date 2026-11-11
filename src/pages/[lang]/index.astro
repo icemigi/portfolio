@@ -67,6 +67,10 @@ const t = ui[lang];
 
   /* portrait : en haut à droite, à cheval sur « kast » (position et taille calculées par le script, d'après le nom) */
   .s1 :global(.p3d) { z-index: 3; left: 0; top: 0; width: 28vw; }
+  /* titre qui joue : la lettre survolée se remélange ; le signe tiré au hasard se pose par-dessus (la lettre devient
+     transparente sans bouger), la mise en page ne change jamais */
+  .name :global(.hc.sx) { color: transparent; }
+  .name :global(.hc.sx)::after { content: attr(data-s); position: absolute; left: 50%; top: 0; translate: -50% 0; color: var(--fg); }
   :global(html.js) .s1:not(.placed) .nw, :global(html.js) .s1:not(.placed) .phrase, :global(html.js) .s1:not(.placed) :global(.p3d) { visibility: hidden; }
   @media (max-width: 760px) {
     .hero { padding-top: calc(var(--head) + 6vh); }
@@ -151,6 +155,27 @@ const t = ui[lang];
   // tant qu'il n'est pas à sa place (aucun saut visible au chargement)
   place();
   document.fonts.ready.then(() => { place(); s1.classList.add('placed'); });
+  // titre qui joue (souris) : chaque lettre survolée passe par quelques signes au hasard, puis revient ; une lettre en cours
+  // ne se relance pas, si bien qu'un passage rapide de la souris fait courir une vague le long du nom
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const POOL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>{}[]$€'];
+    const busy = new WeakSet<HTMLElement>();
+    n.addEventListener('pointerover', (e) => {
+      const el = (e.target as Element).closest?.<HTMLElement>('.hc');
+      if (!el || busy.has(el) || !n.contains(el)) return;
+      const c = (el.textContent || '').trim(); if ([...c].length !== 1) return;
+      busy.add(el); el.classList.add('sx');
+      dispatchEvent(new CustomEvent('kk:sound', { detail: 'key' }));
+      let t = 0, last = '';
+      const tick = () => {
+        if (t >= 300) { el.classList.remove('sx'); el.removeAttribute('data-s'); setTimeout(() => busy.delete(el), 120); return; }
+        let r; do r = POOL[(Math.random() * POOL.length) | 0]; while (r === last || r === c); last = r;
+        el.dataset.s = r;
+        const gap = 40 + 55 * (t / 300) ** 2; t += gap; setTimeout(tick, gap);
+      };
+      tick();
+    });
+  }
   // téléphone : la barre d'adresse qui se replie change la hauteur de quelques px → on ne recale que si la largeur change
   // ou si la hauteur bouge vraiment (rotation, fenêtre redimensionnée)
   let lw = innerWidth, lh = innerHeight;

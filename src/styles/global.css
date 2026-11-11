@@ -31,12 +31,35 @@
 @media (max-width: 760px) {
   :root { --m: 16px; --gut: 12px; --cols: 4; --head: 68px; }
 }
+/* Mode nuit (« veillée », essai) : encre claire sur fond de nuit chaude ; l'orange reste l'accent. Réglé par le bouton lune du menu,
+   sinon par le réglage du système. Le portrait n'est plus éclairé que par une bougie qui suit la souris (voir Portrait3D). */
+html[data-theme='nuit'] {
+  --bg: #12110f; --fg: #ece5d8; --mu: #8b8476; --ln: rgba(255, 255, 255, .14); --accent: #ece5d8;
+  color-scheme: dark;
+}
+html.theme-fade, html.theme-fade body, html.theme-fade .scr, html.theme-fade .site-header { transition: background-color .5s var(--out), color .5s var(--out); }
+.thm { font: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
+.thm svg { display: block; }
+.thm path { fill: transparent; transition: fill .35s var(--out); }
+html[data-theme='nuit'] .thm path { fill: currentColor; } /* la lune se remplit quand la nuit est active */
+/* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
+.fire { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
+.torch-glow { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: opacity .3s; --k: 1;
+  /* lumière d'une flamme : forte tout près, qui chute très vite (≈ 1/d²), chaude ; son intensité vacille avec la flamme */
+  background: radial-gradient(circle 460px at var(--tx, -999px) var(--ty, -999px),
+    rgba(255, 176, 96, calc(.20 * var(--k))) 0%, rgba(255, 150, 70, calc(.11 * var(--k))) 7%, rgba(255, 130, 55, calc(.045 * var(--k))) 18%,
+    rgba(255, 120, 50, calc(.016 * var(--k))) 38%, transparent 70%);
+  mix-blend-mode: screen; }
+/* grain : la lumière d'une flamme n'est jamais un dégradé lisse ; les bords de l'écran s'assombrissent à peine */
+.torch-glow::after { content: ''; position: absolute; inset: 0; opacity: .5; mix-blend-mode: multiply;
+  background: radial-gradient(circle 900px at var(--tx, 50%) var(--ty, 50%), transparent 45%, rgba(0, 0, 0, .16)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .4  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+html[data-theme='nuit'] .thm { color: var(--fg); }
 
 *, *::before, *::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
-  -webkit-user-select: none; user-select: none;
   hyphens: manual; overflow-wrap: normal;
   background: var(--bg); color: var(--fg);
   font-family: var(--sans); font-size: 16px; line-height: 24px;
@@ -73,10 +96,15 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 /* ---------- accessibilité ---------- */
 /* curseur : gantelet (fichier fourni), point chaud à la pointe ; le curseur système reste pour les champs de texte */
 /* curseurs : gantelet médiéval (THTH, domaine public), passé en niveaux de gris ; 48 px, version 2× pour Retina */
-html { cursor: url(/cur-default.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-default.png) 1x, url(/cur-default-2x.png) 2x) 2 3, auto !important; }
-a, button, [role='button'], label, summary, select, [data-go], .prog { cursor: url(/cur-pointer.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-pointer.png) 1x, url(/cur-pointer-2x.png) 2x) 2 3, auto !important; }
-.obj a, .stage, .pile .pc.on a { cursor: url(/cur-grab.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grab.png) 1x, url(/cur-grab-2x.png) 2x) 2 3, auto !important; }
-.obj.drag a, .stage:active, html.grabbing, html.grabbing * { cursor: url(/cur-grabbing.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur-grabbing.png) 1x, url(/cur-grabbing-2x.png) 2x) 2 3, auto !important; }
+html { cursor: url(/cur2-default.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-default.png) 1x, url(/cur2-default-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-default.png) 1x, url(/cur2-default-2x.png) 2x) 2 3, auto !important; }
+a, button, [role='button'], label, summary, select, [data-go], .prog { cursor: url(/cur2-pointer.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-pointer.png) 1x, url(/cur2-pointer-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-pointer.png) 1x, url(/cur2-pointer-2x.png) 2x) 2 3, auto !important; }
+.obj a, .stage, .pile .pc.on a { cursor: url(/cur2-grab.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-grab.png) 1x, url(/cur2-grab-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-grab.png) 1x, url(/cur2-grab-2x.png) 2x) 2 3, auto !important; }
+.obj.drag a, .stage:active, html.grabbing, html.grabbing * { cursor: url(/cur2-grabbing.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-grabbing.png) 1x, url(/cur2-grabbing-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-grabbing.png) 1x, url(/cur2-grabbing-2x.png) 2x) 2 3, auto !important; }
+/* nuit : le gantelet est éclairé par la flamme au bout de son doigt */
+html[data-theme='nuit'] { cursor: url(/cur2-default-nuit.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-default-nuit.png) 1x, url(/cur2-default-nuit-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-default-nuit.png) 1x, url(/cur2-default-nuit-2x.png) 2x) 2 3, auto !important; }
+html[data-theme='nuit'] a, html[data-theme='nuit'] button, html[data-theme='nuit'] [role='button'], html[data-theme='nuit'] label, html[data-theme='nuit'] summary, html[data-theme='nuit'] select, html[data-theme='nuit'] [data-go], html[data-theme='nuit'] .prog { cursor: url(/cur2-pointer-nuit.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-pointer-nuit.png) 1x, url(/cur2-pointer-nuit-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-pointer-nuit.png) 1x, url(/cur2-pointer-nuit-2x.png) 2x) 2 3, auto !important; }
+html[data-theme='nuit'] .obj a, html[data-theme='nuit'] .stage, html[data-theme='nuit'] .pile .pc.on a { cursor: url(/cur2-grab-nuit.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-grab-nuit.png) 1x, url(/cur2-grab-nuit-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-grab-nuit.png) 1x, url(/cur2-grab-nuit-2x.png) 2x) 2 3, auto !important; }
+html[data-theme='nuit'] .obj.drag a, html[data-theme='nuit'] .stage:active, html[data-theme='nuit'].grabbing, html[data-theme='nuit'].grabbing * { cursor: url(/cur2-grabbing-nuit.png) 2 3, auto !important; cursor: -webkit-image-set(url(/cur2-grabbing-nuit.png) 1x, url(/cur2-grabbing-nuit-2x.png) 2x) 2 3, auto !important; cursor: image-set(url(/cur2-grabbing-nuit.png) 1x, url(/cur2-grabbing-nuit-2x.png) 2x) 2 3, auto !important; }
 input, textarea, [contenteditable] { cursor: text; }
 :focus-visible { outline: 2px solid var(--ac); outline-offset: 3px; }
 .skip { position: fixed; left: var(--m); top: 8px; z-index: 200; background: var(--fg); color: var(--bg); padding: 12px 16px; transform: translateY(-200%); }
@@ -214,7 +242,7 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
   .ft .b { grid-column: 1 / 3 !important; } .ft .n { grid-column: 3 / 5 !important; }
   .ft.line .a { display: none; } /* écran Contact : l'adresse est déjà en grand juste au-dessus */
   .ft .col { font-size: 13px; line-height: 1.45; }
-  .ft .c, .ft .c * { white-space: nowrap; } .ft .c { gap: 16px; }
+  .ft .c, .ft .c * { white-space: nowrap; } .ft .c { gap: 4px 16px; flex-wrap: wrap; }
   .ft .c { grid-column: 1 / 4 !important; justify-content: flex-start; } .ft .top { grid-column: 4 / 5 !important; grid-row: auto; align-self: end; }
 }
 /* téléphone court : le pied de page se resserre et laisse tomber l'heure (décorative) pour que l'écran tienne sans défiler */
@@ -261,6 +289,8 @@ html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visi
   .bp.ba:hover { translate: 3px 0; } .bp.ba[data-prev]:hover, .bp.ba[data-step='-1']:hover { translate: -3px 0; }
 }
 
+/* le texte se sélectionne (citer une phrase, copier un nom de projet) ; seuls les éléments qu'on manipule ne se sélectionnent pas */
+a, button, [role='button'], .bp, .site-header, nav, img, svg, canvas, video, iframe, .door, .vi, .ring, .p3d, .seal-w, .more-arrow { -webkit-user-select: none; user-select: none; }
 a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: text; user-select: text; }
 .hc { position: relative; }
 

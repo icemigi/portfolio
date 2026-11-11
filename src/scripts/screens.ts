@@ -23,7 +23,8 @@ export function initScreens(host: HTMLElement): Screens {
   let cur = 0, busy = false;
 
   const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-  if (nav?.type === 'back_forward' || nav?.type === 'reload') {
+  // retour, rechargement, ou changement de langue (on rouvre le même écran dans l'autre langue)
+  if (nav?.type === 'back_forward' || nav?.type === 'reload' || (window as any).kkSwapped) {
     try { cur = Math.min(S.length - 1, Math.max(0, Number(sessionStorage.getItem(key)) || 0)); } catch { /* */ }
   }
   if (location.hash) {

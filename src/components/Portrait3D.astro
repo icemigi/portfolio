@@ -22,10 +22,12 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   .p3d.gl canvas { opacity: 1; }
   .p3d.gl img { visibility: hidden; transition: visibility 0s .3s; }
   .p3d.pre { opacity: 0; } /* avant son entrée (voir le script) */
+  :global(html[data-theme='nuit']) .p3d img { filter: brightness(.55) sepia(.35); } /* image fixe, la nuit */
 </style>
 
 <script>
   import { reduced } from '../scripts/motion';
+  import { FLAME } from '../scripts/torch';
 
   const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
   const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
@@ -56,7 +58,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     }`;
   const KNIGHT_FS = `#version 300 es
     precision highp float;
-    uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax;
+    uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax, uNight; uniform vec2 uCandle;
     in vec2 vUV; out vec4 o;
     void main() {
       vec4 c = texture(uKnight, vUV);
@@ -72,8 +74,12 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       float metal = smoothstep(.22, .07, sat) * smoothstep(.12, .3, dot(rgb, vec3(.333))) * (1. - face);
       float diff = clamp(dot(n, L), 0., 1.);
       float spec = pow(max(dot(n, H), 0.), 56.) * metal;
-      rgb *= 1. + uShade * (diff - .8) * (1. - face);
-      rgb = min(rgb + uSpec * spec, 1.);
+      vec3 day = min(rgb * (1. + uShade * (diff - .8) * (1. - face)) + uSpec * spec, 1.);
+      // nuit : une bougie seule — lumière chaude, très directionnelle, qui faiblit loin de la flamme ; reflet doré sur l'acier
+      vec3 warm = vec3(1., .78, .52);
+      float near = exp(-dot(vUV - uCandle, vUV - uCandle) / .09);
+      vec3 night = rgb * warm * (.10 + (.25 + 1.1 * pow(diff, 1.4)) * (.25 + .75 * near)) + warm * uSpec * 1.8 * spec * near;
+      rgb = mix(day, min(night, 1.), uNight);
       o = vec4(rgb * c.a, c.a);
     }`;
   const PLANE_VS = `#version 300 es
@@ -81,21 +87,27 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     void main() { vUV = aUV; gl_Position = uMVP * vec4(vec2((aUV.x - .5) * uAspect, .5 - aUV.y) * uScale, uZ, 1.); }`;
   const PLANE_FS = `#version 300 es
     precision highp float;
-    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; in vec2 vUV; out vec4 o;
+    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; uniform float uNight; uniform vec2 uCandle; in vec2 vUV; out vec4 o;
     void main() {
       vec4 t = texture(uTex, vUV);
+      // nuit : le cadre et le fond ne reçoivent que la lueur de la bougie
+      float near = exp(-dot(vUV - uCandle, vUV - uCandle) / .16);
+      vec3 lit = mix(vec3(1.), vec3(1., .8, .58) * (.22 + .9 * near), uNight);
       if (uMode == 0) { if (t.b < .5) discard; o = vec4(0.); }   // pochoir : trou du cadre
-      else if (uMode == 2) o = vec4(uColor, 1.);                  // fond uni (limité au pochoir)
-      else o = t;                                                 // cadre
+      else if (uMode == 2) o = vec4(uColor * lit, 1.);            // fond uni (limité au pochoir)
+      else o = vec4(t.rgb * lit, t.a);                            // cadre (prémultiplié : la couleur seule est assombrie)
     }`;
 
   function init(fig: HTMLElement) {
     const canvas = fig.querySelector('canvas')!;
     if (reduced()) return;                                   // image fixe, déjà en place
     // entrée : le portrait reste caché jusqu'à la fin du chargement d'entrée, puis apparaît avec le titre
-    fig.classList.add('pre');
-    let introT0 = Infinity, kickRef = () => {};
+    // (après un changement de langue, la page s'ouvre telle quelle : pas d'entrée)
+    const swapped = !!(window as any).kkSwapped;
+    if (!swapped) fig.classList.add('pre');
+    let introT0 = swapped ? -1e9 : Infinity, kickRef = () => {};
     const begin = () => {
+      if (swapped) return;
       fig.classList.remove('pre');
       fig.animate([{ opacity: 0, translate: '0 5%', scale: 0.94 }, { opacity: 1, translate: '0 0', scale: 1 }], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)' });
       introT0 = performance.now(); kickRef();
@@ -182,6 +194,9 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     // souris : direction du pointeur par rapport au centre du portrait ; au repos (ou au doigt), lente oscillation
     const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
     const tgt = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
+    // mode nuit : position de la bougie (uv du portrait), amortie ; passage jour / nuit en fondu
+    const cand = { x: .5, y: .35, tx: .5, ty: .35 };
+    let night = document.documentElement.dataset.theme === 'nuit' ? 1 : 0;
     let lastMove = -1e9, visible = true, raf = 0, ready = false;
 
     const FOV = (20 * Math.PI) / 180, DIST = 0.5 / Math.tan(FOV / 2);
@@ -193,6 +208,10 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       const idle = !fine || t - lastMove > 2500;
       const gxv = idle ? Math.sin(t / 2600) * 0.45 : tgt.x, gyv = idle ? Math.sin(t / 3300 + 1) * 0.3 : tgt.y;
       cur.x += (gxv - cur.x) * 0.07; cur.y += (gyv - cur.y) * 0.07;
+      night += ((document.documentElement.dataset.theme === 'nuit' ? 1 : 0) - night) * 0.06;
+      if (idle) { cand.tx = .5 + Math.sin(t / 1900) * .22; cand.ty = .38 + Math.sin(t / 2700) * .12; }
+      cand.x += (cand.tx - cand.x) * 0.12; cand.y += (cand.ty - cand.y) * 0.12;
+      const flick = 1 + (Math.sin(t / 97) * .5 + Math.sin(t / 61 + 1.3) * .3) * .012 * night;   // la flamme vacille à peine
 
       gl.viewport(0, 0, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0); gl.clearStencil(0);
@@ -210,6 +229,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.uniformMatrix4fv(planeP.u('uMVP'), false, mvp); gl.uniform1f(planeP.u('uAspect'), ASPECT);
       gl.uniform1f(planeP.u('uZ'), 0); gl.uniform1f(planeP.u('uScale'), 1);
       gl.uniform1i(planeP.u('uTex'), 2); gl.uniform1i(planeP.u('uMode'), 0);
+      gl.uniform1f(planeP.u('uNight'), night); gl.uniform2f(planeP.u('uCandle'), cand.x, cand.y);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
       gl.colorMask(true, true, true, true);
 
@@ -226,7 +246,10 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.uniform1i(knightP.u('uKnight'), 1); gl.uniform1i(knightP.u('uGeo'), 2); gl.uniform1i(knightP.u('uNrm'), 3);
       gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
       gl.uniform1f(knightP.u('uSpec'), SET.spec * (1 + 1.4 * Math.sin(Math.PI * e))); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), GMAX);
-      gl.uniform3f(knightP.u('uLight'), cur.x * 0.9 - 1.6 * (1 - e), -cur.y * 0.9 + 0.25, 1.1);       // l'éclat traverse l'acier
+      // jour : la lumière suit la souris de loin ; nuit : la bougie est devant le portrait, là où est le pointeur
+      const lx = (cand.x - .5) * 2.4, ly = -(cand.y - .5) * 2.4;
+      gl.uniform3f(knightP.u('uLight'), (cur.x * 0.9 - 1.6 * (1 - e)) * (1 - night) + lx * night, (-cur.y * 0.9 + 0.25) * (1 - night) + ly * night, 1.1 - .35 * night);
+      gl.uniform1f(knightP.u('uNight'), night * flick); gl.uniform2f(knightP.u('uCandle'), cand.x, cand.y);
       gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
       gl.disable(gl.DEPTH_TEST); gl.disable(gl.STENCIL_TEST);
 
@@ -242,6 +265,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     addEventListener('pointermove', (e) => {
       if (e.pointerType === 'touch') return;
       const r = fig.getBoundingClientRect();
+      cand.tx = (e.clientX + FLAME.x - r.left) / r.width; cand.ty = (e.clientY + FLAME.y - r.top) / r.height;   // la flamme de la torche
       tgt.x = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (innerWidth / 2)));
       tgt.y = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (innerHeight / 2)));
       lastMove = performance.now(); kick();

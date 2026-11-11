@@ -252,9 +252,13 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   if (desktop()) fit();
   addEventListener('resize', () => { if (desktop()) fit(); });
 
-  let lastK = 0;
+  let lastK = 0, lastN: number | null = null;
   const render = () => {
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
+    // son de molette : un cran tous les 56 px parcourus (la bande avance par le script, pas par un défilement natif)
+    const n = Math.floor(x / 56);
+    if (lastN === null) lastN = n;
+    else if (n !== lastN) { lastN = n; dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'tick', v: .55 } })); }
     const k = index() + 1;
     if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
   };
