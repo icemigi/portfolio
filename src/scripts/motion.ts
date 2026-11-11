@@ -50,7 +50,7 @@ function holdKerning(chars: HTMLElement[]) {
 const SCR_POOL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>{}[]$€'];
 // texte courant : seulement des lettres de même casse (pas de signes) — un frémissement au bout de la plume, pas une friture
 const LOW = [...'abcdefghijklmnopqrstuvwxyz'], UP = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-const SCR = { step: 55, mix: 320, fast: 40, slow: 95, overlay: false };
+const SCR = { step: 70, mix: 400, fast: 48, slow: 115, overlay: false }; // 11/11 : un tiers plus lent
 // écritures mélangées en cours (titre, apartés) : on peut les arrêter net, chaque lettre reprenant la sienne (changement de langue)
 const LIVE = new Set<() => void>();
 export function stopScrambles() { [...LIVE].forEach((f) => f()); }
@@ -100,7 +100,9 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   const nodes = textNodes(root, extraSkip);
   const total = nodes.reduce((n, t) => n + t.nodeValue!.replace(/\s/g, '').length, 0);
   if (!total) return 0;
-  const step = Math.min(28, 1400 / total);
+  // « à propos » (data-letters-slow) : un tiers plus lent, le texte d'affiche y est long (11/11) ; ailleurs, rythme d'origine
+  const slow = !!root.closest('[data-letters-slow]');
+  const step = slow ? Math.min(38, 1900 / total) : Math.min(28, 1400 / total);
   const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
   const mixed: HTMLElement[] = [], named: HTMLElement[] = [];
   let k = 0;
@@ -124,7 +126,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   }
   if (named.length) holdKerning(named);
   // front d'écriture étroit : chaque lettre ne se mélange que ~2,5 pas de cascade (deux ou trois lettres à la fois), 2-3 changements
-  const stopText = mixed.length ? scramble(mixed, delay, { step, mix: Math.max(60, step * 2.5), fast: 22, slow: 34, overlay: true }) : null;
+  const stopText = mixed.length ? scramble(mixed, delay, slow ? { step, mix: Math.max(85, step * 2.6), fast: 30, slow: 46, overlay: true } : { step, mix: Math.max(60, step * 2.5), fast: 22, slow: 34, overlay: true }) : null;
   const stopScramble = named.length ? scramble(named, delay) : null;
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
@@ -202,7 +204,7 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
 // Une fois le texte écrit : les apartés entre parenthèses s'écrivent comme le titre de l'accueil — chaque caractère passe par
 // des signes au hasard avant de se fixer (Geist Mono, chasse fixe : rien ne bouge autour) ; les parenthèses, elles, sont posées
 // d'emblée. Puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans, et son + fait un tour pour attirer l'œil.
-const TYPE = 26; // ms entre deux caractères
+const TYPE = 34; // ms entre deux caractères (11/11 : 26 → 34)
 const NOTE_SCR = { step: TYPE, mix: 240, fast: 35, slow: 80, overlay: false };
 const NOTE_STAGGER = 220; // écart entre les départs de deux apartés
 function type(el: HTMLElement, delay: number): number {

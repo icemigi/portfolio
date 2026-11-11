@@ -1,8 +1,8 @@
 ---
-// Étude de cas, en écrans : titre · accroche en grand · rubriques (regroupées deux à deux quand elles sont courtes)
-// · bandes de visuels qui défilent à l'horizontale · projet suivant. Chaque écran porte un seul libellé entre parenthèses,
-// comme (services) sur « à propos ». Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (le titre glisse
-// et grandit jusqu'à devenir le titre de la page suivante).
+// Étude de cas, mise en page magazine : chaque écran est une double page composée (texte et visuels ensemble,
+// contrastes d'échelle), la disposition change d'un écran à l'autre. Titre · accroche · doubles pages · planche contact
+// · projet suivant. Un seul libellé entre parenthèses par écran. Le défilement reste celui du site (un geste = un écran).
+// Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (le titre glisse et grandit jusqu'au titre de la page suivante).
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
@@ -23,18 +23,20 @@ const nc = next[lang];
 const N = pad(projects.length);
 
 type Para = { t?: string; p: string };
+type Tpl = 'ta' | 'tb' | 'tc';
 type Block =
-  | { kind: 'hook'; k: string; p: string }
+  | { kind: 'hook'; k: string; p: string; img?: Img }
+  | { kind: 'spread'; tpl: Tpl; k: string; paras: Para[]; img: Img }
   | { kind: 'rub'; k: string; paras: Para[] }
-  | { kind: 'split'; k: string; paras: Para[]; img: Img }
   | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'band'; imgs: Img[] }
-  | { kind: 'ph' }
+  | { kind: 'pair'; imgs: Img[] }
+  | { kind: 'stair'; imgs: Img[] }
+  | { kind: 'sheet'; imgs: Img[] }
   | { kind: 'gen'; src: string };
 const M = media[project.slug];
 // grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
 const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(/\.webp$/, '-800.webp')} 800w, ${im.src} ${im.w}w` : undefined);
-const vid = (src: string) => /\.(mp4|webm)$/i.test(src); // boucle vidéo = « GIF » léger
+const vid = (src: string) => /\.(mp4|webm)$/i.test(src);
 const len = (ps: Para[]) => ps.reduce((n, x) => n + (x.t?.length ?? 0) + x.p.length, 0);
 
 // rubriques : le canevas habituel (7 rubriques) se lit en 4 temps ; deux rubriques courtes partagent un écran
@@ -52,33 +54,37 @@ if (S.length === 7) {
 } else S.forEach((s) => groups.push({ k: s.h.toLowerCase(), paras: s.paras }));
 groups.forEach((g) => { if (g.paras.length > 1 && g.paras.every((x) => x.t)) g.list = true; });
 
-// visuels : une image accompagne la dernière rubrique (texte à gauche, image à droite) ; le reste part en une ou deux bandes
-const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src)] : [];
-const lastG = groups[groups.length - 1];
-const splitImg = pool.length > 3 && lastG && !lastG.list && len(lastG.paras) < 520 ? pool.pop()! : null;
-const bands: Img[][] = pool.length > 7 ? [pool.slice(0, Math.ceil(pool.length / 2)), pool.slice(Math.ceil(pool.length / 2))] : pool.length ? [pool] : [];
-
-const blocks: Block[] = [{ kind: 'hook', k: fr ? 'en bref' : 'in short', p: c.lead }];
-const asBlock = (g: Group, i: number): Block =>
-  g.list ? { kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) }
-  : splitImg && i === groups.length - 1 ? { kind: 'split', k: g.k, paras: g.paras, img: splitImg }
-  : { kind: 'rub', k: g.k, paras: g.paras };
-// placement des bandes : après la première rubrique, puis après la liste (choix clés) ou à mi-parcours
-const b2at = Math.max(1, groups.findIndex((g) => g.list) >= 0 ? groups.findIndex((g) => g.list) : Math.floor(groups.length / 2));
+// visuels : la couverture d'abord, puis la galerie ; chaque double page prend ce qu'il lui faut, le reste finit en planche
+const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src && !vid(im.src))] : [];
+const take = (n: number) => (pool.length >= n ? pool.splice(0, n) : null);
+const blocks: Block[] = [{ kind: 'hook', k: fr ? 'en bref' : 'in short', p: c.lead, img: take(1)?.[0] }];
+const TPL: Tpl[] = ['ta', 'tb', 'tc'];
+let ti = 0, vi = 0;
 groups.forEach((g, i) => {
-  blocks.push(asBlock(g, i));
-  if (i === 0) blocks.push(bands[0] ? { kind: 'band', imgs: bands[0] } : { kind: 'ph' });
-  if (i === b2at && bands[1] && i < groups.length - 1) blocks.push({ kind: 'band', imgs: bands[1] });
+  if (g.list) blocks.push({ kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) });
+  else {
+    const im = take(1)?.[0];
+    blocks.push(im ? { kind: 'spread', tpl: TPL[ti++ % TPL.length], k: g.k, paras: g.paras, img: im } : { kind: 'rub', k: g.k, paras: g.paras });
+  }
+  // entre deux rubriques, une double page d'images (deux décalées, puis trois en escalier) — deux au plus
+  if (i < groups.length - 1 && vi < 2 && !g.list) {
+    const kind = vi % 2 === 0 ? 'pair' : 'stair', n = kind === 'pair' ? 2 : 3;
+    const imgs = take(n);
+    if (imgs) { blocks.push({ kind, imgs }); vi++; }
+  }
   if (project.generator && i === groups.length - 2) blocks.push({ kind: 'gen', src: project.generator });
 });
-if (bands[1] && !blocks.some((b) => b.kind === 'band' && b.imgs === bands[1])) blocks.splice(blocks.length - 1, 0, { kind: 'band', imgs: bands[1] });
+if (pool.length >= 3) blocks.push({ kind: 'sheet', imgs: pool.splice(0, 18) });
+else if (pool.length === 2) blocks.push({ kind: 'pair', imgs: pool.splice(0, 2) });
 if (c.blocks?.length) blocks.push({ kind: 'list', k: fr ? 'en bref' : 'in short', items: c.blocks });
 
 // textes alternatifs et légendes : celle de captions.ts, sinon « visuel 03/19 »
-const allImgs = [...bands.flat(), ...(splitImg ? [splitImg] : [])];
+const allImgs: Img[] = blocks.flatMap((b) => ('imgs' in b ? b.imgs : 'img' in b && b.img ? [b.img] : []));
 const imgTotal = allImgs.length;
 const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
 const capOf = (im: Img) => captions[im.src]?.[lang] || `${fr ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
+const pic = (im: Img, cls: string, sizes: string, depth = 0) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}`, depth });
+type Pic = ReturnType<typeof pic>;
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
 const workLd = {
@@ -99,18 +105,17 @@ const workLd = {
       // navigateurs sans transition entre pages (Firefox, Zen…) : la page arrive titre d'abord, par un repli en JS (voir plus bas)
       window.kkXVT = 'CSSViewTransitionRule' in window && 'onpagereveal' in window;
       if (window.kkArriving && !window.kkXVT) document.documentElement.classList.add('kk-flip');
+      if (window.kkArriving) document.documentElement.classList.add('kk-arr');
       // titre continu (transition entre documents) : seulement pour l'ouverture du projet suivant
       addEventListener('pageswap', (e) => {
         if (!e.viewTransition) return;
         if (!window.kkLeavingNext || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
         const h = document.querySelector('.next-title .vt'); if (h) h.style.viewTransitionName = 'case-title';
-        const l = document.querySelector('.nx [data-cl] .vl'); if (l) l.style.viewTransitionName = 'case-lab';
       });
       addEventListener('pagereveal', (e) => {
         if (!e.viewTransition) return;
         if (!window.kkArriving || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
         const h = document.querySelector('.case-h1 .vt'); if (h) h.style.viewTransitionName = 'case-title';
-        const l = document.querySelector('.s1 [data-cl] .vl'); if (l) l.style.viewTransitionName = 'case-lab';
       });
     </script>
   </Fragment>
@@ -133,30 +138,47 @@ const workLd = {
         </dl>
       </div>
     </section>
+    <script is:inline>
+      // arrivée par « Projet suivant » sans transition native (Firefox, Zen) : le titre est posé à son ancienne place
+      // (position et taille de la page précédente) AVANT le premier affichage — aucune image sans titre, aucun saut ;
+      // le script de la page le fait ensuite glisser jusqu'à sa place.
+      (function () {
+        var r = document.documentElement; if (!r.classList.contains('kk-arr')) return;
+        // la page de garde est affichée tout de suite (sans attendre le script des écrans) : pas d'image vide à l'arrivée
+        var s1 = document.querySelector('.s1'); if (s1) s1.classList.add('on');
+        if (!r.classList.contains('kk-flip')) return;
+        var h = document.querySelector('.case-h1'), v = h && h.querySelector('.vt'), f = null;
+        try { f = JSON.parse(sessionStorage.getItem('kk-next-r') || 'null'); sessionStorage.removeItem('kk-next-r'); } catch (e) {}
+        if (!v) return;
+        var b = v.getBoundingClientRect();
+        if (b.width > h.clientWidth) { h.style.fontSize = parseFloat(getComputedStyle(h).fontSize) * h.clientWidth / b.width * 0.98 + 'px'; b = v.getBoundingClientRect(); }
+        if (f) { var tr = 'translate(' + (f.x - b.left) + 'px,' + (f.y - b.top) + 'px) scale(' + (f.w ? f.w / b.width : 1) + ')'; v.style.transformOrigin = '0 0'; v.style.transform = tr; v.dataset.from = tr; }
+        v.style.opacity = '1';
+      })();
+    </script>
 
     {blocks.map((b) =>
       b.kind === 'hook' ? (
         <section class="scr">
-          <div class="in g">
-            <h2 class="lab mono mu par">{b.k}</h2>
+          <div class="in g mag hook">
+            <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
             <p class="bd t56" data-hola data-fit>{b.p}</p>
+            {b.img && ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'sm', '(max-width: 760px) 40vw, 20vw', -0.12))}
+          </div>
+        </section>
+      ) : b.kind === 'spread' ? (
+        <section class="scr">
+          <div class:list={['in g mag spread', b.tpl]}>
+            <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
+            <div class="tx" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
           </div>
         </section>
       ) : b.kind === 'rub' ? (
         <section class="scr">
           <div class="in g">
             <h2 class="lab mono mu par">{b.k}</h2>
-            <div class="bd txt t28" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
-          </div>
-        </section>
-      ) : b.kind === 'split' ? (
-        <section class="scr">
-          <div class="in g sp">
-            <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <div class="bd txt t28" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
-            <figure class="spi" data-enter data-no-ascii>
-              <img class="md" src={b.img.src} srcset={ss(b.img)} sizes="(max-width: 760px) 100vw, 40vw" width={b.img.w} height={b.img.h} alt={`${c.title} — ${capOf(b.img)}`} data-cap={capOf(b.img)} data-n={`${pad(imgNo(b.img))}/${pad(imgTotal)}`} loading="lazy" decoding="async" />
-            </figure>
+            <div class="bd tx solo" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
           </div>
         </section>
       ) : b.kind === 'list' ? (
@@ -170,20 +192,29 @@ const workLd = {
             </ul>
           </div>
         </section>
-      ) : b.kind === 'band' ? (
-        <section class="scr bandscr" data-still data-band>
-          <div class="in g">
+      ) : b.kind === 'pair' ? (
+        <section class="scr" data-still>
+          <div class="in g mag pair">
             <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
-            <div class="band" data-enter data-no-ascii>
-              <div class="track" data-track>
-                {b.imgs.map((im) => vid(im.src)
-                  ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
-                  : <img class="md" src={im.src} srcset={ss(im)} sizes="(max-width: 760px) 80vw, 50vw" width={im.w} height={im.h} alt={`${c.title} — ${capOf(im)}`} data-cap={capOf(im)} data-n={`${pad(imgNo(im))}/${pad(imgTotal)}`} loading="lazy" decoding="async" />)}
-              </div>
-            </div>
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[0], 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[1], 'sm', '(max-width: 760px) 50vw, 25vw', -0.14))}
           </div>
         </section>
-      ) : b.kind === 'gen' ? (
+      ) : b.kind === 'stair' ? (
+        <section class="scr" data-still>
+          <div class="in g mag stair">
+            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
+            {b.imgs.map((im, i) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, `s${i}`, '(max-width: 760px) 50vw, 30vw', [0.08, -0.06, -0.16][i])))}
+          </div>
+        </section>
+      ) : b.kind === 'sheet' ? (
+        <section class="scr" data-still>
+          <div class="in g sheet">
+            <p class="lab mono mu par" data-caplab>{fr ? 'planche' : 'contact sheet'}</p>
+            <div class="grid">{b.imgs.map((im) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, 'th', '(max-width: 760px) 33vw, 15vw')))}</div>
+          </div>
+        </section>
+      ) : (
         <section class="scr">
           <div class="in g">
             <p class="lab mono mu par">{fr ? 'générateur' : 'generator'}</p>
@@ -191,13 +222,6 @@ const workLd = {
               <p class="mono mu">{fr ? 'entrez une clé, obtenez son blason' : 'enter a key, get its coat of arms'}</p>
               <iframe src={b.src} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
             </div>
-          </div>
-        </section>
-      ) : (
-        <section class="scr bandscr" data-still>
-          <div class="in g">
-            <p class="lab mono mu par">{fr ? 'visuels' : 'visuals'}</p>
-            <div class="band"><div class="track">{[0, 1, 2].map(() => <div class="ph md" role="img" aria-label={t.visual}><i aria-hidden="true">{t.visual}</i></div>)}</div></div>
           </div>
         </section>
       ),
@@ -228,10 +252,6 @@ const workLd = {
   ::view-transition-group(case-title) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
   ::view-transition-old(case-title) { animation: none; opacity: 0; }
   ::view-transition-new(case-title) { animation: none; }
-  ::view-transition-group(case-lab) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
-  ::view-transition-old(case-lab) { animation: kk-vt-out .45s both; }
-  ::view-transition-new(case-lab) { animation: kk-vt-in .9s both; }
-  @keyframes kk-vt-out { to { opacity: 0; } }
   ::view-transition { background: var(--bg); }
   ::view-transition-old(root) { animation: none; opacity: 0; }
   ::view-transition-new(root) { animation: kk-vt-in .9s both; }
@@ -239,14 +259,22 @@ const workLd = {
   @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
   /* repli sans transition entre pages : le titre attend d'être replacé à son ancienne position, le menu arrive après lui */
   html.kk-flip .case-h1 .vt, html.kk-flip .site-header { opacity: 0; }
+  /* page de garde : le numéro et la fiche n'apparaissent qu'une fois le titre posé (en CSS : aucun affichage avant le script) */
+  html.js .s1-late { animation: kk-late .45s cubic-bezier(.2,.7,.2,1) 1s both; }
+  html.js.kk-arr .s1-late { animation-delay: 1.15s; }
+  html.js .s1-late + .s1-late { animation-delay: 1.12s; }
+  html.js.kk-arr .s1-late + .s1-late { animation-delay: 1.27s; }
+  @keyframes kk-late { from { opacity: 0; transform: translateY(6px); } }
+  @media (prefers-reduced-motion: reduce) { html.js .s1-late { animation: none; } }
 </style>
 
 <style>
-  /* Gabarit projet : un libellé entre parenthèses en colonnes 1 à 3 (comme « à propos »), le contenu sur l'axe de la colonne 4. */
+  /* Gabarit : libellé entre parenthèses en colonnes 1 à 3, contenu sur la grille de 12 colonnes du site.
+     Doubles pages : la ligne utile va du dessous du menu au bas de l'écran ; chaque élément s'y pose (haut, milieu, bas). */
   .lab { grid-column: 1 / 4; align-self: first baseline; }
   .bd { grid-column: 4 / 11; align-self: first baseline; }
 
-  /* page de garde : très grand titre en bas, fiche dessous ; le numéro et la fiche arrivent après le titre */
+  /* page de garde : très grand titre en bas, fiche dessous */
   .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 24px; padding-top: calc(var(--head) + 24px); padding-bottom: 32px; }
   .s1 .lab { grid-row: 1; }
   .case-h1 { grid-column: 1 / -1; grid-row: 3; font-weight: 500; font-size: min(10.5vw, 17dvh); line-height: .86; letter-spacing: -0.05em; margin-left: -.05em; }
@@ -254,45 +282,67 @@ const workLd = {
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
 
-  .txt p + p { margin-top: .7em; }
-  .txt b { font-weight: 500; }
+  /* texte courant des doubles pages : plus petit que l'affiche, pour laisser la place aux images */
+  .tx { font-size: clamp(16px, 2.5dvh, 21px); line-height: 1.38; letter-spacing: -0.005em; }
+  .tx.solo { font-size: clamp(18px, 3.7dvh, 28px); line-height: 1.286; letter-spacing: -0.01em; }
+  .tx p + p { margin-top: .8em; }
+  .tx b { font-weight: 500; }
 
-  /* texte et image côte à côte */
-  .sp .bd { grid-column: 4 / 8; }
-  .spi { grid-column: 9 / -1; align-self: center; margin: 0; }
-  .spi img { display: block; width: auto; max-width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 140px); }
+  .mag { height: 100%; min-height: 0; align-content: stretch; grid-template-rows: minmax(0, 1fr); padding-top: calc(var(--head) + 24px); padding-bottom: 40px; }
+  .mag > * { grid-row: 1; min-height: 0; }
+  .mag .lab { align-self: start; }
+  :where(.mag) img.md { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .H { --hh: calc(100dvh - var(--head) - 64px); }
 
-  /* index (choix clés) : numéro, intitulé, explication */
+  /* accroche : la phrase en grand, une petite image calée en bas à droite */
+  .hook .bd { align-self: center; grid-column: 4 / 12; }
+  .hook .sm { grid-column: 10 / -1; align-self: end; height: 26dvh; width: auto; max-width: 100%; justify-self: end; object-fit: contain; }
+  .hook .bd { font-size: clamp(28px, 7.4dvh, 56px); }
+
+  /* A : texte étroit en bas à gauche, grande image qui file jusqu'au bord droit */
+  .ta .tx { grid-column: 4 / 7; align-self: end; }
+  .ta .big { grid-column: 8 / -1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
+  /* B : grande image à gauche, texte en haut à droite */
+  .tb .lab { grid-column: 9 / -1; }
+  .tb .big { grid-column: 1 / 8; }
+  .tb .tx { grid-column: 9 / -1; align-self: start; margin-top: 40px; }
+  /* C : image large en haut, texte dessous */
+  .tc { grid-template-rows: minmax(0, 1fr) auto; row-gap: 28px; }
+  .tc .big { grid-column: 4 / -1; grid-row: 1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
+  .tc .tx { grid-column: 4 / 10; grid-row: 2; }
+  .tc .lab { grid-row: 2; align-self: first baseline; }
+
+  /* deux images : une grande, une petite décalée vers le bas */
+  .pair .big { grid-column: 1 / 8; height: 100%; }
+  .pair .sm { grid-column: 9 / 12; align-self: end; height: 46% !important; }
+  .pair .lab { grid-column: 9 / -1; }
+  /* trois images en escalier */
+  .stair .lab { grid-column: 1 / 4; }
+  .stair .s0 { grid-column: 1 / 5; align-self: start; height: 52% !important; margin-top: 40px; }
+  .stair .s1 { grid-column: 5 / 9; align-self: center; height: 66% !important; }
+  .stair .s2 { grid-column: 9 / -1; align-self: end; height: 44% !important; }
+
+  /* planche contact : le reste des images en vignettes carrées */
+  .sheet .grid { grid-column: 4 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--gut); align-self: center; }
+  .sheet .th { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+  .sheet .grid { max-height: calc(100dvh - var(--head) - 100px); overflow: hidden; }
+
   .idx { display: grid; grid-template-columns: subgrid; row-gap: 20px; }
   .idx > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
   .idx .n { font-size: 12px; grid-column: 1; grid-row: 1; }
   .idx h3 { grid-column: 2 / -1; font-weight: 500; }
   .idx .dl { grid-column: 2 / -1; font-size: 12px; text-transform: none; }
 
-  /* bande de visuels : les images à la même hauteur, côte à côte, qui défilent à l'horizontale (molette, pavé, doigt) ;
-     elle part de l'axe de la colonne 4 et file jusqu'au bord droit de l'écran */
-  .bandscr .in { row-gap: 20px; }
-  .bandscr .lab { align-self: start; }
-  .band { grid-column: 4 / -1; margin-right: calc(-1 * var(--m)); overflow: hidden; }
-  .track { display: flex; gap: var(--gut); width: max-content; padding-right: var(--m); will-change: transform; }
-  .track .md { display: block; height: min(66dvh, 760px); width: auto; flex: none; }
-  .track .ph.md { aspect-ratio: 4 / 3; }
-  .track img.md { cursor: zoom-in !important; }
-  .band { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-  .band img { -webkit-user-drag: none; }
-  .lab .cap { text-transform: none; }
-
   .gen { display: grid; row-gap: 16px; grid-column: 4 / -1; }
   .gen iframe { width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 180px); border: 1px solid var(--ln); background: #fff; }
 
   /* zoom */
-  .spi img { cursor: zoom-in !important; }
   .lb { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: calc(var(--head) + 8px) var(--m) 56px; background: color-mix(in srgb, var(--bg) 96%, transparent); }
   .lb[hidden] { display: none; }
-  .lb img { max-width: 100%; max-height: calc(100dvh - var(--head) - 64px); width: auto; height: auto; object-fit: contain; cursor: zoom-out !important; }
+  .lb img { max-width: 100%; max-height: calc(100dvh - var(--head) - 64px); width: auto; height: auto; object-fit: contain; }
   .lbc { position: absolute; left: var(--m); bottom: 20px; right: var(--m); display: flex; justify-content: space-between; font-size: 12px; text-transform: none; }
 
-  /* projet suivant : le titre attend en haut ; à l'ouverture il descend et grandit jusqu'à devenir le titre de la page de garde */
+  /* projet suivant */
   .nx .in { position: relative; align-content: start; }
   .nx .tt > .mono { margin-top: 12px; }
   .ring { position: absolute; right: var(--m); bottom: 40px; width: 160px; height: 160px; display: grid; place-items: center; }
@@ -303,20 +353,30 @@ const workLd = {
   .vl { display: inline-block; white-space: nowrap; }
 
   @media (max-width: 760px) {
-    .lab, .bd, .sp .bd, .spi, .gen { grid-column: 1 / -1; }
+    .lab, .bd, .gen { grid-column: 1 / -1; }
     .s1 .head { grid-template-rows: auto 1fr auto auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(32px, 4dvh); }
     .case-h1 { font-size: min(15vw, 12dvh); }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
     .fiche > div { grid-column: auto; }
-    .spi img { max-height: 38dvh; }
-    .sp { row-gap: 20px; }
     .idx { grid-template-columns: 1fr auto; row-gap: min(20px, 2.4dvh); }
     .idx h3 { grid-column: 1; grid-row: 1; }
     .idx .n { grid-column: 2; grid-row: 1; justify-self: end; }
     .idx .dl { grid-column: 1 / -1; grid-row: 2; }
-    /* téléphone : la bande déborde des deux côtés, elle avance seule et se fait glisser au doigt */
-    .band { grid-column: 1 / -1; margin-inline: calc(-1 * var(--m)); }
-    .track .md { height: min(52dvh, 120vw); }
+    /* téléphone : les doubles pages s'empilent (libellé en haut, image, texte), toujours sur un écran */
+    .mag { grid-template-rows: auto minmax(0, 1fr) auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(56px, 7dvh); }
+    .mag > * { grid-row: auto; }
+    .mag .lab { grid-row: 1; grid-column: 1 / -1; margin: 0; position: static; }
+    .hook .bd { grid-row: 2; grid-column: 1 / -1; align-self: end; font-size: min(8.6vw, 4.2dvh); }
+    .hook .sm { grid-row: 3; grid-column: 2 / -1; height: 20dvh; }
+    .spread .big { grid-row: 2; grid-column: 1 / -1 !important; margin: 0 !important; width: 100% !important; }
+    .spread .tx { grid-row: 3; grid-column: 1 / -1 !important; margin: 0; align-self: start; }
+    .tc .lab { grid-row: 1; }
+    .pair .big { grid-row: 2; grid-column: 1 / -1; }
+    .pair .sm { grid-row: 3; grid-column: 2 / -1; height: 22dvh !important; }
+    .stair { grid-template-rows: auto repeat(3, minmax(0, 1fr)); }
+    .stair .s0, .stair .s1, .stair .s2 { height: 100% !important; margin: 0; align-self: stretch; }
+    .stair .s0 { grid-row: 2; grid-column: 1 / 3; } .stair .s1 { grid-row: 3; grid-column: 2 / 5; } .stair .s2 { grid-row: 4; grid-column: 1 / 4; }
+    .sheet .grid { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .nx .in { align-content: start; padding-top: calc(var(--head) + 56px); }
     .nx .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
     .ring { width: 112px; height: 112px; bottom: min(72px, 9dvh); left: var(--m); right: auto; }
@@ -324,7 +384,7 @@ const workLd = {
 </style>
 
 <script>
-  import { letters, fadeMono, reduced } from '../../../scripts/motion';
+  import { letters, reduced } from '../../../scripts/motion';
   const run = () => {
     const api = window.kkScreens!;
     const host = document.querySelector<HTMLElement>('[data-screens]')!;
@@ -333,20 +393,37 @@ const workLd = {
     const arc = document.querySelector<SVGCircleElement>('[data-arc]')!;
     const RING = 3500;
     let fill: Animation | null = null;
-    const phone = matchMedia('(max-width: 760px)');
-
-    // arrivée par « Projet suivant », sans transition entre pages : le titre part de là où il était sur la page précédente
-    // (position mémorisée) et glisse jusqu'à sa place — même trajet et même courbe que la transition native
     const root = document.documentElement;
+    const arriving = (window as any).kkArriving;
+
+    // arrivée par « Projet suivant », sans transition native : le titre, déjà posé à son ancienne place avant le premier
+    // affichage (script en ligne sous la page de garde), glisse et grandit jusqu'à sa place ; le menu revient après lui
     if (root.classList.contains('kk-flip')) {
-      const h = document.querySelector<HTMLElement>('.case-h1 .vt')!, hd = document.querySelector<HTMLElement>('.site-header');
-      let from: { x: number; y: number; w?: number } | null = null;
-      try { from = JSON.parse(sessionStorage.getItem('kk-next-r') || 'null'); sessionStorage.removeItem('kk-next-r'); } catch { /* */ }
-      const r = h.getBoundingClientRect();
+      const v = document.querySelector<HTMLElement>('.case-h1 .vt')!, hd = document.querySelector<HTMLElement>('.site-header');
+      const from = v.dataset.from;
       root.classList.remove('kk-flip');
-      const k = from?.w ? from.w / r.width : 1;
-      if (from) h.animate([{ transformOrigin: '0 0', transform: `translate(${from.x - r.left}px, ${from.y - r.top}px) scale(${k})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+      if (from) {
+        v.style.transform = '';
+        v.animate([{ transformOrigin: '0 0', transform: from }, { transformOrigin: '0 0', transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+      }
       hd?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 620, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+    }
+    if (arriving) letters(api.el(0), 650, '.case-h1');
+
+    // arrivée par la molette depuis le projet précédent : l'élan du geste qui a ouvert la page ne doit pas faire sauter
+    // la page de garde. La molette est ignorée tant que ce geste dure (au moins 0,9 s, puis jusqu'à 0,25 s de calme).
+    if (arriving) {
+      const t0 = performance.now();
+      let lastW = t0;
+      document.body.setAttribute('data-own-wheel', '');
+      const onW = () => { lastW = performance.now(); };
+      addEventListener('wheel', onW, { passive: true, capture: true });
+      const check = () => {
+        const now = performance.now();
+        if (now - t0 > 900 && now - lastW > 250) { document.body.removeAttribute('data-own-wheel'); removeEventListener('wheel', onW, { capture: true }); return; }
+        setTimeout(check, 60);
+      };
+      check();
     }
 
     // texte : s'il ne tient pas dans son écran (téléphone, fenêtre basse), il descend par paliers jusqu'à tenir
@@ -355,14 +432,11 @@ const workLd = {
       const big = el.classList.contains('idx') ? [...el.querySelectorAll<HTMLElement>('h3')] : [el];
       if (!big.length) return;
       big.forEach((b) => { b.style.fontSize = ''; });
-      const min = innerWidth <= 760 ? 14 : 17;
+      const min = innerWidth <= 760 ? 13 : 15;
+      const over = () => scr.scrollHeight > scr.clientHeight + 2;
       let f = parseFloat(getComputedStyle(big[0]).fontSize);
-      while (scr.scrollHeight > scr.clientHeight + 1 && f > min) {
-        f -= 2;
-        big.forEach((b) => { b.style.fontSize = f + 'px'; });
-      }
+      while (over() && f > min) { f -= 1; big.forEach((b) => { b.style.fontSize = f + 'px'; }); }
     });
-    // titre de garde : ramené à la largeur de l'écran s'il est trop long
     const fitTitle = () => {
       const h = document.querySelector<HTMLElement>('.case-h1'), v = h?.querySelector<HTMLElement>('.vt');
       if (!h || !v) return;
@@ -372,15 +446,9 @@ const workLd = {
     };
     let ft = 0;
     const refit = () => { fitTitle(); fit(); };
-    refit(); document.fonts.ready.then(refit);
+    if (!arriving) refit(); else fit();
+    document.fonts.ready.then(fit);
     addEventListener('resize', () => { clearTimeout(ft); ft = window.setTimeout(refit, 150); });
-
-    // page de garde : rien au-dessus du titre avant lui — le numéro et la fiche arrivent une fois le titre posé
-    const s1 = api.el(0);
-    const arriving = (window as any).kkArriving;
-    if (!reduced()) s1.querySelectorAll<HTMLElement>('.s1-late').forEach((el, i) =>
-      el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 420, delay: (arriving ? 1150 : 1000) + i * 120, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
-    if (arriving) letters(s1, 650, '.case-h1');
 
     const open = () => {
       if ((window as any).kkLeavingNext) return;
@@ -411,7 +479,6 @@ const workLd = {
     host.addEventListener('screens:beyond', open);
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
     document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); });
-    // un clic ailleurs (menu…) annule le minuteur
     document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
     addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
     if (api.current() === last) start();
@@ -423,94 +490,45 @@ const workLd = {
       api.el(i + 1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
       if (!pre && i >= last - 2) { pre = true; const l = document.createElement('link'); l.rel = 'prefetch'; l.href = ring.href; document.head.appendChild(l); }
     });
+    api.el(1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
 
-    // ---------- entrée des images : une montée courte, en cascade, pendant la fin du glissement ----------
+    // ---------- entrée des images : elles se découvrent de bas en haut, chacune à son tour ----------
     const play = (scr: HTMLElement, delay: number) => {
       if (reduced()) return;
-      scr.querySelector<HTMLElement>('[data-enter]')?.querySelectorAll<HTMLElement>('.md').forEach((m, i) => {
-        if (i > 3) return; // au-delà, les images sont hors champ
-        const a = m.animate([{ opacity: 0, transform: 'translateX(40px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: i * 90, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
+      scr.querySelectorAll<HTMLElement>('img.md').forEach((m, i) => {
+        if (i > 5) return;
+        const a = m.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, delay: i * 110, easing: 'cubic-bezier(.7, 0, .2, 1)', fill: 'backwards' });
         a.startTime = (document.timeline.currentTime as number) + delay;
       });
     };
-    host.addEventListener('screens:leave', (e) => { const el = api.el((e as CustomEvent).detail.to); if (el) play(el, 220); });
+    host.addEventListener('screens:leave', (e) => { const el = api.el((e as CustomEvent).detail.to); if (el) play(el, 160); });
 
-    // ---------- bandes de visuels ----------
-    // Le défilement vertical reste celui du site (un geste = un écran). La bande avance seule, lentement, en boucle ;
-    // elle ralentit et s'arrête sous la souris, et se fait glisser à la main (souris ou doigt) pour aller plus vite.
-    const SPEED = 38; // px/s
-    document.querySelectorAll<HTMLElement>('[data-band]').forEach((scr) => {
-      const band = scr.querySelector<HTMLElement>('.band')!, track = scr.querySelector<HTMLElement>('[data-track]')!;
-      // boucle sans couture : la série est doublée (copies masquées aux lecteurs d'écran)
-      const orig = [...track.children] as HTMLElement[];
-      orig.forEach((el) => {
-        const k = el.cloneNode(true) as HTMLElement;
-        k.setAttribute('aria-hidden', 'true'); k.setAttribute('data-clone', '');
-        if (k instanceof HTMLImageElement) { k.alt = ''; k.loading = 'lazy'; }
-        track.appendChild(k);
-      });
-      let x = 0, v = 0, last = 0, raf = 0, hover = false, drag = false, sx = 0, sx0 = 0, moved = 0, vDrag = 0, lastPx = 0, lastT = 0;
-      const loopW = () => { const f = track.children[orig.length] as HTMLElement | undefined; return f ? f.offsetLeft - (track.children[0] as HTMLElement).offsetLeft : track.scrollWidth / 2; };
-      const set = () => { const L = loopW(); if (L > 0) x = ((x % L) + L) % L; track.style.transform = `translate3d(${-x}px,0,0)`; (window as any).kkCapAt?.(); };
-      const active = () => api.el(api.current()) === scr && !document.hidden;
-      const tick = (now: number) => {
-        const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
-        if (!drag) {
-          const want = hover || reduced() ? 0 : SPEED;
-          v += (want - v) * Math.min(1, dt * 3);       // accélère et freine en douceur
-          vDrag *= Math.pow(0.04, dt);                    // élan d'un lancer à la main
-          x += (v + vDrag) * dt;
-          set();
-        }
-        raf = active() ? requestAnimationFrame(tick) : 0;
-        if (!raf) last = 0;
-      };
-      const kick = () => { if (!raf && active()) raf = requestAnimationFrame(tick); };
-      host.addEventListener('screens:enter', kick);
-      host.addEventListener('screens:leave', (e) => { if (api.el((e as CustomEvent).detail.to) === scr) { v = reduced() ? 0 : SPEED; requestAnimationFrame(kick); } });
-      document.addEventListener('visibilitychange', kick);
-      band.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') hover = true; });
-      band.addEventListener('pointerleave', () => { hover = false; });
-      // glisser à la main : seulement à l'horizontale (touch-action: pan-y laisse le geste vertical au site)
-      band.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return;
-        drag = true; moved = 0; sx = e.clientX; sx0 = x; lastPx = e.clientX; lastT = performance.now(); vDrag = 0;
-        band.setPointerCapture(e.pointerId); document.documentElement.classList.add('grabbing');
-      });
-      band.addEventListener('pointermove', (e) => {
-        if (!drag) return;
-        const now = performance.now();
-        moved = Math.max(moved, Math.abs(e.clientX - sx));
-        x = sx0 - (e.clientX - sx); set();
-        if (now > lastT) { vDrag = -(e.clientX - lastPx) / ((now - lastT) / 1000); lastPx = e.clientX; lastT = now; }
-      });
-      const end = () => { if (!drag) return; drag = false; document.documentElement.classList.remove('grabbing'); if (performance.now() - lastT > 80) vDrag = 0; vDrag = Math.max(-3000, Math.min(3000, vDrag)); kick(); };
-      band.addEventListener('pointerup', end); band.addEventListener('pointercancel', end);
-      // un glissement n'ouvre pas le zoom
-      band.addEventListener('click', (e) => { if (moved > 6) { e.stopPropagation(); e.preventDefault(); } }, true);
-      band.addEventListener('dragstart', (e) => e.preventDefault());
-      set(); kick();
-    });
-
-    // ---------- légende au survol : elle remplace le libellé de l'écran (recalculée aussi quand la bande défile sous la souris) ----------
-    let px = -1, py = -1;
-    addEventListener('pointermove', (e) => { px = e.clientX; py = e.clientY; capAt(); }, { passive: true });
-    const bases = new Map<HTMLElement, string>();
-    document.querySelectorAll<HTMLElement>('[data-caplab]').forEach((l) => bases.set(l, l.textContent || ''));
-    const capAt = () => {
-      const el = px < 0 ? null : document.elementFromPoint(px, py)?.closest<HTMLImageElement>('img[data-cap]');
-      bases.forEach((base, l) => {
-        const mine = el && l.closest('.in')?.contains(el);
-        const txt = mine ? (el!.dataset.cap!.endsWith(el!.dataset.n!) ? el!.dataset.cap! : `${el!.dataset.cap} — ${el!.dataset.n}`) : base;
-        if (l.textContent !== txt) l.textContent = txt;
-      });
+    // ---------- profondeur : pendant le passage d'un écran à l'autre, les images n'avancent pas toutes à la même vitesse ----------
+    const deep = [...document.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({ el, k: +el.dataset.depth!, scr: el.closest<HTMLElement>('.scr')! }));
+    let praf = 0, until = 0;
+    const depth = () => {
+      for (const d of deep) {
+        const top = d.scr.getBoundingClientRect().top;
+        d.el.style.translate = Math.abs(top) < innerHeight * 1.2 ? `0 ${(top * d.k).toFixed(1)}px` : '';
+      }
+      praf = performance.now() < until ? requestAnimationFrame(depth) : 0;
+      if (!praf) deep.forEach((d) => { if (Math.abs(d.scr.getBoundingClientRect().top) < 1) d.el.style.translate = ''; });
     };
-    (window as any).kkCapAt = capAt;
+    if (!reduced() && deep.length) host.addEventListener('screens:leave', () => { until = performance.now() + 1500; if (!praf) praf = requestAnimationFrame(depth); });
+
+    // ---------- légende au survol : elle remplace le libellé de l'écran ----------
+    document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {
+      const lab = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
+      if (!lab) return;
+      const base = lab.textContent || '';
+      im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });
+      im.addEventListener('pointerleave', () => { lab.textContent = base; });
+    });
 
     // ---------- zoom ----------
     const lb = document.querySelector<HTMLElement>('[data-lb]')!, lbImg = lb.querySelector('img')!;
     const lbc = lb.querySelector<HTMLElement>('[data-lbc]')!, lbn = lb.querySelector<HTMLElement>('[data-lbn]')!;
-    const all = [...document.querySelectorAll<HTMLImageElement>('img[data-cap]:not([data-clone])')];
+    const all = [...document.querySelectorAll<HTMLImageElement>('img[data-cap]')];
     let at = -1;
     const show = (i: number) => {
       at = (i + all.length) % all.length;
@@ -536,7 +554,7 @@ const workLd = {
       EVS.forEach((t) => addEventListener(t, block, { capture: true, passive: false }));
       if (reduced()) return;
       const a = m.getBoundingClientRect(), b = lbImg.getBoundingClientRect();
-      if (b.width) lbImg.animate([{ transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+      if (b.width) lbImg.animate([{ transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})`, opacity: 0.6 }, { transformOrigin: '0 0', transform: 'none', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.7, 0, .2, 1)' });
       lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 360, easing: 'ease-out' });
       lb.querySelector('.lbc')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' });
     };
@@ -546,12 +564,7 @@ const workLd = {
       if (reduced()) { lb.hidden = true; return; }
       lb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(() => { lb.hidden = true; });
     }
-    document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((m) => m.addEventListener('click', () => {
-      const o = all.find((a) => a.dataset.n === m.dataset.n) || m;
-      if (o === m) { openLb(m); return; }
-      // copie dans la boucle : le zoom part de l'image cliquée, mais la navigation suit la série d'origine
-      show(all.indexOf(o)); const tmp = all[at]; all[at] = m; openLb(m); all[at] = tmp;
-    }));
+    all.forEach((m) => m.addEventListener('click', () => openLb(m)));
     lb.addEventListener('click', close);
   };
   if (window.kkScreens) run(); else document.addEventListener('kk:screens', run, { once: true });
