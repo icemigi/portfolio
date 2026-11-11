@@ -33,8 +33,10 @@ type Job = { slots: Slot[]; target: string; delay: number };
 function prepare(cur: Element[], next: Element[]): Job[] {
   const jobs: Job[] = [];
   cur.slice(0, next.length).forEach((el, b) => {
-    const target = clean(next[b].textContent || '').trim();
+    // texte cible lu comme le texte affiché : sans ce qui est caché (nom pour lecteurs d'écran, vignettes…)
+    const target = clean(texts(next[b]).map((n) => n.nodeValue || '').join('')).trim();
     const nodes = texts(el), olds = nodes.map((n) => clean(n.nodeValue || ''));
+    if (clean(olds.join('')).trim() === target) return;           // même texte dans les deux langues (le nom) : on n'y touche pas
     const L = olds.reduce((n, s) => n + s.length, 0) || 1, k = target.length / L;
     let a = 0;
     // le nouveau texte est réparti sur les nœuds existants au prorata de leur longueur (vignettes et liens restent en place)

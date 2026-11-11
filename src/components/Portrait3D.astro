@@ -21,6 +21,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   .p3d canvas { position: absolute; left: -5%; top: -5%; width: 110%; height: 110%; display: block; opacity: 0; transition: opacity .3s; }
   .p3d.gl canvas { opacity: 1; }
   .p3d.gl img { visibility: hidden; transition: visibility 0s .3s; }
+  .p3d.now canvas, .p3d.now img { transition: none; }
   .p3d.pre { opacity: 0; } /* avant son entrée (voir le script) */
   :global(html[data-theme='nuit']) .p3d img { filter: brightness(.55) sepia(.35); } /* image fixe, la nuit */
 </style>
@@ -284,7 +285,12 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     const loaded = Promise.all([
       tex('/portrait3d/frame.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
       tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
-    ]).then(() => { ready = true; resize(); requestAnimationFrame(() => fig.classList.add('gl')); kick(); });
+    ]).then(() => {
+      ready = true; resize();
+      // après un changement de langue, le rendu 3D remplace l'image fixe d'un coup (un fondu montrerait deux portraits décalés)
+      if (swapped) fig.classList.add('now');
+      requestAnimationFrame(() => fig.classList.add('gl')); kick();
+    });
     loaded.catch((e) => console.warn('portrait 3D :', e));
     gate(loaded);                                             // textures prêtes (ou en échec : l'image fixe entre seule)
   }
