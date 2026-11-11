@@ -181,7 +181,7 @@ const t = ui[lang];
     let over = false, t1 = 0, t2 = 0;
     const place = () => {
       const s1r = s1.getBoundingClientRect(), r = pt.getBoundingClientRect();
-      bub.style.left = 'auto'; bub.style.right = `${s1r.right - (r.left + r.width * .16)}px`; bub.style.top = `${r.top - s1r.top + r.height * .46}px`; // la queue arrive à hauteur de la bouche
+      bub.style.left = 'auto'; bub.style.right = `${s1r.right - (r.left + r.width * .08)}px`; bub.style.top = `${r.top - s1r.top + r.height * .46}px`; // la queue arrive à hauteur de la bouche
     };
     const enter = () => {
       over = true; clearTimeout(t1); clearTimeout(t2);
