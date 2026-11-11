@@ -92,7 +92,7 @@ const t = ui[lang];
     /* téléphone : quatre lignes (kern / —ing / kast / le), le nom remplit l'écran */
     .name .l2 > span { display: block; }
     .name .l2 > span + span { margin-left: .06em; }
-    .phrase { left: var(--m); text-align: left; bottom: 72px; max-width: 43vw; } /* à gauche du portrait */
+    .phrase { left: var(--m); text-align: left; bottom: 72px; } /* à gauche du portrait */
     .lab, .bt, .more, .list { grid-column: 1 / -1; }
   }
 </style>
@@ -140,17 +140,17 @@ const t = ui[lang];
   const placePortrait = (ctx: CanvasRenderingContext2D, head: number, ph: HTMLElement | null) => {
     if (!pt) return;
     const AR = 1709 / 2334;
-    // téléphone : à droite de la phrase (resserrée en CSS), son bas à cheval sur le haut de « kern », comme sur « kast » à l'ordinateur
+    // téléphone : le cadre occupe le quart bas droit de l'écran, à cheval sur le nom, sans jamais cacher « kern »
     if (ph) {
-      const W = s1.clientWidth, sr = s1.getBoundingClientRect();
+      const W = s1.clientWidth, H = s1.clientHeight, sr = s1.getBoundingClientRect();
       const first = n.firstElementChild as HTMLElement;
       const pr = document.createElement('i'); pr.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
       first.appendChild(pr); const base1 = pr.getBoundingClientRect().top - sr.top; pr.remove();
       const asc = ctx.measureText('k').actualBoundingBoxAscent;
-      const bottom = base1 - asc * 0.62, top0 = head + 8;
-      const w = Math.min(W * 0.40, (bottom - top0) * AR);
-      pt.style.display = w < W * 0.26 ? 'none' : '';
-      pt.style.width = `${w}px`; pt.style.left = `${W - w - W * 0.035}px`; pt.style.top = `${bottom - w / AR}px`;
+      const bottom = H - 22, topMin = base1 - asc * .1;                 // au plus, il effleure le pied de « kern »
+      const w = Math.min(W * .62, (H * .52) * AR, (bottom - topMin) * AR);
+      pt.style.display = '';
+      pt.style.width = `${w}px`; pt.style.left = `${W - w - W * .015}px`; pt.style.top = `${bottom - w / AR}px`;
       return;
     }
     pt.style.display = '';
