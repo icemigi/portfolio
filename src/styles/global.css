@@ -166,11 +166,6 @@ input, textarea, [contenteditable] { cursor: text; }
 .uline { position: relative; display: inline-block; }
 .uline::after { content: ''; position: absolute; left: 0; right: 0; bottom: .02em; height: max(1px, .05em); background: var(--ac); transform: scaleX(0); transform-origin: 100% 50%; transition: transform .45s var(--out); }
 @media (hover: hover) { .uline:hover::after { transform: scaleX(1); transform-origin: 0 50%; } }
-.btn { display: inline-flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; background: var(--fg); color: var(--bg); white-space: nowrap; }
-.btn .ar { position: relative; display: inline-block; overflow: hidden; height: 16px; width: 1ch; }
-.btn .ar i { font-style: normal; position: absolute; left: 0; top: 0; }
-@media (hover: hover) { .btn:hover .ar i { animation: kk-drop .5s var(--out); } }
-@keyframes kk-drop { 0% { transform: none; } 45% { transform: translateY(100%); } 46% { transform: translateY(-100%); } 100% { transform: none; } }
 
 /* lignes de projets : décalage */
 .row { display: grid; grid-template-columns: 1fr 5fr 2fr 1fr; column-gap: var(--gut); align-items: baseline; padding: 12px 0; }
@@ -195,7 +190,6 @@ input, textarea, [contenteditable] { cursor: text; }
 /* fluidité : chaque écran a son propre calque (le glissement ne repeint rien) ; les éléments en parallaxe et les vignettes
    animées aussi (leur mouvement et leurs images ne font plus repeindre le paragraphe qui les contient) */
 html.js .screens-host > .scr { will-change: transform; }
-html.js .screens-host .im img, html.js .screens-host .cov, html.js .screens-host .mimg { will-change: translate; }
 .scr::-webkit-scrollbar { display: none; }
 .scr:not(.on) { transform: translateY(100%); }
 .scr.on { transform: none; }

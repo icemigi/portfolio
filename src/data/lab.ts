@@ -46,7 +46,6 @@ const all: Room[] = [
 ];
 // pièces vides (kind 'slot') masquées tant qu'elles ne sont pas intégrées (décision du 03/11)
 export const rooms: Room[] = all.filter((r) => r.kind !== 'slot' && !(r.kind === 'font' && !r.file));
-export const allRooms = all;
 
 // Apps autonomes (pages complètes dans /public/lab/) : ouvertes dans une fenêtre du bureau,
 // sans salle /xx/lab/<id>/. Seule source de vérité pour le bureau, la grille mobile et le compteur du menu.
