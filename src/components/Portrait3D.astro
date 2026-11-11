@@ -351,7 +351,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       if (e.clientX > r.left + r.width * .1 && e.clientX < r.right - r.width * .1 && e.clientY > r.top + r.height * .06 && e.clientY < r.bottom - r.height * .08) toggle();
     });
     const loaded = Promise.all([
-      tex('/portrait3d/frame.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
+      tex('/portrait3d/frame-m.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
       tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
       ...(face === 1 ? [loadFace2()] : []),
     ]).then(() => {
