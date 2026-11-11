@@ -45,15 +45,10 @@ html[data-theme='nuit'] .thm path { fill: currentColor; } /* la lune se remplit 
 /* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
 .fire { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
 .torch-glow { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: opacity .3s; --k: 1;
-  /* lumière d'une flamme : forte tout près, qui chute très vite (≈ 1/d²), chaude ; son intensité vacille avec la flamme */
-  background: radial-gradient(circle 460px at var(--tx, -999px) var(--ty, -999px),
-    rgba(255, 176, 96, calc(.20 * var(--k))) 0%, rgba(255, 150, 70, calc(.11 * var(--k))) 7%, rgba(255, 130, 55, calc(.045 * var(--k))) 18%,
-    rgba(255, 120, 50, calc(.016 * var(--k))) 38%, transparent 70%);
+  /* la flamme n'éclaire que ce qui la touche presque : une petite lueur, pas un halo sur la page */
+  background: radial-gradient(circle 110px at var(--tx, -999px) var(--ty, -999px),
+    rgba(255, 170, 90, calc(.16 * var(--k))) 0%, rgba(255, 140, 60, calc(.05 * var(--k))) 30%, transparent 100%);
   mix-blend-mode: screen; }
-/* grain : la lumière d'une flamme n'est jamais un dégradé lisse ; les bords de l'écran s'assombrissent à peine */
-.torch-glow::after { content: ''; position: absolute; inset: 0; opacity: .5; mix-blend-mode: multiply;
-  background: radial-gradient(circle 900px at var(--tx, 50%) var(--ty, 50%), transparent 45%, rgba(0, 0, 0, .16)),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .4  0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
 html[data-theme='nuit'] .thm { color: var(--fg); }
 
 *, *::before, *::after { box-sizing: border-box; }

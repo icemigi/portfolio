@@ -20,6 +20,7 @@ const t = ui[lang];
         <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span class="l2" aria-hidden="true"><span>—ing</span><span>kast</span></span><span aria-hidden="true" data-le>le</span><span class="sr mono">kerningkastle</span></h1></div>
       </div>
       <Portrait3D lang={lang} id="pt3d" />
+      <p class="bub" id="bub" aria-live="polite"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="msg"></span></p>
       <p class="phrase t28" data-par="60" set:html={t.phrase.replace(' + ', ' <span class="ac">+</span> ')} />
     </section>
 
@@ -67,6 +68,22 @@ const t = ui[lang];
 
   /* portrait : en haut à droite, à cheval sur « kast » (position et taille calculées par le script, d'après le nom) */
   .s1 :global(.p3d) { z-index: 3; left: 0; top: 0; width: 28vw; }
+  /* bulle de message : le chevalier écrit (trois points), puis son message arrive ; orange du site, texte blanc en Medium (choix assumé : contraste 2,4:1, phrases courtes), sur une ligne, queue vers lui */
+  .bub { position: absolute; z-index: 4; left: 0; top: 0; white-space: nowrap; padding: 10px 15px 11px; border-radius: 21px; text-wrap: balance; background: var(--ac); color: #fff; font-weight: 500;
+    font-size: 18px; line-height: 23px; letter-spacing: -.01em; pointer-events: none; opacity: 0; scale: .5; transform-origin: 100% 100%;
+    transition: opacity .18s var(--out), scale .32s cubic-bezier(.34, 1.5, .6, 1), width .25s var(--out); }
+  .bub::after { content: ''; position: absolute; right: -6px; bottom: 0; width: 18px; height: 16px; background: inherit;
+    clip-path: path('M0 0 C 2 9, 8 14, 18 16 C 10 16, 4 14, 0 11 Z'); }
+  .bub.on { opacity: 1; scale: 1; }
+  .bub .dots { display: none; gap: 4px; padding: 6px 2px; }
+  .bub.typing .dots { display: inline-flex; } .bub.typing .msg { display: none; }
+  .bub .dots i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: kk-dot 1.2s ease-in-out infinite; }
+  .bub .dots i:nth-child(2) { animation-delay: .15s; } .bub .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes kk-dot { 0%, 60%, 100% { opacity: .35; translate: 0 0; } 30% { opacity: 1; translate: 0 -3px; } }
+  /* nuit : la bulle prend l'encre claire du mode nuit, texte couleur de nuit */
+  :global(html[data-theme='nuit']) .bub { background: var(--fg); color: var(--bg); }
+  :global(html[data-theme='nuit']) .bub .dots i { background: var(--bg); }
+  @media (hover: none), (max-width: 760px) { .bub { display: none; } }
   /* titre qui joue : la lettre survolée se remélange ; le signe tiré au hasard se pose par-dessus (la lettre devient
      transparente sans bouger), la mise en page ne change jamais */
   .name :global(.hc.sx) { color: transparent; }
@@ -155,6 +172,39 @@ const t = ui[lang];
   // tant qu'il n'est pas à sa place (aucun saut visible au chargement)
   place();
   document.fonts.ready.then(() => { place(); s1.classList.add('placed'); });
+  // bulle de message au survol du portrait : trois points pendant qu'il « écrit », puis une phrase (une nouvelle à chaque survol,
+  // jamais deux fois la même de suite) ; elle reste un instant après le départ de la souris, le temps de la lire
+  if (pt && matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    const bub = document.getElementById('bub')!, msg = bub.querySelector<HTMLElement>('.msg')!;
+    // vannes écrites dans chaque langue (pas traduites mot à mot) ; ponctuation française : espace fine insécable avant ? ! et dans « »
+    const LINES = document.documentElement.lang === 'fr'
+      ? ['Salut\u202f! 👋', 'Non, je n\'enlève pas le casque.', 'Il fait 1\u202f000\u202f°C là-dedans…', 'Tu cherches un type designer\u202f?', 'Le crénage, c\'est ma passion.', 'Écris-moi, je réponds vite.', 'Ce heaume pèse une tonne…', 'Tu peux arrêter de me fixer\u202f?', 'Je dessine des lettres, pas des épées.', 'Oui, c\'est un vrai casque.', 'J\'ai le nez qui gratte…', 'Le Moyen Âge, c\'était mieux avant.', 'Garamond ou Helvetica\u202f? Débat.', 'Mon cheval s\'appelle Bézier.', 'Plus chevalier que chevalet.', 'Respire, c\'est qu\'un portfolio.', 'On dit «\u202ffonte\u202f», pas «\u202fpolice\u202f».', 'Pas de cookies, que des écus.']
+      : ['Hi there 👋', 'No, the helmet stays on.', 'It\'s a thousand degrees in here…', 'Need a type designer?', 'Kerning keeps me up at night.', 'Email me. I\'m quick.', 'This helm weighs a ton…', 'You\'re staring. I can tell.', 'I draw letters, not swords.', 'Yes, it\'s a real helmet.', 'My nose itches. Great.', 'Dark Ages? Mostly bad lighting.', 'Serif or sans? Choose wisely.', 'My horse is called Bézier.', 'Knight by day, designer by night.', 'Relax, it\'s just a portfolio.', 'Fonts are free. Kerning isn\'t.', 'No cookies here. Only shields.'];
+    let k = 0; try { k = +(sessionStorage.getItem('kk-bub') || 0); } catch { /* */ }
+    let over = false, t1 = 0, t2 = 0;
+    const place = () => {
+      const s1r = s1.getBoundingClientRect(), r = pt.getBoundingClientRect();
+      bub.style.left = 'auto'; bub.style.right = `${s1r.right - (r.left + r.width * .16)}px`; bub.style.top = `${r.top - s1r.top + r.height * .46}px`; // la queue arrive à hauteur de la bouche
+    };
+    const enter = () => {
+      over = true; clearTimeout(t1); clearTimeout(t2);
+      if (bub.classList.contains('on')) return;
+      place(); bub.classList.add('typing'); msg.textContent = ''; bub.classList.add('on');
+      t1 = window.setTimeout(() => {
+        msg.textContent = LINES[k % LINES.length]; k++; try { sessionStorage.setItem('kk-bub', String(k)); } catch { /* */ }
+        bub.classList.remove('typing'); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' }));
+      }, 750 + Math.random() * 350);
+    };
+    const leave = () => { over = false; clearTimeout(t2); t2 = window.setTimeout(() => { if (!over) { clearTimeout(t1); bub.classList.remove('on'); } }, bub.classList.contains('typing') ? 200 : 1400); };
+    // le portrait laisse passer la souris (les lettres dessous réagissent) : on teste sa zone à la main
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'mouse') return;
+      const r = pt.getBoundingClientRect(), inside = e.clientX > r.left + r.width * .12 && e.clientX < r.right - r.width * .12 && e.clientY > r.top + r.height * .08 && e.clientY < r.bottom - r.height * .1;
+      if (inside && !over) enter(); else if (!inside && over) leave();
+    }, { passive: true });
+    addEventListener('wheel', () => { if (over) leave(); }, { passive: true });
+  }
+
   // titre qui joue (souris) : chaque lettre survolée passe par quelques signes au hasard, puis revient ; une lettre en cours
   // ne se relance pas, si bien qu'un passage rapide de la souris fait courir une vague le long du nom
   if (matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {

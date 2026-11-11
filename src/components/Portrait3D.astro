@@ -43,7 +43,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
   const KNIGHT_VS = `#version 300 es
     in vec2 aUV; uniform mat4 uMVP; uniform highp sampler2D uGeo; uniform float uRelief, uAspect, uFocus;
-    out vec2 vUV;
+    out vec2 vUV; out float vZ;
     float dep(ivec2 p, ivec2 s) {
       vec4 g = texelFetch(uGeo, clamp(p, ivec2(0), s - 1), 0);
       return (g.r * 65280. + g.g * 255.) / 65535.;
@@ -54,13 +54,13 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       return mix(mix(dep(i, s), dep(i + ivec2(1, 0), s), t.x), mix(dep(i + ivec2(0, 1), s), dep(i + ivec2(1, 1), s), t.x), t.y);
     }
     void main() {
-      vUV = aUV;
-      gl_Position = uMVP * vec4((aUV.x - .5) * uAspect, .5 - aUV.y, (depthAt(aUV) - uFocus) * uRelief, 1.);
+      vUV = aUV; vZ = (depthAt(aUV) - uFocus) * uRelief;
+      gl_Position = uMVP * vec4((aUV.x - .5) * uAspect, .5 - aUV.y, vZ, 1.);
     }`;
   const KNIGHT_FS = `#version 300 es
     precision highp float;
     uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax, uNight; uniform vec2 uCandle;
-    in vec2 vUV; out vec4 o;
+    in vec2 vUV; in float vZ; out vec4 o;
     void main() {
       vec4 c = texture(uKnight, vUV);
       if (c.a < .003) discard;
@@ -76,10 +76,13 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       float diff = clamp(dot(n, L), 0., 1.);
       float spec = pow(max(dot(n, H), 0.), 56.) * metal;
       vec3 day = min(rgb * (1. + uShade * (diff - .8) * (1. - face)) + uSpec * spec, 1.);
-      // nuit : une bougie seule — lumière chaude, très directionnelle, qui faiblit loin de la flamme ; reflet doré sur l'acier
-      vec3 warm = vec3(1., .78, .52);
-      float near = exp(-dot(vUV - uCandle, vUV - uCandle) / .09);
-      vec3 night = rgb * warm * (.10 + (.25 + 1.1 * pow(diff, 1.4)) * (.25 + .75 * near)) + warm * uSpec * 1.8 * spec * near;
+      // nuit : la flamme est une source ponctuelle, devant le portrait. Lumière qui chute avec la distance réelle (3D) et
+      // n'éclaire que les surfaces tournées vers elle (le relief du métal s'allume, le reste plonge dans le noir) ; reflet chaud
+      vec3 warm = vec3(1., .72, .45);
+      vec3 pos = vec3((vUV.x - .5) * uAspect, .5 - vUV.y, vZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 22. * dot(Ld, Ld)); vec3 Lf = normalize(Ld);
+      float dif = max(dot(n, Lf), 0.), spf = pow(max(dot(n, normalize(Lf + vec3(0, 0, 1))), 0.), 48.) * metal;
+      vec3 night = rgb * warm * (.035 + 1.6 * att * dif) + warm * uSpec * 2.4 * spf * att;
       rgb = mix(day, min(night, 1.), uNight);
       o = vec4(rgb * c.a, c.a);
     }`;
@@ -88,12 +91,13 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     void main() { vUV = aUV; gl_Position = uMVP * vec4(vec2((aUV.x - .5) * uAspect, .5 - aUV.y) * uScale, uZ, 1.); }`;
   const PLANE_FS = `#version 300 es
     precision highp float;
-    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; uniform float uNight; uniform vec2 uCandle; in vec2 vUV; out vec4 o;
+    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; uniform float uNight, uAspect, uZ, uScale; uniform vec2 uCandle; in vec2 vUV; out vec4 o;
     void main() {
       vec4 t = texture(uTex, vUV);
-      // nuit : le cadre et le fond ne reçoivent que la lueur de la bougie
-      float near = exp(-dot(vUV - uCandle, vUV - uCandle) / .16);
-      vec3 lit = mix(vec3(1.), vec3(1., .8, .58) * (.22 + .9 * near), uNight);
+      // nuit : le cadre et le fond, plats, reçoivent la flamme de biais (même source ponctuelle que le chevalier)
+      vec3 pos = vec3(vec2((vUV.x - .5) * uAspect, .5 - vUV.y) * uScale, uZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 22. * dot(Ld, Ld));
+      vec3 lit = mix(vec3(1.), vec3(1., .72, .45) * (.035 + 1.6 * att * max(normalize(Ld).z, 0.)), uNight);
       if (uMode == 0) { if (t.b < .5) discard; o = vec4(0.); }   // pochoir : trou du cadre
       else if (uMode == 2) o = vec4(uColor * lit, 1.);            // fond uni (limité au pochoir)
       else o = vec4(t.rgb * lit, t.a);                            // cadre (prémultiplié : la couleur seule est assombrie)
