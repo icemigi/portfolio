@@ -42,6 +42,8 @@ const S: Record<string, (o: Opt) => void> = {
   },
   // dernier cran, à l'arrivée d'un écran : un peu plus mat et plus bas
   notch: () => { noise({ f: 1700, q: 4, a: 0.002, r: 0.026, v: 0.022 }); tone(130, { a: 0.002, r: 0.05, v: 0.02, to: 98 }); },
+  // volte-face du portrait : un souffle qui passe, et le cadre qui se pose
+  flip: () => { noise({ f: 1800, to: 350, q: .7, a: .12, r: .26, v: .024, type: 'lowpass', at: .08 }); tone(150, { a: .003, r: .07, v: .02, to: 110, at: .5 }); },
   // touche : la fiche spécimen change de lettre
   key: () => noise({ f: 4200 + Math.random() * 900, q: 12, a: 0.001, r: 0.012, v: 0.014 }),
 };

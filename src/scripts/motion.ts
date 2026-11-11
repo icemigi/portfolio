@@ -106,7 +106,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   let k = 0;
   for (const n of nodes) {
     const text = n.nodeValue!;
-    const isName = !!n.parentElement?.closest('.name');                 // titre de l'accueil : son propre rythme
+    const isName = !!n.parentElement?.closest('.name, .mail');          // titre de l'accueil et grande adresse : rythme du titre
     const f = document.createDocumentFragment();
     for (const c of text) {
       if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); continue; }

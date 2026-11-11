@@ -201,6 +201,16 @@ const t = ui[lang];
       if (inside && !over) enter(); else if (!inside && over) leave();
     }, { passive: true });
     addEventListener('wheel', () => { if (over) leave(); }, { passive: true });
+    // volte-face du portrait : une réplique selon la face qui apparaît
+    const FLIPL = document.documentElement.lang === 'fr'
+      ? ['Je le remets, il caille.', 'Bon, d\'accord, je l\'enlève.']
+      : ['Putting it back on. Chilly.', 'Fine, I\'ll take it off.'];
+    addEventListener('kk:flip', (e) => {
+      const f = (e as CustomEvent).detail.face as number;
+      clearTimeout(t1); clearTimeout(t2); place();
+      bub.classList.remove('typing'); msg.textContent = FLIPL[f]; bub.classList.add('on');
+      t2 = window.setTimeout(() => { if (!over) bub.classList.remove('on'); }, 2600);
+    });
   }
 
   // titre qui joue (souris) : chaque lettre survolée passe par quelques signes au hasard, puis revient ; une lettre en cours

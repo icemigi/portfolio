@@ -17,8 +17,8 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   /* légèrement incliné, comme sur la maquette (sens horaire) */
   .p3d { position: absolute; margin: 0; aspect-ratio: 1709 / 2334; pointer-events: none; rotate: var(--p3d-rot, 8deg); }
   .p3d img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  /* le canvas déborde de 5 % : la rotation reste dans le cadre du canvas, le portrait au repos couvre exactement l'image */
-  .p3d canvas { position: absolute; left: -5%; top: -5%; width: 110%; height: 110%; display: block; opacity: 0; transition: opacity .3s; }
+  /* le canvas déborde de 20 % : rotation, saut et dépassement de la volte-face restent dedans ; au repos le portrait couvre exactement l'image */
+  .p3d canvas { position: absolute; left: -20%; top: -20%; width: 140%; height: 140%; display: block; opacity: 0; transition: opacity .3s; }
   .p3d.gl canvas { opacity: 1; }
   .p3d.gl img { visibility: hidden; transition: visibility 0s .3s; }
   .p3d.now canvas, .p3d.now img { transition: none; }
@@ -32,11 +32,14 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
   const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
   const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
+  // les deux faces du portrait : avec casque (textures 1-3), sans casque (textures 4-6, chargées après la première)
+  const FACES = [{ box: BOX, gmax: GMAX, tex: [1, 2, 3] }, { box: [0.08192, 0.08483, 0.91281, 0.89974], gmax: 37.1043, tex: [4, 5, 6] }];
+  const FLIP = 720;                                          // volte-face (ms)
   const GRID = [300, 380];
   const SET = { relief: 0.42, angle: 10, spec: 0.45, shade: 0.2 };
   // fond de la fenêtre : le bleu-gris de la photo d'origine, posé un peu derrière le cadre (il glisse sous les montants)
   const BG = [0xc2 / 255, 0xd3 / 255, 0xdf / 255], BG_Z = -0.05;
-  const PAD = 1.1;                                           // canvas = 110 % du portrait
+  const PAD = 1.4;                                           // canvas = 140 % du portrait (marge pour le saut de la volte-face)
   // entrée : pendant que le titre s'écrit, le portrait monte en fondu ; le chevalier sort du cadre (relief de 0 au plein),
   // pivote pour se poser face au visiteur, et un éclat de lumière glisse sur l'acier, de gauche à droite
   const INTRO = 1500, INTRO_AT = 380, YAW = 0.38, PITCH = -0.12;   // ms, ms après l'apparition de l'écran, radians (~22°, ~-7°)
@@ -105,8 +108,20 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     }`;
 
   function init(fig: HTMLElement) {
-    const canvas = fig.querySelector('canvas')!;
-    if (reduced()) return;                                   // image fixe, déjà en place
+    const canvas = fig.querySelector('canvas')!, img = fig.querySelector('img')!;
+    // face gardée d'une visite à l'autre (0 : avec casque, 1 : sans)
+    let face = 0; try { face = localStorage.getItem('kk-face') === '1' ? 1 : 0; } catch { /* */ }
+    const FALLBACK = ['/portrait3d/portrait-fallback.webp', '/portrait3d/portrait-fallback2.webp'];
+    if (face === 1) img.src = FALLBACK[1];
+    // sans rendu 3D (ou « Réduire les animations ») : le clic échange simplement les deux images
+    const flipImg = (e: MouseEvent) => {
+      const r = fig.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+      face = 1 - face; img.src = FALLBACK[face];
+      try { localStorage.setItem('kk-face', String(face)); } catch { /* */ }
+      dispatchEvent(new CustomEvent('kk:flip', { detail: { face } }));
+    };
+    if (reduced()) { addEventListener('click', flipImg); return; } // image fixe, déjà en place
     // entrée : le portrait reste caché jusqu'à la fin du chargement d'entrée, puis apparaît avec le titre
     // (après un changement de langue, la page s'ouvre telle quelle : pas d'entrée)
     const swapped = !!(window as any).kkSwapped;
@@ -129,7 +144,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     const gate = (p: Promise<unknown>) => Promise.all([window.kkReady ?? Promise.resolve(), document.fonts.ready, p.catch(() => {})])
       .then(() => { const wait = !!document.querySelector('[data-ld]'); return gone().then(() => setTimeout(begin, wait ? 60 : INTRO_AT)); });
     const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, stencil: true, depth: true });
-    if (!gl) { gate(Promise.resolve()); return; }
+    if (!gl) { gate(Promise.resolve()); addEventListener('click', flipImg); return; }
 
     const compile = (vs: string, fs: string) => {
       const p = gl.createProgram()!;
@@ -154,15 +169,19 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.bindVertexArray(null); return v;
     };
     const quad = vao(new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]));
-    const [gx, gy] = GRID, verts = new Float32Array((gx + 1) * (gy + 1) * 2), idx = new Uint32Array(gx * gy * 6);
-    for (let j = 0, k = 0; j <= gy; j++) for (let i = 0; i <= gx; i++, k += 2) {
-      verts[k] = BOX[0] + ((BOX[2] - BOX[0]) * i) / gx; verts[k + 1] = BOX[1] + ((BOX[3] - BOX[1]) * j) / gy;
-    }
+    const [gx, gy] = GRID, idx = new Uint32Array(gx * gy * 6);
     for (let j = 0, k = 0; j < gy; j++) for (let i = 0; i < gx; i++, k += 6) {
       const a = j * (gx + 1) + i, b = a + 1, c = a + gx + 1, d = c + 1;
       idx.set([a, c, b, b, c, d], k);
     }
-    const mesh = vao(verts, idx);
+    // un maillage par face (chacune a sa propre emprise dans le cadre)
+    const meshes = FACES.map(({ box }) => {
+      const verts = new Float32Array((gx + 1) * (gy + 1) * 2);
+      for (let j = 0, k = 0; j <= gy; j++) for (let i = 0; i <= gx; i++, k += 2) {
+        verts[k] = box[0] + ((box[2] - box[0]) * i) / gx; verts[k + 1] = box[1] + ((box[3] - box[1]) * j) / gy;
+      }
+      return vao(verts, idx);
+    });
 
     // couleurs : prémultipliées, mip-maps ; données (geo, nrm) : brutes, sans gestion de couleur
     const tex = (url: string, unit: number, data: boolean, nearest = false) => new Promise<void>((ok, ko) => {
@@ -204,6 +223,8 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     const cand = { x: .5, y: .35, tx: .5, ty: .35 };
     let night = document.documentElement.dataset.theme === 'nuit' ? 1 : 0;
     let lastMove = -1e9, visible = true, raf = 0, ready = false;
+    // volte-face : la face affichée, et le retournement en cours (de → vers)
+    let flip: { t0: number; from: number; to: number; swapped: boolean } | null = null;
 
     const FOV = (20 * Math.PI) / 180, DIST = 0.5 / Math.tan(FOV / 2);
     const kick = () => { if (!raf && ready) raf = requestAnimationFrame(draw); };
@@ -225,7 +246,23 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const a = (SET.angle * Math.PI) / 180;
       const ip = Math.max(0, Math.min(1, (t - introT0) / INTRO)), e = 1 - (1 - ip) ** 3;   // entrée (0 → 1)
-      const model = mul(rx(cur.y * a + PITCH * (1 - e)), mul(ry(-cur.x * a + YAW * (1 - e)), sc(1 / PAD)));
+      // volte-face : demi-tour autour de l'axe vertical ; à mi-course (vu par la tranche) la face change, et le cadre
+      // s'avance un peu vers le visiteur pendant qu'il tourne
+      // élan (il recule de 12°), tour très rapide qui passe la tranche en un éclair, léger dépassement puis il se pose
+      // (ressort amorti) ; il saute un peu vers le visiteur pendant le tour
+      let f = face, fa = 0, fz = 0, fk = 1;
+      if (flip) {
+        const p = Math.min(1, (t - flip.t0) / FLIP), BACK = .21, OVER = .17;
+        if (p < .15) fa = -BACK * Math.sin((p / .15) * Math.PI / 2);
+        else if (p < .72) { const u = (p - .15) / .57, q = u < .5 ? 8 * u ** 4 : 1 - 8 * (1 - u) ** 4; fa = -BACK + (Math.PI + OVER + BACK) * q; }
+        else { const u = (p - .72) / .28; fa = Math.PI + OVER * Math.exp(-4 * u) * Math.cos(u * Math.PI * 1.6); }
+        const hop = Math.sin(Math.min(1, Math.max(0, (p - .12) / .62)) * Math.PI);
+        fz = .12 * hop; fk = 1 + .025 * hop;
+        if (fa >= Math.PI / 2) { f = flip.to; fa -= Math.PI; if (!flip.swapped) { flip.swapped = true; dispatchEvent(new CustomEvent('kk:flip', { detail: { face: flip.to } })); } }
+        else f = flip.from;
+        if (p >= 1) flip = null;
+      }
+      const model = mul(tr(0, 0, fz), mul(rx(cur.y * a + PITCH * (1 - e)), mul(ry(-cur.x * a + YAW * (1 - e) + fa), sc(fk / PAD))));
       const mvp = mul(persp(FOV, canvas.width / canvas.height, 0.1, 10), mul(tr(0, 0, -DIST), model));
 
       // 1. pochoir : le trou du cadre, dans le plan du cadre (le chevalier n'en dépasse jamais, quel que soit l'angle)
@@ -247,11 +284,14 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
       // 3. chevalier en relief, limité au pochoir
       gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
-      gl.useProgram(knightP.p); gl.bindVertexArray(mesh);
+      const F = FACES[f];
+      gl.useProgram(knightP.p); gl.bindVertexArray(meshes[f]);
       gl.uniformMatrix4fv(knightP.u('uMVP'), false, mvp);
-      gl.uniform1i(knightP.u('uKnight'), 1); gl.uniform1i(knightP.u('uGeo'), 2); gl.uniform1i(knightP.u('uNrm'), 3);
-      gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
-      gl.uniform1f(knightP.u('uSpec'), SET.spec * (1 + 1.4 * Math.sin(Math.PI * e))); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), GMAX);
+      gl.uniform1i(knightP.u('uKnight'), F.tex[0]); gl.uniform1i(knightP.u('uGeo'), F.tex[1]); gl.uniform1i(knightP.u('uNrm'), F.tex[2]);
+      // pendant le tour, le relief s'aplatit (carte plate de profil, aucun étirement visible) puis se regonfle à l'arrivée
+      const flat = flip ? Math.min(1, Math.abs(Math.sin(fa)) * 1.6) : 0;
+      gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e) * (1 - .97 * flat)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
+      gl.uniform1f(knightP.u('uSpec'), SET.spec * (1 + 1.4 * Math.sin(Math.PI * e))); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), F.gmax);
       // jour : la lumière suit la souris de loin ; nuit : la bougie est devant le portrait, là où est le pointeur
       const lx = (cand.x - .5) * 2.4, ly = -(cand.y - .5) * 2.4;
       gl.uniform3f(knightP.u('uLight'), (cur.x * 0.9 - 1.6 * (1 - e)) * (1 - night) + lx * night, (-cur.y * 0.9 + 0.25) * (1 - night) + ly * night, 1.1 - .35 * night);
@@ -287,10 +327,29 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(fig);
     document.addEventListener('visibilitychange', kick);
 
+    // seconde face : chargée une seule fois, après la première (ou d'abord, si c'est elle qu'on avait laissée)
+    let face2: Promise<unknown> | null = null;
+    const loadFace2 = () => (face2 ??= Promise.all([tex('/portrait3d/knight2.webp', 4, false), tex('/portrait3d/geo2.png', 5, true, true), tex('/portrait3d/nrm2.png', 6, true)]));
+    const toggle = () => {
+      if (!ready || flip) return;
+      const to = 1 - face;
+      loadFace2().then(() => {
+        flip = { t0: performance.now(), from: face, to, swapped: false }; face = to; kick();
+        try { localStorage.setItem('kk-face', String(to)); } catch { /* */ }
+        dispatchEvent(new CustomEvent('kk:sound', { detail: 'flip' }));
+      });
+    };
+    // le portrait laisse passer la souris (les lettres dessous réagissent) : on teste sa zone au clic
+    addEventListener('click', (e) => {
+      const r = fig.getBoundingClientRect();
+      if (e.clientX > r.left + r.width * .1 && e.clientX < r.right - r.width * .1 && e.clientY > r.top + r.height * .06 && e.clientY < r.bottom - r.height * .08) toggle();
+    });
     const loaded = Promise.all([
       tex('/portrait3d/frame.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
       tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
+      ...(face === 1 ? [loadFace2()] : []),
     ]).then(() => {
+      if (face === 0) setTimeout(loadFace2, 1500);
       ready = true; resize();
       // après un changement de langue, le rendu 3D remplace l'image fixe d'un coup (un fondu montrerait deux portraits décalés)
       if (swapped) fig.classList.add('now');
