@@ -33,7 +33,11 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
   const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
   // les deux faces du portrait : avec casque (textures 1-3), sans casque (textures 4-6, chargées après la première)
-  const FACES = [{ box: BOX, gmax: GMAX, tex: [1, 2, 3] }, { box: [0.08192, 0.08483, 0.91281, 0.89974], gmax: 37.1043, tex: [4, 5, 6] }];
+  // eyes : centres des iris (uv du cadre), r : rayon de l'iris (uv) — relevés à la main sur les deux photos
+  const FACES = [
+    { box: BOX, gmax: GMAX, tex: [1, 2, 3], eyes: [.4399, .4527, .5818, .4494], r: [.01205, .00883] },
+    { box: [0.08192, 0.08483, 0.91281, 0.89974], gmax: 33.2264, tex: [4, 5, 6], eyes: [.4362, .4515, .5827, .4481], r: [.0130, .0095] },
+  ];
   const FLIP = 720;                                          // volte-face (ms)
   const GRID = [300, 380];
   const SET = { relief: 0.42, angle: 10, spec: 0.45, shade: 0.2 };
@@ -63,9 +67,17 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   const KNIGHT_FS = `#version 300 es
     precision highp float;
     uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax, uNight; uniform vec2 uCandle;
+    uniform vec4 uEyes; uniform vec2 uEyeR, uGaze;
     in vec2 vUV; in float vZ; out vec4 o;
+    // regard : dans un petit disque autour de chaque iris, l'image est prise un peu à côté — l'iris et la pupille glissent
+    // vers le visiteur, les paupières (hors du disque) ne bougent pas
+    vec2 gazeUV(vec2 uv) {
+      vec2 dA = (uv - uEyes.xy) / (uEyeR * 1.7), dB = (uv - uEyes.zw) / (uEyeR * 1.7);
+      float m = smoothstep(1., .45, length(dA)) + smoothstep(1., .45, length(dB));
+      return uv - uGaze * uEyeR * m;
+    }
     void main() {
-      vec4 c = texture(uKnight, vUV);
+      vec4 c = texture(uKnight, gazeUV(vUV));
       if (c.a < .003) discard;
       vec3 nr = texture(uNrm, vUV).rgb;
       vec2 e = nr.rg * 2. - 1.;
@@ -111,8 +123,9 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
   function init(fig: HTMLElement) {
     const canvas = fig.querySelector('canvas')!, img = fig.querySelector('img')!;
-    // face gardée d'une visite à l'autre (0 : avec casque, 1 : sans)
-    let face = 0; try { face = localStorage.getItem('kk-face') === '1' ? 1 : 0; } catch { /* */ }
+    // face affichée (0 : avec casque, 1 : sans) — le site s'ouvre toujours avec le casque
+    let face = 0;
+    try { localStorage.removeItem('kk-face'); } catch { /* */ }
     const FALLBACK = ['/portrait3d/portrait-fallback.webp', '/portrait3d/portrait-fallback2.webp'];
     if (face === 1) img.src = FALLBACK[1];
     // sans rendu 3D (ou « Réduire les animations ») : le clic échange simplement les deux images
@@ -120,7 +133,6 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       const r = fig.getBoundingClientRect();
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
       face = 1 - face; img.src = FALLBACK[face];
-      try { localStorage.setItem('kk-face', String(face)); } catch { /* */ }
       dispatchEvent(new CustomEvent('kk:flip', { detail: { face } }));
     };
     if (reduced()) { addEventListener('click', flipImg); return; } // image fixe, déjà en place
@@ -223,6 +235,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     const tgt = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
     // mode nuit : position de la bougie (uv du portrait), amortie ; passage jour / nuit en fondu
     const cand = { x: .5, y: .35, tx: .5, ty: .35 };
+    const gaze = { x: 0, y: 0 };                               // regard (en rayons d'iris), un peu plus vif que la tête
     let night = document.documentElement.dataset.theme === 'nuit' ? 1 : 0;
     let lastMove = -1e9, visible = true, raf = 0, ready = false;
     // volte-face : la face affichée, et le retournement en cours (de → vers)
@@ -234,9 +247,11 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     const draw = (t: number) => {
       raf = 0;
       if (!visible || document.hidden || !canvas.width) return;
-      const idle = tilt ? t - lastMove > 4000 : (!fine || t - lastMove > 2500);   // gyroscope : il suit le téléphone
+      const idle = !fine || t - lastMove > 2500;
       const gxv = idle ? Math.sin(t / 2600) * 0.45 : tgt.x, gyv = idle ? Math.sin(t / 3300 + 1) * 0.3 : tgt.y;
       cur.x += (gxv - cur.x) * 0.07; cur.y += (gyv - cur.y) * 0.07;
+      const gl0 = Math.hypot(gxv, gyv), gk = gl0 > 1 ? 1 / gl0 : 1;      // les yeux vont vers le pointeur, sans sortir de l'œil
+      gaze.x += (gxv * gk * .42 - gaze.x) * 0.16; gaze.y += (gyv * gk * .32 - gaze.y) * 0.16;
       night += ((document.documentElement.dataset.theme === 'nuit' ? 1 : 0) - night) * 0.06;
       if (idle) { cand.tx = .5 + Math.sin(t / 1900) * .22; cand.ty = .38 + Math.sin(t / 2700) * .12; }
       cand.x += (cand.tx - cand.x) * 0.12; cand.y += (cand.ty - cand.y) * 0.12;
@@ -290,6 +305,8 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.useProgram(knightP.p); gl.bindVertexArray(meshes[f]);
       gl.uniformMatrix4fv(knightP.u('uMVP'), false, mvp);
       gl.uniform1i(knightP.u('uKnight'), F.tex[0]); gl.uniform1i(knightP.u('uGeo'), F.tex[1]); gl.uniform1i(knightP.u('uNrm'), F.tex[2]);
+      gl.uniform4f(knightP.u('uEyes'), F.eyes[0], F.eyes[1], F.eyes[2], F.eyes[3]); gl.uniform2f(knightP.u('uEyeR'), F.r[0], F.r[1]);
+      gl.uniform2f(knightP.u('uGaze'), gaze.x, gaze.y);
       // pendant le tour, le relief s'aplatit (carte plate de profil, aucun étirement visible) puis se regonfle à l'arrivée
       const flat = flip ? Math.min(1, Math.abs(Math.sin(fa)) * 1.6) : 0;
       gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e) * (1 - .97 * flat)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
@@ -320,22 +337,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       lastMove = performance.now(); kick();
     }, { passive: true });
     document.documentElement.addEventListener('pointerleave', () => { lastMove = -1e9; });
-    // téléphone : le portrait suit l'inclinaison de l'appareil (gyroscope) ; sur iPhone, l'accès est demandé au premier toucher
-    let tilt = false, beta0: number | null = null;
-    const onTilt = (e: DeviceOrientationEvent) => {
-      if (e.gamma == null || e.beta == null) return;
-      if (beta0 === null) beta0 = e.beta;
-      tilt = true;
-      tgt.x = Math.max(-1, Math.min(1, e.gamma / 22)); tgt.y = Math.max(-1, Math.min(1, (e.beta - beta0) / 22));
-      cand.tx = .5 + tgt.x * .4; cand.ty = .4 + tgt.y * .3;              // nuit : la flamme suit aussi l'inclinaison
-      lastMove = performance.now(); kick();
-    };
-    if (!fine && 'DeviceOrientationEvent' in window) {
-      const DOE = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
-      if (typeof DOE.requestPermission === 'function') {
-        addEventListener('touchend', () => { DOE.requestPermission!().then((r) => { if (r === 'granted') addEventListener('deviceorientation', onTilt); }).catch(() => {}); }, { once: true });
-      } else addEventListener('deviceorientation', onTilt);
-    }
+
 
     const resize = () => {
       const dpr = Math.min(devicePixelRatio || 1, 2);
@@ -354,7 +356,6 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       const to = 1 - face;
       loadFace2().then(() => {
         flip = { t0: performance.now(), from: face, to, swapped: false }; face = to; kick();
-        try { localStorage.setItem('kk-face', String(to)); } catch { /* */ }
         dispatchEvent(new CustomEvent('kk:sound', { detail: 'flip' }));
       });
     };

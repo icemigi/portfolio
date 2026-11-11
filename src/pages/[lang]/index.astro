@@ -140,17 +140,16 @@ const t = ui[lang];
   const placePortrait = (ctx: CanvasRenderingContext2D, head: number, ph: HTMLElement | null) => {
     if (!pt) return;
     const AR = 1709 / 2334;
-    // téléphone : le cadre occupe le quart bas droit de l'écran, à cheval sur le nom, sans jamais cacher « kern »
+    // téléphone : en bas à droite, à cheval seulement sur « kast » et « le », avec de l'air autour
     if (ph) {
       const W = s1.clientWidth, H = s1.clientHeight, sr = s1.getBoundingClientRect();
-      const first = n.firstElementChild as HTMLElement;
+      const ing = n.querySelector<HTMLElement>('.l2 > span')!;            // « —ing » (sa propre ligne sur téléphone)
       const pr = document.createElement('i'); pr.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline';
-      first.appendChild(pr); const base1 = pr.getBoundingClientRect().top - sr.top; pr.remove();
-      const asc = ctx.measureText('k').actualBoundingBoxAscent;
-      const bottom = H - 22, topMin = base1 - asc * .1;                 // au plus, il effleure le pied de « kern »
-      const w = Math.min(W * .62, (H * .52) * AR, (bottom - topMin) * AR);
-      pt.style.display = '';
-      pt.style.width = `${w}px`; pt.style.left = `${W - w - W * .015}px`; pt.style.top = `${bottom - w / AR}px`;
+      ing.appendChild(pr); const base2 = pr.getBoundingClientRect().top - sr.top; pr.remove();
+      const bottom = H - 56, topMin = base2 + 10;                          // jamais au-dessus du pied de « —ing »
+      const w = Math.min(W * .46, (bottom - topMin) * AR);
+      pt.style.display = w < W * .26 ? 'none' : '';
+      pt.style.width = `${w}px`; pt.style.left = `${W - w - W * .06}px`; pt.style.top = `${bottom - w / AR}px`;
       return;
     }
     pt.style.display = '';
