@@ -86,7 +86,9 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       vec3 Ld = fl - pos; float att = 1. / (1. + 9. * dot(Ld, Ld)); vec3 Lf = normalize(Ld);
       float dif = max(dot(n, Lf), 0.), spf = pow(max(dot(n, normalize(Lf + vec3(0, 0, 1))), 0.), 48.) * metal;
       // pénombre de la pièce (le portrait reste lisible partout) + la flamme, qui porte assez loin pour éclairer tout le buste
-      vec3 night = rgb * (vec3(.20, .19, .21) + warm * 1.5 * att * dif) + warm * uSpec * 2.2 * spf * att;
+      // la peau prend une lumière enveloppante (la forme reste, sans ombres dures dans les traits)
+      float difN = mix(dif, .55 + .45 * dif, face);
+      vec3 night = rgb * (vec3(.20, .19, .21) + warm * 1.5 * att * difN) + warm * uSpec * 2.2 * spf * att;
       rgb = mix(day, min(night, 1.), uNight);
       o = vec4(rgb * c.a, c.a);
     }`;

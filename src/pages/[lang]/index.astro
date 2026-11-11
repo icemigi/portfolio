@@ -92,7 +92,7 @@ const t = ui[lang];
     /* téléphone : quatre lignes (kern / —ing / kast / le), le nom remplit l'écran */
     .name .l2 > span { display: block; }
     .name .l2 > span + span { margin-left: .06em; }
-    .phrase { left: var(--m); text-align: left; bottom: 72px; max-width: 46vw; } /* à gauche du portrait */
+    .phrase { left: var(--m); text-align: left; bottom: 72px; max-width: 43vw; } /* à gauche du portrait */
     .lab, .bt, .more, .list { grid-column: 1 / -1; }
   }
 </style>
@@ -148,7 +148,7 @@ const t = ui[lang];
       first.appendChild(pr); const base1 = pr.getBoundingClientRect().top - sr.top; pr.remove();
       const asc = ctx.measureText('k').actualBoundingBoxAscent;
       const bottom = base1 - asc * 0.62, top0 = head + 8;
-      const w = Math.min(W * 0.44, (bottom - top0) * AR);
+      const w = Math.min(W * 0.40, (bottom - top0) * AR);
       pt.style.display = w < W * 0.26 ? 'none' : '';
       pt.style.width = `${w}px`; pt.style.left = `${W - w - W * 0.035}px`; pt.style.top = `${bottom - w / AR}px`;
       return;
