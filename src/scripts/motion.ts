@@ -51,7 +51,12 @@ function holdKerning(chars: HTMLElement[]) {
 // Les changements ralentissent avant l'arrêt, comme une roue qui se pose. ~1,1 s pour « kerningkastle ».
 const SCR_POOL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>{}[]$€'];
 const SCR = { step: 55, mix: 320, fast: 40, slow: 95 };
+// écritures mélangées en cours (titre, apartés) : on peut les arrêter net, chaque lettre reprenant la sienne (changement de langue)
+const LIVE = new Set<() => void>();
+export function stopScrambles() { [...LIVE].forEach((f) => f()); }
 function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () => void {
+  const fin = chars.map((sp) => sp.textContent!);
+  let left = chars.length;
   const fs = parseFloat(getComputedStyle(chars[0]).fontSize);
   const cx = document.createElement('canvas').getContext('2d')!;
   cx.font = `${getComputedStyle(chars[0]).fontWeight} ${fs}px ${getComputedStyle(chars[0]).fontFamily}`;
@@ -67,7 +72,7 @@ function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () 
     let last = '', t = 0;
     const pick = () => { let r; do r = pool[(Math.random() * pool.length) | 0]; while (r === last && pool.length > 1); last = r; return r; };
     const tick = () => {
-      if (t >= R.mix) { sp.textContent = c; sp.style.width = ''; sp.style.textAlign = ''; return; } // se fixe
+      if (t >= R.mix) { sp.textContent = c; sp.style.width = ''; sp.style.textAlign = ''; if (--left === 0) LIVE.delete(stop); return; } // se fixe
       sp.textContent = pick();
       const gap = R.fast + (R.slow - R.fast) * (t / R.mix) ** 2; t += gap;
       timers.push(window.setTimeout(tick, gap));
@@ -75,8 +80,10 @@ function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () 
     sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60, delay: start, fill: 'backwards' });
     timers.push(window.setTimeout(tick, start));
   });
-  // arrêt immédiat (écran quitté, nouvelle apparition) : chaque lettre reprend la sienne
-  return () => { timers.forEach(clearTimeout); chars.forEach((sp) => { sp.style.width = ''; sp.style.textAlign = ''; }); };
+  // arrêt immédiat (écran quitté, nouvelle apparition, changement de langue) : chaque lettre reprend la sienne
+  const stop = () => { timers.forEach(clearTimeout); chars.forEach((sp, i) => { sp.textContent = fin[i]; sp.style.width = ''; sp.style.textAlign = ''; }); LIVE.delete(stop); };
+  LIVE.add(stop);
+  return stop;
 }
 
 export function letters(root: Element, delay = 300, extraSkip?: string): number {

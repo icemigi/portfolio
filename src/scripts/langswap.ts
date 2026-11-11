@@ -2,7 +2,7 @@
 // l'autre langue — une vague de signes tirés au hasard passe de gauche à droite et laisse derrière elle le nouveau texte,
 // comme le grand titre. Puis la page de l'autre langue s'ouvre au même écran, sans rejouer l'apparition (rien ne bouge).
 // Le texte cible vient de la page elle-même (déjà en cache, préchargée par Astro), lue bloc par bloc dans le même ordre.
-import { reduced } from './motion';
+import { reduced, settle, stopScrambles } from './motion';
 
 declare global { interface Window { kkScreens?: { current: () => number; el: (i: number) => HTMLElement } } }
 
@@ -85,6 +85,11 @@ document.addEventListener('click', (e) => {
   const timeout = new Promise<null>((r) => setTimeout(() => r(null), 900));
   Promise.race([fetch(url.href).then((r) => (r.ok ? r.text() : null)).catch(() => null), timeout]).then((html) => {
     if (!html) { go(); return; }
+    // une seule animation à la fois : l'apparition en cours (lettres qui montent, titre et apartés qui s'écrivent) est
+    // terminée net avant la réécriture — sinon les deux écrivent dans les mêmes lettres en même temps
+    stopScrambles();
+    settle(document.documentElement);
+    document.getAnimations().forEach((an) => { const t = (an.effect as KeyframeEffect | null)?.target as Element | null; if (t?.closest?.('.ch, .note, .parenthesis-reveal, .bp, .mono, [data-screens]')) try { an.finish(); } catch { /* animation sans fin */ } });
     const doc = new DOMParser().parseFromString(html, 'text/html');
     // même écran (même rang parmi les écrans de la page) et même menu
     const i = window.kkScreens?.current() ?? 0;
