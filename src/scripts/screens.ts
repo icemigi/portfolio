@@ -110,6 +110,17 @@ export function initScreens(host: HTMLElement): Screens {
     for (let n = 0; n < 24; n++) { const v = X(t); if (Math.abs(v - x) < 1e-5) break; if (v < x) lo = t; else hi = t; t = (lo + hi) / 2; }
     return Y(t);
   };
+  // son de molette : CRANS clics par écran parcouru, déclenchés par la position réelle de la bande (ils accélèrent et ralentissent
+  // avec la course, sans minuterie à part) ; le dernier cran, plus mat, tombe à l'arrivée
+  const CRANS = 8;
+  let cran = 0;
+  const sound = (name: string, v?: number) => dispatchEvent(new CustomEvent('kk:sound', { detail: { name, v } }));
+  const crank = () => {
+    const k = Math.floor(scroll / (H / CRANS));
+    if (k === cran) return;
+    cran = k;
+    sound('tick', Math.min(1, 0.45 + Math.abs(vel) * 0.25));
+  };
   const DUR = 480; // départ plus franc (courbe .45,0,.15,1) : le geste répond tout de suite, l'arrivée reste douce
   const arrive = () => {
     mv = null; busy = false; vel = 0; scroll = T[tgt]; pend = null;
@@ -127,8 +138,8 @@ export function initScreens(host: HTMLElement): Screens {
     scroll = Math.max(T[0], Math.min(T[T.length - 1], scroll));
     if (lastT) vel = (scroll - prev) / Math.max(1, now - lastT);
     lastT = now;
-    if (u >= 1) { arrive(); render(); return; }
-    render();
+    if (u >= 1) { arrive(); render(); sound('notch'); return; }
+    render(); crank();
     raf = requestAnimationFrame(tick);
   };
   const revealed = new Map<HTMLElement, number>();
@@ -143,9 +154,9 @@ export function initScreens(host: HTMLElement): Screens {
     // on arrive par le haut ou par le bas de l'écran ; un écran à débord masqué garde son cadrage (le « le » de l'accueil déborde)
     b.scrollTop = dir > 0 || getComputedStyle(b).overflowY === 'hidden' ? 0 : b.scrollHeight;
     emit('screens:leave', { from, to });
-    dispatchEvent(new CustomEvent('kk:sound', { detail: 'slide' }));
     tgt = to;
-    if (reduced()) { arrive(); render(); return; }
+    if (reduced()) { arrive(); render(); sound('notch'); return; }
+    cran = Math.floor(scroll / (H / CRANS));
     busy = true;
     b.classList.add('on');
     const now = performance.now();

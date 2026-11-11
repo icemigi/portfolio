@@ -1,0 +1,244 @@
+---
+// Portrait en relief (WebGL2) : chevalier en maillage déplacé par sa profondeur, cadre enluminé devant,
+// caméra en perspective qui suit la souris. Sans WebGL2 ou avec « Réduire les animations » : image fixe.
+// Assets (public/portrait3d/) régénérés par le script export_web.py ; sources PNG dans assets/portrait3D/web/.
+//   knight.webp : chevalier détouré, non découpé (le pochoir du cadre le découpe au rendu, dans le plan du cadre)
+//   frame.webp  : cadre ; geo.png : R,G = profondeur 16 bits, B = pochoir ; nrm.png : R,G = pente (racine signée), B = visage
+interface Props { lang: 'fr' | 'en'; class?: string; id?: string }
+const { lang, class: cls = '', id } = Astro.props;
+const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame';
+---
+<figure class:list={['p3d', cls]} id={id} data-p3d>
+  <img src="/portrait3d/portrait-fallback.webp" alt={alt} width="900" height="1229" decoding="async" fetchpriority="high" data-no-ascii />
+  <canvas aria-hidden="true"></canvas>
+</figure>
+
+<style>
+  /* légèrement incliné, comme sur la maquette (sens horaire) */
+  .p3d { position: absolute; margin: 0; aspect-ratio: 1709 / 2334; pointer-events: none; rotate: var(--p3d-rot, 8deg); }
+  .p3d img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  /* le canvas déborde de 5 % : la rotation reste dans le cadre du canvas, le portrait au repos couvre exactement l'image */
+  .p3d canvas { position: absolute; left: -5%; top: -5%; width: 110%; height: 110%; display: block; opacity: 0; transition: opacity .3s; }
+  .p3d.gl canvas { opacity: 1; }
+  .p3d.gl img { visibility: hidden; transition: visibility 0s .3s; }
+</style>
+
+<script>
+  import { reduced } from '../scripts/motion';
+
+  const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
+  const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
+  const GRID = [300, 380];
+  const SET = { relief: 0.42, angle: 10, spec: 0.45, shade: 0.2 };
+  // fond de la fenêtre : le bleu-gris de la photo d'origine, posé un peu derrière le cadre (il glisse sous les montants)
+  const BG = [0xc2 / 255, 0xd3 / 255, 0xdf / 255], BG_Z = -0.05;
+  const PAD = 1.1;                                           // canvas = 110 % du portrait
+
+  const KNIGHT_VS = `#version 300 es
+    in vec2 aUV; uniform mat4 uMVP; uniform highp sampler2D uGeo; uniform float uRelief, uAspect, uFocus;
+    out vec2 vUV;
+    float dep(ivec2 p, ivec2 s) {
+      vec4 g = texelFetch(uGeo, clamp(p, ivec2(0), s - 1), 0);
+      return (g.r * 65280. + g.g * 255.) / 65535.;
+    }
+    float depthAt(vec2 uv) {                                  // bilinéaire sur la profondeur 16 bits décodée
+      ivec2 s = textureSize(uGeo, 0);
+      vec2 f = uv * vec2(s) - .5; ivec2 i = ivec2(floor(f)); vec2 t = fract(f);
+      return mix(mix(dep(i, s), dep(i + ivec2(1, 0), s), t.x), mix(dep(i + ivec2(0, 1), s), dep(i + ivec2(1, 1), s), t.x), t.y);
+    }
+    void main() {
+      vUV = aUV;
+      gl_Position = uMVP * vec4((aUV.x - .5) * uAspect, .5 - aUV.y, (depthAt(aUV) - uFocus) * uRelief, 1.);
+    }`;
+  const KNIGHT_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax;
+    in vec2 vUV; out vec4 o;
+    void main() {
+      vec4 c = texture(uKnight, vUV);
+      if (c.a < .003) discard;
+      vec3 nr = texture(uNrm, vUV).rgb;
+      vec2 e = nr.rg * 2. - 1.;
+      vec2 g = sign(e) * e * e * uGmax;                       // pente de la profondeur par unité d'uv
+      vec3 n = normalize(vec3(-g.x * uRelief / uAspect, g.y * uRelief, 1.));
+      vec3 L = normalize(uLight), H = normalize(L + vec3(0, 0, 1));
+      vec3 rgb = c.rgb / c.a;
+      float sat = max(rgb.r, max(rgb.g, rgb.b)) - min(rgb.r, min(rgb.g, rgb.b));
+      float face = nr.b;                                      // visage, cheveux, sourcils : ni reflet ni ombrage
+      float metal = smoothstep(.22, .07, sat) * smoothstep(.12, .3, dot(rgb, vec3(.333))) * (1. - face);
+      float diff = clamp(dot(n, L), 0., 1.);
+      float spec = pow(max(dot(n, H), 0.), 56.) * metal;
+      rgb *= 1. + uShade * (diff - .8) * (1. - face);
+      rgb = min(rgb + uSpec * spec, 1.);
+      o = vec4(rgb * c.a, c.a);
+    }`;
+  const PLANE_VS = `#version 300 es
+    in vec2 aUV; uniform mat4 uMVP; uniform float uAspect, uZ, uScale; out vec2 vUV;
+    void main() { vUV = aUV; gl_Position = uMVP * vec4(vec2((aUV.x - .5) * uAspect, .5 - aUV.y) * uScale, uZ, 1.); }`;
+  const PLANE_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; in vec2 vUV; out vec4 o;
+    void main() {
+      vec4 t = texture(uTex, vUV);
+      if (uMode == 0) { if (t.b < .5) discard; o = vec4(0.); }   // pochoir : trou du cadre
+      else if (uMode == 2) o = vec4(uColor, 1.);                  // fond uni (limité au pochoir)
+      else o = t;                                                 // cadre
+    }`;
+
+  function init(fig: HTMLElement) {
+    const canvas = fig.querySelector('canvas')!;
+    if (reduced()) return;
+    const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, stencil: true, depth: true });
+    if (!gl) return;
+
+    const compile = (vs: string, fs: string) => {
+      const p = gl.createProgram()!;
+      for (const [t, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as const) {
+        const s = gl.createShader(t)!; gl.shaderSource(s, src); gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+        gl.attachShader(p, s);
+      }
+      gl.bindAttribLocation(p, 0, 'aUV'); gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+      const cache: Record<string, WebGLUniformLocation | null> = {};
+      return { p, u: (n: string) => (n in cache ? cache[n] : (cache[n] = gl.getUniformLocation(p, n))) };
+    };
+    let knightP: ReturnType<typeof compile>, planeP: ReturnType<typeof compile>;
+    try { knightP = compile(KNIGHT_VS, KNIGHT_FS); planeP = compile(PLANE_VS, PLANE_FS); } catch (e) { console.warn(e); return; }
+
+    const vao = (data: Float32Array, index?: Uint32Array) => {
+      const v = gl.createVertexArray(); gl.bindVertexArray(v);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      if (index) { gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW); }
+      gl.bindVertexArray(null); return v;
+    };
+    const quad = vao(new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]));
+    const [gx, gy] = GRID, verts = new Float32Array((gx + 1) * (gy + 1) * 2), idx = new Uint32Array(gx * gy * 6);
+    for (let j = 0, k = 0; j <= gy; j++) for (let i = 0; i <= gx; i++, k += 2) {
+      verts[k] = BOX[0] + ((BOX[2] - BOX[0]) * i) / gx; verts[k + 1] = BOX[1] + ((BOX[3] - BOX[1]) * j) / gy;
+    }
+    for (let j = 0, k = 0; j < gy; j++) for (let i = 0; i < gx; i++, k += 6) {
+      const a = j * (gx + 1) + i, b = a + 1, c = a + gx + 1, d = c + 1;
+      idx.set([a, c, b, b, c, d], k);
+    }
+    const mesh = vao(verts, idx);
+
+    // couleurs : prémultipliées, mip-maps ; données (geo, nrm) : brutes, sans gestion de couleur
+    const tex = (url: string, unit: number, data: boolean, nearest = false) => new Promise<void>((ok, ko) => {
+      const im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !data);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, data ? gl.NONE : gl.BROWSER_DEFAULT_WEBGL);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, im);
+        if (nearest) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        } else {
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          const an = gl.getExtension('EXT_texture_filter_anisotropic');
+          if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+        }
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        ok();
+      };
+      im.onerror = ko; im.src = url;
+    });
+
+    type M = Float32Array;
+    const mul = (a: M, b: M) => { const r = new Float32Array(16);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + j] * b[i * 4 + k]; r[i * 4 + j] = s; }
+      return r; };
+    const persp = (fov: number, asp: number, n: number, f: number) => { const t = 1 / Math.tan(fov / 2);
+      return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, (2 * f * n) / (n - f), 0]); };
+    const tr = (x: number, y: number, z: number) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
+    const rx = (a: number) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]); };
+    const ry = (a: number) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]); };
+    const sc = (k: number) => new Float32Array([k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1]);
+
+    // souris : direction du pointeur par rapport au centre du portrait ; au repos (ou au doigt), lente oscillation
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const tgt = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
+    let lastMove = -1e9, visible = true, raf = 0, ready = false;
+
+    const FOV = (20 * Math.PI) / 180, DIST = 0.5 / Math.tan(FOV / 2);
+    const kick = () => { if (!raf && ready) raf = requestAnimationFrame(draw); };
+    const draw = (t: number) => {
+      raf = 0;
+      if (!visible || document.hidden || !canvas.width) return;
+      const idle = !fine || t - lastMove > 2500;
+      const gxv = idle ? Math.sin(t / 2600) * 0.45 : tgt.x, gyv = idle ? Math.sin(t / 3300 + 1) * 0.3 : tgt.y;
+      cur.x += (gxv - cur.x) * 0.07; cur.y += (gyv - cur.y) * 0.07;
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0); gl.clearStencil(0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const a = (SET.angle * Math.PI) / 180;
+      const model = mul(rx(cur.y * a), mul(ry(-cur.x * a), sc(1 / PAD)));
+      const mvp = mul(persp(FOV, canvas.width / canvas.height, 0.1, 10), mul(tr(0, 0, -DIST), model));
+
+      // 1. pochoir : le trou du cadre, dans le plan du cadre (le chevalier n'en dépasse jamais, quel que soit l'angle)
+      gl.enable(gl.STENCIL_TEST); gl.colorMask(false, false, false, false);
+      gl.stencilFunc(gl.ALWAYS, 1, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+      gl.useProgram(planeP.p); gl.bindVertexArray(quad);
+      gl.uniformMatrix4fv(planeP.u('uMVP'), false, mvp); gl.uniform1f(planeP.u('uAspect'), ASPECT);
+      gl.uniform1f(planeP.u('uZ'), 0); gl.uniform1f(planeP.u('uScale'), 1);
+      gl.uniform1i(planeP.u('uTex'), 2); gl.uniform1i(planeP.u('uMode'), 0);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.colorMask(true, true, true, true);
+
+      // 2. fond uni, un peu derrière le cadre et plus grand que lui : il remplit toujours le trou, quel que soit l'angle
+      gl.stencilFunc(gl.EQUAL, 1, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+      gl.uniform1f(planeP.u('uZ'), BG_Z); gl.uniform1f(planeP.u('uScale'), 1.2);
+      gl.uniform1i(planeP.u('uMode'), 2); gl.uniform3f(planeP.u('uColor'), BG[0], BG[1], BG[2]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      // 3. chevalier en relief, limité au pochoir
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+      gl.useProgram(knightP.p); gl.bindVertexArray(mesh);
+      gl.uniformMatrix4fv(knightP.u('uMVP'), false, mvp);
+      gl.uniform1i(knightP.u('uKnight'), 1); gl.uniform1i(knightP.u('uGeo'), 2); gl.uniform1i(knightP.u('uNrm'), 3);
+      gl.uniform1f(knightP.u('uRelief'), SET.relief); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
+      gl.uniform1f(knightP.u('uSpec'), SET.spec); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), GMAX);
+      gl.uniform3f(knightP.u('uLight'), cur.x * 0.9, -cur.y * 0.9 + 0.25, 1.1);
+      gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
+      gl.disable(gl.DEPTH_TEST); gl.disable(gl.STENCIL_TEST);
+
+      // 4. cadre par-dessus
+      gl.useProgram(planeP.p); gl.bindVertexArray(quad);
+      gl.uniform1f(planeP.u('uZ'), 0); gl.uniform1f(planeP.u('uScale'), 1);
+      gl.uniform1i(planeP.u('uTex'), 0); gl.uniform1i(planeP.u('uMode'), 1);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      kick();
+    };
+
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      const r = fig.getBoundingClientRect();
+      tgt.x = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (innerWidth / 2)));
+      tgt.y = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (innerHeight / 2)));
+      lastMove = performance.now(); kick();
+    }, { passive: true });
+    document.documentElement.addEventListener('pointerleave', () => { lastMove = -1e9; });
+
+    const resize = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr);
+      kick();
+    };
+    new ResizeObserver(resize).observe(canvas);
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(fig);
+    document.addEventListener('visibilitychange', kick);
+
+    Promise.all([
+      tex('/portrait3d/frame.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
+      tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
+    ]).then(() => { ready = true; resize(); requestAnimationFrame(() => fig.classList.add('gl')); kick(); })
+      .catch((e) => console.warn('portrait 3D :', e));
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-p3d]').forEach(init);
+</script>

@@ -23,11 +23,10 @@ const noise = ({ f = 2000, q = 1, a = 0.005, r = 0.1, v = 0.05, to = 0, type = '
   env(g, t, a, v, r); s.connect(bp).connect(g).connect(master!); s.start(t, Math.random()); s.stop(t + a + r + 0.05);
 };
 
-type Opt = { at?: number; span?: number };
+type Opt = { at?: number; span?: number; v?: number };
 const S: Record<string, (o: Opt) => void> = {
   hover: () => noise({ f: 5200, q: 6, r: 0.03, v: 0.03 }),
   click: () => { noise({ f: 1400, q: 3, a: 0.003, r: 0.03, v: 0.018 }); tone(140, { a: 0.003, r: 0.04, v: 0.022, to: 110 }); },
-  slide: () => noise({ f: 700, to: 180, q: 0.6, a: 0.3, r: 0.4, v: 0.018, type: 'lowpass' }),
   // une frappe toutes les ~45 ms entre l'apparition de la première lettre et celle de la dernière
   letters: ({ at = 0, span = 0.4 }) => {
     const n = Math.max(3, Math.min(18, Math.round(span / 0.045)));
@@ -36,8 +35,24 @@ const S: Record<string, (o: Opt) => void> = {
   pick: () => tone(120, { a: 0.02, r: 0.14, v: 0.03, to: 160 }),
   drop: () => tone(120, { a: 0.003, r: 0.09, v: 0.035, to: 80 }),
   ring: () => tone(220, { a: 3.3, r: 0.2, v: 0.012, to: 330 }),
+  // molette à crans : un clic sec et aigu + un petit choc grave ; v (0..1) suit la vitesse ; hauteur légèrement variable (jamais mécanique)
+  tick: ({ v = 0.7 }) => {
+    noise({ f: 2300 + Math.random() * 700, q: 9, a: 0.001, r: 0.011, v: 0.022 * v });
+    tone(92 + Math.random() * 10, { a: 0.001, r: 0.018, v: 0.009 * v });
+  },
+  // dernier cran, à l'arrivée d'un écran : un peu plus mat et plus bas
+  notch: () => { noise({ f: 1700, q: 4, a: 0.002, r: 0.026, v: 0.022 }); tone(130, { a: 0.002, r: 0.05, v: 0.02, to: 98 }); },
+  // touche : la fiche spécimen change de lettre
+  key: () => noise({ f: 4200 + Math.random() * 900, q: 12, a: 0.001, r: 0.012, v: 0.014 }),
 };
-export const play = (name: string, o: Opt = {}) => { if (!on || !ctx || document.hidden) return; if (ctx.state === 'suspended') ctx.resume(); S[name]?.(o); };
+// garde-fou : jamais plus d'un clic de molette toutes les 26 ms (au-delà, on entendrait un bourdonnement, plus une molette) (un trackpad rapide en enverrait des dizaines d'un coup)
+let lastTick = 0;
+export const play = (name: string, o: Opt = {}) => {
+  if (!on || !ctx || document.hidden) return;
+  if (name === 'tick' || name === 'key') { const t = performance.now(); if (t - lastTick < 26) return; lastTick = t; }
+  if (ctx.state === 'suspended') { ctx.resume(); return; } // pas encore réveillé (aucun geste) : on n'empile pas de sons en attente
+  S[name]?.(o);
+};
 
 // bouton du menu
 const btn = document.querySelector<HTMLButtonElement>('[data-sound]');
@@ -71,5 +86,16 @@ document.addEventListener('click', (e) => {
   if (!el || el.matches('[data-sound]')) return;
   play('click');
 });
+// défilement libre (écran plus haut que la fenêtre, pages longues) : un cran tous les 56 px parcourus
+const CRAN = 56;
+const run = new WeakMap<Element, { y: number; a: number }>();
+document.addEventListener('scroll', (e) => {
+  const el = e.target === document ? document.scrollingElement : (e.target as Element);
+  if (!(el instanceof Element) || el.matches('.screens-host')) return;
+  const y = el.scrollTop, r = run.get(el);
+  if (!r) { run.set(el, { y, a: 0 }); return; }
+  r.a += Math.abs(y - r.y); r.y = y;
+  if (r.a >= CRAN) { r.a %= CRAN; play('tick', { v: 0.55 }); }
+}, { capture: true, passive: true });
 addEventListener('kk:sound', (e) => { const d = (e as CustomEvent).detail; if (typeof d === 'string') play(d); else play(d.name, d); });
 document.addEventListener('visibilitychange', () => { if (!ctx) return; document.hidden ? ctx.suspend() : ctx.resume(); });
