@@ -16,7 +16,7 @@ const items = [
 ] as const;
 ---
 <header class="site-header g mono">
-  <a class="home" href={`/${lang}/`} aria-label={t.home}><img src="/logo-coin-128.webp" alt="" width="52" height="50" /></a>
+  <a class="home" href={`/${lang}/`} aria-label={t.home}><img class="logo-ic" src="/logo-icon-128.webp" srcset="/logo-icon-128.webp 1x, /logo-icon-256.webp 2x" alt="" width="50" height="50" /></a>
   <nav id="site-nav" aria-label={lang === 'fr' ? 'Menu principal' : 'Main menu'} data-own-wheel data-own-touch>
     <ul>
       {items.map((i, k) => (

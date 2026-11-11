@@ -80,9 +80,7 @@ const t = ui[lang];
   .bub .dots i { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: kk-dot 1.2s ease-in-out infinite; }
   .bub .dots i:nth-child(2) { animation-delay: .15s; } .bub .dots i:nth-child(3) { animation-delay: .3s; }
   @keyframes kk-dot { 0%, 60%, 100% { opacity: .35; translate: 0 0; } 30% { opacity: 1; translate: 0 -3px; } }
-  /* nuit : la bulle prend l'encre claire du mode nuit, texte couleur de nuit */
-  :global(html[data-theme='nuit']) .bub { background: var(--fg); color: var(--bg); }
-  :global(html[data-theme='nuit']) .bub .dots i { background: var(--bg); }
+  /* nuit : la bulle reste orange, texte blanc */
   @media (hover: none), (max-width: 760px) { .bub { display: none; } }
   /* titre qui joue : la lettre survolée se remélange ; le signe tiré au hasard se pose par-dessus (la lettre devient
      transparente sans bouger), la mise en page ne change jamais */

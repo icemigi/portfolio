@@ -5,13 +5,16 @@ export type Vig = { src: string; label: { en: string; fr: string }; logo?: boole
 
 // Accueil, écran 2 : 3 vignettes (lettres, identités, images), animées, uniquement des travaux montrés en entier (jamais recadrés) ; régénérées par tools/vignettes.py.
 export const homeServices = {
-  fr: 'Je dessine {0} des lettres{m:beaucoup}, {1} des identités {2} et des images, à la main ou en code{m:selon l\'humeur}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
-  en: 'I draw {0} letters{m:a lot}, {1} identities {2} and images, by hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
+  fr: 'Je dessine des lettres{m:beaucoup} {0}, des identités {1} et des images {2}, à\u00a0la\u00a0main ou en code {3}{m:selon l\'humeur}, pour des artistes, des marques et des studios {4}{m:et pour moi, le dimanche}.',
+  en: 'I draw letters{m:a lot} {0}, identities {1} and images {2}, by\u00a0hand or in code {3}{m:depending on the mood}, for artists, brands and studios {4}{m:and myself, on Sundays}.',
 };
+// une vignette animée calée juste après chaque mot qu'elle illustre (fabriquées par tools/vignettes.py, images de l'archive)
 export const homeVigs: Vig[] = [
-  { src: '', label: { fr: 'lettre', en: 'letter' } },
-  { src: '', label: { fr: 'identité', en: 'identity' } },
-  { src: '', label: { fr: 'image', en: 'image' } },
+  { src: '/vig/h-lettres.webp', label: { fr: 'lettres', en: 'letters' } },
+  { src: '/vig/h-identites.webp', label: { fr: 'identités', en: 'identities' } },
+  { src: '/vig/h-images.webp', label: { fr: 'images', en: 'images' } },
+  { src: '/vig/h-main-code.webp', label: { fr: 'à la main, en code', en: 'by hand, in code' } },
+  { src: '/vig/h-clients.webp', label: { fr: 'pour des artistes, des marques, des studios', en: 'for artists, brands, studios' } },
 ];
 
 // À propos — 4 écrans

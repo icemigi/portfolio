@@ -80,9 +80,10 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       // n'éclaire que les surfaces tournées vers elle (le relief du métal s'allume, le reste plonge dans le noir) ; reflet chaud
       vec3 warm = vec3(1., .72, .45);
       vec3 pos = vec3((vUV.x - .5) * uAspect, .5 - vUV.y, vZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
-      vec3 Ld = fl - pos; float att = 1. / (1. + 22. * dot(Ld, Ld)); vec3 Lf = normalize(Ld);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 9. * dot(Ld, Ld)); vec3 Lf = normalize(Ld);
       float dif = max(dot(n, Lf), 0.), spf = pow(max(dot(n, normalize(Lf + vec3(0, 0, 1))), 0.), 48.) * metal;
-      vec3 night = rgb * warm * (.035 + 1.6 * att * dif) + warm * uSpec * 2.4 * spf * att;
+      // pénombre de la pièce (le portrait reste lisible partout) + la flamme, qui porte assez loin pour éclairer tout le buste
+      vec3 night = rgb * (vec3(.20, .19, .21) + warm * 1.5 * att * dif) + warm * uSpec * 2.2 * spf * att;
       rgb = mix(day, min(night, 1.), uNight);
       o = vec4(rgb * c.a, c.a);
     }`;
@@ -96,8 +97,8 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       vec4 t = texture(uTex, vUV);
       // nuit : le cadre et le fond, plats, reçoivent la flamme de biais (même source ponctuelle que le chevalier)
       vec3 pos = vec3(vec2((vUV.x - .5) * uAspect, .5 - vUV.y) * uScale, uZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
-      vec3 Ld = fl - pos; float att = 1. / (1. + 22. * dot(Ld, Ld));
-      vec3 lit = mix(vec3(1.), vec3(1., .72, .45) * (.035 + 1.6 * att * max(normalize(Ld).z, 0.)), uNight);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 9. * dot(Ld, Ld));
+      vec3 lit = mix(vec3(1.), vec3(.20, .19, .21) + vec3(1., .72, .45) * 1.5 * att * max(normalize(Ld).z, 0.), uNight);
       if (uMode == 0) { if (t.b < .5) discard; o = vec4(0.); }   // pochoir : trou du cadre
       else if (uMode == 2) o = vec4(uColor * lit, 1.);            // fond uni (limité au pochoir)
       else o = vec4(t.rgb * lit, t.a);                            // cadre (prémultiplié : la couleur seule est assombrie)

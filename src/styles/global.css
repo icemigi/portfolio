@@ -40,6 +40,10 @@ html[data-theme='nuit'] {
 html.theme-fade, html.theme-fade body, html.theme-fade .scr, html.theme-fade .site-header { transition: background-color .5s var(--out), color .5s var(--out); }
 .thm { font: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
 .thm svg { display: block; }
+/* le logo (cavalier noir) passe en encre claire la nuit */
+html[data-theme='nuit'] .logo-ic, html[data-theme='nuit'] .ld-fill { filter: invert(.92) sepia(.15); }
+/* le sceau de cire, la nuit : pris dans la pénombre (plus sombre, moins saturé, ombre plus profonde) */
+html[data-theme='nuit'] .seal { filter: brightness(.62) saturate(.82) sepia(.1) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
 .thm path { fill: transparent; transition: fill .35s var(--out); }
 html[data-theme='nuit'] .thm path { fill: currentColor; } /* la lune se remplit quand la nuit est active */
 /* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
@@ -110,7 +114,7 @@ input, textarea, [contenteditable] { cursor: text; }
 .site-header.solid { background: var(--bg); }
 /* le cavalier seul : c'est la signature */
 .site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; }
-.site-header .home img { width: 52px; height: auto; margin-block: -4px; flex: none; transition: rotate .5s var(--out); }
+.site-header .home img { width: 34px; height: auto; flex: none; transition: rotate .5s var(--out); }
 @media (hover: hover) { .site-header .home:hover img { rotate: -10deg; } }
 .site-header .nn, .site-header .lang-m, .site-header .burger { display: none; }
 .site-header nav { grid-column: 7 / 10; }
@@ -295,7 +299,7 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .ld-logo { position: relative; width: 64px; height: 64px; }
 .ld-logo img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .ld-logo img:first-child { opacity: .12; }
-.ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-coin-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
+.ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-icon-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
 
 /* ---------- indication de défilement ---------- */
@@ -308,3 +312,7 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 
 /* ---------- pièce du Lab ouverte dans une fenêtre du bureau (?embed) ---------- */
 .embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .lab .dots, .embed .lab .arw { display: none !important; }
+
+/* apparition du texte : pendant le mélange, la vraie lettre reste en place (invisible) et le signe tiré au hasard se pose dessus */
+.ch.sx { position: relative; -webkit-text-fill-color: transparent; }
+.ch.sx::after { content: attr(data-s); position: absolute; left: 50%; top: 0; translate: -50% 0; -webkit-text-fill-color: var(--mu); } /* le signe de passage, en gris */

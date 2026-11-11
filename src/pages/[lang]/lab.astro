@@ -31,7 +31,7 @@ const tiles = [
 const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tiles.slice(k * 4, k * 4 + 4));
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent, type modulaire), générateur héraldique, quiz et Letteroastd, sur un faux bureau.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters, modular type), heraldry generator, quiz and Letteroastd, on a fake desktop.'} path="lab/" active="lab">
-  <div class="boot" data-boot aria-hidden="true"><img src="/logo-coin.webp" alt="" width="84" height="80" /><span class="pb"><i data-pb></i></span></div>
+  <div class="boot" data-boot aria-hidden="true"><img class="logo-ic" src="/logo-icon-256.webp" alt="" width="84" height="84" /><span class="pb"><i data-pb></i></span></div>
   <h1 class="sr">Lab</h1>
   <!-- téléphone : défilement par écrans, comme le reste du site (intro, pièces par quatre, pied de page) -->
   <div class="lgrid screens-host">
@@ -134,7 +134,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
 
   /* ---------- bureau ---------- */
   .mac { position: fixed; inset: var(--head) 0 0 0; overflow: hidden; color: #1d1d1f; font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', var(--sans); font-size: 13px; line-height: 1.3; letter-spacing: -0.01em;
-    background: var(--bg) url(/logo-coin.webp) center 46% / min(22vh, 220px) no-repeat; } /* même fond que le menu du site : aucune limite entre les deux */
+    background: var(--bg) url(/logo-icon-512.webp) center 46% / min(22vh, 220px) no-repeat; } /* même fond que le menu du site : aucune limite entre les deux */
 
   /* widgets */
   /* Liquid Glass (macOS 26) : verre clair très transparent, flou + saturation du fond, liseré spéculaire
@@ -254,7 +254,7 @@ const pages = Array.from({ length: Math.ceil(tiles.length / 4) }, (_, k) => tile
   // ---------- icônes d'app (SVG) ----------
   const sq = (fill: string, body: string, defs = '') => `<svg viewBox="0 0 100 100"><defs>${defs}</defs><rect x="4" y="4" width="92" height="92" rx="21" fill="${fill}"/>${body}</svg>`;
   const ICONS: Record<string, string> = {
-    finder: `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="21" fill="#f3f3f3"/><image href="/logo-coin-128.webp" x="22" y="22" width="56" height="56"/></svg>`,
+    finder: `<svg viewBox="0 0 100 100"><rect x="4" y="4" width="92" height="92" rx="21" fill="#f3f3f3"/><image href="/logo-icon-128.webp" x="22" y="22" width="56" height="56"/></svg>`,
     vexillology: sq('url(#gv)', `<rect x="24" y="26" width="52" height="36" fill="#fff"/><rect x="24" y="26" width="17.3" height="36" fill="#111"/><rect x="58.7" y="26" width="17.3" height="36" fill="#e43"/><rect x="22" y="24" width="3" height="54" rx="1.5" fill="#fff"/>`, `<linearGradient id="gv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b8def"/><stop offset="1" stop-color="#2a55c9"/></linearGradient>`),
     ascii: sq('#141414', `<text x="50" y="44" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#8ef0a0">@#*+=</text><text x="50" y="60" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#5fbf73">:-=+*</text><text x="50" y="76" text-anchor="middle" font-family="Geist Mono, monospace" font-size="15" fill="#3c7f4a">. :-=</text>`),
     'modular-type': sq('#f3f3f3', `<g fill="#111"><rect x="30" y="30" width="12" height="12"/><rect x="44" y="30" width="12" height="12"/><rect x="58" y="44" width="12" height="12"/><rect x="30" y="58" width="12" height="12"/><rect x="44" y="58" width="12" height="12" rx="6"/><rect x="58" y="58" width="12" height="12"/><rect x="30" y="44" width="12" height="12" rx="6"/></g>`),

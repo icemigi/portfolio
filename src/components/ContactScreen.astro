@@ -71,7 +71,7 @@ const L = aboutLabels[lang];
     c.style.cssText = `position:fixed;left:0;top:0;width:${size}px;height:auto;z-index:80;pointer-events:none;will-change:transform,filter`;
     document.body.appendChild(c);
     seal.style.opacity = '0';
-    const FLY = 560, t0 = performance.now();
+    const FLY = 560, t0 = performance.now(), night = document.documentElement.dataset.theme === 'nuit';
     let hit = false;
     const smooth = (u: number) => u * u * (3 - 2 * u);
     const frame = (now: number) => {
@@ -99,7 +99,7 @@ const L = aboutLabels[lang];
         sqx = 1 + .12 * k; sqy = 1 / sqx; rot = -6;
       }
       c.style.transform = `translate(${x - size / 2}px, ${y - size / 2}px) rotate(${rot}deg) scale(${sc * sqx}, ${sc * sqy})`;
-      c.style.filter = `drop-shadow(${4 + 10 * lift}px ${6 + 26 * lift}px ${6 + 22 * lift}px rgba(0,0,0,${.28 - .12 * lift}))`;
+      c.style.filter = `${night ? 'brightness(.62) saturate(.82) sepia(.1) ' : ''}drop-shadow(${4 + 10 * lift}px ${6 + 26 * lift}px ${6 + 22 * lift}px rgba(0,0,0,${(night ? .5 : .28) - .12 * lift}))`;
       if (t < FLY + 900) requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
