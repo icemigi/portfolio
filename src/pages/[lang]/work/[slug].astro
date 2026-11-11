@@ -5,6 +5,7 @@ import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media, type Img } from '../../../data/media';
+import { captions } from '../../../data/captions';
 
 export function getStaticPaths() {
   return languages.flatMap((lang) => projects.map((p) => ({ params: { lang, slug: p.slug } })));
@@ -18,38 +19,61 @@ const next = projects[(index + 1) % projects.length];
 const nc = next[lang];
 const N = pad(projects.length);
 
-// écrans de contenu : rubriques, avec des images intercalées (vraies images si présentes, sinon emplacements)
+// écrans de contenu : une rubrique par écran (texte en 28 px), et quelques écrans de visuels groupés, à leur taille,
+// dans la colonne du texte. Le sommaire (colonne de gauche) suit la rubrique en cours.
+type Sec = { sec: number };
 type Block =
-  | { kind: 'rub'; k: string; paras: { t?: string; p: string }[] }
-  | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'gal'; layout: 'full' | 'pair'; labels: string[] }
-  | { kind: 'img'; imgs: Img[] }
-  | { kind: 'gen'; src: string };
+  | ({ kind: 'rub'; k: string; paras: { t?: string; p: string }[] } & Sec)
+  | ({ kind: 'list'; k: string; items: { k: string; v: string }[] } & Sec)
+  | ({ kind: 'img'; imgs: Img[] } & Sec)
+  | ({ kind: 'gal'; n: number } & Sec)
+  | ({ kind: 'gen'; src: string } & Sec);
 const M = media[project.slug];
 // grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
 const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(/\.webp$/, '-800.webp')} 800w, ${im.src} ${im.w}w` : undefined);
 const vid = (src: string) => /\.(mp4|webm)$/i.test(src); // boucle vidéo = « GIF » léger
-const gals = M?.gal ?? [];
-let gi = 0;
-const gallery = (layout: 'full' | 'pair'): Block | null =>
-  gals.length ? (gi < gals.length ? { kind: 'img', imgs: gals[gi++] } : null) : { kind: 'gal', layout, labels: [t.visual, t.visual] };
-const blocks: Block[] = [];
-const push = (b: Block | null) => { if (b) blocks.push(b); };
-if (c.text) blocks.push({ kind: 'rub', k: lang === 'fr' ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) });
-if (c.blocks?.length) blocks.push({ kind: 'list', k: lang === 'fr' ? 'En bref' : 'In short', items: c.blocks });
-c.sections.forEach((s, i) => {
-  blocks.push({ kind: 'rub', k: s.h, paras: s.paras });
-  const last = i === c.sections.length - 1;
-  if (!last && (gals.length || i % 2 === 0)) push(gallery(i % 4 === 0 ? 'full' : 'pair'));
-  if (project.generator && i === c.sections.length - 2) blocks.push({ kind: 'gen', src: project.generator });
-});
-if (!c.sections.length && !gals.length) push(gallery('pair'));
-while (gi < gals.length) push(gallery('full'));
 const tall = (i: Img) => i.h > i.w * 2;
+const units = [...(c.text ? [{ h: lang === 'fr' ? 'Le projet' : 'The project', paras: c.text.map((p) => ({ p })) }] : []), ...c.sections];
+const toc = units.map((u) => u.h);
+const U = units.length;
+// visuels : la couverture seule en premier, puis le reste réparti en quelques planches (6 images au plus chacune)
+const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src)] : [];
+const chunks: Img[][] = [];
+if (pool.length) {
+  chunks.push([pool[0]]);
+  const rest = pool.slice(1), talls = rest.filter(tall), flat = rest.filter((i) => !tall(i));
+  const V = Math.max(1, Math.min(Math.max(1, U - 2), Math.ceil(flat.length / 4)));
+  for (let k = 0; k < V && flat.length; k++) chunks.push(flat.splice(0, Math.min(6, Math.ceil(flat.length / (V - k)))));
+  while (flat.length) chunks.push(flat.splice(0, 6));
+  talls.forEach((im) => chunks.push([im]));
+}
+const after = new Map<number, Img[][]>();
+const rc = chunks.slice(1);
+rc.forEach((ch, j) => {
+  const at = Math.max(0, Math.min(U - 2, Math.floor(((j + 1) * U) / (rc.length + 1)) - 1));
+  after.set(at, [...(after.get(at) ?? []), ch]);
+});
+const blocks: Block[] = [];
+if (chunks.length) blocks.push({ kind: 'img', imgs: chunks[0], sec: 0 });
+units.forEach((u, i) => {
+  if (u.paras.length > 1 && u.paras.every((x) => x.t)) blocks.push({ kind: 'list', k: u.h, items: u.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })), sec: i });
+  else blocks.push({ kind: 'rub', k: u.h, paras: u.paras, sec: i });
+  (after.get(i) ?? []).forEach((ch) => blocks.push({ kind: 'img', imgs: ch, sec: i }));
+  if (!pool.length && i < U - 1 && i % 2 === 0) blocks.push({ kind: 'gal', n: 2, sec: i });
+  if (project.generator && i === U - 2) blocks.push({ kind: 'gen', src: project.generator, sec: i });
+});
+if (c.blocks?.length) blocks.push({ kind: 'list', k: lang === 'fr' ? 'En bref' : 'In short', items: c.blocks, sec: U - 1 });
+// mise en page d'une planche : images par rangée et nombre de rangées (bureau / téléphone)
+const grid = (n: number) => n === 1 ? { per: 1, rows: 1, pp: 1, pr: 1 } : n === 2 ? { per: 2, rows: 1, pp: 1, pr: 2 } : n <= 3 ? { per: 3, rows: 1, pp: 2, pr: 2 } : n === 4 ? { per: 2, rows: 2, pp: 2, pr: 2 } : { per: 3, rows: 2, pp: 2, pr: 3 };
 // textes alternatifs distincts : « titre — visuel 3 / 12 » (numéro dans l'ordre de la galerie)
-const allImgs = gals.flat();
+const allImgs = chunks.flat();
 const imgTotal = allImgs.length;
 const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
+// légende : celle de captions.ts, sinon « visuel 03/19 »
+const capOf = (im: Img) => captions[im.src]?.[lang] || `${lang === 'fr' ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
+// couverture du projet suivant, en petit, au cœur de l'anneau
+const NM = media[next.slug];
+const ncov = NM ? (NM.cover.w > 1000 ? NM.cover.src.replace(/\.webp$/, '-800.webp') : NM.cover.src) : '';
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
 const workLd = {
@@ -75,21 +99,33 @@ const workLd = {
         if (!e.viewTransition) return;
         if (!window.kkLeavingNext || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
         const h = document.querySelector('.next-title .vt'); if (h) h.style.viewTransitionName = 'case-title';
+        const l = document.querySelector('.nx [data-cl] .vl'); if (l) l.style.viewTransitionName = 'case-lab';
       });
       addEventListener('pagereveal', (e) => {
         if (!e.viewTransition) return;
         if (!window.kkArriving || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
         const h = document.querySelector('.case-h1 .vt'); if (h) h.style.viewTransitionName = 'case-title';
+        const l = document.querySelector('.s1 [data-cl] .vl'); if (l) l.style.viewTransitionName = 'case-lab';
       });
     </script>
   </Fragment>
 
+  <nav class="toc mono" aria-label={lang === 'fr' ? 'Sommaire' : 'Contents'} data-toc>
+    <ol>{toc.map((k, i) => <li><button type="button" data-go-sec={i}><span class="n">{pad(i + 1)}</span>{k.toLowerCase()}</button></li>)}</ol>
+    <p class="cap" data-capout aria-hidden="true"></p>
+  </nav>
+  {/* zoom : un visuel en grand, au clic ; Échap, clic ou molette pour revenir, flèches pour passer au suivant */}
+  <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={lang === 'fr' ? 'Visuel agrandi' : 'Enlarged visual'}>
+    <img alt="" decoding="async" />
+    <p class="lbc mono"><span data-lbc></span><span class="mu" data-lbn></span></p>
+  </div>
+
   <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
-        <p class="no mono mu par">{pad(index + 1)} / {N}</p>
-        <h1 class="case-h1 t56" id="case-title"><span class="vt">{c.title}</span></h1>
+        <p class="lab mono mu par" data-cl><span class="vl">{lang === 'fr' ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
         <p class="lead t28" data-hola>{c.lead}</p>
+        <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
         <dl class="fiche mono">
           <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
           <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
@@ -99,49 +135,51 @@ const workLd = {
       </div>
     </section>
 
-    <section class="scr open" data-still aria-label={t.opening}>
-      {M ? (vid(M.cover.src)
-           ? <video class="bleed cov" src={M.cover.src} width={M.cover.w} height={M.cover.h} autoplay muted loop playsinline aria-label={c.title}></video>
-           : <img class="bleed cov" src={M.cover.src} srcset={ss(M.cover)} sizes="100vw" width={M.cover.w} height={M.cover.h} alt={`${c.title} — ${c.short}`} decoding="async" fetchpriority="high" />)
-         : <div class="ph bleed" role="img" aria-label={`${t.opening} — ${t.visual}`}><i aria-hidden="true">{t.opening} — {t.visual}</i></div>}
-    </section>
-
     {blocks.map((b) =>
       b.kind === 'rub' ? (
-        <section class="scr">
-          <div class="in g rub">
-            <h2 class="k mono mu par">{b.k}</h2>
-            <div class="v" data-hola>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+        <section class="scr" data-sec={b.sec}>
+          <div class="in g">
+            <h2 class="lab sl mono mu par">{b.k}</h2>
+            <div class="bd txt t28" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
           </div>
         </section>
       ) : b.kind === 'list' ? (
-        <section class="scr">
-          <div class="in g rub">
-            <h2 class="k mono mu par">{b.k}</h2>
-            <dl class="v blk">{b.items.map((it) => <div><dt class="mono mu">{it.k}</dt><dd>{it.v}</dd></div>)}</dl>
+        <section class="scr" data-sec={b.sec}>
+          <div class="in g">
+            <h2 class="lab sl mono mu par">{b.k}</h2>
+            <ul class="bd idx" data-hola data-fit>
+              {b.items.map((it, i) => (
+                <li><span class="mono mu n">{pad(i + 1)}</span><h3 class="t28">{it.k}</h3><p class="mono mu dl">{it.v}</p></li>
+              ))}
+            </ul>
           </div>
         </section>
       ) : b.kind === 'img' ? (
-        <section class="scr" data-still={b.imgs.some(tall) ? undefined : ''}>
-          <div data-enter class:list={['in g gal im', b.imgs.length === 1 ? 'n1' : 'n2', b.imgs.some(tall) && 'tall']}>
-            {b.imgs.map((im) => vid(im.src)
-              ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
-              : <img class="md" src={im.src} srcset={ss(im)} sizes="(max-width: 760px) 100vw, 50vw" width={im.w} height={im.h} alt={`${c.title} — ${lang === 'fr' ? 'visuel' : 'visual'} ${imgNo(im)} / ${imgTotal}`} loading="lazy" decoding="async" />)}
+        <section class="scr" data-sec={b.sec} data-still={b.imgs.some(tall) ? undefined : ''}>
+          <div class="in g">
+            <p class="lab sl mono mu">{lang === 'fr' ? 'visuels' : 'visuals'} {pad(imgNo(b.imgs[0]))}{b.imgs.length > 1 && `–${pad(imgNo(b.imgs[b.imgs.length - 1]))}`}/{pad(imgTotal)}</p>
+            <div data-enter data-no-ascii class:list={['bd im', b.imgs.some(tall) && 'tall']} style={(({ per, rows, pp, pr }) => `--per:${per};--rows:${rows};--pp:${pp};--pr:${pr}`)(grid(b.imgs.length))}>
+              {b.imgs.map((im) => vid(im.src)
+                ? <video class="md" src={im.src} width={im.w} height={im.h} autoplay muted loop playsinline preload="metadata" aria-label={c.title}></video>
+                : <img class="md" src={im.src} srcset={ss(im)} sizes={b.imgs.length === 1 ? '(max-width: 760px) 100vw, 80vw' : '(max-width: 760px) 50vw, 40vw'} width={im.w} height={im.h} alt={`${c.title} — ${capOf(im)}`} data-cap={capOf(im)} data-n={`${pad(imgNo(im))}/${pad(imgTotal)}`} loading="lazy" decoding="async" />)}
+            </div>
           </div>
         </section>
       ) : b.kind === 'gen' ? (
-        <section class="scr">
-          <div class="in g gen">
-            <p class="k mono mu par">{lang === 'fr' ? 'Générateur — entrez une clé, obtenez son blason' : 'Generator — enter a key, get its coat of arms'}</p>
-            <iframe src={b.src} title={lang === 'fr' ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+        <section class="scr" data-sec={b.sec}>
+          <div class="in g">
+            <p class="lab sl mono mu par">{lang === 'fr' ? 'générateur' : 'generator'}</p>
+            <div class="bd gen">
+              <p class="mono mu">{lang === 'fr' ? 'entrez une clé, obtenez son blason' : 'enter a key, get its coat of arms'}</p>
+              <iframe src={b.src} title={lang === 'fr' ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
+            </div>
           </div>
         </section>
       ) : (
-        <section class="scr" data-still>
-          <div class:list={['in g gal', b.layout]}>
-            {b.layout === 'full'
-              ? <div class="ph f" role="img" aria-label={b.labels[0]}><i aria-hidden="true">{b.labels[0]}</i></div>
-              : b.labels.map((l) => <div class="ph h" role="img" aria-label={l}><i aria-hidden="true">{l}</i></div>)}
+        <section class="scr" data-sec={b.sec} data-still>
+          <div class="in g">
+            <p class="lab sl mono mu">{t.visual}</p>
+            <div class="bd im" style="--per:2;--rows:1;--pp:1;--pr:2">{Array.from({ length: b.n }, () => <div class="ph md" role="img" aria-label={t.visual}><i aria-hidden="true">{t.visual}</i></div>)}</div>
           </div>
         </section>
       ),
@@ -149,9 +187,13 @@ const workLd = {
 
     <section class="scr nx" aria-labelledby="next-l">
       <div class="in g">
-        <p class="k mono mu par" id="next-l">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</p>
-        <div class="tt"><h2 class="next-title t56"><span class="vt">{nc.title}</span></h2><p class="mono mu">{nc.short} — {next.yearLabel}</p></div>
-        <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
+        <p class="lab mono mu par" id="next-l" data-cl><span class="vl">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</span></p>
+        <div class="bd tt">
+          <h2 class="next-title t56"><span class="vt">{nc.title}</span></h2>
+          <p class="mono mu">{nc.short} — {next.yearLabel}</p>
+        </div>
+        <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next data-no-ascii aria-label={`${t.next} : ${nc.title}`}>
+          {ncov && <img class="rc" src={ncov} alt="" aria-hidden="true" loading="lazy" decoding="async" data-rc />}
           <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
           <span class="mono" aria-hidden="true">{t.nextShort}</span>
         </a>
@@ -169,6 +211,10 @@ const workLd = {
   ::view-transition-group(case-title) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
   ::view-transition-old(case-title) { animation: none; opacity: 0; }
   ::view-transition-new(case-title) { animation: none; }
+  ::view-transition-group(case-lab) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
+  ::view-transition-old(case-lab) { animation: kk-vt-out .45s both; }
+  ::view-transition-new(case-lab) { animation: kk-vt-in .9s both; }
+  @keyframes kk-vt-out { to { opacity: 0; } }
   ::view-transition { background: var(--bg); }
   ::view-transition-old(root) { animation: none; opacity: 0; }
   ::view-transition-new(root) { animation: kk-vt-in .9s both; }
@@ -179,84 +225,105 @@ const workLd = {
 </style>
 
 <style>
-  /* Gabarit projet : un seul squelette du début à la fin. Libellé en colonnes 1 à 3, contenu sur l'axe de la colonne 4,
-     chaque module commence à la même hauteur ; toutes les positions viennent de la grille du site. */
-  .open { overflow: hidden; }
-  @media (min-width: 761px) { .case .in { align-content: start; } }
+  /* Gabarit projet : libellé (ou sommaire) en colonnes 1 à 3, contenu sur l'axe de la colonne 4.
+     Page de garde : chapeau en haut, très grand titre en bas, fiche dessous. Texte courant en 28 px pour laisser la place aux visuels. */
+  .lab { grid-column: 1 / 4; align-self: first baseline; }
+  .bd { grid-column: 4 / 11; align-self: first baseline; }
 
-  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 32px; padding-top: calc(var(--head) + 24px); padding-bottom: 40px; }
-  .no { grid-column: 1 / 4; grid-row: 1; align-self: first baseline; }
-  .case-h1 { grid-column: 4 / -1; grid-row: 1; align-self: first baseline; }
-  .lead { grid-column: 4 / 11; grid-row: 3; }
+  .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 24px; padding-top: calc(var(--head) + 24px); padding-bottom: 32px; }
+  .s1 .lab { grid-row: 1; }
+  .lead { grid-column: 4 / 11; grid-row: 1; align-self: first baseline; }
+  .case-h1 { grid-column: 1 / -1; grid-row: 3; font-weight: 500; font-size: min(10.5vw, 17dvh); line-height: .86; letter-spacing: -0.05em; margin-left: -.05em; }
   .fiche { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding-top: 12px; }
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
 
-  .bleed { position: absolute; inset: 0; }
+  /* sommaire : fixe dans la colonne de gauche, la rubrique en cours en orange */
+  .toc { position: fixed; z-index: 40; left: var(--m); top: 0; opacity: 0; pointer-events: none; transition: opacity .35s var(--out, ease); }
+  .toc.on { opacity: 1; pointer-events: auto; }
+  .toc li + li { margin-top: 6px; }
+  .toc button { all: unset; cursor: pointer; display: flex; gap: 10px; font-size: 12px; color: var(--mu); transition: color .2s, translate .35s var(--out, ease); }
+  .toc .n { opacity: .6; }
+  .toc button.cur { color: var(--ac); translate: 6px 0; }
+  @media (hover: hover) { .toc button:not(.cur):hover { color: var(--fg); } }
+  .toc button:focus-visible { outline: 1px solid var(--ac); outline-offset: 3px; }
+  /* sur ordinateur le sommaire remplace le libellé de chaque écran (gardé pour les lecteurs d'écran) */
+  @media (min-width: 761px) { .sl { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
 
-  .rub { row-gap: 24px; align-items: first baseline; }
-  .rub .k { grid-column: 1 / 4; }
-  .rub .v { grid-column: 4 / 10; }
-  .rub .v p + p { margin-top: 16px; }
-  .rub b { font-weight: 500; }
-  .blk { display: grid; grid-template-columns: subgrid; }
-  .blk div { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding: 12px 0; }
-  .blk dt { grid-column: span 2; } .blk dd { grid-column: span 4; }
-  .blk div:last-child { border-bottom: 1px solid var(--ln); }
+  /* légende au survol d'un visuel : elle prend la place du sommaire */
+  .toc ol { transition: opacity .25s; }
+  .toc .cap { position: absolute; left: 0; top: 0; width: calc((100vw - 2 * var(--m)) / 4 - var(--gut)); font-size: 12px; line-height: 16px; text-transform: none; opacity: 0; transition: opacity .25s; }
+  .toc .cap .mu { display: block; margin-top: 4px; }
+  .toc.capping ol { opacity: 0; }
+  .toc.capping .cap { opacity: 1; }
+  .toc { transition: opacity .35s var(--out, ease), translate .6s cubic-bezier(.7, 0, .2, 1); }
 
-  .gal { row-gap: var(--gut); }
-  .gal .f { grid-column: 1 / -1; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 88px); }
-  .gal .h { grid-column: span 6; aspect-ratio: 4 / 3; }
+  .im { position: relative; }
+  .im img.md { cursor: zoom-in !important; }
+  .lb { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: calc(var(--head) + 8px) var(--m) 56px; background: color-mix(in srgb, var(--bg) 96%, transparent); }
+  .lb[hidden] { display: none; }
+  .lb img { max-width: 100%; max-height: calc(100dvh - var(--head) - 64px); width: auto; height: auto; object-fit: contain; cursor: zoom-out !important; }
+  .lbc { position: absolute; left: var(--m); bottom: 20px; right: var(--m); display: flex; justify-content: space-between; font-size: 12px; text-transform: none; }
 
-  .cov { top: var(--head); width: 100%; height: calc(100% - var(--head)); object-fit: cover; }
-  .im { align-items: start; }
-  /* une image plus petite que sa case reste calée sur l'angle supérieur gauche de sa colonne */
-  .im img { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; object-position: left top; }
-  .im.n1 img { grid-column: 1 / -1; }
-  .im.n2 img { grid-column: span 6; }
-  .im.tall img { max-height: none; }
-  .im.n1.tall img { grid-column: 4 / 12; }
-  .im .md { width: 100%; height: auto; max-height: calc(100dvh - var(--head) - 88px); object-fit: contain; object-position: left top; }
-  .im.n1 .md { grid-column: 1 / -1; } .im.n2 .md { grid-column: span 6; } .im.tall .md { max-height: none; } .im.n1.tall .md { grid-column: 4 / 12; }
+  .ring .rc { position: absolute; width: 84%; height: 84%; border-radius: 50%; object-fit: cover; scale: 0; opacity: 0; }
 
-  .gen { row-gap: 16px; }
-  .gen .k { grid-column: 1 / -1; }
-  .gen iframe { grid-column: 1 / -1; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 120px); border: 1px solid var(--ln); background: #fff; }
+  .txt p + p { margin-top: .7em; }
+  .txt b { font-weight: 500; }
 
-  .nx .in { align-items: first baseline; row-gap: 32px; }
-  .nx .k { grid-column: 1 / 4; }
-  .nx .tt { grid-column: 4 / 10; }
-  .nx .tt .mono { margin-top: 12px; }
-  .ring { grid-column: 10 / 13; justify-self: end; align-self: start; position: relative; width: 160px; height: 160px; display: grid; place-items: center; }
+  /* index (choix clés) : numéro, intitulé, explication */
+  .idx { display: grid; grid-template-columns: subgrid; row-gap: 20px; }
+  .idx > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
+  .idx .n { font-size: 12px; grid-column: 1; grid-row: 1; }
+  .idx h3 { grid-column: 2 / -1; font-weight: 500; }
+  .idx .dl { grid-column: 2 / -1; font-size: 12px; text-transform: none; }
+
+  /* planches : images à leur proportion, sans recadrage, rangées de même hauteur, jamais plus hautes que l'écran */
+  .im { --mh: calc(100dvh - var(--head) - 150px); grid-column: 4 / -1; align-self: start; display: flex; flex-wrap: wrap; gap: var(--gut); }
+  .lab:has(+ .im) { align-self: start; }
+  .im .md { display: block; height: calc((var(--mh) - (var(--rows) - 1) * var(--gut)) / var(--rows)); width: auto; min-width: 0;
+    max-width: calc((100% - (var(--per) - 1) * var(--gut)) / var(--per)); object-fit: contain; object-position: left top; }
+  .im .ph.md { flex: 1 1 0; aspect-ratio: 4 / 3; height: auto; }
+  .im.tall { grid-column: 4 / 9; }
+  .im.tall .md { height: auto; max-width: 100%; }
+
+  .gen { display: grid; row-gap: 16px; grid-column: 4 / -1; }
+  .gen iframe { width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 180px); border: 1px solid var(--ln); background: #fff; }
+
+  /* projet suivant : le titre attend en haut ; à l'ouverture il descend et grandit jusqu'à devenir le titre de la page de garde */
+  .nx .in { position: relative; align-content: start; }
+  .nx .tt > .mono { margin-top: 12px; }
+  .ring { position: absolute; right: var(--m); bottom: 40px; width: 160px; height: 160px; display: grid; place-items: center; }
   .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ring circle { fill: none; stroke-width: 1.5; }
   .ring .track { stroke: var(--ln); }
   .ring .arc { stroke: var(--fg); stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
+  .vl { display: inline-block; white-space: nowrap; }
 
   @media (max-width: 760px) {
-    .s1 .head { padding-top: calc(var(--head) + 24px); }
-    .no, .case-h1, .lead { grid-column: 1 / -1; }
-    .case-h1 { grid-row: 2; align-self: end; }
-    .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
+    .toc { display: none; }
+    .lab, .bd, .lead, .im, .im.tall, .gen { grid-column: 1 / -1; }
+    .s1 .head { grid-template-rows: auto auto 1fr auto auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(32px, 4dvh); }
+    .lead { grid-row: 2; }
+    .case-h1 { grid-row: 4; font-size: min(15vw, 12dvh); }
+    .fiche { grid-row: 5; grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
     .fiche > div { grid-column: auto; }
-    .rub .k, .rub .v { grid-column: 1 / -1; }
-    /* le texte courant suit la hauteur visible : une rubrique tient toujours dans son écran */
-    .rub .v { font-size: clamp(13px, 2.1dvh, 16px); line-height: 1.45; }
-    .rub .v p + p { margin-top: min(16px, 1.8dvh); }
-    .blk { display: block; }
-    .blk div { grid-template-columns: 1fr; row-gap: 4px; padding: min(12px, 1.3dvh) 0; }
-    .blk dt, .blk dd { grid-column: auto; }
-    .gal .h { grid-column: 1 / -1; }
-    .im.n2 img, .im.n1.tall img, .im.n2 .md, .im.n1.tall .md { grid-column: 1 / -1; }
-    /* deux images empilées : chacune prend une moitié de l'écran visible, le module reste verrouillé sur un écran */
-    .im.n2:not(.tall) img, .im.n2:not(.tall) .md { max-height: calc((100dvh - var(--head) - min(56px, 7dvh) - min(72px, 9dvh) - var(--gut)) / 2); }
-    .nx .k, .nx .tt { grid-column: 1 / -1; }
-    .ring { grid-column: 1 / -1; justify-self: start; width: 120px; height: 120px; }
+    .idx { grid-template-columns: 1fr auto; row-gap: min(20px, 2.4dvh); }
+    .idx h3 { grid-column: 1; grid-row: 1; }
+    .idx .n { grid-column: 2; grid-row: 1; justify-self: end; }
+    .idx .dl { grid-column: 1 / -1; grid-row: 2; }
+    /* téléphone : les images se règlent sur la largeur (1 ou 2 par rangée), la hauteur ne fait que plafonner */
+    .im { --mh: calc(100dvh - var(--head) - min(56px, 7dvh) - min(72px, 9dvh) - 40px); }
+    .im .md { width: calc((100% - (var(--pp) - 1) * var(--gut)) / var(--pp)); max-width: none; height: auto; max-height: calc((var(--mh) - (var(--pr) - 1) * var(--gut)) / var(--pr)); }
+    .im .ph.md { flex: none; width: 100%; }
+    .nx .in { align-content: start; padding-top: calc(var(--head) + 56px); }
+    .nx .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
+    .ring { width: 112px; height: 112px; bottom: min(72px, 9dvh); left: var(--m); right: auto; }
   }
 </style>
 
 <script>
   import { letters, fadeMono, reduced } from '../../../scripts/motion';
+  import { focusIn } from '../../../scripts/asciifocus';
   const run = () => {
     const api = window.kkScreens!;
     const host = document.querySelector<HTMLElement>('[data-screens]')!;
@@ -265,19 +332,49 @@ const workLd = {
     const arc = document.querySelector<SVGCircleElement>('[data-arc]')!;
     const RING = 3500;
     let fill: Animation | null = null;
+    const rc = document.querySelector<HTMLImageElement>('[data-rc]'), rlab = ring.querySelector<HTMLElement>('span');
+    let grow: Animation[] = [];
 
     // arrivée par « Projet suivant », sans transition entre pages : le titre part de là où il était sur la page précédente
     // (position mémorisée) et glisse jusqu'à sa place — même trajet et même courbe que la transition native
     const root = document.documentElement;
     if (root.classList.contains('kk-flip')) {
       const h = document.querySelector<HTMLElement>('.case-h1 .vt')!, hd = document.querySelector<HTMLElement>('.site-header');
-      let from: { x: number; y: number } | null = null;
+      let from: { x: number; y: number; w?: number } | null = null;
       try { from = JSON.parse(sessionStorage.getItem('kk-next-r') || 'null'); sessionStorage.removeItem('kk-next-r'); } catch { /* */ }
       const r = h.getBoundingClientRect();
       root.classList.remove('kk-flip');
-      if (from) h.animate([{ transform: `translate(${from.x - r.left}px, ${from.y - r.top}px)` }, { transform: 'none' }], { duration: 900, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+      const k = from?.w ? from.w / r.width : 1;
+      if (from) h.animate([{ transformOrigin: '0 0', transform: `translate(${from.x - r.left}px, ${from.y - r.top}px) scale(${k})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
       hd?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 620, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
     }
+
+    // texte d'affiche : 56 px comme ailleurs ; si un paragraphe ne tient pas dans son écran (téléphone, fenêtre basse),
+    // il descend par paliers jusqu'à tenir, sans passer sous la taille du chapeau (t28)
+    const fit = () => document.querySelectorAll<HTMLElement>('[data-fit]').forEach((el) => {
+      const scr = el.closest<HTMLElement>('.scr')!;
+      const big = el.classList.contains('idx') ? [...el.querySelectorAll<HTMLElement>('h3')] : [el];
+      if (!big.length) return;
+      big.forEach((b) => { b.style.fontSize = ''; });
+      const min = innerWidth <= 760 ? 14 : 17;
+      let f = parseFloat(getComputedStyle(big[0]).fontSize);
+      while (scr.scrollHeight > scr.clientHeight + 1 && f > min) {
+        f -= 2;
+        big.forEach((b) => { b.style.fontSize = f + 'px'; });
+      }
+    });
+    const fitTitle = () => {
+      const h = document.querySelector<HTMLElement>('.case-h1'), v = h?.querySelector<HTMLElement>('.vt');
+      if (!h || !v) return;
+      h.style.fontSize = '';
+      const room = h.clientWidth, w = v.getBoundingClientRect().width;
+      if (w > room) h.style.fontSize = parseFloat(getComputedStyle(h).fontSize) * room / w * 0.98 + 'px';
+    };
+    let ft = 0;
+    fitTitle(); document.fonts.ready.then(fitTitle);
+    addEventListener('resize', () => { fitTitle(); });
+    fit(); document.fonts.ready.then(fit);
+    addEventListener('resize', () => { clearTimeout(ft); ft = window.setTimeout(fit, 150); });
 
     // arrivée par « Projet suivant » : le titre arrive par la transition, le reste lettre par lettre
     if ((window as any).kkArriving) {
@@ -293,32 +390,96 @@ const workLd = {
       // sans transition entre pages : tout s'efface autour du titre du projet suivant, qui reste seul à l'écran ; on note sa place
       if (!reduced() && !(window as any).kkXVT) {
         const h = document.querySelector<HTMLElement>('.next-title .vt'), b = h?.getBoundingClientRect();
-        try { if (b) sessionStorage.setItem('kk-next-r', JSON.stringify({ x: b.left, y: b.top })); } catch { /* */ }
-        const fade = [...document.querySelectorAll<HTMLElement>('.site-header, .more-arrow, .nx .k, .nx .tt p, .nx .ring')];
+        try { if (b) sessionStorage.setItem('kk-next-r', JSON.stringify({ x: b.left, y: b.top, w: b.width })); } catch { /* */ }
+        const fade = [...document.querySelectorAll<HTMLElement>('.site-header, .more-arrow, .nx .lab, .nx .tt > p, .nx .ring')];
         Promise.all(fade.map((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished))
           .then(() => { location.href = ring.href; });
         return;
       }
       location.href = ring.href;
     };
-    const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } };
+    const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } grow.forEach((a) => a.cancel()); grow = []; };
     const start = () => {
       stop();
       if (reduced()) return; // pas d'ouverture automatique : l'anneau s'ouvre au clic
       fill = arc.animate([{ strokeDashoffset: 339.3 }, { strokeDashoffset: 0 }], { duration: RING, easing: 'linear', fill: 'forwards' });
-      if (document.hidden) fill.pause();
+      // la couverture du projet suivant grandit au cœur de l'anneau pendant qu'il se remplit ; le mot « suivant » s'efface
+      if (rc) grow = [rc.animate([{ scale: 0, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: RING, easing: 'cubic-bezier(.3, 0, .2, 1)', fill: 'forwards' }),
+        ...(rlab ? [rlab.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RING * 0.4, delay: RING * 0.2, fill: 'forwards' })] : [])];
+      if (document.hidden) { fill.pause(); grow.forEach((a) => a.pause()); }
       dispatchEvent(new CustomEvent('kk:sound', { detail: 'ring' }));
       fill.onfinish = open;
     };
     host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
 
+    // ---------- sommaire ----------
+    const toc = document.querySelector<HTMLElement>('[data-toc]');
+    if (toc) {
+      const btns = [...toc.querySelectorAll<HTMLButtonElement>('[data-go-sec]')];
+      // comme le libellé des autres pages : la rubrique en cours se pose sur la première ligne du contenu de l'écran
+      // (ligne de base du texte, haut des images) ; la liste glisse pour l'y amener
+      const align = (i: number, cur?: HTMLElement) => {
+        const scr = api.el(i), bd = scr?.querySelector<HTMLElement>('.bd');
+        if (!scr || !bd || !cur) return;
+        const top = bd.getBoundingClientRect().top - scr.getBoundingClientRect().top;
+        let y: number;
+        if (bd.classList.contains('im') || bd.classList.contains('gen')) y = top - cur.offsetTop - 1;
+        else {
+          const first = bd.querySelector<HTMLElement>('p, h3') || bd, cs = getComputedStyle(first);
+          const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3, fs = parseFloat(cs.fontSize);
+          const base = first.getBoundingClientRect().top - scr.getBoundingClientRect().top + (lh + fs * 0.7) / 2; // ligne de base du texte
+          y = base - (cur.offsetTop + cur.offsetHeight / 2 + 4);                                                  // ligne de base du sommaire (12 px)
+        }
+        toc.style.translate = `0 ${Math.round(y)}px`;
+      };
+      const upd = (i: number) => {
+        const sec = api.el(i)?.dataset.sec;
+        toc.classList.toggle('on', sec != null);
+        let cur: HTMLElement | undefined;
+        btns.forEach((b) => { const on = b.dataset.goSec === sec; b.classList.toggle('cur', on); if (on) { cur = b; b.setAttribute('aria-current', 'step'); } else b.removeAttribute('aria-current'); });
+        align(i, cur);
+      };
+      addEventListener('resize', () => upd(api.current()));
+      // légende au survol d'un visuel : à la place du sommaire, à hauteur du haut de l'image
+      const capOut = toc.querySelector<HTMLElement>('[data-capout]')!;
+      document.querySelectorAll<HTMLImageElement>('.im img.md').forEach((im) => {
+        im.addEventListener('pointerenter', () => {
+          const cap = im.dataset.cap || '', n = im.dataset.n || '';
+          capOut.innerHTML = '';
+          capOut.append(cap);
+          if (!cap.endsWith(n)) { const m = document.createElement('span'); m.className = 'mu'; m.textContent = n; capOut.append(m); }
+          const cur = toc.querySelector<HTMLElement>('button.cur');
+          capOut.style.top = (cur?.offsetTop ?? 0) + 'px';
+          toc.classList.add('capping');
+        });
+        im.addEventListener('pointerleave', () => toc.classList.remove('capping'));
+      });
+      host.addEventListener('screens:leave', (e) => upd((e as CustomEvent).detail.to));
+      host.addEventListener('screens:enter', (e) => upd((e as CustomEvent).detail.index));
+      upd(api.current());
+      btns.forEach((b) => b.addEventListener('click', () => {
+        for (let j = 0; j < api.count; j++) if (api.el(j)?.dataset.sec === b.dataset.goSec) { api.go(j); return; }
+      }));
+    }
+
     // ---------- entrée des images ----------
     // une seule entrée, en transform et opacity seulement (animées sans repeindre l'image), jouée pendant la fin du glissement
     const OUT = 'cubic-bezier(.2,.7,.2,1)';
     const STAGGER = 120, ENTER = 640;
+    const phone = matchMedia('(max-width: 760px)');
+    const seen = new WeakSet<Element>();
     const play = (scr: HTMLElement, delay: number) => {
       if (reduced()) return;
-      scr.querySelector<HTMLElement>('[data-enter]')?.querySelectorAll<HTMLElement>('.md').forEach((m, i) => {
+      const box = scr.querySelector<HTMLElement>('[data-enter]');
+      if (!box) return;
+      // ordinateur : mise au point ASCII, une fois par écran (signes Geist Mono colorés par l'image, qui s'affinent jusqu'au net)
+      if (!phone.matches) {
+        if (seen.has(box)) return;
+        seen.add(box);
+        box.querySelectorAll<HTMLImageElement>('img.md').forEach((m, i) => { m.loading = 'eager'; focusIn(m, delay + i * 140); });
+        return;
+      }
+      box.querySelectorAll<HTMLElement>('.md').forEach((m, i) => {
         const a = m.animate([{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }], { duration: ENTER, delay: i * STAGGER, easing: OUT, fill: 'backwards' });
         a.startTime = (document.timeline.currentTime as number) + delay;
       });
@@ -326,8 +487,63 @@ const workLd = {
     host.addEventListener('screens:leave', (e) => { const to = (e as CustomEvent).detail.to; const el = api.el(to); if (el) play(el, 220); });
     host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
     host.addEventListener('screens:beyond', open);
+    // préchargement : les images de l'écran d'après, et la page du projet suivant dès qu'on approche de la fin
+    let pre = false;
+    host.addEventListener('screens:enter', (e) => {
+      const i = (e as CustomEvent).detail.index;
+      api.el(i + 1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
+      if (!pre && i >= last - 2) {
+        pre = true;
+        const l = document.createElement('link'); l.rel = 'prefetch'; l.href = ring.href; document.head.appendChild(l);
+        if (rc) rc.loading = 'eager';
+      }
+    });
+
+    // ---------- zoom ----------
+    const lb = document.querySelector<HTMLElement>('[data-lb]')!, lbImg = lb.querySelector('img')!;
+    const lbc = lb.querySelector<HTMLElement>('[data-lbc]')!, lbn = lb.querySelector<HTMLElement>('[data-lbn]')!;
+    const all = [...document.querySelectorAll<HTMLImageElement>('.im img.md')];
+    let at = -1;
+    const full = (m: HTMLImageElement) => m.getAttribute('data-real') || m.getAttribute('src') || '';
+    const show = (i: number) => {
+      at = (i + all.length) % all.length;
+      const m = all[at];
+      lbImg.src = full(m); lbImg.width = m.width; lbImg.height = m.height;
+      const cap = m.dataset.cap || '', n = m.dataset.n || '';
+      lbc.textContent = cap; lbn.textContent = cap.endsWith(n) ? '' : n;
+    };
+    const block = (e: Event) => {
+      e.stopPropagation();
+      if (e.type === 'wheel') { close(); return; }
+      if (e.type !== 'keydown') return;
+      const k = (e as KeyboardEvent).key;
+      if (k === 'Escape') close();
+      else if (k === 'ArrowRight' || k === 'ArrowDown') show(at + 1);
+      else if (k === 'ArrowLeft' || k === 'ArrowUp') show(at - 1);
+      e.preventDefault();
+    };
+    const EVS = ['wheel', 'keydown', 'touchstart'] as const;
+    const openLb = (m: HTMLImageElement) => {
+      show(all.indexOf(m));
+      lb.hidden = false;
+      EVS.forEach((t) => addEventListener(t, block, { capture: true, passive: false }));
+      if (reduced()) return;
+      // l'image part de sa place dans la page et s'agrandit (FLIP), le fond se pose en fondu
+      const a = m.getBoundingClientRect(), b = lbImg.getBoundingClientRect();
+      if (b.width) lbImg.animate([{ transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})` }, { transformOrigin: '0 0', transform: 'none' }], { duration: 560, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+      lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 360, easing: 'ease-out' });
+      lb.querySelector('.lbc')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' });
+    };
+    function close() {
+      if (lb.hidden) return;
+      EVS.forEach((t) => removeEventListener(t, block, { capture: true }));
+      if (reduced()) { lb.hidden = true; return; }
+      lb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(() => { lb.hidden = true; });
+    }
+    all.forEach((m) => m.addEventListener('click', () => openLb(m)));
+    lb.addEventListener('click', close);
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
-    document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); });
+    document.addEventListener('visibilitychange', () => { if (!fill) return; [fill, ...grow].forEach((a) => (document.hidden ? a.pause() : a.play())); });
     // un clic ailleurs (menu…) annule le minuteur
     document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
     addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
