@@ -46,6 +46,39 @@ function holdKerning(chars: HTMLElement[]) {
   });
 }
 
+// Grand titre de l'accueil : il s'écrit de gauche à droite, chaque lettre passe par des caractères tirés au hasard
+// (majuscules, minuscules, chiffres, signes) de largeur voisine — le mot ne tressaute pas — puis se fixe.
+// Les changements ralentissent avant l'arrêt, comme une roue qui se pose. ~1,1 s pour « kerningkastle ».
+const SCR_POOL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>{}[]$€'];
+const SCR = { step: 55, mix: 320, fast: 40, slow: 95 };
+function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () => void {
+  const fs = parseFloat(getComputedStyle(chars[0]).fontSize);
+  const cx = document.createElement('canvas').getContext('2d')!;
+  cx.font = `${getComputedStyle(chars[0]).fontWeight} ${fs}px ${getComputedStyle(chars[0]).fontFamily}`;
+  const wOf = new Map(SCR_POOL.map((c) => [c, cx.measureText(c).width]));
+  const timers: number[] = [];
+  chars.forEach((sp, i) => {
+    const c = sp.textContent!, target = cx.measureText(c).width;
+    const near = SCR_POOL.filter((x) => x !== c && Math.abs(wOf.get(x)! - target) <= target * 0.18);
+    const pool = near.length > 2 ? near : SCR_POOL;
+    // la case garde la largeur exacte de sa lettre (crénage reporté compris) pendant le mélange
+    sp.style.width = `${(sp.getBoundingClientRect().width / fs).toFixed(4)}em`; sp.style.textAlign = 'center';
+    const start = delay + i * R.step;
+    let last = '', t = 0;
+    const pick = () => { let r; do r = pool[(Math.random() * pool.length) | 0]; while (r === last && pool.length > 1); last = r; return r; };
+    const tick = () => {
+      if (t >= R.mix) { sp.textContent = c; sp.style.width = ''; sp.style.textAlign = ''; return; } // se fixe
+      sp.textContent = pick();
+      const gap = R.fast + (R.slow - R.fast) * (t / R.mix) ** 2; t += gap;
+      timers.push(window.setTimeout(tick, gap));
+    };
+    sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60, delay: start, fill: 'backwards' });
+    timers.push(window.setTimeout(tick, start));
+  });
+  // arrêt immédiat (écran quitté, nouvelle apparition) : chaque lettre reprend la sienne
+  return () => { timers.forEach(clearTimeout); chars.forEach((sp) => { sp.style.width = ''; sp.style.textAlign = ''; }); };
+}
+
 export function letters(root: Element, delay = 300, extraSkip?: string): number {
   if (reduced()) return 0;
   settle(root);
@@ -54,18 +87,21 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   if (!total) return 0;
   const step = Math.min(28, 1400 / total);
   const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
-  const lifted: HTMLElement[] = [];
+  const lifted: HTMLElement[] = [], named: HTMLElement[] = [], finals: string[] = [];
   let k = 0;
   for (const n of nodes) {
     const text = n.nodeValue!;
-    const isTitle = !PHONE && !!n.parentElement?.closest('.name');
+    const isName = !!n.parentElement?.closest('.name');                 // titre de l'accueil : écriture mélangée
+    const isTitle = !PHONE && isName;
     const f = document.createDocumentFragment();
     for (const c of text) {
       if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); continue; }
       const sp = document.createElement('span');
       sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
       f.appendChild(sp);
+      if (isName) { named.push(sp); finals.push(c); k++; continue; }
       const rise = isTitle ? [{ opacity: 0, transform: 'translateY(.35em)' }, { opacity: 1, transform: 'none' }] : [{ opacity: 0, top: '.35em' }, { opacity: 1, top: '0em' }];
+      sp.dataset.d = String(delay + k * step);                 // instant d'apparition : l'aparté qui suit ce mot part de là
       sp.animate(PHONE ? [{ opacity: 0 }, { opacity: 1 }] : rise, { duration: PHONE ? 360 : 420, delay: delay + k++ * step, easing: EASE_OUT, fill: 'backwards' });
       if (isTitle) lifted.push(sp);
     }
@@ -74,6 +110,8 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
     groups.push({ text, first, last });
   }
   if (lifted.length) holdKerning(lifted);
+  if (named.length) holdKerning(named);
+  const stopScramble = named.length ? scramble(named, delay) : null;
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
   const textEnd = delay + k * step + 440;
@@ -82,6 +120,8 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   parens.forEach((p, i) => p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: PAREN_FADE, delay: textEnd + i * (PAREN_FADE + PAREN_GAP), easing: EASE_OUT, fill: 'backwards' }));
   const end = textEnd + parens.length * (PAREN_FADE + PAREN_GAP);
   pending.set(root, () => {
+    stopScramble?.();
+    named.forEach((sp, i) => (sp.textContent = finals[i]));
     root.getAnimations({ subtree: true }).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
       if (!first.parentNode) continue;
@@ -135,30 +175,38 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   return end;
 }
 
-// Une fois le texte écrit : les apartés entre parenthèses se tapent à la machine, caractère par caractère (Geist Mono,
-// chasse fixe : rien ne bouge autour), puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans,
-// et son + fait un tour pour attirer l'œil.
-const TYPE = 18; // ms par caractère
+// Une fois le texte écrit : les apartés entre parenthèses s'écrivent comme le titre de l'accueil — chaque caractère passe par
+// des signes au hasard avant de se fixer (Geist Mono, chasse fixe : rien ne bouge autour) ; les parenthèses, elles, sont posées
+// d'emblée. Puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans, et son + fait un tour pour attirer l'œil.
+const TYPE = 26; // ms entre deux caractères
+const NOTE_SCR = { step: TYPE, mix: 240, fast: 35, slow: 80 };
 const NOTE_STAGGER = 220; // écart entre les départs de deux apartés
 function type(el: HTMLElement, delay: number): number {
   const text = (el.dataset.txt ??= el.textContent || '');
   el.textContent = '';
-  const f = document.createDocumentFragment();
+  const f = document.createDocumentFragment(), mixed: HTMLElement[] = [];
   let k = 0;
   for (const c of text) {
-    if (c === ' ') { f.appendChild(document.createTextNode(' ')); k++; continue; }
+    if (c === ' ') { f.appendChild(document.createTextNode(' ')); continue; }
     const sp = document.createElement('span'); sp.textContent = c;
-    sp.animate([{ opacity: 0 }, { opacity: 0, offset: 0.99 }, { opacity: 1 }], { duration: delay + k++ * TYPE, fill: 'backwards' });
+    if (c === '(' || c === ')') sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: c === '(' ? delay : delay + k * TYPE, fill: 'backwards' });
+    else { mixed.push(sp); k++; }
     f.appendChild(sp);
   }
   el.appendChild(f);
+  if (mixed.length) scramble(mixed, delay + 40, NOTE_SCR);
   dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
-  return delay + k * TYPE;
+  return delay + k * TYPE + NOTE_SCR.mix;
 }
 function afterText(frame: Element, end: number, start = end) {
   if (reduced()) return;
-  // les apartés entre parenthèses suivent le texte en cascade : chacun démarre peu après le précédent, sans attendre sa fin
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => { type(n, end - 200 + i * NOTE_STAGGER); });
+  // les apartés entre parenthèses s'écrivent au fil du texte : chacun part quand la cascade atteint le mot qu'il commente
+  // (sa dernière lettre vient d'apparaître) ; à défaut, après le texte, en cascade comme avant
+  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => {
+    const before = [...(n.closest('.glue, p, li, h1, h2, h3') || frame).querySelectorAll<HTMLElement>('.ch[data-d]')]
+      .filter((c) => c.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING).pop();
+    type(n, before ? +before.dataset.d! + 90 : end - 200 + i * NOTE_STAGGER);
+  });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
     b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
     b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });

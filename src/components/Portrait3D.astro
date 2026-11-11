@@ -21,6 +21,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   .p3d canvas { position: absolute; left: -5%; top: -5%; width: 110%; height: 110%; display: block; opacity: 0; transition: opacity .3s; }
   .p3d.gl canvas { opacity: 1; }
   .p3d.gl img { visibility: hidden; transition: visibility 0s .3s; }
+  .p3d.pre { opacity: 0; } /* avant son entrée (voir le script) */
 </style>
 
 <script>
@@ -33,6 +34,9 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
   // fond de la fenêtre : le bleu-gris de la photo d'origine, posé un peu derrière le cadre (il glisse sous les montants)
   const BG = [0xc2 / 255, 0xd3 / 255, 0xdf / 255], BG_Z = -0.05;
   const PAD = 1.1;                                           // canvas = 110 % du portrait
+  // entrée : pendant que le titre s'écrit, le portrait monte en fondu ; le chevalier sort du cadre (relief de 0 au plein),
+  // pivote pour se poser face au visiteur, et un éclat de lumière glisse sur l'acier, de gauche à droite
+  const INTRO = 1500, INTRO_AT = 380, YAW = 0.38, PITCH = -0.12;   // ms, ms après l'apparition de l'écran, radians (~22°, ~-7°)
 
   const KNIGHT_VS = `#version 300 es
     in vec2 aUV; uniform mat4 uMVP; uniform highp sampler2D uGeo; uniform float uRelief, uAspect, uFocus;
@@ -87,9 +91,27 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
   function init(fig: HTMLElement) {
     const canvas = fig.querySelector('canvas')!;
-    if (reduced()) return;
+    if (reduced()) return;                                   // image fixe, déjà en place
+    // entrée : le portrait reste caché jusqu'à la fin du chargement d'entrée, puis apparaît avec le titre
+    fig.classList.add('pre');
+    let introT0 = Infinity, kickRef = () => {};
+    const begin = () => {
+      fig.classList.remove('pre');
+      fig.animate([{ opacity: 0, translate: '0 5%', scale: 0.94 }, { opacity: 1, translate: '0 0', scale: 1 }], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      introT0 = performance.now(); kickRef();
+    };
+    // avec l'écran de chargement d'entrée (première visite), on attend qu'il ait quitté la page (il monte et découvre le haut,
+    // où est le portrait, en dernier) ; garde-fou : 5 s au plus
+    const gone = () => new Promise<void>((r) => {
+      const ld = document.querySelector('[data-ld]');
+      if (!ld?.parentNode) { r(); return; }
+      const mo = new MutationObserver(() => { if (!ld.isConnected) { mo.disconnect(); r(); } });
+      mo.observe(ld.parentNode, { childList: true }); setTimeout(() => { mo.disconnect(); r(); }, 5000);
+    });
+    const gate = (p: Promise<unknown>) => Promise.all([window.kkReady ?? Promise.resolve(), document.fonts.ready, p.catch(() => {})])
+      .then(() => { const wait = !!document.querySelector('[data-ld]'); return gone().then(() => setTimeout(begin, wait ? 60 : INTRO_AT)); });
     const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, stencil: true, depth: true });
-    if (!gl) return;
+    if (!gl) { gate(Promise.resolve()); return; }
 
     const compile = (vs: string, fs: string) => {
       const p = gl.createProgram()!;
@@ -104,7 +126,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       return { p, u: (n: string) => (n in cache ? cache[n] : (cache[n] = gl.getUniformLocation(p, n))) };
     };
     let knightP: ReturnType<typeof compile>, planeP: ReturnType<typeof compile>;
-    try { knightP = compile(KNIGHT_VS, KNIGHT_FS); planeP = compile(PLANE_VS, PLANE_FS); } catch (e) { console.warn(e); return; }
+    try { knightP = compile(KNIGHT_VS, KNIGHT_FS); planeP = compile(PLANE_VS, PLANE_FS); } catch (e) { console.warn(e); gate(Promise.resolve()); return; }
 
     const vao = (data: Float32Array, index?: Uint32Array) => {
       const v = gl.createVertexArray(); gl.bindVertexArray(v);
@@ -164,6 +186,7 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
     const FOV = (20 * Math.PI) / 180, DIST = 0.5 / Math.tan(FOV / 2);
     const kick = () => { if (!raf && ready) raf = requestAnimationFrame(draw); };
+    kickRef = kick;
     const draw = (t: number) => {
       raf = 0;
       if (!visible || document.hidden || !canvas.width) return;
@@ -176,7 +199,8 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
       gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       const a = (SET.angle * Math.PI) / 180;
-      const model = mul(rx(cur.y * a), mul(ry(-cur.x * a), sc(1 / PAD)));
+      const ip = Math.max(0, Math.min(1, (t - introT0) / INTRO)), e = 1 - (1 - ip) ** 3;   // entrée (0 → 1)
+      const model = mul(rx(cur.y * a + PITCH * (1 - e)), mul(ry(-cur.x * a + YAW * (1 - e)), sc(1 / PAD)));
       const mvp = mul(persp(FOV, canvas.width / canvas.height, 0.1, 10), mul(tr(0, 0, -DIST), model));
 
       // 1. pochoir : le trou du cadre, dans le plan du cadre (le chevalier n'en dépasse jamais, quel que soit l'angle)
@@ -200,9 +224,9 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
       gl.useProgram(knightP.p); gl.bindVertexArray(mesh);
       gl.uniformMatrix4fv(knightP.u('uMVP'), false, mvp);
       gl.uniform1i(knightP.u('uKnight'), 1); gl.uniform1i(knightP.u('uGeo'), 2); gl.uniform1i(knightP.u('uNrm'), 3);
-      gl.uniform1f(knightP.u('uRelief'), SET.relief); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
-      gl.uniform1f(knightP.u('uSpec'), SET.spec); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), GMAX);
-      gl.uniform3f(knightP.u('uLight'), cur.x * 0.9, -cur.y * 0.9 + 0.25, 1.1);
+      gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
+      gl.uniform1f(knightP.u('uSpec'), SET.spec * (1 + 1.4 * Math.sin(Math.PI * e))); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), GMAX);
+      gl.uniform3f(knightP.u('uLight'), cur.x * 0.9 - 1.6 * (1 - e), -cur.y * 0.9 + 0.25, 1.1);       // l'éclat traverse l'acier
       gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
       gl.disable(gl.DEPTH_TEST); gl.disable(gl.STENCIL_TEST);
 
@@ -233,11 +257,12 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
     new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); }).observe(fig);
     document.addEventListener('visibilitychange', kick);
 
-    Promise.all([
+    const loaded = Promise.all([
       tex('/portrait3d/frame.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
       tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
-    ]).then(() => { ready = true; resize(); requestAnimationFrame(() => fig.classList.add('gl')); kick(); })
-      .catch((e) => console.warn('portrait 3D :', e));
+    ]).then(() => { ready = true; resize(); requestAnimationFrame(() => fig.classList.add('gl')); kick(); });
+    loaded.catch((e) => console.warn('portrait 3D :', e));
+    gate(loaded);                                             // textures prêtes (ou en échec : l'image fixe entre seule)
   }
 
   document.querySelectorAll<HTMLElement>('[data-p3d]').forEach(init);
