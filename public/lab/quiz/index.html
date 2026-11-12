@@ -2,171 +2,144 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-<meta name="robots" content="noindex, follow">
+    <meta name="robots" content="noindex, follow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quiz Master Arcade</title>
-    <meta name="description" content="Quiz Master Arcade, par kerningkastle : un quiz de culture générale en plusieurs modes de jeu, avec carte du monde et classement." />
+    <title>Quiz-O-Matic</title>
+    <meta name="description" content="Quiz-O-Matic, par kerningkastle : une borne d'arcade de culture générale, un quiz de culture générale (drapeaux, cartes, ordres, curseurs), un défi du jour identique pour tout le monde et plusieurs modes de jeu." />
     <link rel="canonical" href="https://kerningkastle.com/lab/quiz/" />
-    <link rel="stylesheet" href="style.css?v=18.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+    <link rel="stylesheet" href="style.css?v=21">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
-
-    <header>
-        <div class="brand">QUIZ ARCADE ⚡</div>
-        <div class="user-badge" id="profile-badge">👤 Joueur</div>
+    <header class="top">
+        <div class="brand">Quiz-O-Matic</div>
+        <div class="user-badge mono" id="profile-badge"></div>
     </header>
 
-    <div class="card">
-        
-        <!-- ECRAN D'ACCUEIL -->
+    <main class="card">
+        <!-- ACCUEIL -->
         <div id="screen-home">
-            <div class="hero-banner">
-                <h1>Prêt à tester vos réflexes ?</h1>
-                <p>Joue en partie rapide ou configure ta partie sur mesure.</p>
+            <h1 class="hero">1 198 questions.<br>Combien en sais-tu&nbsp;?</h1>
+
+            <ol class="modes-grid">
+                <li class="mode-card daily selected" onclick="selectMode('daily', this)">
+                    <span class="n mono">(01)</span><span class="t">Défi du jour</span><span class="d">Dix questions, les mêmes pour tout le monde aujourd'hui. Un résultat à partager.</span>
+                </li>
+                <li class="mode-card" onclick="selectMode('infini', this)">
+                    <span class="n mono">(02)</span><span class="t">Infini</span><span class="d">Trois vies, la difficulté monte.</span>
+                </li>
+                <li class="mode-card" onclick="selectMode('sudden', this)">
+                    <span class="n mono">(03)</span><span class="t">Mort subite</span><span class="d">Une seule erreur et c'est fini.</span>
+                </li>
+                <li class="mode-card" onclick="selectMode('sprint', this)">
+                    <span class="n mono">(04)</span><span class="t">Sprint</span><span class="d">Dix questions, au chrono.</span>
+                </li>
+            </ol>
+
+            <div class="play-row">
+                <label class="name"><span class="mono mu">pseudo</span><input type="text" id="username" autocomplete="off" maxlength="20"></label>
+                <button class="btn-quick" onclick="startQuickGame()">Start <i>+</i></button>
             </div>
+            <p class="daily-best mono mu" id="daily-best"></p>
+            <p class="insert" aria-hidden="true">Insert coin</p>
+            <button class="btn-link" onclick="openCustomModal()">Partie sur mesure : choisir les thèmes et les types de questions</button>
 
-            <label for="username">Pseudo :</label>
-            <input type="text" id="username" placeholder="Entrez votre pseudo..." autocomplete="off">
-
-            <label style="margin-top: 15px; display: block; font-weight: 600; color: #cbd5e1;">Mode de Jeu :</label>
-            <div class="modes-grid">
-                <div class="mode-card selected" onclick="selectMode('infini', this)">
-                    <h3>♾️ Infini</h3>
-                    <p>3 vies. Difficulté progressive.</p>
-                </div>
-                <div class="mode-card" onclick="selectMode('sudden', this)">
-                    <h3>💀 Sudden Death</h3>
-                    <p>1 seule faute éliminatoire.</p>
-                </div>
-                <div class="mode-card" onclick="selectMode('sprint', this)">
-                    <h3>⏱️ Sprint 10</h3>
-                    <p>10 questions chrono.</p>
-                </div>
-                <div class="mode-card" onclick="selectMode('escalade', this)">
-                    <h3>🧗 Escalade</h3>
-                    <p>Difficulté croissante.</p>
-                </div>
-                <div class="mode-card" onclick="selectMode('test', this)">    
-                    <h3>🛠️ Mode Test (Dev)</h3>
-                    <p>Vies infinies, idéal pour les tests.</p>
-                </div>
-            </div>
-
-            <!-- BOUTONS DE LANCEMENT -->
-            <button class="btn-quick" onclick="startQuickGame()">⚡ Lancer la Partie Rapide (Leaderboard actif)</button>
-            <button onclick="openCustomModal()" style="background: linear-gradient(135deg, #7c3aed, #a78bfa); margin-top: 10px;">⚙️ Créer une Partie Personnalisée</button>
-
-            <!-- SECTION LEADERBOARD -->
-            <div class="leaderboard-section">
-                <h3>🏆 Top 10 Joueurs</h3>
-                <div id="home-leaderboard" class="leaderboard-list">
-                    <p style="color: #64748b; font-size: 13px;">Chargement du classement...</p>
-                </div>
-            </div>
+            <section class="leaderboard-section">
+                <h2 class="mono mu">Hi-score <span>(cet appareil)</span></h2>
+                <div id="home-leaderboard" class="leaderboard-list"></div>
+            </section>
         </div>
 
-        <!-- ECRAN DE JEU -->
+        <!-- JEU -->
         <div id="screen-game" class="hidden">
-            <div class="stats-bar">
-                <span id="stat-lives">Vies : ❤️❤️❤️</span>
-                <span id="stat-score">Score : 0</span>
-                <span id="stat-multiplier">🔥 x1</span>
-                <span id="stat-progress">Q: 1</span>
+            <div class="stats-bar mono">
+                <span id="stat-progress"></span>
+                <span id="stat-lives"></span>
+                <span id="stat-multiplier"></span>
+                <span id="stat-score"></span>
             </div>
-
-            <div class="timer-bar-container">
-                <div id="timer-bar" class="timer-bar"></div>
-            </div>
-
+            <div class="timer-bar-container"><div id="timer-bar" class="timer-bar"></div></div>
             <div id="question-container"></div>
-            <div id="feedback-container"></div>
+            <div id="feedback-container" aria-live="polite"></div>
         </div>
 
-        <!-- ECRAN GAME OVER -->
+        <!-- FIN -->
         <div id="screen-gameover" class="hidden gameover-container">
-            <h2>Partie Terminée 🏆</h2>
-            <p id="final-stats">Score final : 0</p>
-            <p id="best-score-badge" style="color: #a78bfa; font-weight: 800;"></p>
-            
-            <div id="leaderboard-container-wrapper" class="leaderboard-section" style="margin-top: 20px;">
-                <h3>📊 Top 10 Général</h3>
-                <div id="gameover-leaderboard" class="leaderboard-list"></div>
+            <p class="mono mu" id="go-label">Game over</p>
+            <h2 id="final-stats"></h2>
+            <p id="best-score-badge"></p>
+            <div class="go-actions">
+                <button class="btn-quick" onclick="resetToHome()">Continue ? <i>+</i></button>
+                <button class="btn-link hidden" id="share-btn" onclick="shareDaily()">Copier mon résultat</button>
             </div>
-
-            <button onclick="resetToHome()" style="margin-top: 20px;">Rejouer 🔄</button>
+            <section id="leaderboard-container-wrapper" class="leaderboard-section">
+                <h2 class="mono mu">Hi-score <span>(cet appareil)</span></h2>
+                <div id="gameover-leaderboard" class="leaderboard-list"></div>
+            </section>
         </div>
+    </main>
 
-    </div>
-
-    <!-- FENÊTRE MODALE (POP-UP) DE CONFIGURATION PERSONNALISÉE -->
+    <!-- PARTIE SUR MESURE -->
     <div id="custom-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="modal-header-top">
                 <div>
-                    <h2>⚙️ Configuration Sur Mesure</h2>
-                    <p>Personnalise les filtres de ta session (Scores non enregistrés).</p>
+                    <h2>Partie sur mesure</h2>
+                    <p class="mu">Choisis ce qui tombe. Les scores ne sont pas classés.</p>
                 </div>
-                <button class="modal-close-x" onclick="closeCustomModal()">✕</button>
+                <button class="modal-close-x" onclick="closeCustomModal()" aria-label="Fermer">×</button>
             </div>
-            
             <div class="modal-scroll-area">
-                <!-- Difficultés -->
-<div class="filter-group">
-    <div class="filter-header-row">
-        <label class="filter-title">Niveaux de difficulté</label>
-    </div>
-    <div class="filter-options-grid diff-grid">
-        <label class="filter-pill"><input type="checkbox" name="diff" value="1" checked> <span>Niveau 1</span></label>
-        <label class="filter-pill"><input type="checkbox" name="diff" value="2" checked> <span>Niveau 2</span></label>
-        <label class="filter-pill"><input type="checkbox" name="diff" value="3" checked> <span>Niveau 3</span></label>
-        <label class="filter-pill"><input type="checkbox" name="diff" value="4" checked> <span>Niveau 4</span></label>
-        <label class="filter-pill"><input type="checkbox" name="diff" value="5" checked> <span>Niveau 5</span></label>
-    </div>
-</div>
-                <!-- Thèmes -->
                 <div class="filter-group">
-                    <div class="filter-header-row">
-                        <label class="filter-title">Thèmes</label>
-                    </div>
-                    <div class="filter-options-grid theme-grid">
-                        <label class="filter-pill"><input type="checkbox" name="theme" value="geographie" checked> <span>🌍 Géographie</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="theme" value="histoire" checked> <span>📜 Histoire</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="theme" value="science" checked> <span>🔬 Science</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="theme" value="cinema" checked> <span>🎬 Cinéma</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="theme" value="general" checked> <span>💡 Général</span></label>
+                    <p class="filter-title mono mu">Difficulté</p>
+                    <div class="filter-options-grid">
+                        <label class="filter-pill"><input type="checkbox" name="diff" value="1" checked> <span>1</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="diff" value="2" checked> <span>2</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="diff" value="3" checked> <span>3</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="diff" value="4" checked> <span>4</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="diff" value="5" checked> <span>5</span></label>
                     </div>
                 </div>
-
-                <!-- Types de questions -->
                 <div class="filter-group">
-                    <div class="filter-header-row">
-                        <label class="filter-title">Types de questions</label>
-                    </div>
-                    <div class="filter-options-grid type-grid">
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="flag" checked> <span>🏴 Drapeaux</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="slider" checked> <span>↔️ Sliders</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="boolean" checked> <span>⚡ Vrai / Faux</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="qcm" checked> <span>🔘 QCM</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="text" checked> <span>⌨️ Saisie texte</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="order" checked> <span>🖐️ Ordre</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="map_pin" checked> <span>🗺️ Place le pays</span></label>
-                        <label class="filter-pill"><input type="checkbox" name="qtype" value="duel" checked> <span>⚖️ Duel (Œuf/Poule)</span></label>
+                    <p class="filter-title mono mu">Thèmes</p>
+                    <div class="filter-options-grid">
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="geographie" checked> <span>Géographie</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="histoire" checked> <span>Histoire</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="science" checked> <span>Science</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="cinema" checked> <span>Cinéma</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="general" checked> <span>Culture générale</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="literature" checked> <span>Littérature</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="art" checked> <span>Art</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="theme" value="music" checked> <span>Musique</span></label>
                     </div>
                 </div>
+                <div class="filter-group">
+                    <p class="filter-title mono mu">Types de questions</p>
+                    <div class="filter-options-grid">
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="flag" checked> <span>Drapeaux</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="slider" checked> <span>Curseur</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="boolean" checked> <span>Vrai ou faux</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="qcm" checked> <span>Choix multiple</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="text" checked> <span>Réponse libre</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="order" checked> <span>Remettre dans l'ordre</span></label>
+                        <label class="filter-pill"><input type="checkbox" name="qtype" value="map_pin" checked> <span>Placer sur la carte</span></label>
+                    </div>
+                </div>
+                <p class="modal-err" id="modal-err" role="alert"></p>
             </div>
-
             <div class="modal-actions">
-                <button class="btn-secondary" onclick="closeCustomModal()">Annuler</button>
-                <button onclick="startCustomGame()">Lancer la partie 🚀</button>
+                <button class="btn-link" onclick="closeCustomModal()">Annuler</button>
+                <button class="btn-quick" onclick="startCustomGame()">Lancer <i>+</i></button>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPTS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="api.js"></script>
-    <script src="map.js"></script>
-    <script src="app.js?v=18.0"></script>
+    <script src="api.js?v=19"></script>
+    <script src="map.js?v=19"></script>
+    <script src="app.js?v=19"></script>
+    <script src="/lab/back.js"></script>
 </body>
 </html>

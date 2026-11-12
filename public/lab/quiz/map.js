@@ -12,16 +12,16 @@ function initLeafletMap(containerId, correctAnswer, onCountryClickCallback, reve
                 const isTheTarget = matchesTarget(feature.properties, revealKey);
                 if (isTheTarget) {
                     return {
-                        fillColor: '#10b981',
+                        fillColor: '#2e9d5b',
                         weight: 1.5,
-                        color: '#34d399',
+                        color: '#2e9d5b',
                         fillOpacity: 0.9
                     };
                 }
                 return {
-                    fillColor: '#1e293b',
+                    fillColor: '#dcdcdc',
                     weight: 1,
-                    color: '#334155',
+                    color: '#bdbdbd',
                     fillOpacity: 0.8
                 };
             });
@@ -84,17 +84,17 @@ function initLeafletMap(containerId, correctAnswer, onCountryClickCallback, reve
                     
                     if (revealKey && isTheTarget) {
                         return {
-                            fillColor: '#10b981',
+                            fillColor: '#2e9d5b',
                             weight: 1.5,
-                            color: '#34d399',
+                            color: '#2e9d5b',
                             fillOpacity: 0.9
                         };
                     }
 
                     return {
-                        fillColor: '#1e293b',
+                        fillColor: '#dcdcdc',
                         weight: 1,
-                        color: '#334155',
+                        color: '#bdbdbd',
                         fillOpacity: 0.8
                     };
                 },
@@ -103,18 +103,18 @@ function initLeafletMap(containerId, correctAnswer, onCountryClickCallback, reve
                         mouseover: (e) => {
                             if (window.isGameAnswered && window.isGameAnswered()) return;
                             e.target.setStyle({
-                                fillColor: '#3b82f6',
+                                fillColor: '#FF8716',
                                 fillOpacity: 0.9,
-                                color: '#60a5fa'
+                                color: '#FF8716'
                             });
                         },
                         mouseout: (e) => {
                             if (window.isGameAnswered && window.isGameAnswered()) return;
                             const isRevealed = revealKey && matchesTarget(feature.properties, revealKey);
                             e.target.setStyle({
-                                fillColor: isRevealed ? '#10b981' : '#1e293b',
+                                fillColor: isRevealed ? '#2e9d5b' : '#dcdcdc',
                                 fillOpacity: isRevealed ? 0.9 : 0.8,
-                                color: isRevealed ? '#34d399' : '#334155'
+                                color: isRevealed ? '#2e9d5b' : '#bdbdbd'
                             });
                         },
                         click: () => {

@@ -17,7 +17,12 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
   <h1 class="sr">{r.title}</h1>
   <div class="lab" data-room={room.kind}>
     <div class:list={['room', room.kind]}>
-      {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} />}
+      {room.kind === 'type' && (
+        <Fragment>
+          <p class="hint mono mu">({lang === 'fr' ? 'tape un mot · clic pour changer de module' : 'type a word · click to change modules'}) <span data-fam></span></p>
+          <TypeCanvas class="tc" label={r.note} edit />
+        </Fragment>
+      )}
       {room.kind === 'slot' && <p class="mono mu">({r.note})</p>}
       {room.kind === 'embed' && <iframe class="emb" src={room.src} title={r.title} loading="lazy"></iframe>}
       {room.kind === 'font' && (
@@ -30,7 +35,7 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
 
     <div class="bot g">
       <div class="info mono">
-        <p>{pad(index + 1)} / {pad(N)} — {r.title}</p>
+        <p><a class="back hit" href={`/${lang}/lab/`} aria-label={lang === 'fr' ? 'Retour au Lab' : 'Back to the Lab'}>← lab</a> · {pad(index + 1)} / {pad(N)} — {r.title}</p>
         <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i bp hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>note</button></Fragment>}</p>
       </div>
       <ol class="dots mono" aria-label="Lab">
@@ -40,6 +45,7 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
         {room.kind === 'font' && (room.file
           ? <a class="bp hit" href={room.file} download>{t.download.toLowerCase()}</a>
           : <span class="mono mu">{t.fileSoon.toLowerCase()}</span>)}
+        {room.kind === 'type' && <button class="bp hit" type="button" data-tsave>{lang === 'fr' ? 'enregistrer' : 'save'}</button>}
         <a class="arw bp ba hit" href={url(index - 1)} aria-label={t.prev} data-prev>←</a>
         <a class="arw bp ba hit" href={url(index + 1)} aria-label={t.nextShort} data-nextroom>→</a>
       </div>
@@ -50,11 +56,15 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
 
 <style>
   .lab { position: fixed; inset: 0; }
+  .back { color: var(--ac); }
+  .back:hover { color: var(--fg); }
+  :global(.embed) .back { display: none; }
   .room { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 var(--m); }
   .room.slot { background: repeating-linear-gradient(45deg, #e6e6e6 0 10px, #dedede 10px 20px); }
   .room.slot p { max-width: 520px; text-align: center; }
   .room.embed { background: #f3f3f3; }
-  .room .emb { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; border: 0; }
+  .room .emb { position: absolute; top: var(--head); left: 0; width: 100%; height: calc(100% - var(--head) - 76px); max-width: none; border: 0; }
+  @media (max-width: 760px) { .room .emb { height: calc(100% - var(--head) - 120px); } }
   .room :global(.tc) { width: 100%; height: 100%; }
   .tester { font-weight: 500; font-size: 160px; line-height: 160px; letter-spacing: -0.03em; text-align: center; outline: none; max-width: 100%; overflow-wrap: anywhere; caret-color: var(--fg); }
   .hint { position: absolute; top: calc(var(--head) + 120px); left: 0; right: 0; text-align: center; }
@@ -79,6 +89,12 @@ const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
 </style>
 
 <script>
+  // type modulaire : enregistrer, et nom de la famille de modules affiché au clic
+  {
+    const tc = document.querySelector<HTMLCanvasElement>('canvas.type-canvas[data-edit]');
+    document.querySelector('[data-tsave]')?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:save')));
+    tc?.addEventListener('type:family', (e) => { const f = document.querySelector('[data-fam]'); if (f) f.textContent = (e as CustomEvent).detail.name; });
+  }
   const btn = document.querySelector<HTMLButtonElement>('[data-note]');
   const note = document.getElementById('note');
   btn?.addEventListener('click', () => { const open = note!.hidden; note!.hidden = !open; btn.setAttribute('aria-expanded', String(open)); });

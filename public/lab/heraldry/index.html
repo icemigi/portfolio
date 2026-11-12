@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
 <meta name="robots" content="noindex, follow">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Générateur Héraldique Binaire</title>
-    <meta name="description" content="Générateur héraldique binaire de kerningkastle : des blasons générés selon les règles de l'héraldique médiévale, chacun scellé par une clé unique. Une sorte de QR code médiéval." />
+  <title>Algorithmic Heraldry — générateur</title>
+    <meta name="description" content="Algorithmic Heraldry, le générateur de kerningkastle : des blasons écrits selon les règles de l'héraldique, chacun né d'une clé qui le redonne à l'identique. Tape ton prénom pour obtenir ton écu, partage-le par lien, exporte-le en SVG ou en PNG." />
     <link rel="canonical" href="https://kerningkastle.com/lab/heraldry/" />
   <link rel="stylesheet" href="style.css">
 </head>
@@ -13,6 +13,14 @@
   <!-- Conteneur principal du blason SVG -->
   <main id="container" role="main" aria-label="Zone d'affichage du blason vectoriel"></main>
 
+  <nav id="tools" aria-label="Commandes">
+    <button id="t-prev" title="Écu précédent (←)">←</button><button id="t-new" title="Nouvel écu (espace)">nouvel écu</button><button id="t-next" title="Écu suivant (→)">→</button>
+    <span class="sep"></span>
+    <button id="t-part" aria-pressed="false" title="Partitions (P)">partitions</button><button id="t-light" aria-pressed="false" title="Clair / sombre (L)">clair</button>
+    <span class="sep"></span>
+    <button id="t-link" title="Copier le lien de cet écu">lien</button><button id="t-svg" title="Exporter en SVG (S)">svg</button><button id="t-png" title="Exporter en PNG">png</button>
+  </nav>
+  <p id="who" aria-live="polite"></p>
   <!-- Interface minimale centrée -->
   <footer id="ui">
     <p id="blazon"></p>
@@ -27,9 +35,12 @@
         </svg>
       </button>
     </div>
+    <div id="name-line"><input type="text" id="name-input" maxlength="40" spellcheck="false" autocomplete="off" placeholder="ton prénom, pour ton écu" aria-label="Ton prénom, pour obtenir ton écu"></div>
   </footer>
 
   <!-- Chargement des modules JavaScript -->
   <script type="module" src="src/main.js"></script>
+  <script type="module" src="src/extras.js"></script>
+<script src="/lab/back.js"></script>
 </body>
 </html>

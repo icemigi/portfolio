@@ -2,202 +2,187 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-<meta name="robots" content="noindex, follow">
+  <meta name="robots" content="noindex, follow">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lettres qui tombent — kerningkastle</title>
-    <meta name="description" content="Lettres qui tombent : une affiche générative de kerningkastle. Chaque clic lâche une lettre qui tombe et s'empile dans la grille, avec un vrai corps physique. p5.js, Matter.js." />
-    <link rel="canonical" href="https://kerningkastle.com/fr/lab/gravity/" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.6.0/p5.js"></script>
+  <meta name="description" content="Lettres qui tombent : une affiche générative de kerningkastle. Tape au clavier et tes lettres tombent dans la grille, avec un vrai corps physique taillé sur leur dessin. Attrape-les, lance-les, enregistre l'affiche. Matter.js." />
+  <link rel="canonical" href="https://kerningkastle.com/fr/lab/gravity/" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #f3f3f3;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+    @font-face { font-family: Geist; src: url('/fonts/Geist-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
+    @font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+    html, body { margin: 0; height: 100%; background: #f3f3f3; overflow: hidden; }
+    body { display: grid; place-items: center; font: 12px/1.3 'Geist Mono', ui-monospace, monospace; color: #111; }
+    .poster { position: relative; width: min(92vw, calc(88vh * 600 / 850)); aspect-ratio: 600 / 850; }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    canvas.grab { cursor: grabbing; }
+    /* mentions dans les marges de l'affiche */
+    .m { position: absolute; margin: 0; white-space: nowrap; pointer-events: none; }
+    .tl { left: 8.3%; top: 2.2%; } .tr { right: 8.3%; top: 2.2%; text-align: right; }
+    .bl { left: 8.3%; bottom: 2.2%; } .br { right: 8.3%; bottom: 2.2%; text-align: right; pointer-events: auto; }
+    .mu { color: #777; }
+    button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+    button:hover { color: #FF8716; }
+    button + button { margin-left: 14px; }
+    .tilt { display: none; }
+    @media (pointer: coarse) { .tilt { display: inline; } .kb { display: none; } }
+    /* champ invisible : ouvre le clavier sur téléphone */
+    .ghost { position: absolute; opacity: 0; width: 1px; height: 1px; left: 50%; top: 50%; border: 0; padding: 0; }
   </style>
 </head>
 <body>
+  <div class="poster" id="poster">
+    <canvas id="c" aria-label="Affiche : des lettres qui tombent et s'empilent dans une grille"></canvas>
+    <p class="m tl"><span class="kb">tape un mot</span><span class="tilt">touche pour écrire</span></p>
+    <p class="m tr mu" id="count">0 lettre</p>
+    <p class="m bl mu"><span class="kb">glisse pour lancer · retour arrière efface</span><span class="tilt">glisse pour lancer</span></p>
+    <p class="m br"><button class="tilt" id="tilt">inclinaison</button><button id="clear">vider</button><button id="save">enregistrer +</button></p>
+    <input class="ghost" id="ghost" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Écrire des lettres">
+  </div>
 
 <script>
-let Engine = Matter.Engine,
-    Bodies = Matter.Bodies,
-    Composite = Matter.Composite;
+(() => {
+  // Affiche 600 × 850 (unités du monde physique), rendue à la taille de l'écran et à la densité de l'écran.
+  const W = 600, H = 850, M = 50, COLS = 3, MAX = 80;
+  const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Events } = Matter;
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  const engine = Engine.create({ enableSleeping: true }), world = engine.world;
+  const letters = []; // { body, ch, size, off }
+  let scale = 1, dpr = 1;
 
-let engine;
-let world;
-let letters = [];
-let chars = ['a', 'b', 'c', 'd', 'e', 'f', 'g'];
-let maxLetters = 30;
-
-let margin = 50;
-let colCount = 3;
-
-function setup() {
-  createCanvas(600, 850);
-  
-  engine = Engine.create();
-  world = engine.world;
-  
-  // Limites de l'affiche (Sol, murs latéraux)
-  let wallThickness = 60;
-  let ground = Bodies.rectangle(width / 2, height - 30 + wallThickness / 2, width, wallThickness, { isStatic: true });
-  let leftWall = Bodies.rectangle(-wallThickness / 2, height / 2, wallThickness, height, { isStatic: true });
-  let rightWall = Bodies.rectangle(width + wallThickness / 2, height / 2, wallThickness, height, { isStatic: true });
-  
-  Composite.add(world, [ground, leftWall, rightWall]);
-  
-  // Cloisons verticales de la grille (obstacles physiques internes)
-  let usableWidth = width - (margin * 2);
-  let colWidth = usableWidth / colCount;
-  
-  for (let i = 1; i < colCount; i++) {
-    let xPos = margin + (i * colWidth);
-    let gridDivider = Bodies.rectangle(xPos, (height / 2) - 50, 4, height * 0.5, { isStatic: true, restitution: 0.1 });
-    Composite.add(world, gridDivider);
+  // ---------- glyphe → corps physique : le caractère rendu hors écran, découpé en rectangles qui épousent sa forme ----------
+  const scratch = document.createElement('canvas'), sx = scratch.getContext('2d', { willReadFrequently: true });
+  const cache = new Map();
+  function shape(ch, size) {
+    const k = ch + '|' + size;
+    if (cache.has(k)) return cache.get(k);
+    const S = Math.ceil(size * 1.6); scratch.width = scratch.height = S;
+    sx.clearRect(0, 0, S, S); sx.fillStyle = '#000'; sx.font = `700 ${size}px Geist`; sx.textAlign = 'center'; sx.textBaseline = 'middle';
+    sx.fillText(ch, S / 2, S / 2);
+    const px = sx.getImageData(0, 0, S, S).data, cell = Math.max(4, Math.round(size / 13)), n = Math.ceil(S / cell);
+    const on = (cx, cy) => { let c = 0; for (let y = cy * cell; y < Math.min(S, cy * cell + cell); y += 2) for (let x = cx * cell; x < Math.min(S, cx * cell + cell); x += 2) if (px[(y * S + x) * 4 + 3] > 120) c++; return c >= ((cell / 2) ** 2) * 0.45; };
+    // runs horizontaux par rangée, fusionnés verticalement quand ils ont exactement la même étendue
+    const rects = [], open = new Map();
+    for (let y = 0; y <= n; y++) {
+      const runs = [];
+      if (y < n) for (let x = 0; x < n; x++) if (on(x, y)) { let e = x; while (e + 1 < n && on(e + 1, y)) e++; runs.push([x, e]); x = e; }
+      const next = new Map();
+      for (const [a, b] of runs) { const key = a + ':' + b, r = open.get(key); if (r) { r.h++; next.set(key, r); open.delete(key); } else next.set(key, { x: a, y, w: b - a + 1, h: 1 }); }
+      for (const r of open.values()) rects.push(r);
+      open.clear(); for (const [k2, v] of next) open.set(k2, v);
+    }
+    const parts = rects.map((r) => ({ x: (r.x + r.w / 2) * cell - S / 2, y: (r.y + r.h / 2) * cell - S / 2, w: r.w * cell, h: r.h * cell }));
+    cache.set(k, parts);
+    return parts;
   }
-
-  // Générer des lettres initiales
-  for (let i = 0; i < 8; i++) {
-    spawnLetter(random(margin + 40, width - margin - 40), -100 - (i * 70));
+  function drop(ch, x, y = -80) {
+    if (!ch.trim()) return;
+    if (letters.length >= MAX) { const o = letters.shift(); Composite.remove(world, o.body); }
+    const size = Math.round(70 + Math.random() * 110);
+    const ps = shape(ch, size);
+    if (!ps.length) return;
+    const parts = ps.map((p) => Bodies.rectangle(p.x, p.y, p.w, p.h));
+    const body = Body.create({ parts, restitution: 0.05, friction: 0.7, frictionAir: 0.012 });
+    const off = { x: body.position.x, y: body.position.y }; // centre de masse par rapport au centre du glyphe
+    Body.setPosition(body, { x: Math.max(M + 30, Math.min(W - M - 30, x)), y });
+    Body.setAngle(body, (Math.random() - 0.5) * 1.2);
+    Composite.add(world, body);
+    letters.push({ body, ch, size, off });
+    count();
   }
-}
+  const count = () => (document.getElementById('count').textContent = `${letters.length} lettre${letters.length > 1 ? 's' : ''}`);
 
-function draw() {
-  background(242, 241, 237);
-  
-  Engine.update(engine);
-  
-  // --- DESSIN DE LA GRILLE STRUCTURALE ---
-  let usableWidth = width - (margin * 2);
-  let colWidth = usableWidth / colCount;
-  
-  stroke(0, 45);
-  strokeWeight(1);
-  
-  for (let i = 0; i <= colCount; i++) {
-    let xPos = margin + (i * colWidth);
-    line(xPos, margin, xPos, height - margin);
-  }
-  
-  line(margin, margin, width - margin, margin);
-  line(margin, height - margin, width - margin, height - margin);
+  // ---------- monde : sol, murs, cloisons de la grille ----------
+  const T = 80;
+  let ground = Bodies.rectangle(W / 2, H - M + T / 2, W * 2, T, { isStatic: true });
+  Composite.add(world, [ground, Bodies.rectangle(-T / 2, H / 2, T, H * 3, { isStatic: true }), Bodies.rectangle(W + T / 2, H / 2, T, H * 3, { isStatic: true })]);
+  const colW = (W - M * 2) / COLS;
+  const walls = []; for (let i = 1; i < COLS; i++) walls.push(Bodies.rectangle(M + i * colW, H / 2 + 60, 4, H * 0.42, { isStatic: true, restitution: 0.1 }));
+  Composite.add(world, walls);
 
-  // Métadonnées typographiques
-  noStroke();
-  fill(0);
-  textFont('Helvetica');
-  textSize(9);
-  textStyle(NORMAL);
-  
-  text("SYS.GRID // COMPOUND_BODIES", margin, margin - 12);
-  textAlign(RIGHT, BASELINE);
-  text("INTERACTIVE_ACTIVE", width - margin, margin - 12);
-  
-  textAlign(LEFT, BASELINE);
-  text("STRUCTURAL COLLISION ENGINE", margin, height - margin + 20);
-  textAlign(RIGHT, BASELINE);
-  text("BORD // 2026", width - margin, height - margin + 20);
-
-  // --- RENDU DES CORPS TYPOGRAPHIQUES ---
-  for (let i = 0; i < letters.length; i++) {
-    let item = letters[i];
-    let pos = item.body.position;
-    let angle = item.body.angle;
-    
-    push();
-    translate(pos.x, pos.y);
-    rotate(angle);
-    
-    fill(0);
-    noStroke();
-    textFont('Helvetica');
-    textSize(item.size);
-    textAlign(CENTER, CENTER);
-    textStyle(BOLD);
-    text(item.char, 0, 0);
-    pop();
-  }
-  
-  // Cadre structurel extérieur
-  noFill();
-  stroke(0);
-  strokeWeight(5);
-  rect(0, 0, width, height);
-}
-
-// Fonction pour créer un corps physique composite épousant la forme exacte du glyphe
-function createLetterBody(x, y, char, size) {
-  let parts = [];
-  
-  // Construction géométrique par caractère pour coller au dessin de Helvetica
-  if (char === 'a') {
-    parts.push(Bodies.circle(0, size * 0.08, size * 0.32));
-    parts.push(Bodies.rectangle(size * 0.16, size * 0.08, size * 0.12, size * 0.55));
-  } else if (char === 'b') {
-    parts.push(Bodies.rectangle(-size * 0.16, 0, size * 0.12, size * 0.75));
-    parts.push(Bodies.circle(size * 0.08, size * 0.15, size * 0.28));
-  } else if (char === 'c') {
-    parts.push(Bodies.rectangle(0, -size * 0.22, size * 0.35, size * 0.12));
-    parts.push(Bodies.rectangle(-size * 0.16, 0, size * 0.12, size * 0.45));
-    parts.push(Bodies.rectangle(0, size * 0.22, size * 0.35, size * 0.12));
-  } else if (char === 'd') {
-    parts.push(Bodies.circle(-size * 0.08, size * 0.15, size * 0.28));
-    parts.push(Bodies.rectangle(size * 0.16, 0, size * 0.12, size * 0.75));
-  } else if (char === 'e') {
-    parts.push(Bodies.circle(0, size * 0.08, size * 0.36));
-    parts.push(Bodies.rectangle(0, size * 0.08, size * 0.3, size * 0.1));
-  } else if (char === 'f') {
-    parts.push(Bodies.rectangle(0, 0, size * 0.14, size * 0.75));
-    parts.push(Bodies.rectangle(size * 0.12, -size * 0.26, size * 0.28, size * 0.12));
-  } else if (char === 'g') {
-    // Corps haut + boucle basse caractéristique pour éviter les traversées aberrantes
-    parts.push(Bodies.circle(0, -size * 0.12, size * 0.3));
-    parts.push(Bodies.circle(0, size * 0.26, size * 0.28));
-  }
-
-  let body = Matter.Body.create({
-    parts: parts,
-    restitution: 0.02,
-    friction: 0.8,
-    angle: random(-0.8, 0.8)
+  // ---------- souris : attraper, lancer ; un clic dans le vide lâche une lettre ----------
+  const mouse = Mouse.create(cv);
+  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.18, damping: 0.08, render: { visible: false } } });
+  Composite.add(world, mc);
+  // (la souris de Matter attend des coordonnées de monde : on corrige l'échelle d'affichage)
+  const fit = () => { const r = cv.getBoundingClientRect(); scale = r.width / W; dpr = Math.min(2, devicePixelRatio || 1); cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); Mouse.setScale(mouse, { x: 1 / (scale * dpr), y: 1 / (scale * dpr) }); }; // Matter lit la position en pixels du canvas (css × densité)
+  addEventListener('resize', fit); fit();
+  let downAt = null, lastX = W / 2;
+  cv.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
+  cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); lastX = (e.clientX - r.left) / scale; });
+  Events.on(mc, 'startdrag', () => cv.classList.add('grab'));
+  Events.on(mc, 'enddrag', () => cv.classList.remove('grab'));
+  const WORD = 'kerningkastle'; let wi = 0;
+  cv.addEventListener('pointerup', (e) => {
+    const moved = downAt && Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 6; downAt = null;
+    if (moved || mc.body) return;
+    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) / scale;
+    if (matchMedia('(pointer: coarse)').matches) { ghost.focus({ preventScroll: true }); }
+    drop(WORD[wi++ % WORD.length], x);
   });
 
-  Matter.Body.setPosition(body, { x: x, y: y });
-  return body;
-}
-
-function spawnLetter(customX, customY) {
-  if (letters.length >= maxLetters) {
-    let oldItem = letters.shift();
-    Composite.remove(world, oldItem.body);
-  }
-  
-  let char = random(chars);
-  let size = random(50, 180);
-  
-  let x = customX !== undefined ? customX : random(margin + 40, width - margin - 40);
-  let y = customY !== undefined ? customY : -60;
-  
-  let body = createLetterBody(x, y, char, size);
-  Composite.add(world, body);
-  
-  letters.push({
-    body: body,
-    char: char,
-    size: size
+  // ---------- clavier : chaque touche lâche sa lettre là où est la souris ----------
+  const ghost = document.getElementById('ghost');
+  addEventListener('keydown', (e) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'Backspace') { e.preventDefault(); const o = letters.pop(); if (o) Composite.remove(world, o.body); count(); return; }
+    if (e.key === 'Escape') return clear();
+    if (e.key.length === 1 && e.target !== ghost) { e.preventDefault(); drop(e.key, lastX + (Math.random() - 0.5) * 40); }
   });
-}
+  ghost.addEventListener('input', () => { for (const ch of ghost.value) drop(ch, M + 40 + Math.random() * (W - M * 2 - 80)); ghost.value = ''; });
 
-function mousePressed() {
-  if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
-    spawnLetter(mouseX, -50);
+  // ---------- vider : le sol s'ouvre un instant ----------
+  function clear() {
+    if (!letters.length) return;
+    Composite.remove(world, [ground, ...walls]); letters.forEach((l) => Matter.Sleeping.set(l.body, false));
+    setTimeout(() => { letters.splice(0).forEach((l) => Composite.remove(world, l.body)); Composite.add(world, [ground, ...walls]); count(); }, 1300);
   }
-}
+  document.getElementById('clear').onclick = clear;
+
+  // ---------- inclinaison (téléphone) : la gravité suit le téléphone ----------
+  document.getElementById('tilt').onclick = async () => {
+    try { if (typeof DeviceOrientationEvent !== 'undefined' && DeviceOrientationEvent.requestPermission) await DeviceOrientationEvent.requestPermission(); } catch { return; }
+    addEventListener('deviceorientation', (e) => {
+      if (e.gamma == null) return;
+      engine.gravity.x = Math.max(-1, Math.min(1, e.gamma / 40)); engine.gravity.y = Math.max(-0.4, Math.min(1, (e.beta ?? 45) / 45));
+      letters.forEach((l) => Matter.Sleeping.set(l.body, false));
+    });
+    document.getElementById('tilt').textContent = 'inclinaison activée';
+  };
+
+  // ---------- enregistrer l'affiche (PNG, 1200 × 1700) ----------
+  document.getElementById('save').onclick = () => {
+    const out = document.createElement('canvas'); out.width = W * 2; out.height = H * 2;
+    paint(out.getContext('2d'), 2, true);
+    const a = document.createElement('a'); a.download = 'lettres-qui-tombent.png'; a.href = out.toDataURL('image/png'); a.click();
+  };
+
+  // ---------- rendu ----------
+  function paint(g, k, full) {
+    g.setTransform(k, 0, 0, k, 0, 0);
+    g.fillStyle = '#f2f1ed'; g.fillRect(0, 0, W, H);
+    g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 1;
+    g.beginPath();
+    for (let i = 0; i <= COLS; i++) { const x = M + i * colW; g.moveTo(x, M); g.lineTo(x, H - M); }
+    g.moveTo(M, M); g.lineTo(W - M, M); g.moveTo(M, H - M); g.lineTo(W - M, H - M); g.stroke();
+    g.fillStyle = '#111'; g.font = '700 10px Geist'; g.textBaseline = 'alphabetic';
+    if (full) { g.textAlign = 'left'; g.fillText('LETTRES QUI TOMBENT', M, M - 14); g.textAlign = 'right'; g.fillText('KERNINGKASTLE.COM/LAB', W - M, H - M + 24); }
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const l of letters) {
+      const { x, y } = l.body.position;
+      g.save(); g.translate(x, y); g.rotate(l.body.angle);
+      g.font = `700 ${l.size}px Geist`; g.fillText(l.ch, -l.off.x, -l.off.y);
+      g.restore();
+    }
+    g.lineWidth = 5; g.strokeStyle = '#111'; g.strokeRect(0, 0, W, H);
+  }
+  const loop = () => { Engine.update(engine, 1000 / 60); paint(ctx, scale * dpr, false); requestAnimationFrame(loop); };
+  document.fonts.load('700 100px Geist').then(() => {
+    for (let i = 0; i < 6; i++) setTimeout(() => drop('kerning'[i], M + 60 + Math.random() * (W - M * 2 - 120)), i * 220);
+    loop();
+  });
+})();
 </script>
-
+<script src="/lab/back.js"></script>
 </body>
 </html>

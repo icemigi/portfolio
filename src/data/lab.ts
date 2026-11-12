@@ -67,8 +67,8 @@ export const labApps: LabApp[] = [
   },
   {
     id: 'quiz', year: '2026', src: '/lab/quiz/index.html', w: 1040, h: 700,
-    fr: { title: 'Quiz Arcade', cat: 'Jeu' },
-    en: { title: 'Quiz Arcade', cat: 'Game' },
+    fr: { title: 'Quiz-O-Matic', cat: 'Jeu' },
+    en: { title: 'Quiz-O-Matic', cat: 'Game' },
   },
   {
     id: 'letteroastd', year: '2026', src: '/lab/letteroastd/index.html', w: 1000, h: 700,

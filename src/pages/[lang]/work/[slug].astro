@@ -416,12 +416,12 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
     if (arriving) {
       const t0 = performance.now();
       let lastW = t0;
-      document.body.setAttribute('data-own-wheel', '');
+      host.style.overflowY = 'hidden'; // défilement natif figé tant que dure l'élan du geste qui a ouvert la page
       const onW = () => { lastW = performance.now(); };
       addEventListener('wheel', onW, { passive: true, capture: true });
       const check = () => {
         const now = performance.now();
-        if (now - t0 > 900 && now - lastW > 250) { document.body.removeAttribute('data-own-wheel'); removeEventListener('wheel', onW, { capture: true }); return; }
+        if (now - t0 > 900 && now - lastW > 250) { host.style.overflowY = ''; removeEventListener('wheel', onW, { capture: true }); return; }
         setTimeout(check, 60);
       };
       check();

@@ -37,6 +37,9 @@ body {
 }
 
 svg {
+  /* Safari réduit à zéro un SVG sans largeur dans un conteneur flex : on la donne */
+  width: min(85vw, 60vh);
+  height: auto;
   max-width: 85vw;
   max-height: 60vh;
   display: block;
@@ -212,3 +215,17 @@ body.light-mode #seed-submit:hover {
     height: 22px;
   }
 }
+/* ---------- barre de commandes (visible, au lieu des seules touches cachées) ---------- */
+@font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-display: swap; }
+#tools { position: fixed; top: 16px; right: 20px; z-index: 10; display: flex; gap: 16px; font: 12px/1 'Geist Mono', ui-monospace, monospace; }
+#tools button { padding: 0; background: none; border: 0; color: #888; font: inherit; cursor: pointer; }
+#tools button:hover, #tools button[aria-pressed="true"] { color: #FF8716; }
+#tools .sep { width: 1px; background: #333; }
+body.light-mode #tools button { color: #666; }
+body.light-mode #tools .sep { background: #ccc; }
+#who { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 10; margin: 0; font: 12px/1 'Geist Mono', ui-monospace, monospace; color: #FF8716; }
+#name-line { display: flex; justify-content: center; gap: 8px; margin-top: 10px; font: 12px 'Geist Mono', ui-monospace, monospace; }
+#name-input { width: 190px; padding: 6px 0; background: none; border: 0; border-bottom: 1px solid #444; color: #ddd; font: inherit; text-align: center; outline: none; }
+#name-input:focus { border-color: #FF8716; }
+body.light-mode #name-input { color: #222; border-color: #bbb; }
+@media (max-width: 700px) { #tools { gap: 12px; right: 12px; top: 56px; } #who { top: 92px; } }

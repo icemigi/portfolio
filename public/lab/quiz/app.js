@@ -1,6 +1,7 @@
 const gameState = {
     username: '',
-    mode: 'infini',
+    mode: 'daily',
+    correct: 0,
     score: 0,
     streak: 0,
     multiplier: 1,
@@ -20,8 +21,8 @@ const gameState = {
     isCustomGame: false,
     customFilters: {
         difficulties: ['1', '2', '3', '4', '5'],
-        themes: ['geographie', 'histoire', 'science', 'cinema', 'general'],
-        types: ['flag', 'slider', 'boolean', 'qcm', 'text', 'order', 'map_pin', 'duel']
+        themes: ['geographie', 'histoire', 'science', 'cinema', 'general', 'literature', 'art', 'music'],
+        types: ['flag', 'slider', 'boolean', 'qcm', 'text', 'order', 'map_pin']
     }
 };
 
@@ -66,8 +67,8 @@ function startQuickGame() {
     document.querySelectorAll('input[name="diff"], input[name="theme"], input[name="qtype"]').forEach(el => el.checked = true);
     gameState.customFilters = {
         difficulties: ['1', '2', '3', '4', '5'],
-        themes: ['geographie', 'histoire', 'science', 'cinema', 'general'],
-        types: ['flag', 'slider', 'boolean', 'qcm', 'text', 'order', 'map_pin', 'duel']
+        themes: ['geographie', 'histoire', 'science', 'cinema', 'general', 'literature', 'art', 'music'],
+        types: ['flag', 'slider', 'boolean', 'qcm', 'text', 'order', 'map_pin']
     };
     gameState.isCustomGame = false;
     startGame();
@@ -89,7 +90,7 @@ function startCustomGame() {
     const selectedTypes = Array.from(document.querySelectorAll('input[name="qtype"]:checked')).map(el => el.value);
 
     if (selectedDifficulties.length === 0 || selectedThemes.length === 0 || selectedTypes.length === 0) {
-        alert("Veuillez cocher au moins une option dans chaque catégorie !");
+        document.getElementById('modal-err').innerText = 'Coche au moins une case dans chaque groupe.';
         return;
     }
 
@@ -106,6 +107,10 @@ function startCustomGame() {
 
 window.addEventListener('keydown', (e) => {
     if (gameState.isAnswered) return;
+    // A B C D ou 1 2 3 4 : appuie sur la touche de réponse correspondante
+    const k = e.key.toLowerCase(), idx = 'abcd'.indexOf(k) >= 0 ? 'abcd'.indexOf(k) : '1234'.indexOf(k);
+    const tiles = document.querySelectorAll('#options-box .opt-btn, #options-box .duel-card-btn');
+    if (idx >= 0 && tiles[idx] && document.activeElement?.tagName !== 'INPUT') { e.preventDefault(); tiles[idx].click(); return; }
     if (e.altKey || e.ctrlKey || e.metaKey || e.key === 'Tab') return;
 
     const screenGame = document.getElementById('screen-game');
@@ -128,13 +133,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameInput = document.getElementById('username');
     if (usernameInput) usernameInput.value = savedUser;
     updateProfileBadge(savedUser);
+    showDailyBest();
     fetchLeaderboard('home-leaderboard');
 });
 
 function updateProfileBadge(name) {
     const best = localStorage.getItem('quiz_best_score') || 0;
     const badge = document.getElementById('profile-badge');
-    if (badge) badge.innerText = `👤 ${name} (Max: ${best} pts)`;
+    if (badge) badge.innerText = `${name} · record ${Number(best).toLocaleString('fr-FR')}`;
 }
 
 function startGame() {
@@ -150,6 +156,8 @@ function startGame() {
     gameState.multiplier = 1;
     gameState.tier = 1;
     gameState.questionCount = 0;
+    gameState.correct = 0;
+    gameState.answers = [];
     gameState.seenIds = [];
 
     if (gameState.mode === 'sudden') {
@@ -158,9 +166,9 @@ function startGame() {
     } else if (gameState.mode === 'sprint') {
         gameState.lives = 99;
         gameState.maxQuestions = 10;
-    } else if (gameState.mode === 'test') {
-        gameState.lives = 999;
-        gameState.maxQuestions = null;
+    } else if (gameState.mode === 'daily') {
+        gameState.lives = 99;
+        gameState.maxQuestions = 10;
     } else {
         gameState.lives = 3;
         gameState.maxQuestions = null;
@@ -190,13 +198,14 @@ async function fetchNextQuestion() {
             themes: JSON.stringify(gameState.customFilters.themes),
             types: JSON.stringify(gameState.customFilters.types)
         });
+        if (gameState.mode === 'daily' && !gameState.isCustomGame) { queryParams.set('daily', todayKey()); queryParams.set('n', String(gameState.questionCount)); }
 
         const response = await fetch(`/api/question?${queryParams.toString()}`);
         const data = await response.json();
 
         if (data.error) {
-            alert(data.error);
-            showGameOver();
+            document.getElementById('feedback-container').innerHTML = `<div class="feedback feedback-red">${data.error}</div>`;
+            setTimeout(showGameOver, 1800);
             return;
         }
 
@@ -220,7 +229,7 @@ async function fetchNextQuestion() {
         startTimer();
     } catch (err) {
         console.error('Erreur :', err);
-        alert('Erreur de connexion au serveur.');
+        document.getElementById('feedback-container').innerHTML = '<div class="feedback feedback-red">Impossible de charger la question.</div>';
     }
 }
 
@@ -229,8 +238,9 @@ function renderQuestion() {
     const q = gameState.currentQuestion;
     const container = document.getElementById('question-container');
     
-    let html = `<h3 style="color: #94a3b8; font-size: 14px; text-transform: uppercase; margin-bottom: 8px;">[${q.theme} • ${q.type}] • Difficulté ${q.difficulty}</h3>`;
-    html += `<p style="font-size: 19px; font-weight: 700; margin-bottom: 20px;">${q.question_text}</p>`;
+    const THEMES = { geographie: 'géographie', histoire: 'histoire', science: 'science', cinema: 'cinéma', general: 'culture générale', literature: 'littérature', art: 'art', music: 'musique' };
+    let html = `<p class="q-meta mono">(${String(gameState.questionCount).padStart(2, '0')}) ${THEMES[String(q.theme).toLowerCase()] || q.theme} · niveau ${q.difficulty}</p>`;
+    html += `<p class="q-text">${q.question_text}</p>`;
 
     if (q.type === 'flag') {
         const flagCode = String(q.flag_code || (q.id && q.id.startsWith('flag_') ? q.id.replace('flag_', '') : 'fr')).toLowerCase().trim();
@@ -239,7 +249,7 @@ function renderQuestion() {
                  </div>`;
         
         const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-        html += `<div style="display:flex; flex-direction:column; gap:10px;" id="options-box"></div>`;
+        html += `<div class="opts" id="options-box"></div>`;
         container.innerHTML = html;
 
         const optionsBox = document.getElementById('options-box');
@@ -255,7 +265,7 @@ function renderQuestion() {
     }
     else if (q.type === 'qcm' || q.type === 'boolean') {
         const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-        html += `<div style="display:flex; flex-direction:column; gap:10px;" id="options-box"></div>`;
+        html += `<div class="opts" id="options-box"></div>`;
         container.innerHTML = html;
 
         const optionsBox = document.getElementById('options-box');
@@ -271,31 +281,31 @@ function renderQuestion() {
     }
     else if (q.type === 'slider') {
         const middleValue = Math.round((q.min_val + q.max_val) / 2);
-        html += `<div class="hint-banner">↔️ Glissez le curseur OU tapez directement la valeur au clavier</div>
+        html += `<div class="hint-banner">Glisse le curseur, ou tape la valeur au clavier</div>
                  <div class="slider-container" id="slider-wrapper-container">
-                    <div id="slider-value-bubble" onclick="openExactInput()">${middleValue.toLocaleString()}<small style="display:block; font-size:10px; opacity:0.8;">✏️ Saisir</small></div>
+                    <div id="slider-value-bubble" onclick="openExactInput()">${middleValue.toLocaleString()}<small>saisir</small></div>
                     <div class="slider-custom-thumb" id="slider-custom-thumb"></div>
                     <input type="range" id="slider-answer" min="${q.min_val}" max="${q.max_val}" step="1" value="${middleValue}" oninput="updateSliderBubble(this)">
                  </div>
                  <div class="slider-labels-container">
                     <div class="slider-extreme-card">
-                        <div class="extreme-tag">◀ Min</div>
+                        <div class="extreme-tag">min</div>
                         <div class="extreme-label">${q.min_label || ''}</div>
                         <div class="extreme-value">${q.min_val.toLocaleString()}</div>
                     </div>
-                    <div class="slider-extreme-card" style="text-align:right;">
-                        <div class="extreme-tag">Max ▶</div>
+                    <div class="slider-extreme-card r">
+                        <div class="extreme-tag">max</div>
                         <div class="extreme-label">${q.max_label || ''}</div>
                         <div class="extreme-value">${q.max_val.toLocaleString()}</div>
                     </div>
                  </div>
-                 <button id="validate-btn" onclick="submitSliderAnswer()">Valider la valeur</button>`;
+                 <button id="validate-btn" onclick="submitSliderAnswer()">Valider</button>`;
         container.innerHTML = html;
         const sliderEl = document.getElementById('slider-answer');
         if (sliderEl) updateSliderBubble(sliderEl);
     } 
     else if (q.type === 'text') {
-        html += `<input type="text" id="text-answer" placeholder="Votre réponse..." autocomplete="off" onkeypress="if(event.key === 'Enter') submitTextAnswer()" style="margin-bottom: 12px;">
+        html += `<input type="text" id="text-answer" placeholder="Ta réponse" autocomplete="off" onkeypress="if(event.key === 'Enter') submitTextAnswer()">
                  <button id="validate-btn" onclick="submitTextAnswer()">Valider</button>`;
         container.innerHTML = html;
         const textInput = document.getElementById('text-answer');
@@ -316,14 +326,14 @@ function renderQuestion() {
 
         gameState.currentOrder = shuffled;
 
-        html += `<div class="hint-banner">🖐️ Glissez le texte ou utilisez les flèches pour ordonner les cartes</div>
+        html += `<div class="hint-banner">Glisse les lignes ou utilise les flèches</div>
                  <div id="order-box" class="order-list"></div>
                  <button id="validate-btn" onclick="submitOrderAnswer()">Valider l'ordre</button>`;
         container.innerHTML = html;
         renderOrderItems();
     }
     else if (q.type === 'map_pin') {
-        html += `<div class="hint-banner">🗺️ Glisse, zoome et clique directement sur le pays recherché</div>
+        html += `<div class="hint-banner">Glisse, zoome, puis clique sur le pays</div>
                  <div id="leaflet-map-container"></div>`;
         container.innerHTML = html;
 
@@ -335,7 +345,7 @@ function renderQuestion() {
     }
     else if (q.type === 'duel' || q.type === 'egg_chicken') {
         const options = typeof q.options === 'string' ? JSON.parse(q.options) : q.options;
-        html += `<div class="hint-banner">⚖️ Lequel est apparu en premier ?</div>
+        html += `<div class="hint-banner">Lequel est apparu en premier ?</div>
                  <div class="duel-container" id="options-box"></div>`;
         container.innerHTML = html;
 
@@ -344,7 +354,7 @@ function renderQuestion() {
             options.forEach((opt, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'duel-card-btn';
-                btn.innerHTML = `<span style="font-size:12px; opacity:0.7; display:block; margin-bottom:5px;">Option ${index + 1}</span><strong>${opt}</strong>`;
+                btn.innerHTML = `<span class="k">(${index + 1})</span><strong>${opt}</strong>`;
                 btn.onclick = () => submitChoiceAnswer(btn, opt);
                 optionsBox.appendChild(btn);
             });
@@ -413,7 +423,7 @@ function openExactInput(initialChar = null) {
         const newBubble = document.createElement('div');
         newBubble.id = 'slider-value-bubble';
         newBubble.onclick = () => openExactInput();
-        newBubble.innerHTML = `${parseFloat(slider.value).toLocaleString()}<small style="display:block; font-size:10px; opacity:0.8;">✏️ Saisir</small>`;
+        newBubble.innerHTML = `${parseFloat(slider.value).toLocaleString()}<small>saisir</small>`;
 
         if (input.parentNode) parent.replaceChild(newBubble, input);
         updateSliderBubble(slider);
@@ -513,7 +523,7 @@ function updateSliderBubble(slider) {
 
     const val = parseFloat(slider.value);
     if (bubble) {
-        bubble.innerHTML = `${val.toLocaleString()}<small style="display:block; font-size:10px; opacity:0.8;">✏️ Saisir</small>`;
+        bubble.innerHTML = `${val.toLocaleString()}<small>saisir</small>`;
     }
 
     const min = parseFloat(slider.min);
@@ -572,9 +582,9 @@ async function evaluateAnswer(userAnswer, isTimeout = false, isCheat = false) {
     const feedbackEl = document.getElementById('feedback-container');
 
     if (gameState.selectedOptionBtn) {
-        gameState.selectedOptionBtn.style.setProperty('background', data.isCorrect ? '#10b981' : '#ef4444', 'important');
-        gameState.selectedOptionBtn.style.setProperty('border-color', data.isCorrect ? '#10b981' : '#ef4444', 'important');
-        gameState.selectedOptionBtn.style.color = '#ffffff';
+        gameState.selectedOptionBtn.classList.add(data.isCorrect ? 'is-right' : 'is-wrong');
+        // erreur : la bonne touche s'allume aussi
+        if (!data.isCorrect && data.correct != null) document.querySelectorAll('#options-box .opt-btn, #options-box .duel-card-btn').forEach((b) => { if (b.textContent.trim().toLowerCase() === String(data.correct).trim().toLowerCase() || b.querySelector('strong')?.textContent.trim().toLowerCase() === String(data.correct).trim().toLowerCase()) b.classList.add('is-right'); });
     }
 
     if (gameState.currentQuestion.type === 'slider' && data.targetValue !== undefined) {
@@ -601,7 +611,7 @@ async function evaluateAnswer(userAnswer, isTimeout = false, isCheat = false) {
             const oEnd = Math.min(100, targetAdjustedPercent + 9);
 
             if (bubble) {
-                const colorMap = { green: '#10b981', yellow: '#eab308', orange: '#f59e0b', red: '#ef4444' };
+                const colorMap = { green: '#2e9d5b', yellow: '#c9a227', orange: '#c9a227', red: '#d9472b' };
                 bubble.style.background = colorMap[data.tierColor] || '#ef4444';
             }
 
@@ -621,13 +631,13 @@ async function evaluateAnswer(userAnswer, isTimeout = false, isCheat = false) {
         const countryName = countryNamesMap[targetIso] || targetIso.toUpperCase();
 
         if (isCheat) {
-            data.feedback = `⚠️ Changement d'onglet ! Il fallait cliquer sur <strong>${countryName}</strong>.`;
+            data.feedback = `Tu as changé d'onglet. Il fallait cliquer sur <b>${countryName}</b>.`;
         } else if (isTimeout) {
-            data.feedback = `⏰ Temps écoulé ! Il fallait cliquer sur <strong>${countryName}</strong>.`;
+            data.feedback = `Temps écoulé. Il fallait cliquer sur <b>${countryName}</b>.`;
         } else if (!data.isCorrect) {
-            data.feedback = `🔴 Raté ! Il fallait cliquer sur <strong>${countryName}</strong>.`;
+            data.feedback = `Raté. Il fallait cliquer sur <b>${countryName}</b>.`;
         } else {
-            data.feedback = `🟢 Bien joué, c'est bien <strong>${countryName}</strong> !`;
+            data.feedback = `Bien vu, c'est bien <b>${countryName}</b>.`;
         }
 
         initLeafletMap('leaflet-map-container', gameState.currentQuestion.correct_answer, () => {}, targetIso);
@@ -642,12 +652,15 @@ async function evaluateAnswer(userAnswer, isTimeout = false, isCheat = false) {
         let points = Math.round(100 * gameState.multiplier * (data.scoreMultiplier || 1) * timeBonus);
         if (gameState.mode === 'sudden') points *= 2;
         gameState.score += points;
+        gameState.correct++;
+        (gameState.answers ||= []).push('■');
         gameState.tier++;
-        feedbackEl.innerHTML = `<div class="feedback ${tierColorClass}">${data.feedback} (+${points} pts)</div>`;
+        feedbackEl.innerHTML = `<div class="feedback ${tierColorClass}">${data.feedback} <span class="mono mu"> +${points}</span></div>`;
     } else {
         gameState.streak = 0;
         gameState.multiplier = 1;
-        if (gameState.mode !== 'sprint' && gameState.mode !== 'test') gameState.lives--;
+        (gameState.answers ||= []).push('□');
+        if (gameState.mode !== 'sprint' && gameState.mode !== 'daily') gameState.lives--;
         updateHUD();
         feedbackEl.innerHTML = `<div class="feedback ${tierColorClass}">${data.feedback}</div>`;
     }
@@ -663,20 +676,27 @@ async function showGameOver() {
 
     if (gameState.isCustomGame) {
         if (leaderboardWrapper) leaderboardWrapper.classList.add('hidden');
-        document.getElementById('best-score-badge').innerHTML = `<span style="display:inline-block; margin-top: 6px; margin-bottom: 6px;">✨ Partie personnalisée (Score non classé)</span>`;
-        document.getElementById('final-stats').innerText = `Score final : ${gameState.score} pts (${gameState.questionCount} questions jouées)`;
+        document.getElementById('best-score-badge').innerText = 'Partie sur mesure : score non classé.';
+        document.getElementById('final-stats').innerText = `${gameState.score.toLocaleString('fr-FR')} points`;
     } else {
         if (leaderboardWrapper) leaderboardWrapper.classList.remove('hidden');
 
         const best = parseInt(localStorage.getItem('quiz_best_score') || 0);
         if (gameState.score > best) {
             localStorage.setItem('quiz_best_score', gameState.score);
-            document.getElementById('best-score-badge').innerText = "🎉 NOUVEAU MEILLEUR SCORE LOCAL !";
+            document.getElementById('best-score-badge').innerText = `${gameState.correct} bonnes réponses sur ${gameState.questionCount}. Nouveau record sur cet appareil.`;
         } else {
-            document.getElementById('best-score-badge').innerText = `Meilleur score : ${best} pts`;
+            document.getElementById('best-score-badge').innerText = `${gameState.correct} bonnes réponses sur ${gameState.questionCount}. Record : ${best.toLocaleString('fr-FR')} points.`;
         }
 
-        document.getElementById('final-stats').innerText = `Score final : ${gameState.score} pts (${gameState.questionCount} questions jouées)`;
+        document.getElementById('final-stats').innerText = `${gameState.score.toLocaleString('fr-FR')} points`;
+        if (gameState.mode === 'daily') {
+            const key = 'quiz_daily_' + todayKey();
+            const prev = JSON.parse(localStorage.getItem(key) || 'null');
+            if (!prev || gameState.score > prev.score) localStorage.setItem(key, JSON.stringify({ score: gameState.score, correct: gameState.correct }));
+            document.getElementById('go-label').innerText = `Défi du ${todayLabel()}`;
+            document.getElementById('share-btn').classList.remove('hidden');
+        }
         updateProfileBadge(gameState.username);
 
         try {
@@ -707,7 +727,7 @@ async function fetchLeaderboard(targetContainerId) {
         const scores = await response.json();
 
         if (!scores || scores.length === 0) {
-            container.innerHTML = `<p style="color: #64748b; font-size: 13px;">Aucun score enregistré pour l'instant.</p>`;
+            container.innerHTML = `<p class="empty">Aucun score pour l'instant. À toi de jouer.</p>`;
             return;
         }
 
@@ -715,27 +735,48 @@ async function fetchLeaderboard(targetContainerId) {
         scores.forEach((item, index) => {
             html += `
                 <div class="leader-item">
-                    <span><span class="rank">#${index + 1}</span> ${item.username} <small style="color:#64748b;">(${item.mode})</small></span>
-                    <span class="score-val">${item.score} pts</span>
+                    <span><span class="rank">(${String(index + 1).padStart(2, '0')})</span>${item.username}<small>${MODES[item.mode] || item.mode}</small></span>
+                    <span class="score-val">${Number(item.score).toLocaleString('fr-FR')}</span>
                 </div>`;
         });
         container.innerHTML = html;
     } catch (err) {
         console.error("Erreur leaderboard :", err);
-        container.innerHTML = `<p style="color: #ef4444; font-size: 13px;">Impossible de charger le classement.</p>`;
+        container.innerHTML = `<p class="empty">Classement indisponible.</p>`;
     }
 }
 
 function resetToHome() {
     document.getElementById('screen-gameover').classList.add('hidden');
     document.getElementById('screen-home').classList.remove('hidden');
+    document.getElementById('share-btn').classList.add('hidden');
+    document.getElementById('go-label').innerText = 'Game over';
+    showDailyBest();
     fetchLeaderboard('home-leaderboard');
 }
 
 function updateHUD() {
-    const hearts = (gameState.mode === 'sprint' || gameState.mode === 'test') ? '♾️' : ("❤️".repeat(Math.max(0, gameState.lives)) || '💀');
-    document.getElementById('stat-lives').innerText = `Vies : ${hearts}`;
-    document.getElementById('stat-score').innerText = `Score : ${gameState.score}`;
-    document.getElementById('stat-multiplier').innerText = `🔥 x${gameState.multiplier}`;
-    document.getElementById('stat-progress').innerText = `Q: ${gameState.questionCount + 1}${gameState.maxQuestions ? '/' + gameState.maxQuestions : ''}`;
+    const noLives = gameState.mode === 'sprint' || gameState.mode === 'daily';
+    document.getElementById('stat-lives').innerHTML = noLives ? '' : `vies <b>${Math.max(0, gameState.lives)}</b>`;
+    document.getElementById('stat-score').innerHTML = `<b>${gameState.score.toLocaleString('fr-FR')}</b> pts`;
+    document.getElementById('stat-multiplier').innerHTML = gameState.multiplier > 1 ? `série <b>×${gameState.multiplier}</b>` : '';
+    document.getElementById('stat-progress').innerHTML = `question <b>${String(gameState.questionCount + (gameState.isAnswered ? 0 : 0)).padStart(2, '0')}</b>${gameState.maxQuestions ? ' / ' + gameState.maxQuestions : ''}`;
+}
+
+// ---------- défi du jour : dix questions tirées d'après la date, les mêmes pour tout le monde ----------
+const MODES = { daily: 'défi du jour', infini: 'infini', sudden: 'mort subite', sprint: 'sprint' };
+function todayKey() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function todayLabel() { return new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' }); }
+function showDailyBest() {
+    const el = document.getElementById('daily-best'); if (!el) return;
+    const r = JSON.parse(localStorage.getItem('quiz_daily_' + todayKey()) || 'null');
+    el.innerText = r ? `Défi du ${todayLabel()} : déjà joué, ${r.correct}/10 et ${r.score.toLocaleString('fr-FR')} points. Tu peux retenter.` : '';
+}
+function shareDaily() {
+    const marks = gameState.answers ? gameState.answers.join('') : '';
+    const text = `Quiz-O-Matic · défi du ${todayLabel()}\n${gameState.correct}/10 · ${gameState.score.toLocaleString('fr-FR')} points ${marks}\nkerningkastle.com/lab`;
+    const btn = document.getElementById('share-btn');
+    const done = () => { btn.innerText = 'Copié'; setTimeout(() => (btn.innerText = 'Copier mon résultat'), 1600); };
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) navigator.share({ text }).catch(() => {});
+    else navigator.clipboard?.writeText(text).then(done, done);
 }

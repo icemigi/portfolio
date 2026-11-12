@@ -2,25 +2,60 @@
 // Canvas de type modulaire : les lettres sont faites de modules (cellules 5×7)
 // qui changent de forme à l'approche du curseur. Sans curseur, un point fantôme
 // se promène. Respecte prefers-reduced-motion (rendu statique).
-interface Props { text?: string; label: string; class?: string; cols?: number; align?: 'left' | 'center' | 'right' }
-const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'center' } = Astro.props;
+interface Props { text?: string; label: string; class?: string; cols?: number; align?: 'left' | 'center' | 'right'; edit?: boolean }
+const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'center', edit = false } = Astro.props;
 ---
-<canvas class:list={['type-canvas', cls]} data-text={text} data-cols={cols} data-align={align} role="img" aria-label={label}></canvas>
+<canvas class:list={['type-canvas', cls]} data-text={text} data-cols={cols} data-align={align} data-edit={edit || undefined} role="img" aria-label={label}></canvas>
 
 <script>
   import { reduced as isReduced } from '../scripts/motion';
   // Glyphes 5 × 7 (1 = module plein)
+  // Glyphes 5 × 7 (1 = module plein) : alphabet complet, chiffres et ponctuation courante
   const GLYPHS: Record<string, string[]> = {
-    K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
-    E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
-    R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
-    N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
-    I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
-    G: ['01111', '10000', '10000', '10011', '10001', '10001', '01111'],
     A: ['01110', '10001', '10001', '11111', '10001', '10001', '10001'],
+    B: ['11110', '10001', '10001', '11110', '10001', '10001', '11110'],
+    C: ['01111', '10000', '10000', '10000', '10000', '10000', '01111'],
+    D: ['11110', '10001', '10001', '10001', '10001', '10001', '11110'],
+    E: ['11111', '10000', '10000', '11110', '10000', '10000', '11111'],
+    F: ['11111', '10000', '10000', '11110', '10000', '10000', '10000'],
+    G: ['01111', '10000', '10000', '10011', '10001', '10001', '01111'],
+    H: ['10001', '10001', '10001', '11111', '10001', '10001', '10001'],
+    I: ['11111', '00100', '00100', '00100', '00100', '00100', '11111'],
+    J: ['00111', '00001', '00001', '00001', '00001', '10001', '01110'],
+    K: ['10001', '10010', '10100', '11000', '10100', '10010', '10001'],
+    L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+    M: ['10001', '11011', '10101', '10101', '10001', '10001', '10001'],
+    N: ['10001', '11001', '10101', '10011', '10001', '10001', '10001'],
+    O: ['01110', '10001', '10001', '10001', '10001', '10001', '01110'],
+    P: ['11110', '10001', '10001', '11110', '10000', '10000', '10000'],
+    Q: ['01110', '10001', '10001', '10001', '10101', '10010', '01101'],
+    R: ['11110', '10001', '10001', '11110', '10100', '10010', '10001'],
     S: ['01111', '10000', '10000', '01110', '00001', '00001', '11110'],
     T: ['11111', '00100', '00100', '00100', '00100', '00100', '00100'],
-    L: ['10000', '10000', '10000', '10000', '10000', '10000', '11111'],
+    U: ['10001', '10001', '10001', '10001', '10001', '10001', '01110'],
+    V: ['10001', '10001', '10001', '10001', '10001', '01010', '00100'],
+    W: ['10001', '10001', '10001', '10101', '10101', '10101', '01010'],
+    X: ['10001', '10001', '01010', '00100', '01010', '10001', '10001'],
+    Y: ['10001', '10001', '01010', '00100', '00100', '00100', '00100'],
+    Z: ['11111', '00001', '00010', '00100', '01000', '10000', '11111'],
+    0: ['01110', '10011', '10101', '10101', '10101', '11001', '01110'],
+    1: ['00100', '01100', '00100', '00100', '00100', '00100', '01110'],
+    2: ['01110', '10001', '00001', '00010', '00100', '01000', '11111'],
+    3: ['11110', '00001', '00001', '01110', '00001', '00001', '11110'],
+    4: ['00010', '00110', '01010', '10010', '11111', '00010', '00010'],
+    5: ['11111', '10000', '11110', '00001', '00001', '10001', '01110'],
+    6: ['00110', '01000', '10000', '11110', '10001', '10001', '01110'],
+    7: ['11111', '00001', '00010', '00100', '01000', '01000', '01000'],
+    8: ['01110', '10001', '10001', '01110', '10001', '10001', '01110'],
+    9: ['01110', '10001', '10001', '01111', '00001', '00010', '01100'],
+    '!': ['00100', '00100', '00100', '00100', '00100', '00000', '00100'],
+    '?': ['01110', '10001', '00001', '00010', '00100', '00000', '00100'],
+    '.': ['00000', '00000', '00000', '00000', '00000', '00000', '00100'],
+    ',': ['00000', '00000', '00000', '00000', '00100', '00100', '01000'],
+    '-': ['00000', '00000', '00000', '11111', '00000', '00000', '00000'],
+    "'": ['00100', '00100', '01000', '00000', '00000', '00000', '00000'],
+    '&': ['01100', '10010', '10100', '01000', '10101', '10010', '01101'],
+    '+': ['00000', '00100', '00100', '11111', '00100', '00100', '00000'],
     ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
   };
 
@@ -35,7 +70,9 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
   function init(canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const text = (canvas.dataset.text || 'KERNINGKASTLE').toUpperCase();
+    const base = (canvas.dataset.text || 'KERNINGKASTLE').toUpperCase();
+    let text = base, typed = false, family = -1; // family : -1 = mélange (graine), 0..3 = une seule famille de modules
+    const FAMILY = ['mixte', 'cercles', 'quarts', 'diagonales', 'carrés'];
     const reduced = isReduced();
 
     let W = 0, H = 0, s = 0;
@@ -100,6 +137,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
 
     function splitText(str: string) {
       if (str === 'KERNINGKASTLE') return ['KERNING', 'KASTLE'];
+      const sp = str.indexOf(' ', Math.floor(str.length / 3)); if (sp > 0) return [str.slice(0, sp), str.slice(sp + 1)];
       const mid = Math.ceil(str.length / 2);
       return [str.slice(0, mid), str.slice(mid)];
     }
@@ -137,7 +175,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       c.save();
       c.translate(x + s / 2, y + s / 2);
       c.rotate(rot);
-      switch ((seed >>> 3) % 4) {
+      switch (family < 0 ? (seed >>> 3) % 4 : [1, 0, 2, 3][family]) {
         case 0: { // quart de cercle
           c.beginPath();
           c.moveTo(-s / 2, -s / 2);
@@ -199,6 +237,24 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       if (visible) kick();
     }).observe(canvas);
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); draw(); });
+
+    // clavier (salle du Lab : data-edit) : on tape son propre mot ; retour arrière efface ; Échap revient au mot de départ
+    if (canvas.hasAttribute('data-edit')) {
+      addEventListener('keydown', (e) => {
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+        const k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        if (k === 'Escape') { text = base; typed = false; }
+        else if (k === 'Backspace') { text = typed ? text.slice(0, -1) : ''; typed = true; }
+        else if (k.length === 1 && GLYPHS[k] && k !== ' ' || (k === ' ' && typed)) { text = (typed ? text : '') + k; typed = true; if (text.length > 16) text = text.slice(-16); }
+        else return;
+        e.preventDefault(); layout(); kick();
+        canvas.dispatchEvent(new CustomEvent('type:change', { detail: { text } }));
+      });
+      // clic : famille de modules suivante
+      canvas.addEventListener('click', () => { family = family >= 3 ? -1 : family + 1; draw(); canvas.dispatchEvent(new CustomEvent('type:family', { detail: { name: FAMILY[family + 1] } })); });
+      // enregistrer : la toile en PNG, mot dans le nom du fichier
+      canvas.addEventListener('type:save', () => { const a = document.createElement('a'); a.download = `type-modulaire-${(text.trim() || 'vide').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`; a.href = canvas.toDataURL('image/png'); a.click(); });
+    }
 
     layout();
     kick();

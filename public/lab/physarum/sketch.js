@@ -18,9 +18,8 @@ let dynamicContourMask;
 let currentText = "a";      
 let canvas;                 
 
-let customImage = null;     
-let fileInput;              
-let batchImgBtn;            
+let customImage = null;
+let food;
 
 let charCenters = [];       
 const STEP_DELAY = 1;       
@@ -61,13 +60,8 @@ function setup() {
     canvas = createCanvas(INSTA_WIDTH, INSTA_HEIGHT); 
     pixelDensity(1);                                    
     
-    fileInput = createFileInput(handleFile);            
-    fileInput.parent('ui-container'); 
+    canvas.parent('stage');
 
-    batchImgBtn = createButton('Batch 200 Frames Image');
-    batchImgBtn.parent('ui-container');
-    batchImgBtn.mousePressed(startImageBatch); 
-    
     cols = width / resolution;
     rows = height / resolution;
     
@@ -75,6 +69,7 @@ function setup() {
     nextGrid = new Float32Array(cols * rows);
     baseContourMask = new Float32Array(cols * rows);
     dynamicContourMask = new Float32Array(cols * rows);
+    food = new Float32Array(cols * rows); // nourriture déposée à la souris, qui s'épuise
     
     buildSphereBrush(sphereBrushes.small, resolution * 0.6);
     buildSphereBrush(sphereBrushes.medium, resolution * 1.0);
@@ -375,26 +370,13 @@ function updateDynamicMask() {
 // GESTION DES ENTRÉES CLAVIER
 // ==========================================
 function keyTyped() {
-    if (isMorphBatching || isImageBatching || customImage !== null) return;
-
-    if (key.length === 1) {
-        currentText = key;
-        startMorph(key);
-    }
+    if (isMorphBatching || isImageBatching || key.length !== 1 || !key.trim()) return;
+    currentText = key;
+    if (customImage !== null) { customImage = null; updateMaskSource(); return; }
+    startMorph(key);
 }
 
 function keyPressed() {
-    if ((key === 'p' || key === 'P') && !isPreloadingAll && !isMorphBatching && !isImageBatching && customImage === null) {
-        isPreloadingAll = true;
-        loadIndex = 0;
-        console.log("Pré-chargement global des formes démarré...");
-        return;
-    }
-
-    if ((key === 'e' || key === 'E') && !isMorphBatching && !isImageBatching && customImage === null) {
-        startMorphBatchExport();
-        return;
-    }
     if (isMorphBatching || isImageBatching) return; 
 
     if (keyCode === ESCAPE) {
@@ -610,6 +592,7 @@ function draw() {
 function runSingleSimulationStep() {
     simulationFrameCount++; 
     updateDynamicMask(); 
+    for (let i = 0; i < food.length; i++) if (food[i] > 0.01) { if (food[i] > dynamicContourMask[i]) dynamicContourMask[i] = food[i]; food[i] *= 0.988; } else food[i] = 0;
     
     let waveTime = simulationFrameCount * 0.1; 
     
@@ -717,3 +700,44 @@ function renderToPixels() {
     }
     updatePixels(); 
 }
+
+// ==========================================
+// INTERACTION : nourrir à la souris, déposer une image, inverser, enregistrer, filmer
+// ==========================================
+function feed(mx, my) {
+    const cx = mx / resolution, cy = my / resolution, r = 11;
+    for (let y = Math.max(4, Math.floor(cy - r)); y < Math.min(rows - 4, cy + r); y++)
+        for (let x = Math.max(4, Math.floor(cx - r)); x < Math.min(cols - 4, cx + r); x++) {
+            const d = Math.hypot(x - cx, y - cy) / r;
+            if (d > 1) continue;
+            const i = x + y * cols, v = 0.95 * (1 - d * d);
+            if (v > food[i]) food[i] = v;
+            if (Math.random() < 0.18 * (1 - d)) grid[i] = 1;
+        }
+}
+function mouseDragged() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) feed(mouseX, mouseY); }
+function mousePressed() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) feed(mouseX, mouseY); }
+function touchMoved() { mouseDragged(); return false; }
+
+(() => {
+    const $ = (s) => document.querySelector(s);
+    if (window.top !== window) document.body.classList.add('in-room'); // dans une salle du Lab : la barre passe sous le menu du site
+    const useImage = (file) => { if (!file || !/^image\//.test(file.type)) return; const url = URL.createObjectURL(file); loadImage(url, (img) => { customImage = img; updateMaskSource(); }); };
+    $('#pick').onclick = () => $('#file').click();
+    $('#file').onchange = (e) => useImage(e.target.files[0]);
+    addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('over'); });
+    addEventListener('dragleave', () => document.body.classList.remove('over'));
+    addEventListener('drop', (e) => { e.preventDefault(); document.body.classList.remove('over'); useImage(e.dataTransfer.files[0]); });
+    $('#invert').onclick = () => { for (let k = 0; k < 3; k++) [BG_COLOR[k], TEXT_COLOR[k]] = [TEXT_COLOR[k], BG_COLOR[k]]; document.body.classList.toggle('light'); };
+    $('#save').onclick = () => saveCanvas('lettres-qui-poussent', 'png');
+    const rec = $('#rec');
+    rec.onclick = () => {
+        if (!window.MediaRecorder || rec.dataset.on) return;
+        const type = ['video/mp4', 'video/webm;codecs=vp9', 'video/webm'].find((t) => MediaRecorder.isTypeSupported(t)) || '';
+        const mr = new MediaRecorder(canvas.elt.captureStream(30), type ? { mimeType: type, videoBitsPerSecond: 8e6 } : undefined), parts = [];
+        mr.ondataavailable = (e) => e.data.size && parts.push(e.data);
+        mr.onstop = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(parts, { type: mr.mimeType })); a.download = 'lettres-qui-poussent.' + (/mp4/.test(mr.mimeType) ? 'mp4' : 'webm'); a.click(); rec.textContent = 'vidéo 6 s'; delete rec.dataset.on; };
+        rec.dataset.on = '1'; mr.start(); let t = 6; rec.textContent = `● ${t} s`;
+        const iv = setInterval(() => { t--; rec.textContent = `● ${t} s`; if (t <= 0) { clearInterval(iv); mr.stop(); } }, 1000);
+    };
+})();

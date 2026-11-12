@@ -9,7 +9,8 @@
     <meta name="description" content="Letteroastd, par kerningkastle : importe ton export Letterboxd et découvre ce que ta cinéphilie dit de toi. Tout se passe dans ton navigateur, rien n'est envoyé." />
     <link rel="canonical" href="https://kerningkastle.com/lab/letteroastd/" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
     <style>
         /* Letteroastd : une affiche de cinéma. Titre géant coupé par le bord, texte calé à gauche,
            bandes orange / verte / bleue (les couleurs de Letterboxd) comme éléments graphiques, mentions en bloc-générique. */
@@ -29,7 +30,7 @@
         .billing, .option-label, .final-badge, .stat-label, .wrapped-title, .tooltip-header, .micro-loader, .hint-text { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; line-height: 1.35; }
 
         #hover-poster { display: none; }
-        .word-fade { display: inline-block; opacity: 0; animation: fadeIn .35s ease-out forwards; margin-right: .22em; }
+        .word-fade { display: inline-block; opacity: 0; animation: fadeIn .35s ease-out forwards; }
         .fade-in-up { animation: fadeIn .35s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .highlight { color: var(--gr); }
@@ -120,493 +121,453 @@
         }
         @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
     </style>
+    <style>
+        /* ---------- v4 : répliques, compteur, profil exemple, fiche lisible ---------- */
+        .lr-back { position: absolute; left: var(--m); top: 14px; font-size: 12px; letter-spacing: .06em; color: var(--tx); text-decoration: none; }
+        .lr-back:hover { color: var(--hi); }
+        #stage-home { padding-top: calc(var(--m) + 24px); }
+        .home-actions { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 12px; }
+        .demo-btn { background: none; border: 0; padding: 0; color: var(--tx); font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--ln); }
+        .demo-btn:hover { color: var(--hi); border-color: var(--gr); }
+        .lang-btn { background: none; border: 0; padding: 0; color: var(--tx); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+        .lang-btn:hover { color: var(--hi); }
+        .err { min-height: 1.4em; margin: 10px 0 0; color: var(--or); font-size: 13px; }
+        .step-count { position: absolute; right: var(--m); top: calc(12px + var(--m) * .6); font-size: 12px; letter-spacing: .06em; color: var(--tx); font-variant-numeric: tabular-nums; }
+        .step-count b { color: var(--hi); font-weight: 500; }
+        .quit { position: absolute; left: var(--m); top: calc(12px + var(--m) * .6); background: none; border: 0; padding: 0; color: var(--tx); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+        .quit:hover { color: var(--hi); }
+        .main-dialogue-text.reply { color: var(--gr); }
+        .choice-key { display: inline-block; min-width: 1.6em; color: var(--tx); font-size: .75em; font-weight: 500; }
+        /* duel : cartes-titres typographiques (pas d'affiches sans serveur) */
+        .duel-card { width: 200px; height: 290px; padding: 16px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg2); border-radius: 4px; box-shadow: inset 0 10px 0 var(--c), inset 0 0 0 1px rgba(221, 238, 255, .2); outline: 3px solid transparent; outline-offset: -3px; cursor: pointer; text-align: left; color: var(--hi); border: 0; transition: outline-color .15s; }
+        .duel-card .dt { font-size: 24px; font-weight: 700; line-height: 1.02; letter-spacing: -0.03em; }
+        .duel-card .dy { font-size: 12px; letter-spacing: .06em; color: var(--tx); }
+        .duel-card:hover { outline-color: var(--gr); }
+        .duel-card { position: relative; overflow: hidden; }
+        .duel-card .dp { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .duel-card.has-p { padding: 0; box-shadow: inset 0 0 0 1px rgba(221, 238, 255, .25); }
+        .duel-card.has-p .dt, .duel-card.has-p .dy { display: none; }
+        .duel-wrap { display: flex; flex-direction: column; gap: 8px; }
+        .dcap { display: none; max-width: 200px; font-size: 13px; color: var(--hi); line-height: 1.25; }
+        .dcap span { color: var(--tx); }
+        .duel-wrap.has-p .dcap { display: block; }
+        .duel-wrap:hover .dcap { color: var(--gr); }
+        /* fiche */
+        .final-score small { font-size: .28em; letter-spacing: -0.02em; color: var(--tx); margin-left: .08em; }
+        .axes { margin: 0 0 18px; padding: 0; list-style: none; border-top: 1px solid var(--ln); }
+        .axes li { display: grid; grid-template-columns: 7.5em 1fr 2.2em; gap: 4px 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--ln2, #2c3440); }
+        .axes .an { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--hi); }
+        .axes .ab { height: 6px; background: var(--bg2); }
+        .axes .ab i { display: block; height: 100%; background: var(--gr); }
+        .axes .av { font-size: 13px; color: var(--hi); text-align: right; font-variant-numeric: tabular-nums; }
+        .axes .al { grid-column: 1 / -1; font-size: 13px; color: var(--hi); }
+        .axes .al em { font-style: normal; color: var(--tx); margin-left: 6px; }
+        .verdict { margin: 0 0 16px; padding: 0; list-style: none; }
+        .verdict li { font-size: 17px; font-weight: 500; line-height: 1.3; color: var(--hi); padding: 2px 0; }
+        .final-quote:empty { display: none; }
+        .card-foot { margin-top: 18px; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--tx); }
+        .action-buttons-row { flex-wrap: wrap; }
+        /* export story 9:16 : la fiche recomposée dans un cadre 540 × 960 (exporté ×2) */
+        .story { position: fixed; left: -10000px; top: 0; width: 540px; height: 960px; padding: 48px 40px; background: var(--bg); display: flex; flex-direction: column; justify-content: center; }
+        .story .export-wrapper { width: 100%; }
+        @media (max-width: 760px) { .duel-card { width: 42vw; height: 60vw; } .duel-card .dt { font-size: 18px; } }
+    </style>
+
+    <style>
+        /* ---------- v5 : le vidéoclub des années 70, sans en faire trop ----------
+           fond brun-noir chaud, texte crème (papier jauni), titres en Fraunces bien grasse et arrondie (jaquettes d'époque),
+           grain de pellicule léger, duels en boîtiers VHS de location, fiche en carte de membre du vidéoclub. */
+        :root { --bg: #16120e; --bg2: #221b15; --tx: #b8a88f; --hi: #f3e7d0; --ln: #5a4a3a; --ln2: #33291f; --disp: 'Fraunces', Georgia, serif; }
+        body::after { content: ''; position: fixed; inset: 0; z-index: 999; pointer-events: none; opacity: .09; mix-blend-mode: overlay;
+          background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+        .home-title { font-family: var(--disp); font-weight: 900; font-variation-settings: 'SOFT' 100, 'opsz' 144; letter-spacing: -0.035em; line-height: .8; }
+        .home-subtitle { font-family: var(--disp); font-weight: 600; font-variation-settings: 'SOFT' 100; font-style: italic; letter-spacing: -0.01em; }
+        .main-dialogue-text { font-family: var(--disp); font-weight: 800; font-variation-settings: 'SOFT' 100, 'opsz' 96; letter-spacing: -0.025em; line-height: 1.04; }
+        .main-dialogue-text.reply { color: var(--or); }
+        .btn-choice-large { font-family: var(--disp); font-weight: 600; font-variation-settings: 'SOFT' 100; letter-spacing: -0.005em; }
+        .slider-value-display, .final-score { font-family: var(--disp); font-weight: 900; font-variation-settings: 'SOFT' 100, 'opsz' 144; letter-spacing: -0.04em; }
+        .final-rank { font-family: var(--disp); font-weight: 800; font-variation-settings: 'SOFT' 100; text-transform: none; letter-spacing: -0.02em; color: var(--or); }
+        .verdict li { font-family: var(--disp); font-weight: 600; font-variation-settings: 'SOFT' 100; }
+        .axes .ab i { background: var(--or); }
+        /* duel : boîtier VHS de location (tranche colorée, étiquette « VHS », pastille de location) */
+        .duel-card { border-radius: 3px; background: #2a2119; box-shadow: inset 16px 0 0 var(--c), inset 0 0 0 1px rgba(243, 231, 208, .18); padding: 16px 16px 16px 30px; }
+        .duel-card.has-p { padding: 0 0 0 16px; box-shadow: inset 16px 0 0 var(--c), inset 0 0 0 1px rgba(243, 231, 208, .18); }
+        .duel-card .dp { left: 16px; width: calc(100% - 16px); }
+        .duel-card .dt { font-family: var(--disp); font-weight: 800; font-variation-settings: 'SOFT' 100; letter-spacing: -0.02em; }
+        .duel-card::after { content: 'VHS'; position: absolute; right: 8px; top: 8px; z-index: 2; padding: 2px 5px 1px; background: var(--hi); color: var(--bg); font: 700 10px/1 Geist, sans-serif; letter-spacing: .08em; border-radius: 2px; }
+        .duel-card::before { content: 'location 24 h'; position: absolute; right: 10px; bottom: 12px; z-index: 2; width: 52px; height: 52px; display: grid; place-items: center; text-align: center; border-radius: 50%; background: var(--or); color: var(--bg); font: 700 9px/1.1 Geist, sans-serif; text-transform: uppercase; letter-spacing: .04em; transform: rotate(-12deg); }
+        .duel-card:hover { outline-color: var(--or); }
+        .duel-wrap:hover .dcap { color: var(--or); }
+        /* fiche : carte de membre du vidéoclub */
+        .export-wrapper { background: #241c15; border-radius: 10px; padding: 34px 30px 24px; box-shadow: inset 0 0 0 1px rgba(243, 231, 208, .14); overflow: hidden; }
+        .export-wrapper::before { top: 0; left: 0; right: 0; height: 12px; }
+        .member { display: flex; justify-content: space-between; margin: 0 0 6px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--tx); }
+        .member b { color: var(--hi); font-weight: 500; font-variant-numeric: tabular-nums; }
+        .card-foot { display: flex; justify-content: space-between; border-top: 1px dashed var(--ln); padding-top: 12px; }
+        .story { background: var(--bg); }
+    </style>
+
+    <style>
+        /* ---------- v6 : boîtiers VHS de location réalistes, et ton rayon de cassettes ---------- */
+        .poster-duel-container { gap: 36px; padding: 6px 0 10px; }
+        .vhs { position: relative; display: block; flex: none; width: 232px; height: 336px; padding: 0; border: 0; background: none; cursor: pointer; transform: rotate(var(--r)); transition: transform .4s cubic-bezier(.34, 1.56, .64, 1); filter: drop-shadow(0 20px 18px rgba(0, 0, 0, .55)) drop-shadow(0 2px 2px rgba(0, 0, 0, .6)); }
+        .vhs:hover, .vhs:focus-visible { transform: translateY(-10px) rotate(0); outline: none; }
+        /* tranche : plastique noir, titre à la verticale, étiquette de couleur du rayon en bas */
+        .vhs .spine { position: absolute; left: 0; top: 0; bottom: 0; width: 28px; border-radius: 7px 0 0 7px; background: linear-gradient(90deg, #070707 0, #222 35%, #111 70%, #050505 100%); display: flex; justify-content: center; padding: 14px 0 54px; overflow: hidden; }
+        .vhs .spine span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-height: 100%; font: 700 10px/1 Geist, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: #e9dcc0; }
+        .vhs .spine i { position: absolute; left: 4px; right: 4px; bottom: 10px; height: 36px; background: var(--c); border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .2); }
+        /* boîtier : plastique noir mat, pochette transparente avec reflet, jaquette dessous */
+        .vhs .case { position: absolute; left: 28px; right: 0; top: 0; bottom: 0; border-radius: 0 7px 7px 0; background: linear-gradient(180deg, #1b1b1b, #0d0d0d); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07), inset 1px 0 0 rgba(0, 0, 0, .9); }
+        .vhs .win { position: absolute; inset: 8px 8px 8px 6px; overflow: hidden; border-radius: 2px; background: #2a2119; box-shadow: 0 0 0 1px rgba(0, 0, 0, .8); }
+        .vhs .win img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(.82) contrast(.96) sepia(.14) brightness(.96); }
+        .vhs .paper { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 18px 14px 14px; background: #ece0c4; color: #1a1410; box-shadow: inset 0 10px 0 var(--c); text-align: left; }
+        .vhs .paper .dt { font: 800 24px/1.02 'Fraunces', Georgia, serif; font-variation-settings: 'SOFT' 100; letter-spacing: -0.02em; margin-top: 8px; }
+        .vhs .paper .dy { font: 600 11px Geist, sans-serif; letter-spacing: .1em; }
+        .vhs .gloss { position: absolute; inset: 0; pointer-events: none;
+          background: linear-gradient(118deg, rgba(255, 255, 255, .26) 0%, rgba(255, 255, 255, .08) 22%, transparent 34%, transparent 66%, rgba(255, 255, 255, .07) 80%, transparent 92%),
+                      repeating-linear-gradient(97deg, transparent 0 23px, rgba(255, 255, 255, .025) 23px 24px); mix-blend-mode: screen; }
+        .vhs:hover .gloss { background-position: 18px 0, 0 0; }
+        .vhs .logo { position: absolute; top: 16px; right: 15px; z-index: 2; padding: 2px 6px 1px 5px; border: 1.5px solid #e9dcc0; border-radius: 2px; background: rgba(10, 10, 10, .72); color: #e9dcc0; font: 900 11px/1.1 Geist, sans-serif; letter-spacing: .16em; transform: skewX(-14deg); }
+        /* autocollants du vidéoclub : prix au feutre, « à rembobiner » */
+        .vhs .price { position: absolute; right: 12px; bottom: 22px; z-index: 2; width: 76px; padding: 7px 6px 6px; border-radius: 2px; background: #f4e6c3; color: #2a1f15; text-align: center; font: 700 7.5px/1.2 Geist, sans-serif; letter-spacing: .08em; text-transform: uppercase; transform: rotate(-7deg); box-shadow: 0 1px 2px rgba(0, 0, 0, .45), inset 0 0 12px rgba(150, 110, 60, .25); }
+        .vhs .price b { display: block; margin: 3px 0 1px; font: 400 21px/1 'Permanent Marker', cursive; letter-spacing: 0; color: #c2361f; text-transform: none; }
+        .vhs .rew { position: absolute; left: 14px; bottom: 26px; z-index: 2; padding: 4px 6px; border-radius: 2px; background: #e8b93a; color: #2a1f15; font: 800 7px/1.15 Geist, sans-serif; letter-spacing: .06em; text-transform: uppercase; transform: rotate(4deg); box-shadow: 0 1px 2px rgba(0, 0, 0, .45); }
+        .duel-wrap { gap: 14px; }
+        .dcap { display: block; max-width: 232px; }
+        .duel-wrap:hover .dcap { color: var(--or); }
+        /* ton rayon : étagère de cassettes à droite pendant les questions */
+        .shelf { display: none; }
+        @media (min-width: 1100px) {
+            #interactive-stage { padding-right: calc(min(40vw, 560px) + var(--m) * 2); }
+            .shelf { position: absolute; right: var(--m); bottom: calc(var(--m) + 4px); width: min(40vw, 560px); height: 66vh; display: flex; align-items: flex-end; gap: 3px; padding: 0 12px; border-bottom: 12px solid #3b2b1e; box-shadow: 0 14px 0 -2px #23190f, 0 30px 40px -10px rgba(0, 0, 0, .6); }
+            .shelf::before { content: 'TON RAYON'; position: absolute; left: 12px; top: -26px; font: 500 11px Geist, sans-serif; letter-spacing: .14em; color: var(--tx); }
+            .sv { position: relative; flex: none; width: var(--w); height: var(--h); border-radius: 3px 3px 0 0; background: linear-gradient(90deg, rgba(0, 0, 0, .35) 0, transparent 18%, rgba(255, 255, 255, .12) 45%, transparent 60%, rgba(0, 0, 0, .3) 100%), var(--c); color: var(--t); display: flex; flex-direction: column; align-items: center; padding: 8px 0 12px; overflow: hidden; transition: transform .45s cubic-bezier(.34, 1.56, .64, 1), box-shadow .3s; box-shadow: inset 0 -26px 0 rgba(0, 0, 0, .18); }
+            .sv b { font: 600 8px Geist, sans-serif; letter-spacing: .08em; padding: 2px 3px; background: #f4e6c3; color: #2a1f15; border-radius: 1px; margin-bottom: 8px; }
+            .sv span { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 0; flex: 1; font: 700 11px Geist, sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+            .sv.lean { transform: rotate(-7deg); transform-origin: 0 100%; margin-left: 10px; }
+            .sv.out { transform: translateY(-34px); box-shadow: 0 0 0 2px var(--hi), 0 16px 24px rgba(0, 0, 0, .5); z-index: 2; }
+        }
+    </style>
+
+    <style>
+        /* ---------- v7 : le vidéoclub passe au DVD (années 2000) : typo étroite Oswald, boîtiers DVD fins, présentoir de jaquettes ---------- */
+        :root { --disp: 'Oswald', 'Arial Narrow', sans-serif; }
+        .home-title, .main-dialogue-text, .btn-choice-large, .slider-value-display, .final-score, .final-rank, .verdict li, .home-subtitle { font-variation-settings: normal; }
+        .home-title { font-weight: 700; letter-spacing: -0.02em; line-height: .84; }
+        .home-subtitle { font-style: normal; font-weight: 500; letter-spacing: 0; text-transform: none; }
+        .main-dialogue-text { font-weight: 600; letter-spacing: -0.01em; line-height: 1.05; text-transform: uppercase; }
+        .btn-choice-large { font-weight: 500; letter-spacing: .01em; }
+        .final-score { font-weight: 700; letter-spacing: -0.03em; }
+        .final-rank { font-weight: 600; text-transform: uppercase; letter-spacing: .01em; }
+        .verdict li { font-weight: 500; letter-spacing: .005em; }
+        /* boîtier DVD : format 135 × 190, tranche fine, plastique noir, pochette transparente */
+        .vhs { width: 214px; height: 302px; }
+        .vhs .spine { width: 14px; border-radius: 9px 0 0 9px; padding: 10px 0 40px; background: linear-gradient(90deg, #050505, #1d1d1d 45%, #0a0a0a); }
+        .vhs .spine span { font-size: 7.5px; letter-spacing: .12em; }
+        .vhs .spine i { left: 3px; right: 3px; height: 26px; bottom: 8px; }
+        .vhs .case { left: 14px; border-radius: 0 9px 9px 0; background: linear-gradient(180deg, #141414, #070707); }
+        .vhs .win { inset: 6px 6px 6px 4px; border-radius: 3px; }
+        .vhs .paper .dt { font: 700 26px/1 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0; }
+        .vhs .logo { top: 12px; right: auto; left: 12px; transform: none; border: 0; padding: 3px 5px 2px; background: rgba(255, 255, 255, .92); color: #0a0a0a; font: 800 12px/1 Geist, sans-serif; letter-spacing: .02em; border-radius: 2px; }
+        .vhs .logo small { display: block; font-size: 5.5px; letter-spacing: .32em; margin-top: 1px; }
+        .vhs .rew { left: auto; right: 12px; bottom: auto; top: 12px; padding: 4px 6px; background: #ffd23c; font-size: 8px; transform: rotate(6deg); border-radius: 50px; }
+        .vhs .price { bottom: 16px; }
+        .vhs .price b { font-size: 18px; }
+        /* présentoir : jaquettes de face sur deux tablettes, vraies affiches */
+        @media (min-width: 1100px) {
+            .shelf { display: grid; grid-template-columns: repeat(5, 1fr); grid-template-rows: 1fr 1fr; gap: 26px 10px; align-items: end; padding: 0 12px 0; height: auto; border-bottom: 0; box-shadow: none;
+              background: linear-gradient(transparent calc(50% - 12px), #3b2b1e calc(50% - 12px), #3b2b1e calc(50% - 2px), #23190f calc(50% - 2px), #23190f 50%, transparent 50%, transparent calc(100% - 12px), #3b2b1e calc(100% - 12px), #3b2b1e calc(100% - 2px), #23190f calc(100% - 2px)); padding-bottom: 12px; }
+            .sv { width: 100%; height: auto; aspect-ratio: 135 / 190; border-radius: 3px 5px 5px 3px; padding: 0; overflow: hidden; margin-bottom: 12px; background: #141414; box-shadow: inset 5px 0 0 #050505, 0 8px 14px rgba(0, 0, 0, .55); display: block; transform: none; }
+            .sv::after { content: ''; position: absolute; inset: 0; background: linear-gradient(118deg, rgba(255, 255, 255, .2), transparent 30%, transparent 75%, rgba(255, 255, 255, .06)); pointer-events: none; }
+            .sv img { position: absolute; inset: 3px 3px 3px 5px; width: calc(100% - 8px); height: calc(100% - 6px); object-fit: cover; border-radius: 2px; filter: saturate(.85) sepia(.08); }
+            .sv-t { position: absolute; inset: 3px 3px 3px 5px; display: flex; align-items: flex-end; padding: 8px; background: var(--c); color: #120e0a; font: 700 13px/1 'Oswald', sans-serif; text-transform: uppercase; writing-mode: horizontal-tb; transform: none; border-radius: 2px; }
+            .sv.has-p .sv-t { display: none; }
+            .sv.out { transform: translateY(-16px) scale(1.06); box-shadow: 0 0 0 2px var(--hi), 0 18px 26px rgba(0, 0, 0, .6); z-index: 2; }
+            .shelf::before { content: 'NOUVEAUTÉS · TON RAYON'; top: -24px; }
+        }
+    </style>
+
+    <style>
+        /* ---------- v8 : DM Serif Display (DVD de collection), rayon sur toute la hauteur, boîtiers DVD réalistes avec disque ---------- */
+        :root { --disp: 'DM Serif Display', Georgia, serif; }
+        .home-title { font-weight: 400; letter-spacing: -0.03em; line-height: .84; }
+        .home-subtitle { font-style: italic; font-weight: 400; }
+        .main-dialogue-text { font-weight: 400; text-transform: none; letter-spacing: -0.015em; line-height: 1.04; }
+        .btn-choice-large { font-weight: 400; letter-spacing: 0; font-size: clamp(19px, 1.8vw, 26px); }
+        .final-score { font-weight: 400; letter-spacing: -0.04em; }
+        .final-rank { font-weight: 400; text-transform: none; letter-spacing: -0.01em; }
+        .verdict li { font-weight: 400; font-size: 19px; }
+        .slider-value-display { font-weight: 400; }
+        /* boîtier DVD : plastique, épaisseur, charnière, rebords de la pochette, reflet ; le disque sort au survol */
+        .vhs { isolation: isolate; width: 222px; height: 312px; }
+        .vhs .spine, .vhs .case { z-index: 1; }
+        .vhs .spine { background: repeating-linear-gradient(0deg, rgba(255, 255, 255, .05) 0 1px, transparent 1px 4px), linear-gradient(90deg, #040404, #1e1e1e 45%, #080808); box-shadow: inset -1px 0 0 rgba(0, 0, 0, .9), inset 1px 0 0 rgba(255, 255, 255, .06); }
+        .vhs .case { background: linear-gradient(180deg, #161616, #080808); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), inset 0 2px 0 rgba(255, 255, 255, .06), 3px 0 0 #0b0b0b, 5px 2px 0 #050505, 6px 4px 6px rgba(0, 0, 0, .5); }
+        /* rebords de la pochette transparente, en haut et en bas */
+        .vhs .case::before, .vhs .case::after { content: ''; position: absolute; left: 2px; right: 2px; height: 5px; z-index: 3; pointer-events: none; background: linear-gradient(180deg, rgba(255, 255, 255, .14), rgba(255, 255, 255, .02)); border-radius: 2px; }
+        .vhs .case::before { top: 1px; } .vhs .case::after { bottom: 1px; transform: scaleY(-1); }
+        .vhs .win { box-shadow: 0 0 0 1px rgba(0, 0, 0, .9), inset 0 0 18px rgba(0, 0, 0, .35); }
+        .vhs .win img { filter: saturate(.92) contrast(1.02) brightness(.97); }
+        .vhs .gloss { background:
+            linear-gradient(112deg, rgba(255, 255, 255, .32) 0%, rgba(255, 255, 255, .1) 18%, transparent 30%, transparent 62%, rgba(255, 255, 255, .1) 76%, rgba(255, 255, 255, .02) 88%, transparent 100%),
+            linear-gradient(180deg, rgba(255, 255, 255, .08), transparent 12%, transparent 88%, rgba(0, 0, 0, .25)),
+            radial-gradient(60% 30% at 80% 12%, rgba(255, 255, 255, .12), transparent 70%); transition: opacity .3s; }
+        .vhs:hover .gloss { opacity: .75; }
+        .vhs .paper .dt { font: 400 28px/1 'DM Serif Display', Georgia, serif; text-transform: none; letter-spacing: -0.01em; }
+        /* le disque : argent irisé, trou central, étiquette imprimée à la couleur du film */
+        .vhs .disc { position: absolute; z-index: 0; top: 50%; left: 26px; width: 186px; height: 186px; margin-top: -93px; border-radius: 50%; transition: transform .6s cubic-bezier(.22, 1, .36, 1);
+          background: radial-gradient(circle, transparent 0 7.5%, #d7dbe0 8% 9%, #9aa3ad 9.3% 10.5%, transparent 11%),
+                      radial-gradient(circle, transparent 0 17%, var(--c) 17.5% 47%, transparent 47.5%),
+                      conic-gradient(from 30deg, #e9ecf0, #b8c4d4, #f4dff0, #cfeee4, #eef0d8, #c8cff9, #f6e5d3, #e9ecf0);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .25), inset 0 0 0 3px rgba(255, 255, 255, .35), 0 4px 10px rgba(0, 0, 0, .5);
+          -webkit-mask: radial-gradient(circle, transparent 0 7.5%, #000 8%); mask: radial-gradient(circle, transparent 0 7.5%, #000 8%); }
+        .vhs .disc span { position: absolute; left: 50%; top: 64%; transform: translateX(-50%); width: 46%; text-align: center; font: 700 8px/1.15 Geist, sans-serif; letter-spacing: .08em; text-transform: uppercase; color: rgba(10, 10, 10, .8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .vhs:hover .disc, .vhs:focus-visible .disc { transform: translateX(118px) rotate(70deg); }
+        .vhs:hover { transform: translateY(-6px) rotate(0); }
+        .poster-duel-container { gap: 150px; }
+        /* rayon : toute la hauteur à droite, trois jaquettes par tablette */
+        @media (min-width: 1100px) {
+            .shelf { top: calc(var(--m) + 84px); bottom: var(--m); height: auto; display: flex; flex-direction: column; justify-content: space-between; gap: 0; background: none; padding: 0; }
+            .shelf .row { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: end; padding: 0 18px; border-bottom: 14px solid #3b2b1e; box-shadow: 0 10px 0 -2px #23190f, 0 26px 30px -14px rgba(0, 0, 0, .6); min-height: 0; }
+            .shelf .row + .row { margin-top: 22px; }
+            .sv { max-height: calc(100% - 8px); justify-self: center; height: 100%; width: auto; margin-bottom: 0; }
+            .sv-t { font: 400 18px/1.05 'DM Serif Display', Georgia, serif; text-transform: none; }
+            .shelf::before { top: -28px; }
+        }
+    </style>
+
+    <style>
+        /* ---------- v9 : jaquette de DVD réaliste (bandeaux, mentions techniques, code-barres d'inventaire) et disque argenté sans couleur ---------- */
+        .vhs .win { background: #0b0b0b; }
+        .vhs .win img { inset: auto; top: 20px; left: 0; width: 100%; height: calc(100% - 37px); object-fit: cover; filter: saturate(.94) contrast(1.03); }
+        .vhs .paper { top: 20px; bottom: 17px; }
+        .vhs .dvdbar { position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 1; display: flex; align-items: center; gap: 5px; padding: 0 7px; background: linear-gradient(180deg, #151515, #050505); color: #e6e6e6; border-bottom: 1px solid #2a2a2a; }
+        .vhs .dvdbar b { font: 900 11px/1 Geist, sans-serif; letter-spacing: -0.02em; font-style: italic; }
+        .vhs .dvdbar i { font: 600 5.5px/1 Geist, sans-serif; letter-spacing: .3em; font-style: normal; margin-top: 1px; }
+        .vhs .dvdbar em { margin-left: auto; font: 500 6px/1 Geist, sans-serif; letter-spacing: .14em; text-transform: uppercase; font-style: normal; color: #9a9a9a; }
+        .vhs .specs { position: absolute; left: 0; right: 0; bottom: 0; height: 17px; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 4px; background: #050505; border-top: 1px solid #2a2a2a; }
+        .vhs .specs i { font: 600 5.5px/1 Geist, sans-serif; font-style: normal; letter-spacing: .08em; text-transform: uppercase; color: #cfcfcf; padding: 2px 3px; border: 0.5px solid #6a6a6a; border-radius: 1px; }
+        .vhs .logo { display: none; }
+        .vhs .rew { top: 26px; }
+        /* étiquette d'inventaire du vidéoclub, collée en travers près de la tranche */
+        .vhs .code { position: absolute; z-index: 2; left: 10px; top: 92px; width: 58px; padding: 4px 4px 3px; background: #fbfbf6; border-radius: 1px; transform: rotate(-90deg) translateX(-50%); transform-origin: 0 0; box-shadow: 0 1px 2px rgba(0, 0, 0, .45); font: 600 5.5px/1 Geist, sans-serif; letter-spacing: .1em; color: #222; text-align: center; }
+        .vhs .code span { display: block; height: 14px; margin-bottom: 2px; background: repeating-linear-gradient(90deg, #111 0 1px, transparent 1px 2px, #111 2px 4px, transparent 4px 5px, #111 5px 6px, transparent 6px 8px, #111 8px 9px, transparent 9px 11px); }
+        /* disque : argent, sillons fins, anneau transparent autour du trou, titre imprimé en noir */
+        .vhs .disc { background:
+            radial-gradient(circle, transparent 0 7.5%, rgba(255, 255, 255, .55) 8% 9%, rgba(190, 200, 210, .35) 9% 14.5%, rgba(120, 125, 132, .6) 15% 15.6%, transparent 16%),
+            repeating-radial-gradient(circle, rgba(255, 255, 255, .06) 0 1px, rgba(0, 0, 0, .04) 1px 2px),
+            conic-gradient(from 15deg, #d9dce0, #f2f3f5 12%, #b4b8bd 25%, #e6e8eb 38%, #a9aeb4 52%, #eef0f2 66%, #bfc3c8 80%, #dfe2e5 92%, #d9dce0);
+          box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .3), inset 0 0 0 2px rgba(255, 255, 255, .4), 0 4px 12px rgba(0, 0, 0, .55); }
+        .vhs .disc span { top: 66%; color: rgba(20, 20, 20, .75); font-size: 7.5px; }
+    </style>
+
+    <style>
+        /* ---------- v10 : retour à Geist (la typo de l'affiche du rework), boîtiers et rayon inchangés ---------- */
+        :root { --disp: Geist, system-ui, sans-serif; }
+        .home-title { font-weight: 700; letter-spacing: -0.045em; line-height: .78; text-transform: uppercase; }
+        .home-subtitle { font-style: normal; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; }
+        .main-dialogue-text { font-weight: 700; letter-spacing: -0.04em; line-height: 1.02; text-transform: none; }
+        .btn-choice-large { font-weight: 500; letter-spacing: -0.01em; font-size: clamp(17px, 1.6vw, 22px); }
+        .slider-value-display, .final-score { font-weight: 700; letter-spacing: -0.06em; }
+        .final-rank { font-weight: 700; text-transform: uppercase; letter-spacing: -0.03em; }
+        .verdict li { font-weight: 500; font-size: 17px; letter-spacing: -0.01em; }
+        .vhs .paper .dt, .sv-t { font-family: Geist, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
+    </style>
 </head>
 <body>
-
-    <!-- Élément DOM pour la miniature d'affiche flottante -->
-    <img id="hover-poster" src="" alt="Affiche" />
-
-    <!-- Étape 1 : Page d'accueil et formulaires d'import -->
     <div class="stage-fullscreen" id="stage-home">
+        <a class="lr-back" data-own-back data-back href="/fr/lab/">← lab</a>
         <h1 class="home-title" aria-label="Letteroastd">Lettero<span class="l2">astd<span class="bands" aria-hidden="true"><i></i><i></i><i></i></span></span></h1>
         <div></div>
         <div class="home-low">
-            <p class="home-subtitle">L'évaluation de cinéphilie sans filtre. Donne ton export, on lit tout, on ne pardonne rien.</p>
-
+            <p class="home-subtitle" data-t="sub"></p>
             <div class="forms-container">
-                <form id="fast-form" hidden><input id="username-input"></form>
                 <div class="option-header">
-                    <span class="option-label">Ton export Letterboxd</span>
+                    <span class="option-label" data-t="exp"></span>
                     <span class="badge-full">.zip</span>
                 </div>
-                <form id="file-form">
-                    <input type="file" id="file-input" accept=".zip,.csv" style="display:none;">
-                    <div class="zip-button-wrapper">
-                        <button type="button" class="btn-fullscreen" data-drop onclick="document.getElementById('file-input').click()">
-                            <span>Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span></span>
-                            <span class="help-icon">comment l'obtenir ?</span>
-                        </button>
-                        <div class="tooltip-box">
-                            <div class="tooltip-header">Exporter en 15 secondes</div>
-                            <div class="tooltip-steps-container">
-                                <div class="step-pill"><span class="step-num">1</span><span>Connecte-toi sur <strong>Letterboxd.com</strong> (web ou mobile).</span></div>
-                                <div class="step-pill"><span class="step-num">2</span><span>Ouvre ton profil, puis <strong>Settings</strong>.</span></div>
-                                <div class="step-pill"><span class="step-num">3</span><span>Onglet <strong>Data</strong>, tout à droite.</span></div>
-                                <div class="step-pill"><span class="step-num">4</span><span><strong>Export Your Data</strong>, puis glisse le .zip ici.</span></div>
-                            </div>
-                        </div>
+                <input type="file" id="file-input" accept=".zip" hidden>
+                <div class="zip-button-wrapper">
+                    <button type="button" class="btn-fullscreen" data-drop>
+                        <span data-t="drop"></span>
+                        <span class="help-icon" data-t="how"></span>
+                    </button>
+                    <div class="tooltip-box">
+                        <div class="tooltip-header" data-t="howT"></div>
+                        <div class="tooltip-steps-container" data-t="howS"></div>
                     </div>
-                </form>
+                </div>
+                <p class="err" data-err role="alert"></p>
+                <div class="home-actions">
+                    <button type="button" class="demo-btn" data-demo data-t="demo"></button>
+                    <button type="button" class="lang-btn" data-lang></button>
+                </div>
             </div>
-
-            <p class="billing">Un roast de <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur<br>rien n'est envoyé</p>
+            <p class="billing" data-t="bill"></p>
         </div>
-        <div class="footer-credit"></div>
     </div>
 
-    <!-- Étape 2 : Séquence interactive des questions/roasts -->
     <div id="interactive-stage">
-        <div class="text-container">
-            <div class="main-dialogue-text" id="dialogue-text"></div>
-        </div>
+        <div class="shelf" aria-hidden="true" data-shelf></div>
+        <button type="button" class="quit" data-quit data-t="quit"></button>
+        <p class="step-count" data-count></p>
+        <div class="text-container"><div class="main-dialogue-text" id="dialogue-text"></div></div>
         <div class="action-area" id="action-area"></div>
     </div>
 
-    <!-- Étape 3 : Fiche de score finale et partage -->
     <div id="final-stage">
         <div class="export-wrapper" id="capture-target">
-            <div class="final-hero">
-                <div class="final-badge">Fiche Cinéphile Officielle</div>
-                <div class="final-username" id="res-user">@Cinéphile</div>
-                <div class="final-score" id="res-score">77.5</div>
-                <div class="final-rank" id="res-rank">Cinéaste avisé</div>
-
-                <div class="chart-container">
-                    <canvas id="radarChart"></canvas>
-                </div>
-
-                <div class="final-stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="res-diary">237</div>
-                        <div class="stat-label">Visionnages</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="res-wl">92</div>
-                        <div class="stat-label">Watchlist</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="res-vo">VOSTFR</div>
-                        <div class="stat-label">Format</div>
-                    </div>
-                </div>
-
-                <div class="wrapped-banner">
-                    <div class="wrapped-item">
-                        <span class="wrapped-title">Top 100 Vus</span>
-                        <span class="wrapped-val" id="res-top100">0%</span>
-                    </div>
-                    <div class="wrapped-item">
-                        <span class="wrapped-title">Décennie Reine</span>
-                        <span class="wrapped-val" id="res-decade">-</span>
-                    </div>
-                    <div class="wrapped-item">
-                        <span class="wrapped-title">Moyenne</span>
-                        <span class="wrapped-val" id="res-avg">0.0★</span>
-                    </div>
-                </div>
-
-                <div class="final-quote" id="res-roast">"Aucune critique rédigée disponible."</div>
-            </div>
+            <p class="member"><span data-t="club"></span><span>n° <b data-member></b></span></p>
+            <div class="final-badge" data-res-user></div>
+            <div class="final-score" data-res-score></div>
+            <div class="final-rank" data-res-rank></div>
+            <ul class="axes" data-res-axes></ul>
+            <ul class="verdict" data-res-verdict></ul>
+            <div class="final-quote" data-res-quote></div>
+            <div class="card-foot"><span>Letteroastd · vidéoclub</span><span>kerningkastle.com/lab</span></div>
         </div>
-
         <div class="action-buttons-row">
-            <button class="btn-action-secondary" onclick="restartApp()">
-                <span class="icon-placeholder">⟲</span>
-                <span>Recommencer</span>
-            </button>
-            <button class="btn-action-primary" onclick="downloadCardPNG()">
-                <span class="icon-placeholder">⤓</span>
-                <span>Télécharger la fiche</span>
-            </button>
+            <button class="btn-action-primary" data-dl="card" data-t="dl"></button>
+            <button class="btn-action-primary" data-dl="story" data-t="story"></button>
+            <button class="btn-action-secondary" data-restart data-t="again"></button>
         </div>
     </div>
 
     <script src="jszip.min.js"></script>
     <script src="api.js"></script>
     <script>
-        let currentData = null;
-        let scriptSteps = [];
-        let currentStepIndex = 0;
-        let userChoices = { vo: true, foreign_ratio: 3, pacing: 'slow', habit: 'spontaneous', time: 'classic' };
+    (() => {
+        // langue : ?lang=en, sinon celle du navigateur ; bouton pour basculer
+        const q = new URLSearchParams(location.search);
+        let lang = q.get('lang') || (/^fr/i.test(navigator.language) ? 'fr' : 'en');
+        const T = {
+            fr: { sub: "L'évaluation de cinéphilie sans filtre. Donne ton export, on lit tout, on ne pardonne rien.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
+                howS: ['Connecte-toi sur <strong>letterboxd.com</strong>.', 'Profil, puis <strong>Settings</strong>.', 'Onglet <strong>Data</strong>, tout à droite.', '<strong>Export your data</strong>, puis glisse le .zip ici.'],
+                demo: 'Pas de compte ? Essayer avec un profil exemple', bill: "Un roast de <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur<br>seuls des titres de films partent<br>chez Wikipédia, pour les affiches", quit: '← Recommencer',
+                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', ok: 'Valider', read: 'Lecture de ton export…', step: 'question',
+                notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour un vrai roast (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
+            en: { sub: 'The no-filter film-buff assessment. Hand over your export, we read everything, we forgive nothing.', exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
+                howS: ['Sign in on <strong>letterboxd.com</strong>.', 'Profile, then <strong>Settings</strong>.', 'The <strong>Data</strong> tab, far right.', '<strong>Export your data</strong>, then drop the .zip here.'],
+                demo: 'No account? Try a sample profile', bill: 'A roast by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser<br>only film titles go to Wikipedia,<br>to fetch the posters', quit: '← Start over',
+                dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
+                notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a proper roast (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
+        };
+        const t = (k) => T[lang][k];
+        const $ = (s) => document.querySelector(s);
+        const paint = () => {
+            document.documentElement.lang = lang;
+            document.querySelectorAll('[data-t]').forEach((el) => { const v = t(el.dataset.t); el.innerHTML = Array.isArray(v) ? v.map((s, i) => `<div class="step-pill"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join('') : v; });
+            $('[data-lang]').textContent = t('other');
+            $('[data-back]').href = `/${lang}/lab/`;
+        };
+        paint();
+        $('[data-lang]').onclick = () => { lang = lang === 'fr' ? 'en' : 'fr'; paint(); };
 
-        // Gestion du mouvement de la souris pour l'affiche flottante au survol
-        const hoverPoster = document.getElementById('hover-poster');
-        document.addEventListener('mousemove', function(e) {
-            if (hoverPoster.style.display === 'block') {
-                hoverPoster.style.left = (e.clientX + 15) + 'px';
-                hoverPoster.style.top = (e.clientY + 15) + 'px';
-            }
-        });
-
-        // Association des événements de survol (hover) pour afficher l'affiche du film
-        function attachHoverPoster(elem, filmTitle, filmYear, filmUri) {
-            if (!filmTitle) return;
-            const posterUrl = `/api/poster?title=${encodeURIComponent(filmTitle)}&year=${encodeURIComponent(filmYear || '')}&uri=${encodeURIComponent(filmUri || '')}`;
-
-            elem.addEventListener('mouseenter', function() {
-                hoverPoster.src = posterUrl;
-                hoverPoster.style.display = 'block';
-                setTimeout(() => { hoverPoster.style.opacity = '1'; }, 10);
-            });
-
-            elem.addEventListener('mouseleave', function() {
-                hoverPoster.style.opacity = '0';
-                setTimeout(() => { hoverPoster.style.display = 'none'; }, 150);
-            });
+        // ---------- entrée : fichier, glisser-déposer, profil exemple ----------
+        const fi = $('#file-input'), zone = $('[data-drop]'), err = $('[data-err]');
+        zone.onclick = () => fi.click();
+        ['dragenter', 'dragover'].forEach((e) => zone.addEventListener(e, (ev) => { ev.preventDefault(); zone.classList.add('over'); }));
+        ['dragleave', 'drop'].forEach((e) => zone.addEventListener(e, () => zone.classList.remove('over')));
+        zone.addEventListener('drop', (ev) => { ev.preventDefault(); if (ev.dataTransfer.files[0]) load(ev.dataTransfer.files[0]); });
+        fi.onchange = () => fi.files[0] && load(fi.files[0]);
+        $('[data-demo]').onclick = () => begin(LR.demo(), true);
+        async function load(file) {
+            err.textContent = '';
+            if (!/\.zip$/i.test(file.name)) { err.textContent = t('notzip'); return; }
+            let raw; try { raw = await LR.read(file); } catch { err.textContent = t('bad'); return; }
+            begin(raw, false);
         }
 
-        // Écouteur pour l'upload d'un fichier ZIP complet
-        document.getElementById('file-input').addEventListener('change', function() {
-            if (this.files.length > 0) {
-                const formData = new FormData();
-                formData.append('file', this.files[0]);
-                fetchData('/api/complete', formData);
-            }
-        });
-
-        // glisser-déposer du .zip sur la zone
-        (() => {
-            const z = document.querySelector('[data-drop]'), fi = document.getElementById('file-input');
-            ['dragenter', 'dragover'].forEach((t) => z.addEventListener(t, (e) => { e.preventDefault(); z.classList.add('over'); }));
-            ['dragleave', 'drop'].forEach((t) => z.addEventListener(t, () => z.classList.remove('over')));
-            z.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; fi.dispatchEvent(new Event('change')); } });
-        })();
-
-        // Écouteur pour la soumission du formulaire d'analyse rapide par pseudo
-        document.getElementById('fast-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username-input').value;
-            const formData = new FormData();
-            formData.append('username', username);
-            fetchData('/api/fast', formData);
-        });
-
-        // Fonction principale pour récupérer les données de l'API avec barre de progression
-        async function fetchData(url, formData) {
-            document.getElementById('stage-home').style.display = 'none';
-            document.getElementById('interactive-stage').style.display = 'flex';
-
-            const area = document.getElementById('action-area');
-            area.innerHTML = `
-                <div class="progress-box">
-                    <div class="progress-bar-bg"><div class="progress-bar-fill" id="pbar"></div></div>
-                    <div class="progress-status-text" id="ptext">Initialisation de l'analyse...</div>
-                </div>
-            `;
-            area.style.opacity = '1';
-
-            const apiPromise = fetch(url, { method: 'POST', body: formData }).then(res => res.json());
-
-            const steps = [
-                { pct: 15, msg: "Analyse de la structure des données...", delay: 400 },
-                { pct: 35, msg: "Extraction du Diary & historique des visionnages...", delay: 1000 },
-                { pct: 60, msg: "Calcul des distributions par décennies et notes...", delay: 1800 },
-                { pct: 82, msg: "Détection des hot takes et pépites du profil...", delay: 2600 },
-                { pct: 95, msg: "Génération du parcours de questions...", delay: 3200 }
-            ];
-
-            steps.forEach(s => {
-                setTimeout(() => {
-                    updateProgress(s.pct, s.msg);
-                }, s.delay);
-            });
-
-            const minWaitPromise = new Promise(resolve => setTimeout(resolve, 3600));
-
-            const [dataResult] = await Promise.all([apiPromise, minWaitPromise]);
-            currentData = dataResult;
-
-            updateProgress(100, "Profil analysé avec succès !");
-
+        // ---------- parcours ----------
+        let F, S, A, i, demo;
+        const stage = $('#interactive-stage'), txt = $('#dialogue-text'), area = $('#action-area'), count = $('[data-count]');
+        function begin(raw, isDemo) {
+            F = LR.facts(raw); demo = isDemo;
+            if (F.total < 10) { err.textContent = t('few'); return; }
+            S = LR.script(F, lang); A = {}; i = 0;
+            S.filter((s) => s.kind === 'duel').forEach((s) => s.films.forEach((f) => LR.poster(f.title, f.year))); // affiches chargées d'avance
+            $('#stage-home').style.display = 'none'; stage.style.display = 'flex';
+            // ton rayon : une étagère de cassettes avec tes propres films sur les tranches
+            const PAL = ['#ff8000', '#00e054', '#40bcf4', '#e2a93b', '#b5462a', '#2f5d50', '#e9dcc0', '#5b3a29', '#24201c', '#c7562a', '#7b8b3a'];
+            const nine = F.shelf.slice(0, 9);
+            $('[data-shelf]').innerHTML = [0, 1, 2].map((r) => `<div class="row">${nine.slice(r * 3, r * 3 + 3).map((f, k) => { const c = PAL[((r * 3 + k) * 7 + f.title.length) % PAL.length];
+                return `<div class="sv" data-title="${f.title.toLowerCase().replace(/"/g, '')}" style="--c:${c}"><span class="sv-t">${f.title}</span><img alt="" hidden></div>`; }).join('')}</div>`).join('');
+            document.querySelectorAll('.sv').forEach((el, k) => LR.poster(nine[k].title, nine[k].year).then((u) => { if (!u) return; const im = el.querySelector('img'); im.onload = () => { im.hidden = false; el.classList.add('has-p'); }; im.src = u; }));
+            say(t('read'), true); setTimeout(step, 900);
+        }
+        $('[data-quit]').onclick = () => location.reload();
+        const asks = () => S.filter((s) => s.kind !== 'say');
+        function say(text, reply) {
+            document.querySelectorAll('.sv.out').forEach((x) => x.classList.remove('out'));
+            const low = text.toLowerCase(); document.querySelectorAll('.sv').forEach((x) => { if (x.dataset.title.length > 2 && low.includes(x.dataset.title)) x.classList.add('out'); });
+            txt.className = 'main-dialogue-text' + (reply === 'reply' ? ' reply' : '');
+            txt.innerHTML = '';
+            text.split(' ').forEach((w, k) => { const s = document.createElement('span'); s.className = 'word-fade'; if (/\d|★|½/.test(w)) s.classList.add('highlight'); s.textContent = w; s.style.animationDelay = `${k * 35}ms`; txt.appendChild(s); txt.appendChild(document.createTextNode(' ')); });
+            return text.split(' ').length * 35 + 120;
+        }
+        function cont(after) {
+            area.innerHTML = `<div class="hint-text fade-in-up">${t('next')}</div>`; area.style.opacity = '1';
+            const go = (e) => { if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return; e.preventDefault?.(); removeEventListener('keydown', go); area.removeEventListener('click', go); after(); };
+            setTimeout(() => { addEventListener('keydown', go); area.addEventListener('click', go); }, 250);
+        }
+        function step() {
+            if (i >= S.length) return finish();
+            const s = S[i], k = asks().indexOf(s);
+            count.innerHTML = k >= 0 ? `${t('step')} <b>${String(k + 1).padStart(2, '0')}</b> / ${String(asks().length).padStart(2, '0')}` : '';
+            area.style.opacity = '0'; area.innerHTML = '';
+            const d = say(s.text);
             setTimeout(() => {
-                buildScript();
-                runNextStep();
-            }, 500);
-        }
-
-        function updateProgress(pct, status) {
-            const pbar = document.getElementById('pbar');
-            const ptext = document.getElementById('ptext');
-            if (pbar) pbar.style.width = pct + "%";
-            if (ptext) ptext.textContent = status;
-        }
-
-        function buildScript() {
-            scriptSteps = currentData.script_steps || [];
-        }
-
-        // Affichage progressif du texte (mot par mot) avec animation
-        function showTextWithFadeUp(text, callback) {
-            const elem = document.getElementById('dialogue-text');
-            elem.innerHTML = "";
-
-            const words = text.split(" ");
-            const wordDelay = 45;
-
-            words.forEach((word, index) => {
-                const span = document.createElement('span');
-                span.className = 'word-fade';
-                
-                if (/\d/.test(word) || word.includes('★') || word.includes('½')) {
-                    span.classList.add('highlight');
-                }
-
-                span.textContent = word;
-                span.style.animationDelay = `${index * wordDelay}ms`;
-                elem.appendChild(span);
-            });
-
-            const totalDuration = (words.length * wordDelay) + 80;
-
-            setTimeout(() => {
-                if (callback) callback();
-            }, totalDuration);
-        }
-
-        // Micro-loader affiché entre les étapes pour donner du rythme
-        function triggerMicroLoading(callback) {
-            hoverPoster.style.opacity = '0';
-            hoverPoster.style.display = 'none';
-
-            const area = document.getElementById('action-area');
-            area.style.opacity = '0';
-
-            const loaderTexts = [
-                "Enregistrement du choix...",
-                "Calcul de l'axe RISQ...",
-                "Ajustement de la sévérité...",
-                "Recalibrage du radar...",
-                "Pondération culturelle..."
-            ];
-            const randomMsg = loaderTexts[Math.floor(Math.random() * loaderTexts.length)];
-
-            setTimeout(() => {
-                area.innerHTML = `
-                    <div class="micro-loader">
-                        <div class="dot-pulse"></div>
-                        <span>${randomMsg}</span>
-                    </div>
-                `;
+                if (s.kind === 'say') return cont(() => { i++; step(); });
+                if (s.kind === 'choice') area.innerHTML = s.options.map((o, n) => `<button class="btn-choice-large fade-in-up" data-v="${n}"><span class="choice-key">${n + 1}</span>${o.label}</button>`).join('');
+                if (s.kind === 'slider') area.innerHTML = `<div class="slider-container-raw fade-in-up"><div class="slider-value-display" data-sv>3 / 10</div><input type="range" min="0" max="10" value="3" class="slider-input-large" data-sl aria-label="${s.text}"><button class="btn-slider-validate" data-ok>${t('ok')}</button></div>`;
+                if (s.kind === 'duel') area.innerHTML = `<div class="poster-duel-container fade-in-up">${s.films.map((f, n) => `<div class="duel-wrap"><button class="vhs" data-v="${n}" style="--c:var(${['--or', '--bl'][n]});--r:${n ? 1.6 : -2.2}deg" aria-label="${f.title} ${f.year || ''}"><span class="disc"><span>${f.title}</span></span><span class="spine"><span>${f.title}</span><i></i></span><span class="case"><span class="win"><span class="paper"><span class="dt">${f.title}</span><span class="dy">${f.year || ''}</span></span><img class="dp" alt="" hidden><span class="dvdbar"><b>DVD</b><i>VIDEO</i><em>Édition simple</em></span><span class="specs"><i>16/9</i><i>Dolby Digital</i><i>PAL · Zone 2</i></span><span class="gloss"></span></span><span class="code"><span></span>N° ${String(1000 + ((f.title.length * 977) % 9000))}</span><span class="price">Vidéoclub<br>Kern<b>3,50 €</b>la nuit</span><span class="rew">Nouveauté</span></span></button><span class="dcap">${f.title} <span>${f.year || ''}</span></span></div>`).join('')}</div>`;
+                if (s.kind === 'duel') area.querySelectorAll('.vhs').forEach((c, n) => LR.poster(s.films[n].title, s.films[n].year).then((u) => { if (!u) return; const im = c.querySelector('.dp'); im.onload = () => { im.hidden = false; c.classList.add('has-p'); c.parentElement.classList.add('has-p'); }; im.src = u; }));
                 area.style.opacity = '1';
-
-                const randomDelay = Math.floor(Math.random() * 300) + 450;
-
-                setTimeout(() => {
-                    area.style.opacity = '0';
-                    setTimeout(() => {
-                        if (callback) callback();
-                    }, 150);
-                }, randomDelay);
-            }, 100);
+                const pickV = (v, extra = {}) => { answer(s, v, extra); };
+                area.querySelectorAll('[data-v]').forEach((b) => (b.onclick = () => {
+                    const n = +b.dataset.v;
+                    if (s.kind === 'duel') { const kept = s.films[n], lost = s.films[1 - n]; pickV(kept.title, { kept: kept.title, lost: lost.title }); }
+                    else pickV(s.options[n].v);
+                }));
+                const sl = area.querySelector('[data-sl]');
+                if (sl) { sl.oninput = () => (area.querySelector('[data-sv]').textContent = `${sl.value} / 10`); area.querySelector('[data-ok]').onclick = () => pickV(+sl.value); sl.focus(); }
+                // clavier : 1, 2, 3 pour répondre
+                const keys = (e) => { const b = area.querySelector(`[data-v="${+e.key - 1}"]`); if (b) { removeEventListener('keydown', keys); b.click(); } };
+                addEventListener('keydown', keys); area.addEventListener('click', () => removeEventListener('keydown', keys), { once: true });
+            }, d);
+        }
+        function answer(s, v, extra) {
+            A[s.id] = { v, ...extra, ...(s.grade ? { ok: s.grade(v) } : s.guess !== undefined ? { ok: v === s.guess ? 1 : 0 } : {}) };
+            area.style.opacity = '0';
+            setTimeout(() => { const d = say(s.reply(v), 'reply'); setTimeout(() => cont(() => { i++; step(); }), d); }, 180);
         }
 
-        // Gestion de l'affichage séquentiel des étapes du script
-        function runNextStep() {
-            if (currentStepIndex >= scriptSteps.length) {
-                renderFinalStage();
-                return;
-            }
-
-            const step = scriptSteps[currentStepIndex];
-            const area = document.getElementById('action-area');
-            area.innerHTML = "";
-
-            showTextWithFadeUp(step.text, () => {
-                setTimeout(() => {
-                    if (step.type === 'dialogue') {
-                        area.innerHTML = `<div class="hint-text fade-in-up" onclick="directNextStep()">Entrée ou clic pour continuer</div>`;
-                        document.addEventListener('keydown', handleEnterKey);
-                    } else if (step.type === 'question_roast') {
-                        const btn1 = document.createElement('button');
-                        btn1.className = 'btn-choice-large fade-in-up';
-                        btn1.innerHTML = step.btn1;
-                        btn1.onclick = actionNextStep;
-                        if (step.btn1_film) {
-                            attachHoverPoster(btn1, step.btn1_film, step.btn1_year, step.btn1_uri);
-                        }
-                        area.appendChild(btn1);
-
-                        if (step.btn2) {
-                            const btn2 = document.createElement('button');
-                            btn2.className = 'btn-choice-large fade-in-up';
-                            btn2.innerHTML = step.btn2;
-                            btn2.onclick = actionNextStep;
-                            area.appendChild(btn2);
-                        }
-                    } else if (step.type === 'question_vo') {
-                        area.innerHTML = `
-                            <button class="btn-choice-large fade-in-up" onclick="selectVO(true)">Langue Originale (VOSTFR)</button>
-                            <button class="btn-choice-large fade-in-up" onclick="selectVO(false)">Doublage Français (VF)</button>
-                        `;
-                    } else if (step.type === 'question_foreign_slider') {
-                        area.innerHTML = `
-                            <div class="slider-container-raw fade-in-up">
-                                <div class="slider-value-display" id="slider-val">3 / 10</div>
-                                <input type="range" min="0" max="10" value="3" class="slider-input-large" id="foreign-range" oninput="updateSliderText(this.value)">
-                                <button class="btn-slider-validate" onclick="submitSlider()">Valider</button>
-                            </div>
-                        `;
-                    } else if (step.type === 'question_duel') {
-                        const img1 = `/api/poster?title=${encodeURIComponent(step.f1)}&year=${encodeURIComponent(step.y1 || '')}&uri=${encodeURIComponent(step.u1 || '')}`;
-                        const img2 = `/api/poster?title=${encodeURIComponent(step.f2)}&year=${encodeURIComponent(step.y2 || '')}&uri=${encodeURIComponent(step.u2 || '')}`;
-
-                        area.innerHTML = `
-                            <div class="poster-duel-container fade-in-up">
-                                <div class="poster-card" onclick="actionNextStep()">
-                                    <img src="${img1}" class="poster-img" alt="${step.f1}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>${step.f1}</div>';">
-                                    <div class="poster-title">${step.f1}</div>
-                                </div>
-                                <div class="poster-card" onclick="actionNextStep()">
-                                    <img src="${img2}" class="poster-img" alt="${step.f2}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>${step.f2}</div>';">
-                                    <div class="poster-title">${step.f2}</div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    area.style.opacity = '1';
-                }, 80);
-            });
+        // ---------- fiche ----------
+        function finish() {
+            stage.style.display = 'none';
+            const R = LR.score(F, A, lang), V = LR.verdict(F, A, lang);
+            $('[data-res-user]').textContent = `${t('card')} ${demo ? t('demoName') : F.username ? '@' + F.username : '—'}`;
+            { let h = 7; for (const c of (F.username || 'exemple')) h = (h * 31 + c.charCodeAt(0)) % 9973; $('[data-member]').textContent = String(h).padStart(4, '0'); }
+            $('[data-res-score]').innerHTML = `${R.total}<small>/100</small>`;
+            $('[data-res-rank]').textContent = R.rank;
+            $('[data-res-axes]').innerHTML = R.axes.map((a) => `<li><span class="an">${a.name}</span><span class="ab"><i style="width:${a.v}%"></i></span><span class="av">${a.v}</span><span class="al">${a.line} <em>${a.stat}</em></span></li>`).join('');
+            $('[data-res-verdict]').innerHTML = V.map((l) => `<li>${l}</li>`).join('');
+            const h = F.hot;
+            $('[data-res-quote]').textContent = h ? `« ${h.text.length > 180 ? h.text.slice(0, 177) + '…' : h.text} » — ${h.title}${h.rating != null ? ' ' + LR.stars(h.rating) : ''}` : '';
+            if (lang === 'en' && h) $('[data-res-quote]').textContent = $('[data-res-quote]').textContent.replace(/^« /, '“').replace(/ » —/, '” —');
+            const fs = $('#final-stage'); fs.style.display = 'flex'; fs.classList.add('fade-in-up');
         }
-
-        function updateSliderText(val) {
-            document.getElementById('slider-val').textContent = val + " / 10";
-            userChoices.foreign_ratio = parseInt(val);
-        }
-
-        function submitSlider() {
-            const val = parseInt(document.getElementById('foreign-range').value);
-            userChoices.foreign_ratio = val;
-            actionNextStep();
-        }
-
-        function handleEnterKey(e) {
-            if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                document.removeEventListener('keydown', handleEnterKey);
-                directNextStep();
-            }
-        }
-
-        function directNextStep() {
-            document.removeEventListener('keydown', handleEnterKey);
-            currentStepIndex++;
-            runNextStep();
-        }
-
-        function actionNextStep() {
-            document.removeEventListener('keydown', handleEnterKey);
-            triggerMicroLoading(() => {
-                currentStepIndex++;
-                runNextStep();
-            });
-        }
-
-        function selectVO(isVo) { 
-            userChoices.vo = isVo; 
-            actionNextStep(); 
-        }
-
-        // Rendu final de l'étape de résultats avec calcul du score et graphique Radar
-        async function renderFinalStage() {
-            document.getElementById('interactive-stage').style.display = 'none';
-
-            const res = await fetch('/api/calculate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(userChoices)
-            });
-            const finalScoreData = await res.json();
-
-            const usernameDisplay = currentData.username !== "Cinéphile" ? "@" + currentData.username : "Fiche Cinéphile";
-            document.getElementById('res-user').textContent = usernameDisplay;
-            
-            document.getElementById('res-score').textContent = finalScoreData.score;
-            document.getElementById('res-rank').textContent = finalScoreData.rank;
-            document.getElementById('res-diary').textContent = currentData.diary_count;
-            document.getElementById('res-wl').textContent = currentData.wl_count;
-            document.getElementById('res-vo').textContent = userChoices.vo ? "VOSTFR" : "VF";
-
-            if (finalScoreData.advanced_stats) {
-                document.getElementById('res-top100').textContent = (finalScoreData.advanced_stats.top_100_pct || 0) + "%";
-                document.getElementById('res-decade').textContent = finalScoreData.advanced_stats.top_decade || "-";
-                document.getElementById('res-avg').textContent = (finalScoreData.advanced_stats.avg_rating || 0) + "★";
-            }
-
-            if (currentData.hot_take && currentData.hot_take.review && currentData.hot_take.review !== "Pas de review") {
-                document.getElementById('res-roast').textContent = `"${currentData.hot_take.review}" — ${currentData.hot_take.title}`;
-            } else {
-                document.getElementById('res-roast').textContent = `"Aucune critique rédigée disponible sur ce profil."`;
-            }
-
-            const ctx = document.getElementById('radarChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['VOL', 'ENG', 'SEV', 'RISQ', 'VNTG', 'DIV'],
-                    datasets: [{
-                        data: [
-                            finalScoreData.details.VOL,
-                            finalScoreData.details.ENG,
-                            finalScoreData.details.SEV,
-                            finalScoreData.details.RISQ,
-                            finalScoreData.details.VNTG,
-                            finalScoreData.details.DIV
-                        ],
-                        backgroundColor: 'rgba(0, 224, 84, 0.18)',
-                        borderColor: '#00e054',
-                        borderWidth: 1.5,
-                        pointBackgroundColor: '#00e054',
-                        pointBorderColor: '#14181c',
-                        pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: '#00e054',
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    animation: false,
-                    scales: {
-                        r: {
-                            min: 0,
-                            max: 100,
-                            ticks: { display: false, stepSize: 20 },
-                            angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            pointLabels: { color: '#9ab', font: { size: 11, family: 'Geist, sans-serif' } }
-                        }
-                    },
-                    plugins: { legend: { display: false } }
-                }
-            });
-
-            const finalStage = document.getElementById('final-stage');
-            finalStage.style.display = 'flex';
-            finalStage.classList.add('fade-in-up');
-        }
-
-        // Fonction pour télécharger la fiche finale sous forme d'image PNG
-        function downloadCardPNG() {
-            const target = document.getElementById('capture-target');
-            html2canvas(target, { backgroundColor: "#14181c", scale: 2 }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Letteroastd_${currentData.username}.png`;
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        }
-
-        function restartApp() {
-            window.location.reload();
-        }
+        const shot = (node, w, h) => html2canvas(node, { backgroundColor: '#14181c', scale: 2, width: w, height: h }).then((c) => {
+            const a = document.createElement('a'); a.download = `letteroastd-${demo ? 'exemple' : F.username || 'fiche'}.png`; a.href = c.toDataURL('image/png'); a.click();
+        });
+        document.querySelectorAll('[data-dl]').forEach((b) => (b.onclick = () => {
+            const card = $('#capture-target');
+            if (b.dataset.dl === 'card') return shot(card);
+            const box = document.createElement('div'); box.className = 'story'; box.appendChild(card.cloneNode(true)); document.body.appendChild(box);
+            shot(box, 540, 960).finally(() => box.remove());
+        }));
+        $('[data-restart]').onclick = () => location.reload();
+    })();
     </script>
 </body>
 </html>

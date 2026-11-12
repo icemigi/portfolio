@@ -33,14 +33,28 @@ test("un écran qui défile encore garde le geste", () => {
   assert.deepEqual(play(wheelGesture(() => false), [60, 80, 70]), []);
 });
 
-test('un nouveau geste commencé trop tôt passe à la fin du verrou au lieu d\'être perdu', () => {
+test('un nouveau geste commencé trop tôt passe dès qu\'il se maintient, sans attendre la fin du verrou', () => {
   const feed = wheelGesture(() => true);
   assert.equal(feed(1000, 100), 1);
-  assert.deepEqual([1300, 1350, 1400, 1450, 1500].map((t) => feed(t, 100)), [0, 0, 0, 1, 0]);
+  assert.deepEqual([1300, 1350, 1400, 1450, 1500].map((t) => feed(t, 100)), [0, 1, 0, 0, 0]);
 });
 
 test("l'élan qui repart trop tôt puis retombe reste ignoré", () => {
   const feed = wheelGesture(() => true);
   assert.equal(feed(1000, 100), 1);
   assert.deepEqual([1300, 1330, 1360, 1390, 1420, 1450, 1480].map((t, i) => feed(t, 90 * 0.8 ** i)), [0, 0, 0, 0, 0, 0, 0]);
+});
+
+test('une molette roulée en continu enchaîne plusieurs écrans', () => {
+  const feed = wheelGesture(() => true);
+  const out = Array.from({ length: 40 }, (_, i) => feed(1000 + i * 50, 100)).filter(Boolean);
+  assert.ok(out.length >= 3, `seulement ${out.length} écran(s)`);
+});
+
+test('deux coups de pavé rapprochés passent deux écrans', () => {
+  const feed = wheelGesture(() => true);
+  const flick = [8, 20, 45, 70, 60, 40, 25, 12, 5];
+  const a = flick.map((d, i) => feed(1000 + i * 16, d));
+  const b = flick.map((d, i) => feed(1000 + 8 * 16 + 290 + i * 16, d));
+  assert.deepEqual([...a, ...b].filter(Boolean), [1, 1]);
 });

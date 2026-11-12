@@ -1,6 +1,8 @@
 ---
-// /xx/lab/ : un index, comme la page Projets. Chaque ligne « (01) titre · catégorie · année » ouvre la pièce en pleine page ;
-// sur ordinateur, au survol, un aperçu vivant de la pièce (la pièce elle-même, réduite) suit le curseur.
+// /xx/lab/ : une galerie de pochettes, à la façon du Cover Flow d'iTunes mais allégée : la pièce du centre de face,
+// les autres inclinées et estompées de chaque côté. La molette fait passer une pochette par geste, comme les écrans du site (molette roulée sans pause : elles s'enchaînent) ;
+// arrivé au bout, un nouveau geste passe à l'écran suivant. Flèches, glisser ou clic sur une
+// pochette de côté pour parcourir ; clic sur celle du centre (ou Entrée) pour ouvrir la pièce.
 import Base from '../../layouts/Base.astro';
 import Footer from '../../components/Footer.astro';
 import { ui, languages, getLangFromParam, pad } from '../../data/ui';
@@ -11,29 +13,33 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const fr = lang === 'fr';
 const items = [
-  ...rooms.map((r) => ({ title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year, href: `/${lang}/lab/${r.id}/`, pv: r.src ?? `/${lang}/lab/${r.id}/?embed` })),
-  ...labApps.map((a) => ({ title: a[lang].title, cat: a[lang].cat, year: a.year, href: a.src, pv: a.src })),
+  ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year, href: `/${lang}/lab/${r.id}/` })),
+  ...labApps.map((a) => ({ id: a.id, title: a[lang].title, cat: a[lang].cat, year: a.year, href: `${a.src}?lang=${lang}` })),
 ];
+const N = items.length;
+const start = Math.floor((N - 1) / 2);
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent, type modulaire), générateur héraldique, quiz et Letteroastd.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters, modular type), heraldry generator, quiz and Letteroastd.'} path="lab/" active="lab">
   <div class="screens-host" data-screens>
     <section class="scr" data-still aria-labelledby="lb-t">
-      <div class="in g">
-        <h1 class="lab mono mu par" id="lb-t">{t.nav.lab} {pad(items.length)}</h1>
-        <p class="lg-i t56">{fr ? 'Des expériences, des générateurs et des fontes.' : 'Experiments, generators and typefaces.'}</p>
-        <ol class="rows lg-l" data-lab>
+      <div class="cf" data-cf data-start={start}>
+        <h1 class="lab mono mu par" id="lb-t">{t.nav.lab} {pad(N)}</h1>
+        <div class="stage" data-stage>
           {items.map((x, i) => (
-            <li>
-              <a class="row" href={x.href} data-pv={x.pv}>
-                <span class="n mono">({pad(i + 1)})</span>
-                <span class="t t28">{x.title}</span>
-                <span class="d mono mu">{x.cat}</span>
-                <span class="y mono mu">{x.year}</span>
-              </a>
-            </li>
+            <a class="cv" href={x.href} aria-label={`${x.title} — ${x.cat}, ${x.year}`} draggable="false" tabindex={i === start ? 0 : -1}>
+              <img src={`/lab/covers/${x.id}.webp`} width="600" height="600" alt="" draggable="false" decoding="async" />
+            </a>
           ))}
-        </ol>
-        <div class="pv" aria-hidden="true" data-pvbox></div>
+        </div>
+        <div class="cap" aria-live="polite">
+          {items.map((x, i) => (
+            <p class:list={['ci', { on: i === start }]}>
+              <span class="t t28">{x.title}</span>
+              <span class="mono mu">{x.cat.toLowerCase()} · {x.year}</span>
+            </p>
+          ))}
+          <p class="ct mono"><span class="ac" data-n>({pad(start + 1)})</span> <span class="mu">/ {pad(N)}</span></p>
+        </div>
       </div>
     </section>
     <section class="scr" data-peek data-still aria-label={fr ? 'Pied de page' : 'Footer'}><Footer lang={lang} /></section>
@@ -41,44 +47,111 @@ const items = [
 </Base>
 
 <style>
-  .lg-i, .lg-l { grid-column: 1 / -1; }
-  .lg-l { margin-top: min(56px, 6dvh); }
-  .row .n { color: var(--ac); }
-  .in { position: relative; }
-  .pv { display: none; }
-  @media (hover: hover) and (pointer: fine) {
-    /* aperçu : la pièce rendue à 1200 × 800 puis réduite, sans interaction */
-    .pv { display: block; position: absolute; left: 0; top: 0; z-index: 5; width: 420px; height: 280px; overflow: hidden; pointer-events: none; background: #f3f3f3;
-      box-shadow: 0 18px 40px rgba(0, 0, 0, .18); opacity: 0; scale: .9; transition: opacity .25s, scale .45s var(--out); will-change: transform; }
-    .pv.on { opacity: 1; scale: 1; }
-    .pv :global(iframe) { position: absolute; left: 0; top: 0; width: 1200px; height: 800px; border: 0; transform: scale(.35); transform-origin: 0 0; }
+  .cf { --s: min(46dvh, 34vw, 480px); position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: var(--head); overflow: hidden; }
+  .cf .lab { position: absolute; left: var(--m); top: calc(var(--head) + 16px); margin: 0; }
+  .stage { position: relative; width: 100%; height: var(--s); touch-action: pan-y; user-select: none; cursor: grab; }
+  .stage.drag { cursor: grabbing; }
+  .cv { position: absolute; left: calc(50% - var(--s) / 2); top: 0; width: var(--s); will-change: transform; -webkit-user-drag: none; }
+  .cv img { display: block; width: 100%; height: auto; background: #ddd; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 24px 50px -24px rgba(0, 0, 0, .35); }
+  /* estompe : un voile de la couleur du fond (opaque, donc on ne voit pas les pochettes de derrière à travers) */
+  .cv::after { content: ''; position: absolute; inset: 0; background: var(--bg); opacity: var(--f, 0); pointer-events: none; }
+  .cv:focus-visible { outline: 2px solid var(--ac); outline-offset: 6px; }
+  /* légende : titre et catégorie de la pièce du centre, compteur à droite comme une pagination */
+  .cap { position: relative; width: var(--s); height: 3.4em; margin-top: min(32px, 4dvh); }
+  .ci { position: absolute; left: 0; top: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .45s var(--out); pointer-events: none; }
+  .ci.on { opacity: 1; transform: none; }
+  .ci .t { font-size: clamp(18px, 2.6dvh, 24px); }
+  .ct { position: absolute; right: 0; top: .35em; margin: 0; }
+  @media (max-width: 760px) {
+    .cf { --s: min(64vw, 38dvh); }
+    .cap { height: 5em; }
+    .ct { position: absolute; left: 0; right: auto; top: 3.4em; }
   }
 </style>
 
 <script>
-  // aperçu vivant : la pièce survolée est chargée dans une iframe réduite, qui suit le curseur avec un léger retard ;
-  // une seule iframe à la fois, retirée quand la souris quitte la liste (rien ne tourne en arrière-plan)
-  const list = document.querySelector<HTMLElement>('[data-lab]');
-  const box = document.querySelector<HTMLElement>('[data-pvbox]');
-  if (list && box && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const host = box.parentElement!;
-    let x = 0, y = 0, tx = 0, ty = 0, raf = 0, first = true, cur = '';
-    const loop = () => {
-      x += (tx - x) * 0.18; y += (ty - y) * 0.18;
-      box.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${((tx - x) * 0.03).toFixed(2)}deg)`;
-      raf = Math.abs(tx - x) + Math.abs(ty - y) > 0.3 ? requestAnimationFrame(loop) : 0;
+  import { reduced } from '../../scripts/motion';
+  import { wheelGesture } from '../../scripts/gesture';
+  const root = document.querySelector<HTMLElement>('[data-cf]');
+  if (root) {
+    const stage = root.querySelector<HTMLElement>('[data-stage]')!;
+    const cards = [...root.querySelectorAll<HTMLAnchorElement>('.cv')];
+    const caps = [...root.querySelectorAll<HTMLElement>('.ci')];
+    const num = root.querySelector<HTMLElement>('[data-n]')!;
+    const N = cards.length;
+    const still = reduced();
+    let cur = Number(root.dataset.start) || 0, target = cur, raf = 0, shown = cur;
+    const size = () => cards[0].offsetWidth;
+    // pochettes de côté : inclinées à 45°, plus petites, de plus en plus estompées
+    const place = () => {
+      const S = size(), G0 = S * 0.78, G = S * 0.34, P = S * 3.2;
+      cards.forEach((c, k) => {
+        const d = k - cur, a = Math.abs(d), sg = Math.sign(d), near = Math.min(a, 1);
+        const x = sg * (near * G0 + Math.max(a - 1, 0) * G);
+        c.style.transform = `perspective(${P.toFixed(0)}px) translateX(${x.toFixed(1)}px) rotateY(${(-sg * near * 45).toFixed(2)}deg) scale(${(1 - near * 0.18).toFixed(3)})`;
+        c.style.setProperty('--f', Math.min(0.85, Math.max(a - 0.4, 0) * 0.28).toFixed(3));
+        c.style.zIndex = String(100 - Math.round(a * 10));
+      });
+      const i = Math.round(cur);
+      if (i !== shown) {
+        shown = i;
+        cards.forEach((c, k) => (c.tabIndex = k === i ? 0 : -1));
+        caps.forEach((c, k) => c.classList.toggle('on', k === i));
+        num.textContent = `(${String(i + 1).padStart(2, '0')})`;
+      }
     };
-    list.querySelectorAll<HTMLAnchorElement>('[data-pv]').forEach((a) => a.addEventListener('pointerenter', () => {
-      const src = a.dataset.pv!;
-      if (src !== cur) { cur = src; box.innerHTML = `<iframe src="${src}" tabindex="-1" loading="eager" title=""></iframe>`; }
-      box.classList.add('on');
-    }));
-    list.addEventListener('pointermove', (e) => {
-      const r = host.getBoundingClientRect();
-      tx = Math.min(e.clientX - r.left + 32, r.width - 440); ty = e.clientY - r.top - 140;
-      if (first) { x = tx; y = ty; first = false; }
+    const loop = () => {
+      cur += (target - cur) * 0.13;
+      if (Math.abs(target - cur) < 0.001) cur = target;
+      place();
+      raf = cur !== target ? requestAnimationFrame(loop) : 0;
+    };
+    const go = (i: number) => {
+      const n = Math.max(0, Math.min(N - 1, i));
+      if (n === target) return;
+      dispatchEvent(new CustomEvent('kk:sound', { detail: 'tick' }));
+      target = n;
+      if (still) { cur = target; place(); return; }
       if (!raf) raf = requestAnimationFrame(loop);
+    };
+    place();
+    addEventListener('resize', place);
+
+    // molette : comme les écrans du site, un geste = une pochette, et une molette roulée sans pause enchaîne les pochettes.
+    // La galerie ne prend la molette que si son écran est en place (pas pendant que le pied de page est affiché) ;
+    // au bout, le geste suivant part à l'écran suivant, mais l'inertie du geste en cours ne fait pas sauter l'écran.
+    const screen = root.closest<HTMLElement>('.scr');
+    const gesture = wheelGesture(() => true);
+    let mine = 0;
+    root.addEventListener('wheel', (e) => {
+      if (screen && Math.abs(screen.getBoundingClientRect().top) > 2) return;
+      // Firefox : une molette compte en lignes (deltaMode 1) ou en pages (2), pas en pixels
+      const k = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1;
+      const dl = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * k, now = performance.now();
+      const can = dl > 0 ? target < N - 1 : target > 0;
+      if (!can && now - mine > 300) return;
+      e.preventDefault(); e.stopPropagation(); mine = now; // la galerie prend la molette : la page ne défile pas
+      const step = gesture(now, dl);
+      if (step) go(target + step);
+    }, { passive: false });
+
+    // clic : de côté = au centre ; au centre = ouvrir
+    let moved = false;
+    cards.forEach((c, k) => c.addEventListener('click', (e) => { if (moved || k !== target) { e.preventDefault(); if (!moved) go(k); } }));
+    // clavier : flèches gauche/droite (haut/bas restent au site)
+    root.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault(); go(target + (e.key === 'ArrowRight' ? 1 : -1)); cards[target].focus({ preventScroll: true });
     });
-    list.addEventListener('pointerleave', () => { first = true; box.classList.remove('on'); setTimeout(() => { if (!box.classList.contains('on')) { box.innerHTML = ''; cur = ''; } }, 300); });
+    // glisser horizontalement (souris ou doigt)
+    let sx = 0, s0 = 0, down = false;
+    stage.addEventListener('pointerdown', (e) => { down = true; moved = false; sx = e.clientX; s0 = target; });
+    addEventListener('pointermove', (e) => {
+      if (!down) return;
+      const dx = e.clientX - sx;
+      if (!moved && Math.abs(dx) > 6) { moved = true; stage.classList.add('drag'); }
+      if (moved) go(Math.round(s0 - dx / (size() * 0.4)));
+    });
+    addEventListener('pointerup', () => { down = false; stage.classList.remove('drag'); setTimeout(() => (moved = false), 0); });
   }
 </script>

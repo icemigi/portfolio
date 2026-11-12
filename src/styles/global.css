@@ -184,17 +184,14 @@ input, textarea, [contenteditable] { cursor: text; }
   .row .d { display: none; }
 }
 
-/* ---------- écrans ---------- */
-.screens-host { position: fixed; inset: 0; overflow: hidden; }
-.scr { position: absolute; inset: 0; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
-/* fluidité : chaque écran a son propre calque (le glissement ne repeint rien) ; les éléments en parallaxe et les vignettes
-   animées aussi (leur mouvement et leurs images ne font plus repeindre le paragraphe qui les contient) */
-html.js .screens-host > .scr { will-change: transform; }
+/* ---------- écrans : défilement natif aimanté ----------
+   le conteneur défile pour de vrai (inertie et vitesse du navigateur) et se cale sur chaque écran (scroll-snap obligatoire) ;
+   un écran trop haut défile à l'intérieur, puis le défilement continue vers le suivant (pas de contain) */
+.screens-host { position: fixed; inset: 0; overflow-x: hidden; overflow-y: auto; scroll-snap-type: y mandatory; overscroll-behavior: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.screens-host::-webkit-scrollbar { display: none; }
+.scr { position: relative; height: 100%; background: var(--bg); overflow-x: hidden; overflow-y: auto; overscroll-behavior: auto; scrollbar-width: none; scroll-snap-align: start; scroll-snap-stop: normal; }
 .scr::-webkit-scrollbar { display: none; }
-.scr:not(.on) { transform: translateY(100%); }
-.scr.on { transform: none; }
-.scr.before { transform: translateY(-100%); }
-.scr[data-peek] { top: auto; height: auto; overflow: visible; }
+.scr[data-peek] { height: auto; overflow: visible; scroll-snap-align: end; }
 .scr .in { min-height: 100%; display: grid; align-content: center; padding-top: calc(var(--head) + 24px); padding-bottom: 64px; }
 @media (max-width: 760px) {
   /* affiche : le texte se pose en bas de l'écran, l'étiquette (services, projets…) reste en haut sous le menu */
@@ -202,7 +199,7 @@ html.js .screens-host > .scr { will-change: transform; }
   .scr .in .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; }
 }
 html:not(.js) .screens-host { position: static; }
-html:not(.js) .scr { position: relative; transform: none; min-height: 100vh; }
+html:not(.js) .scr { position: relative; min-height: 100vh; height: auto; }
 html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
 
 /* lettres : restent dans le flux, crénage intact */
