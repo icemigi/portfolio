@@ -140,9 +140,9 @@ const all: Project[] = [
       lead: "Des identités pour des artistes de rap underground, d'électro et d'hyperpop, du lettrage dessiné jusqu'à la scène.",
       sections: [
         { h: "Un collectif pour commencer", paras: [{ p: "Tout est parti d'un collectif, que je dirigeais avec ses deux fondateurs et dont j'étais le graphiste. Ses pochettes ont circulé, le bouche-à-oreille a fait le reste : d'autres artistes ont suivi." }] },
-        { h: "Écouter avant de dessiner", paras: [{ p: "Chaque sortie, je l'écoute en boucle en notant des mots et des matières ; les paroles et les thèmes évoqués guident le reste, avec une référence forte trouvée en veille." }] },
+        { h: "Écouter avant de dessiner", paras: [{ p: "Chaque sortie, je l'écoute en boucle en notant des mots ; les paroles et les thèmes évoqués guident le reste, avec une référence forte trouvée en veille." }] },
         { h: "Le lettrage dessiné", paras: [{ p: "Presque toujours un titre dessiné à la main, jamais tiré d'une fonte, mêlé à une image très travaillée : une forme faite pour cette sortie et aucune autre." }] },
-        { h: "Penser l'objet", paras: [{ p: "La pochette se pense dans la main avant d'être une vignette : relief, découpe, matière. Puis elle se décline, du dos au merch." }] },
+        { h: "Penser l'objet", paras: [{ p: "Les matières arrivent avec l'objet : la pochette se pense dans la main avant d'être une vignette, relief, découpe, papier. Puis elle se décline, du dos au merch." }] },
         { h: "Jusqu'à la scène", paras: [{ p: "L'identité se met ensuite à bouger : des visuels projetés en direct sous TouchDesigner, notamment à la Gaîté Lyrique. Plus de vingt identités, montrées ici sans noms ni titres." }] },
       ],
     },
@@ -158,9 +158,9 @@ const all: Project[] = [
       lead: "Identities for underground rap, electronic and hyperpop artists, from hand-drawn lettering all the way to the stage.",
       sections: [
         { h: "It started with a collective", paras: [{ p: "It all began with a collective I ran with its two founders, as its designer and art director. Its sleeves got around, word of mouth did the rest: other artists followed." }] },
-        { h: "Listening before drawing", paras: [{ p: "I listen to each release on repeat, noting words and materials; the lyrics and themes guide the rest, along with one strong reference found while digging." }] },
+        { h: "Listening before drawing", paras: [{ p: "I listen to each release on repeat, noting words; the lyrics and themes guide the rest, along with one strong reference found while digging." }] },
         { h: "Drawn lettering", paras: [{ p: "Almost always a title drawn by hand, never taken from a font, blended with a carefully crafted image: a shape made for this release and no other." }] },
-        { h: "Thinking in objects", paras: [{ p: "A sleeve is thought of in the hand before it becomes a thumbnail: emboss, die-cut, material. Then it extends, from the back cover to the merch." }] },
+        { h: "Thinking in objects", paras: [{ p: "Materials come with the object: a sleeve is thought of in the hand before it becomes a thumbnail, emboss, die-cut, paper. Then it extends, from the back cover to the merch." }] },
         { h: "All the way to the stage", paras: [{ p: "Then the identity starts to move: visuals projected live with TouchDesigner, including at La Gaîté Lyrique. Over twenty identities, shown here without names or titles." }] },
       ],
     },
