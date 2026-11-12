@@ -19,58 +19,42 @@ import '../styles/global.css';
         <p class="t28 mu" lang="fr">Cette page n'existe pas.</p>
         <p class="links"><a class="bp" href="/en/">home</a><a class="bp" href="/fr/" lang="fr">accueil</a></p>
       </div>
-      <!-- mini-jeu : le cavalier saute par-dessus les caractères perdus (espace, clic ou toucher) -->
-      <div class="game" data-game>
-        <canvas aria-label="Mini-game: jump over the lost characters (space or click)"></canvas>
-        <p class="mono mu hint" data-hint>space / click to ride — espace / clic pour chevaucher</p>
-        <p class="mono sc"><span class="mu">score</span> <b data-score>000</b> <span class="mu">best</span> <b data-best>000</b></p>
+      <!-- ticket à gratter : sous la couche, la pièce kerningkastle -->
+      <div class="tk" data-tk>
+        <img src="/logo-coin.webp" alt="kerningkastle coin" width="440" height="421" />
+        <canvas aria-hidden="true"></canvas>
+        <p class="mono win" data-win><span>(gagné : rien, mais bien joué)</span><span class="mu">(you won: nothing, but well played)</span></p>
       </div>
     </main>
   </body>
 <script>
-  // Le cavalier (le logo) galope ; des caractères perdus arrivent (4, 0, 4, parenthèses, +) : sauter par-dessus.
-  const box = document.querySelector<HTMLElement>('[data-game]')!;
-  const cv = box.querySelector('canvas')!, g = cv.getContext('2d')!;
-  const sEl = box.querySelector('[data-score]')!, bEl = box.querySelector('[data-best]')!, hint = box.querySelector('[data-hint]')!;
-  const knight = new Image(); knight.src = '/logo-kerningkastle-dark.svg';
-  const GLYPHS = ['4', '0', '4', '(', ')', '+', '?', '§', '&'];
-  let W = 0, H = 0, dpr = 1, run = false, dead = false, t = 0, speed = 6, y = 0, vy = 0, score = 0, next = 60, raf = 0;
-  let best = 0; try { best = Number(localStorage.getItem('kk-404') || 0); } catch { /* */ }
-  let obs: { x: number; c: string; w: number }[] = [];
-  const pad = (n: number) => String(Math.floor(n)).padStart(3, '0');
-  bEl.textContent = pad(best);
-  const fit = () => { const r = cv.getBoundingClientRect(); dpr = Math.min(2, devicePixelRatio || 1); W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; draw(); };
-  const GROUND = () => H - 24, K = 46;
-  const jump = () => {
-    if (!run || dead) { run = true; dead = false; obs = []; score = 0; speed = 6; t = 0; next = 50; y = 0; vy = 0; hint.classList.add('gone'); if (!raf) raf = requestAnimationFrame(loop); return; }
-    if (y === 0) vy = 13;
-  };
-  function draw() {
-    g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-    g.fillStyle = '#d6d6d6'; g.fillRect(0, GROUND(), W, 1);
-    const bob = run && !dead && y === 0 ? Math.abs(Math.sin(t * .35)) * 3 : 0;
-    if (knight.complete) g.drawImage(knight, 40, GROUND() - K - y - bob, K, K);
-    g.fillStyle = '#111'; g.font = '500 44px Geist, sans-serif'; g.textBaseline = 'alphabetic';
-    for (const o of obs) g.fillText(o.c, o.x, GROUND() - 2);
-    if (dead) { g.fillStyle = '#FF8716'; g.font = '400 13px "Geist Mono", monospace'; g.fillText('(désarçonné) + / (unhorsed) +', 40, 24); }
+  // Ticket à gratter : une couche grise marquée « 404 » couvre la pièce ; passé la moitié grattée, elle tombe d'elle-même
+  {
+    const tk = document.querySelector<HTMLElement>('[data-tk]')!, c = tk.querySelector('canvas')!, x = c.getContext('2d')!;
+    let done = false, n = 0;
+    const cover = () => {
+      const d = Math.min(2, devicePixelRatio || 1), w = tk.clientWidth, h = tk.clientHeight;
+      c.width = w * d; c.height = h * d; x.setTransform(d, 0, 0, d, 0, 0);
+      x.globalCompositeOperation = 'source-over'; x.fillStyle = '#c9c9c9'; x.fillRect(0, 0, w, h);
+      x.fillStyle = '#b3b3b3'; x.font = `500 ${w * .42}px Geist, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('404', w / 2, h * .47);
+      x.fillStyle = '#8f8f8f'; x.font = '400 11px "Geist Mono", monospace'; x.fillText('grattez · scratch', w / 2, h - 16);
+    };
+    const cleared = () => { const a = x.getImageData(0, 0, c.width, c.height).data; let z = 0; for (let i = 3; i < a.length; i += 64) if (a[i] < 40) z++; return z / (a.length / 64); };
+    let lx = -1, ly = -1, down = false;
+    const scratch = (e: PointerEvent) => {
+      if (done || (e.pointerType !== 'mouse' && !down)) return;
+      const b = c.getBoundingClientRect(), px = e.clientX - b.left, py = e.clientY - b.top;
+      x.globalCompositeOperation = 'destination-out'; x.lineCap = 'round'; x.lineWidth = 34;
+      x.beginPath(); x.moveTo(lx < 0 ? px : lx, ly < 0 ? py : ly); x.lineTo(px + .1, py); x.stroke();
+      lx = px; ly = py;
+      if (++n % 12 === 0 && cleared() > .5) { done = true; c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' }); tk.classList.add('won'); }
+    };
+    c.addEventListener('pointerdown', (e) => { down = true; lx = ly = -1; c.setPointerCapture(e.pointerId); scratch(e); });
+    c.addEventListener('pointermove', scratch);
+    c.addEventListener('pointerup', () => { down = false; lx = ly = -1; });
+    c.addEventListener('pointerleave', () => { lx = ly = -1; });
+    document.fonts.ready.then(cover);
   }
-  function loop() {
-    raf = 0; if (!run || dead) return;
-    t++; score += .2; speed = 6 + Math.min(8, score / 60);
-    vy -= .9; y = Math.max(0, y + vy); if (y === 0) vy = 0;
-    if (--next <= 0) { const c = GLYPHS[Math.floor(Math.random() * GLYPHS.length)]; g.font = '500 44px Geist, sans-serif'; obs.push({ x: W + 10, c, w: g.measureText(c).width }); next = 38 + Math.random() * 60 - Math.min(20, score / 20); }
-    for (const o of obs) o.x -= speed;
-    obs = obs.filter((o) => o.x > -60);
-    // collision : boîte du cavalier contre la boîte du caractère (avec un peu d'indulgence)
-    for (const o of obs) if (o.x < 40 + K - 10 && o.x + o.w > 40 + 10 && y < 30) { dead = true; if (score > best) { best = score; try { localStorage.setItem('kk-404', String(Math.floor(best))); } catch { /* */ } bEl.textContent = pad(best); } }
-    sEl.textContent = pad(score);
-    draw();
-    if (!dead) raf = requestAnimationFrame(loop);
-  }
-  addEventListener('keydown', (e) => { if (e.code === 'Space' || e.key === 'ArrowUp') { e.preventDefault(); jump(); } });
-  cv.addEventListener('pointerdown', jump);
-  addEventListener('resize', fit);
-  knight.onload = draw; document.fonts.ready.then(fit); fit();
 </script>
 </html>
 
@@ -78,14 +62,16 @@ import '../styles/global.css';
   .nf { min-height: 100dvh; align-content: center; position: relative; }
   .home { position: absolute; left: var(--m); top: 17px; }
   .k { grid-column: 1 / 4; padding-top: 10px; }
+  .tk { grid-column: 4 / 8; position: relative; width: min(260px, 100%); aspect-ratio: 1; margin-bottom: 40px; display: grid; place-items: center; }
+  .tk img { width: 74%; height: auto; }
+  .tk canvas { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; touch-action: none; cursor: crosshair; }
+  .win { position: absolute; left: 0; top: calc(100% + 10px); display: grid; gap: 2px; opacity: 0; transition: opacity .4s .3s; text-transform: none; }
+  .tk.won .win { opacity: 1; }
+  .tk.won img { animation: kk-coin 1.2s cubic-bezier(.2, .7, .2, 1); }
+  @keyframes kk-coin { from { transform: rotateY(540deg) scale(.9); } }
+  @media (prefers-reduced-motion: reduce) { .tk.won img { animation: none; } }
   .v { grid-column: 4 / 12; }
   .links { display: flex; gap: 32px; margin-top: 32px; }
   .nf { align-content: center; row-gap: 48px; }
-  .game { grid-column: 1 / -1; position: relative; }
-  .game canvas { display: block; width: 100%; height: 180px; max-width: none; cursor: pointer; }
-  .hint { position: absolute; left: 0; top: 0; transition: opacity .3s; }
-  .hint.gone { opacity: 0; }
-  .sc { position: absolute; right: 0; top: 0; display: flex; gap: 8px; }
-  .sc b { font-weight: 400; color: var(--ac); }
-  @media (max-width: 760px) { .k, .v { grid-column: 1 / -1; } .k { margin-bottom: 16px; } }
+  @media (max-width: 760px) { .k, .v, .tk { grid-column: 1 / -1; } .k { margin-bottom: 16px; } }
 </style>

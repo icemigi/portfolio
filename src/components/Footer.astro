@@ -1,6 +1,6 @@
 ---
 // Pied de page : contact (clic = copie), ailleurs, plan du site, heure de Paris avec une humeur qui change selon l'heure,
-// colophon (avec beaucoup trop de parenthèses, c'est assumé), année, mentions légales, retour en haut.
+// ligne de fabrication (avec beaucoup trop de parenthèses, c'est assumé), année, mentions légales, retour en haut.
 import { ui, type Lang } from '../data/ui';
 import { contact } from '../data/about';
 interface Props { lang: Lang; class?: string; top?: boolean }
@@ -35,9 +35,9 @@ const moods = fr
     <p class="mu" data-mood></p>
   </div>
   <p class="col mu">{fr
-    ? 'Fait main à Paris avec Geist, Geist Mono et beaucoup trop de parenthèses (c\'est assumé). Aucun framework, aucun cookie, quelques sons.'
-    : 'Handmade in Paris with Geist, Geist Mono and far too many parentheses (on purpose). No framework, no cookies, a few sounds.'}</p>
-  <div class="c"><p class="mono mu">© {new Date().getFullYear()} kerningkastle</p><a class="lk mu mono" href={`/${lang}/colophon/`}>Colophon</a><a class="lk mu mono" href={`/${lang}/legal/`}>{fr ? 'Mentions légales' : 'Legal notice'}</a></div>
+    ? 'Fait avec 🧡, Astro, TypeScript, WebGL, Web Audio et Geist. Et beaucoup trop de parenthèses (c\'est assumé (vraiment)).'
+    : 'Made with 🧡, Astro, TypeScript, WebGL, Web Audio and Geist. And far too many parentheses (on purpose (really)).'}</p>
+  <div class="c"><p class="mono mu">© {new Date().getFullYear()} kerningkastle</p><a class="lk mu mono" href={`/${lang}/legal/`}>{fr ? 'Mentions légales' : 'Legal notice'}</a></div>
   {top && <a class="top bp hit" href="#main" data-go="0">{t.top.toLowerCase()}</a>}
 </footer>
 

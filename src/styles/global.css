@@ -295,6 +295,10 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .ld-logo img:first-child { opacity: .12; }
 .ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-icon-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
+/* entre deux pages : fondu enchaîné court (Chrome, Safari ; ailleurs, coupe nette) */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: ease; }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }

@@ -106,15 +106,15 @@ const workLd = {
       window.kkXVT = 'CSSViewTransitionRule' in window && 'onpagereveal' in window;
       if (window.kkArriving && !window.kkXVT) document.documentElement.classList.add('kk-flip');
       if (window.kkArriving) document.documentElement.classList.add('kk-arr');
-      // titre continu (transition entre documents) : seulement pour l'ouverture du projet suivant
+      // titre continu (transition entre documents) : seulement pour l'ouverture du projet suivant ; ailleurs, le fondu enchaîné de global.css
       addEventListener('pageswap', (e) => {
         if (!e.viewTransition) return;
-        if (!window.kkLeavingNext || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
+        if (!window.kkLeavingNext || !window.kkXVT) return; // sinon : fondu enchaîné commun
         const h = document.querySelector('.next-title .vt'); if (h) h.style.viewTransitionName = 'case-title';
       });
       addEventListener('pagereveal', (e) => {
         if (!e.viewTransition) return;
-        if (!window.kkArriving || !window.kkXVT) { e.viewTransition.skipTransition(); return; }
+        if (!window.kkArriving || !window.kkXVT) return;
         const h = document.querySelector('.case-h1 .vt'); if (h) h.style.viewTransitionName = 'case-title';
       });
     </script>
@@ -244,7 +244,6 @@ const workLd = {
 </Base>
 
 <style is:global>
-  @view-transition { navigation: auto; }
   /* Titre continu : le titre du projet suivant glisse jusqu'à sa place de titre, sans fondu ni déformation
      (même texte, même taille, une seule ligne : seul le déplacement est animé). L'ancienne page disparaît net,
      la nouvelle arrive une fois le titre posé. */
@@ -253,10 +252,9 @@ const workLd = {
   ::view-transition-old(case-title) { animation: none; opacity: 0; }
   ::view-transition-new(case-title) { animation: none; }
   ::view-transition { background: var(--bg); }
-  ::view-transition-old(root) { animation: none; opacity: 0; }
-  ::view-transition-new(root) { animation: kk-vt-in .9s both; }
+  html.kk-arr::view-transition-old(root) { animation: none; opacity: 0; }
+  html.kk-arr::view-transition-new(root) { animation: kk-vt-in .9s both; }
   @keyframes kk-vt-in { 0%, 70% { opacity: 0; } 100% { opacity: 1; } }
-  @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
   /* repli sans transition entre pages : le titre attend d'être replacé à son ancienne position, le menu arrive après lui */
   html.kk-flip .case-h1 .vt, html.kk-flip .site-header { opacity: 0; }
   /* page de garde : le numéro et la fiche n'apparaissent qu'une fois le titre posé (en CSS : aucun affichage avant le script) */

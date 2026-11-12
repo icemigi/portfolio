@@ -8,7 +8,12 @@ interface Props { kind: ObjectKind }
 const { kind } = Astro.props;
 const u = (n: string) => `${kind}-${n}`; // identifiants uniques par objet (plusieurs objets par page)
 const f = (n: string) => `url(#${u(n)})`;
+// essai : photos détourées à la place des objets dessinés (vinyle : identités musicales ; sac : prise d'escalade kern.outdoor)
+const photo = ({ vinyl: ['/work/music-identities/object.webp', 1200, 809], backpack: ['/work/kern-outdoor/object.webp', 1200, 907] } as Partial<Record<ObjectKind, [string, number, number]>>)[kind];
 ---
+{photo ? (
+  <img class="shape" src={photo[0]} width={photo[1]} height={photo[2]} alt="" decoding="async" data-no-ascii />
+) : (
 <svg class="shape" viewBox="0 0 200 200" aria-hidden="true">
   {kind === 'book' && (
     <g>
@@ -214,3 +219,4 @@ const f = (n: string) => `url(#${u(n)})`;
     <g fill="#b5b5b5"><path d="M150 24 C 96 34 54 84 46 160 L 58 162 C 72 104 104 66 150 24 Z" /></g>
   )}
 </svg>
+)}
