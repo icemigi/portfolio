@@ -1,108 +1,71 @@
 ---
-// Lab : une salle plein écran, sans défilement. L'interface flotte par-dessus en Geist Mono.
-// Changer de salle : boutons ← →, rangée 01…0n, flèches du clavier (sauf dans une fonte, où le clavier sert à taper).
+// Lab : une pièce en plein écran, avec la même enveloppe épurée que les pièces autonomes (public/lab/ui.css + back.js) :
+// « ← lab » et une aide en haut à gauche, les actions en haut à droite, rien d'autre (ni menu du site, ni numéros, ni flèches).
+// Une pièce autonome (kind 'embed') s'ouvre directement : cette adresse ne fait que l'y renvoyer.
 import Base from '../layouts/Base.astro';
 import TypeCanvas from './TypeCanvas.astro';
-import { ui, pad, type Lang } from '../data/ui';
+import { ui, type Lang } from '../data/ui';
 import { rooms } from '../data/lab';
 interface Props { lang: Lang; index: number }
 const { lang, index } = Astro.props;
 const t = ui[lang];
 const room = rooms[index];
 const r = room[lang];
-const N = rooms.length;
-const url = (i: number) => `/${lang}/lab/${rooms[(i + N) % N].id}/`;
+const fr = lang === 'fr';
+const intro = room.kind === 'type'
+  ? (fr ? 'Tape un mot : il se compose en modules (Entrée pour une nouvelle ligne). Approche le curseur, clique pour changer de famille, molette pour la portée.' : 'Type a word: it is built from modules (Enter for a new line). Move the cursor close, click to change the family, wheel for the reach.')
+  : r.note;
 ---
 <Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
+  {room.kind === 'embed' && <script is:inline define:vars={{ to: `${room.src}?lang=${lang}` }}>location.replace(to);</script>}
+  <link rel="stylesheet" href="/lab/ui.css" />
   <h1 class="sr">{r.title}</h1>
   <div class="lab" data-room={room.kind}>
     <div class:list={['room', room.kind]}>
-      {room.kind === 'type' && (
-        <Fragment>
-          <p class="hint mono mu">({lang === 'fr' ? 'tape un mot · clic pour changer de module' : 'type a word · click to change modules'}) <span data-fam></span></p>
-          <TypeCanvas class="tc" label={r.note} edit />
-        </Fragment>
-      )}
+      {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} edit />}
       {room.kind === 'slot' && <p class="mono mu">({r.note})</p>}
-      {room.kind === 'embed' && <iframe class="emb" src={room.src} title={r.title} loading="lazy"></iframe>}
-      {room.kind === 'font' && (
-        <Fragment>
-          <p class="hint mono mu" id="hint">({t.typeHere})</p>
-          <p class="tester" contenteditable="plaintext-only" spellcheck="false" aria-describedby="hint" data-own-keys>Kerning</p>
-        </Fragment>
-      )}
+      {room.kind === 'font' && <p class="tester" contenteditable="plaintext-only" spellcheck="false" data-own-keys>Kerning</p>}
+      {room.kind === 'embed' && <p class="mono mu"><a href={`${room.src}?lang=${lang}`}>{r.title}</a></p>}
     </div>
-
-    <div class="bot g">
-      <div class="info mono">
-        <p><a class="back hit" href={`/${lang}/lab/`} aria-label={lang === 'fr' ? 'Retour au Lab' : 'Back to the Lab'}>← lab</a> · {pad(index + 1)} / {pad(N)} — {r.title}</p>
-        <p class="mu">{r.cat} · {room.year}{room.kind !== 'font' && <Fragment> · <button class="i bp hit" type="button" aria-label="Note" aria-expanded="false" aria-controls="note" data-note>note</button></Fragment>}</p>
-      </div>
-      <ol class="dots mono" aria-label="Lab">
-        {rooms.map((x, i) => <li><a class:list={['hit', { mu: i !== index }]} href={url(i)} aria-current={i === index ? 'page' : undefined} aria-label={x[lang].title}>{pad(i + 1)}</a></li>)}
-      </ol>
-      <div class="act">
-        {room.kind === 'font' && (room.file
-          ? <a class="bp hit" href={room.file} download>{t.download.toLowerCase()}</a>
-          : <span class="mono mu">{t.fileSoon.toLowerCase()}</span>)}
-        {room.kind === 'type' && <button class="bp hit" type="button" data-tsave>{lang === 'fr' ? 'enregistrer' : 'save'}</button>}
-        <a class="arw bp ba hit" href={url(index - 1)} aria-label={t.prev} data-prev>←</a>
-        <a class="arw bp ba hit" href={url(index + 1)} aria-label={t.nextShort} data-nextroom>→</a>
-      </div>
-    </div>
-    {room.kind !== 'font' && <div class="note" id="note" hidden><p class="mono mu">{t.note}</p><p>{r.note}</p></div>}
   </div>
+  <div class="kk-bar">
+    <p class="hint">{room.kind === 'type' ? (fr ? 'tape · entrée : ligne · clic : modules · molette : portée' : 'type · enter: new line · click: modules · wheel: reach') : room.kind === 'font' ? t.typeHere : ''} <span data-fam></span></p>
+    <p class="act">
+      {room.kind === 'type' && <Fragment><button type="button" data-twave>{fr ? 'onde' : 'wave'}</button><button type="button" data-tsave>{fr ? 'enregistrer' : 'save'}</button><button type="button" data-tsvg>svg</button></Fragment>}
+      {room.kind === 'font' && (room.file ? <a href={room.file} download>{t.download.toLowerCase()}</a> : <span>{t.fileSoon.toLowerCase()}</span>)}
+    </p>
+  </div>
+  <script is:inline define:vars={{ intro }}>document.documentElement.dataset.intro = intro;</script>
+  <script is:inline src="/lab/back.js"></script>
 </Base>
 
 <style>
-  .lab { position: fixed; inset: 0; }
-  .back { color: var(--ac); }
-  .back:hover { color: var(--fg); }
-  :global(.embed) .back { display: none; }
+  /* enveloppe épurée : la pièce seule, plein écran, aux couleurs du mode jour / nuit du site */
+  :global(.site-header), :global(.more-arrow) { display: none !important; }
+  .lab { position: fixed; inset: 0; background: var(--bg); }
   .room { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 var(--m); }
   .room.slot { background: repeating-linear-gradient(45deg, #e6e6e6 0 10px, #dedede 10px 20px); }
   .room.slot p { max-width: 520px; text-align: center; }
-  .room.embed { background: #f3f3f3; }
-  .room .emb { position: absolute; top: var(--head); left: 0; width: 100%; height: calc(100% - var(--head) - 76px); max-width: none; border: 0; }
-  @media (max-width: 760px) { .room .emb { height: calc(100% - var(--head) - 120px); } }
   .room :global(.tc) { width: 100%; height: 100%; }
   .tester { font-weight: 500; font-size: 160px; line-height: 160px; letter-spacing: -0.03em; text-align: center; outline: none; max-width: 100%; overflow-wrap: anywhere; caret-color: var(--fg); }
-  .hint { position: absolute; top: calc(var(--head) + 120px); left: 0; right: 0; text-align: center; }
-  .bot { position: absolute; left: 0; right: 0; bottom: 24px; align-items: end; z-index: 3; }
-  .info { grid-column: 1 / 5; }
-  .info p + p { margin-top: 4px; }
-
-  .dots { grid-column: 5 / 9; display: flex; gap: 14px; justify-self: center; }
-  .dots [aria-current='page'] { color: var(--ac); }
-  .act { grid-column: 9 / 13; justify-self: end; display: flex; gap: 20px; align-items: baseline; }
-  .arw { padding: 12px 0; }
-  .note { position: absolute; z-index: 4; left: var(--m); bottom: 96px; width: 320px; background: var(--bg); padding: 16px; box-shadow: 0 0 0 1px var(--ln); }
-  .note p + p { margin-top: 8px; }
-  @media (max-width: 760px) {
-    .tester { font-size: 52px; line-height: 56px; }
-    .bot { row-gap: 14px; bottom: calc(24px + env(safe-area-inset-bottom)); }
-    .info { grid-column: 1 / -1; }
-    .dots { grid-column: 1 / 3; justify-self: start; gap: 10px; }
-    .act { grid-column: 3 / 5; }
-    .note { left: var(--m); right: var(--m); width: auto; bottom: 150px; }
-  }
+  .kk-bar :global(a), .kk-bar :global(span) { color: var(--k-fg); }
+  @media (max-width: 760px) { .tester { font-size: 52px; line-height: 56px; } }
 </style>
 
 <script>
-  // type modulaire : enregistrer, et nom de la famille de modules affiché au clic
-  {
-    const tc = document.querySelector<HTMLCanvasElement>('canvas.type-canvas[data-edit]');
-    document.querySelector('[data-tsave]')?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:save')));
-    tc?.addEventListener('type:family', (e) => { const f = document.querySelector('[data-fam]'); if (f) f.textContent = (e as CustomEvent).detail.name; });
+  import { reduced as isReduced } from '../scripts/motion';
+  // apparition : la pièce se montre en fondu (et se pose, de 2 %), la barre glisse en place juste après
+  if (!isReduced()) {
+    const room = document.querySelector<HTMLElement>('.room'), bar = document.querySelector<HTMLElement>('.kk-bar');
+    room?.animate([{ opacity: 0, transform: 'scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
+    bar?.animate([{ opacity: 0, transform: 'translateY(-8px)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: 260, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
   }
-  const btn = document.querySelector<HTMLButtonElement>('[data-note]');
-  const note = document.getElementById('note');
-  btn?.addEventListener('click', () => { const open = note!.hidden; note!.hidden = !open; btn.setAttribute('aria-expanded', String(open)); });
-  addEventListener('keydown', (e) => {
-    const t = e.target as Element;
-    if (t.closest('[contenteditable], input, textarea')) return;
-    if (e.key === 'ArrowRight') document.querySelector<HTMLAnchorElement>('[data-nextroom]')?.click();
-    if (e.key === 'ArrowLeft') document.querySelector<HTMLAnchorElement>('[data-prev]')?.click();
-    if (e.key === 'Escape' && note && !note.hidden) { note.hidden = true; btn?.setAttribute('aria-expanded', 'false'); }
-  });
+  // type modulaire : enregistrer, et nom de la famille de modules affiché au clic
+  const tc = document.querySelector<HTMLCanvasElement>('canvas.type-canvas[data-edit]');
+  document.querySelector('[data-tsave]')?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:save')));
+  document.querySelector('[data-tsvg]')?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:svg')));
+  const wv = document.querySelector<HTMLButtonElement>('[data-twave]');
+  wv?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:wave')));
+  tc?.addEventListener('type:wavestate', (e) => wv?.setAttribute('aria-pressed', String((e as CustomEvent).detail.on)));
+  tc?.addEventListener('type:family', (e) => { const f = document.querySelector('[data-fam]'); if (f) f.textContent = '· ' + (e as CustomEvent).detail.name; });
 </script>

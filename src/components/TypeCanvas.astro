@@ -59,7 +59,8 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
     ' ': ['00000', '00000', '00000', '00000', '00000', '00000', '00000'],
   };
 
-  type Cell = { x: number; y: number; on: boolean; seed: number; t: number };
+  // x, y : place visée ; cx, cy : place dessinée (glisse vers la visée) ; v : présence du module (0 = point de trame, 1 = module)
+  type Cell = { key: string; x: number; y: number; cx: number; cy: number; on: boolean; seed: number; t: number; v: number };
 
   function hash(n: number) {
     let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
@@ -72,6 +73,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
     if (!ctx) return;
     const base = (canvas.dataset.text || 'KERNINGKASTLE').toUpperCase();
     let text = base, typed = false, family = -1; // family : -1 = mélange (graine), 0..3 = une seule famille de modules
+    let reach = 5.5, wave = false; // portée du curseur (en modules) ; onde qui traverse les modules
     const FAMILY = ['mixte', 'cercles', 'quarts', 'diagonales', 'carrés'];
     const reduced = isReduced();
 
@@ -100,7 +102,7 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       // Une ligne si le format est large, sinon coupure KERNING / KASTLE
-      const lines = W / H > 2.2 || text.length < 9 ? [text] : splitText(text);
+      const lines = text.includes('\n') ? text.split('\n') : W / H > 2.2 || text.length < 9 ? [text] : splitText(text);
       // data-cols : force une largeur commune (aligner KERNING et KASTLE sur la même grille)
       const maxLen = Math.max(Number(canvas.dataset.cols) || 0, ...lines.map((l) => l.length));
       const align = canvas.dataset.align || 'center';
@@ -112,6 +114,8 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       const left = Math.round((W - cols * s) / 2);
       const oy = Math.round((H - rows * s) / 2);
 
+      // les modules gardent leur état d'une composition à l'autre : ils glissent à leur nouvelle place, apparaissent ou s'effacent
+      const prev = new Map(cells.map((c) => [c.key, c]));
       cells = [];
       let id = 0;
       lines.forEach((line, li) => {
@@ -120,13 +124,8 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
           const g = GLYPHS[ch] || GLYPHS[' '];
           for (let r = 0; r < 7; r++) {
             for (let c = 0; c < 5; c++) {
-              cells.push({
-                x: ox + (ci * 6 + c) * s,
-                y: oy + (li * 8 + r) * s,
-                on: g[r][c] === '1',
-                seed: hash(++id),
-                t: 0,
-              });
+              const key = `${li}:${ci}:${r}:${c}`, o = prev.get(key), x = ox + (ci * 6 + c) * s, y = oy + (li * 8 + r) * s;
+              cells.push({ key, x, y, cx: o ? o.cx : x, cy: o ? o.cy : y, on: g[r][c] === '1', seed: o ? o.seed : hash(++id), t: o ? o.t : 0, v: o ? o.v : reduced ? (g[r][c] === '1' ? 1 : 0) : 0 });
             }
           }
         });
@@ -151,29 +150,36 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
 
     function step(now: number) {
       if (!pointer.active && !reduced) ghost(now);
-      const R = s * 5.5;
+      const R = s * reach, k = now / 1000;
       let moving = false;
       for (const cell of cells) {
+        // présence (apparition / effacement) et glissement vers la nouvelle place
+        const v = cell.v + ((cell.on ? 1 : 0) - cell.v) * 0.16, cx = cell.cx + (cell.x - cell.cx) * 0.18, cy = cell.cy + (cell.y - cell.cy) * 0.18;
+        if (Math.abs(v - cell.v) > 0.002 || Math.abs(cx - cell.cx) > 0.1 || Math.abs(cy - cell.cy) > 0.1) moving = true;
+        cell.v = Math.abs(v - (cell.on ? 1 : 0)) < 0.002 ? (cell.on ? 1 : 0) : v; cell.cx = cx; cell.cy = cy;
         if (!cell.on) continue;
-        const dx = cell.x + s / 2 - pointer.x;
-        const dy = cell.y + s / 2 - pointer.y;
+        const dx = cell.cx + s / 2 - pointer.x;
+        const dy = cell.cy + s / 2 - pointer.y;
         const d = Math.sqrt(dx * dx + dy * dy);
-        const target = reduced && !pointer.active ? 0 : Math.max(0, 1 - d / R);
+        let target = reduced && !pointer.active ? 0 : Math.max(0, 1 - d / R);
+        // onde : une vague diagonale qui traverse les modules
+        if (wave && !reduced) target = Math.max(target, Math.pow(0.5 + 0.5 * Math.sin(k * 2.2 - (cell.cx + cell.cy) / (s * 7)), 3));
         const next = cell.t + (target - cell.t) * 0.14;
         if (Math.abs(next - cell.t) > 0.0005) moving = true;
         cell.t = next;
       }
-      return moving;
+      return moving || wave;
     }
 
     function drawModule(cell: Cell) {
-      const { x, y, t, seed } = cell;
+      const { cx: x, cy: y, t, seed, v } = cell;
       const c = ctx!;
       c.fillStyle = t > 0.55 ? colors.accent : colors.fg;
-      if (t < 0.08) { c.fillRect(x, y, s, s); return; }
-      const rot = (seed % 4) * (Math.PI / 2);
       c.save();
       c.translate(x + s / 2, y + s / 2);
+      if (v < 1) c.scale(v, v);
+      if (t < 0.08) { c.fillRect(-s / 2, -s / 2, s, s); c.restore(); return; }
+      const rot = (seed % 4) * (Math.PI / 2);
       c.rotate(rot);
       switch (family < 0 ? (seed >>> 3) % 4 : [1, 0, 2, 3][family]) {
         case 0: { // quart de cercle
@@ -209,9 +215,9 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       c.fillStyle = colors.fg;
       c.globalAlpha = 0.18;
       const dot = Math.max(1, s * 0.06);
-      for (const cell of cells) if (!cell.on) c.fillRect(cell.x + s / 2 - dot / 2, cell.y + s / 2 - dot / 2, dot, dot);
+      for (const cell of cells) if (cell.v < 0.6) c.fillRect(cell.cx + s / 2 - dot / 2, cell.cy + s / 2 - dot / 2, dot, dot);
       c.globalAlpha = 1;
-      for (const cell of cells) if (cell.on) drawModule(cell);
+      for (const cell of cells) if (cell.v > 0.02) drawModule(cell);
     }
 
     function loop(now: number) {
@@ -237,21 +243,47 @@ const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'cente
       if (visible) kick();
     }).observe(canvas);
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { readColors(); draw(); });
+    new MutationObserver(() => { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
     // clavier (salle du Lab : data-edit) : on tape son propre mot ; retour arrière efface ; Échap revient au mot de départ
     if (canvas.hasAttribute('data-edit')) {
       addEventListener('keydown', (e) => {
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         const k = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        const lines = text.split('\n'), last = lines[lines.length - 1];
         if (k === 'Escape') { text = base; typed = false; }
         else if (k === 'Backspace') { text = typed ? text.slice(0, -1) : ''; typed = true; }
-        else if (k.length === 1 && GLYPHS[k] && k !== ' ' || (k === ' ' && typed)) { text = (typed ? text : '') + k; typed = true; if (text.length > 16) text = text.slice(-16); }
+        else if (k === 'Enter') { if (!typed || lines.length >= 4 || !last) return; text += '\n'; }
+        else if (k.length === 1 && GLYPHS[k] && k !== ' ' || (k === ' ' && typed)) { if (typed && last.length >= 14) return; text = (typed ? text : '') + k; typed = true; }
         else return;
         e.preventDefault(); layout(); kick();
         canvas.dispatchEvent(new CustomEvent('type:change', { detail: { text } }));
       });
       // clic : famille de modules suivante
       canvas.addEventListener('click', () => { family = family >= 3 ? -1 : family + 1; draw(); canvas.dispatchEvent(new CustomEvent('type:family', { detail: { name: FAMILY[family + 1] } })); });
+      // molette au-dessus du texte : portée du curseur (de 2 à 14 modules)
+      canvas.addEventListener('wheel', (e) => { e.preventDefault(); reach = Math.max(2, Math.min(14, reach - Math.sign(e.deltaY) * 0.5)); canvas.dispatchEvent(new CustomEvent('type:family', { detail: { name: `portée ${reach.toFixed(1).replace('.0', '')}` } })); kick(); }, { passive: false });
+      // onde : une vague traverse les modules, sans curseur
+      canvas.addEventListener('type:wave', () => { wave = !wave; canvas.dispatchEvent(new CustomEvent('type:wavestate', { detail: { on: wave } })); kick(); });
+      // SVG vectoriel : la composition telle qu'elle est à l'écran
+      canvas.addEventListener('type:svg', () => {
+        const f = (n: number) => +n.toFixed(2);
+        let out = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${f(W)} ${f(H)}"><rect width="100%" height="100%" fill="${colors.bg}"/>`;
+        for (const cell of cells) {
+          if (cell.v < 0.05) continue;
+          const { t, seed } = cell, fill = t > 0.55 ? colors.accent : colors.fg, h = s / 2;
+          const tr = `translate(${f(cell.cx + h)} ${f(cell.cy + h)}) scale(${f(cell.v)})`;
+          if (t < 0.08) { out += `<rect x="${f(-h)}" y="${f(-h)}" width="${f(s)}" height="${f(s)}" fill="${fill}" transform="${tr}"/>`; continue; }
+          const rot = (seed % 4) * 90, g = `${tr} rotate(${rot})`;
+          const kind = family < 0 ? (seed >>> 3) % 4 : [1, 0, 2, 3][family];
+          if (kind === 0) { const r = s * (1 - t * 0.25); out += `<path d="M${f(-h)} ${f(-h)}h${f(r)}a${f(r)} ${f(r)} 0 0 1 ${f(-r)} ${f(r)}z" fill="${fill}" transform="${g}"/>`; }
+          else if (kind === 1) out += `<circle r="${f(h * (1 - t * 0.55))}" fill="${fill}" transform="${g}"/>`;
+          else if (kind === 2) out += `<path d="M${f(-h)} ${f(-h)}H${f(h)}L${f(-h)} ${f(h)}z" fill="${fill}" transform="${g}"/>`;
+          else { const q = s * (1 - t * 0.5); out += `<rect x="${f(-q / 2)}" y="${f(-q / 2)}" width="${f(q)}" height="${f(q)}" fill="${fill}" transform="${g} rotate(${f(t * 45)})"/>`; }
+        }
+        const a = document.createElement('a'); a.download = `type-modulaire-${(text.trim() || 'vide').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.svg`;
+        a.href = URL.createObjectURL(new Blob([out + '</svg>'], { type: 'image/svg+xml' })); a.click();
+      });
       // enregistrer : la toile en PNG, mot dans le nom du fichier
       canvas.addEventListener('type:save', () => { const a = document.createElement('a'); a.download = `type-modulaire-${(text.trim() || 'vide').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`; a.href = canvas.toDataURL('image/png'); a.click(); });
     }

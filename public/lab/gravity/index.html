@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-intro="Tape un mot : tes lettres tombent dans la grille. Attrape-les et lance-les, Maj pour les aimanter. « Composer » pose ton mot en titre.">
 <head>
   <meta charset="UTF-8">
   <meta name="robots" content="noindex, follow">
@@ -8,35 +8,35 @@
   <meta name="description" content="Lettres qui tombent : une affiche générative de kerningkastle. Tape au clavier et tes lettres tombent dans la grille, avec un vrai corps physique taillé sur leur dessin. Attrape-les, lance-les, enregistre l'affiche. Matter.js." />
   <link rel="canonical" href="https://kerningkastle.com/fr/lab/gravity/" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <link rel="stylesheet" href="/lab/ui.css">
   <style>
     @font-face { font-family: Geist; src: url('/fonts/Geist-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
     @font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
-    html, body { margin: 0; height: 100%; background: #f3f3f3; overflow: hidden; }
-    body { display: grid; place-items: center; font: 12px/1.3 'Geist Mono', ui-monospace, monospace; color: #111; }
+    .kb-key { font-family: system-ui, sans-serif; }
+    :root { --bg: #f3f3f3; --fg: #111; --mu: #777; }
+    html[data-theme='nuit'] { --bg: #12110f; --fg: #ece5d8; --mu: #8b8476; }
+    html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+    body { display: grid; place-items: center; font: 12px/1.3 'Geist Mono', ui-monospace, monospace; color: var(--fg); }
     .poster { position: relative; width: min(92vw, calc(88vh * 600 / 850)); aspect-ratio: 600 / 850; }
     canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
     canvas.grab { cursor: grabbing; }
     /* mentions dans les marges de l'affiche */
     .m { position: absolute; margin: 0; white-space: nowrap; pointer-events: none; }
     .tl { left: 8.3%; top: 2.2%; } .tr { right: 8.3%; top: 2.2%; text-align: right; }
-    .bl { left: 8.3%; bottom: 2.2%; } .br { right: 8.3%; bottom: 2.2%; text-align: right; pointer-events: auto; }
-    .mu { color: #777; }
-    button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
-    button:hover { color: #FF8716; }
-    button + button { margin-left: 14px; }
-    .tilt { display: none; }
-    @media (pointer: coarse) { .tilt { display: inline; } .kb { display: none; } }
+    .bl { left: 8.3%; bottom: 2.2%; max-width: 46%; overflow: hidden; text-overflow: ellipsis; } .br { right: 8.3%; bottom: 2.2%; text-align: right; pointer-events: auto; }
+    .mu { color: var(--mu); }
+    .tilt { display: none !important; }
+    @media (pointer: coarse) { .tilt { display: inline !important; } }
     /* champ invisible : ouvre le clavier sur téléphone */
     .ghost { position: absolute; opacity: 0; width: 1px; height: 1px; left: 50%; top: 50%; border: 0; padding: 0; }
   </style>
 </head>
 <body>
+  <div class="kk-bar"><p class="hint">tape un mot · glisse pour lancer · maj : aimant · ⌫ efface</p><p class="act"><button class="tilt" id="tilt">inclinaison</button><button id="font">police : geist</button><button id="compose" aria-pressed="false">composer</button><button id="clear">vider</button><button id="link">lien</button><button id="save">enregistrer</button></p></div>
   <div class="poster" id="poster">
     <canvas id="c" aria-label="Affiche : des lettres qui tombent et s'empilent dans une grille"></canvas>
-    <p class="m tl"><span class="kb">tape un mot</span><span class="tilt">touche pour écrire</span></p>
     <p class="m tr mu" id="count">0 lettre</p>
-    <p class="m bl mu"><span class="kb">glisse pour lancer · retour arrière efface</span><span class="tilt">glisse pour lancer</span></p>
-    <p class="m br"><button class="tilt" id="tilt">inclinaison</button><button id="clear">vider</button><button id="save">enregistrer +</button></p>
+    <p class="m tl mu">Lettres qui tombent</p>
     <input class="ghost" id="ghost" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Écrire des lettres">
   </div>
 
@@ -53,11 +53,15 @@
   // ---------- glyphe → corps physique : le caractère rendu hors écran, découpé en rectangles qui épousent sa forme ----------
   const scratch = document.createElement('canvas'), sx = scratch.getContext('2d', { willReadFrequently: true });
   const cache = new Map();
+  // police des lettres : Geist (gras), mono, ou serif ; le corps physique se recalcule d'après le dessin de chaque police
+  const FONTS = [['geist', '700 {s}px Geist'], ['mono', '400 {s}px "Geist Mono", monospace'], ['serif', '700 {s}px Georgia, "Times New Roman", serif']];
+  let fi = 0;
+  const font = (size, f = fi) => FONTS[f][1].replace('{s}', size);
   function shape(ch, size) {
-    const k = ch + '|' + size;
+    const k = ch + '|' + size + '|' + fi;
     if (cache.has(k)) return cache.get(k);
     const S = Math.ceil(size * 1.6); scratch.width = scratch.height = S;
-    sx.clearRect(0, 0, S, S); sx.fillStyle = '#000'; sx.font = `700 ${size}px Geist`; sx.textAlign = 'center'; sx.textBaseline = 'middle';
+    sx.clearRect(0, 0, S, S); sx.fillStyle = '#000'; sx.font = font(size); sx.textAlign = 'center'; sx.textBaseline = 'middle';
     sx.fillText(ch, S / 2, S / 2);
     const px = sx.getImageData(0, 0, S, S).data, cell = Math.max(4, Math.round(size / 13)), n = Math.ceil(S / cell);
     const on = (cx, cy) => { let c = 0; for (let y = cy * cell; y < Math.min(S, cy * cell + cell); y += 2) for (let x = cx * cell; x < Math.min(S, cx * cell + cell); x += 2) if (px[(y * S + x) * 4 + 3] > 120) c++; return c >= ((cell / 2) ** 2) * 0.45; };
@@ -87,7 +91,8 @@
     Body.setPosition(body, { x: Math.max(M + 30, Math.min(W - M - 30, x)), y });
     Body.setAngle(body, (Math.random() - 0.5) * 1.2);
     Composite.add(world, body);
-    letters.push({ body, ch, size, off });
+    letters.push({ body, ch, size, off, f: fi });
+    if (ch.trim()) word = (word + ch).slice(-24);
     count();
   }
   const count = () => (document.getElementById('count').textContent = `${letters.length} lettre${letters.length > 1 ? 's' : ''}`);
@@ -107,9 +112,16 @@
   // (la souris de Matter attend des coordonnées de monde : on corrige l'échelle d'affichage)
   const fit = () => { const r = cv.getBoundingClientRect(); scale = r.width / W; dpr = Math.min(2, devicePixelRatio || 1); cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); Mouse.setScale(mouse, { x: 1 / (scale * dpr), y: 1 / (scale * dpr) }); }; // Matter lit la position en pixels du canvas (css × densité)
   addEventListener('resize', fit); fit();
-  let downAt = null, lastX = W / 2;
+  let downAt = null, lastX = W / 2, lastY = H / 2, word = '', compose = false, magnet = false, overCanvas = false;
   cv.addEventListener('pointerdown', (e) => { downAt = { x: e.clientX, y: e.clientY }; });
-  cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); lastX = (e.clientX - r.left) / scale; });
+  cv.addEventListener('pointermove', (e) => { const r = cv.getBoundingClientRect(); lastX = (e.clientX - r.left) / scale; lastY = (e.clientY - r.top) / scale; overCanvas = true; magnet = e.shiftKey; });
+  cv.addEventListener('pointerleave', () => { overCanvas = false; magnet = false; });
+  addEventListener('keydown', (e) => { if (e.key === 'Shift') magnet = true; });
+  addEventListener('keyup', (e) => { if (e.key === 'Shift') magnet = false; });
+  // police suivante, composer, lien partageable
+  document.getElementById('font').onclick = () => { fi = (fi + 1) % FONTS.length; document.getElementById('font').textContent = 'police : ' + FONTS[fi][0]; };
+  document.getElementById('compose').onclick = (e) => { compose = !compose; e.currentTarget.setAttribute('aria-pressed', String(compose)); };
+  document.getElementById('link').onclick = (e) => { const b = e.currentTarget, u = location.href.split('#')[0] + '#' + encodeURIComponent(word.trim() || 'kerning'); navigator.clipboard?.writeText(u).then(() => { b.textContent = 'copié'; setTimeout(() => (b.textContent = 'lien'), 1400); }); };
   Events.on(mc, 'startdrag', () => cv.classList.add('grab'));
   Events.on(mc, 'enddrag', () => cv.classList.remove('grab'));
   const WORD = 'kerningkastle'; let wi = 0;
@@ -160,25 +172,36 @@
   // ---------- rendu ----------
   function paint(g, k, full) {
     g.setTransform(k, 0, 0, k, 0, 0);
-    g.fillStyle = '#f2f1ed'; g.fillRect(0, 0, W, H);
-    g.strokeStyle = 'rgba(0,0,0,.18)'; g.lineWidth = 1;
+    const N = window.kkNight, INK = N ? '#ece5d8' : '#111';
+    g.fillStyle = N ? '#191714' : '#f2f1ed'; g.fillRect(0, 0, W, H);
+    g.strokeStyle = N ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.18)'; g.lineWidth = 1;
     g.beginPath();
     for (let i = 0; i <= COLS; i++) { const x = M + i * colW; g.moveTo(x, M); g.lineTo(x, H - M); }
     g.moveTo(M, M); g.lineTo(W - M, M); g.moveTo(M, H - M); g.lineTo(W - M, H - M); g.stroke();
-    g.fillStyle = '#111'; g.font = '700 10px Geist'; g.textBaseline = 'alphabetic';
+    g.fillStyle = INK; g.font = '700 10px Geist'; g.textBaseline = 'alphabetic';
     if (full) { g.textAlign = 'left'; g.fillText('LETTRES QUI TOMBENT', M, M - 14); g.textAlign = 'right'; g.fillText('KERNINGKASTLE.COM/LAB', W - M, H - M + 24); }
+    // composer : le mot tapé se pose en titre en haut de l'affiche, avec la date — l'affiche est finie
+    if (compose && word.trim()) {
+      const t = word.trim().toUpperCase(); let fs = 120; g.font = font(fs); const w = g.measureText(t).width;
+      if (w > W - M * 2 - 20) { fs = fs * (W - M * 2 - 20) / w; g.font = font(fs); }
+      g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.fillText(t, M + 10, M + 10 + fs * 0.8);
+      g.font = '400 10px "Geist Mono", monospace'; g.fillText(new Date().toLocaleDateString('fr-FR').replace(/\//g, '.') + ' — LETTRES QUI TOMBENT', M + 10, M + 26 + fs * 0.8);
+    }
     g.textAlign = 'center'; g.textBaseline = 'middle';
     for (const l of letters) {
       const { x, y } = l.body.position;
       g.save(); g.translate(x, y); g.rotate(l.body.angle);
-      g.font = `700 ${l.size}px Geist`; g.fillText(l.ch, -l.off.x, -l.off.y);
+      g.font = font(l.size, l.f); g.fillText(l.ch, -l.off.x, -l.off.y);
       g.restore();
     }
-    g.lineWidth = 5; g.strokeStyle = '#111'; g.strokeRect(0, 0, W, H);
+    g.lineWidth = 5; g.strokeStyle = INK; g.strokeRect(0, 0, W, H);
   }
-  const loop = () => { Engine.update(engine, 1000 / 60); paint(ctx, scale * dpr, false); requestAnimationFrame(loop); };
+  const loop = () => {
+    if (magnet && overCanvas) for (const l of letters) { const b = l.body, dx = lastX - b.position.x, dy = lastY - b.position.y, d = Math.hypot(dx, dy); if (d < 320 && d > 8) { Matter.Sleeping.set(b, false); Body.applyForce(b, b.position, { x: dx / d * b.mass * 0.0011, y: dy / d * b.mass * 0.0011 }); } }
+    Engine.update(engine, 1000 / 60); paint(ctx, scale * dpr, false); requestAnimationFrame(loop); };
   document.fonts.load('700 100px Geist').then(() => {
-    for (let i = 0; i < 6; i++) setTimeout(() => drop('kerning'[i], M + 60 + Math.random() * (W - M * 2 - 120)), i * 220);
+    let start = 'kerning'; try { const h = decodeURIComponent(location.hash.slice(1)); if (h) { start = h.slice(0, 24); compose = true; document.getElementById('compose').setAttribute('aria-pressed', 'true'); } } catch { /* */ }
+    [...start].forEach((c, i) => setTimeout(() => drop(c, M + 60 + Math.random() * (W - M * 2 - 120)), i * 220));
     loop();
   });
 })();

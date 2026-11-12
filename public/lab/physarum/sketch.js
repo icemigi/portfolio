@@ -20,6 +20,8 @@ let canvas;
 
 let customImage = null;
 let food;
+// rendus : trame de points (sphères), pixels (blocs pleins), lignes (une ligne par cellule)
+let RENDER = 'trame', BLOCK = [], LINES = [];
 
 let charCenters = [];       
 const STEP_DELAY = 1;       
@@ -71,6 +73,8 @@ function setup() {
     dynamicContourMask = new Float32Array(cols * rows);
     food = new Float32Array(cols * rows); // nourriture déposée à la souris, qui s'épuise
     
+    for (let dy = 0; dy < resolution; dy++) for (let dx = 0; dx < resolution; dx++) BLOCK.push({ offset: (dx + dy * width) * 4, factor: 1 });
+    for (let dx = 0; dx < resolution; dx++) LINES.push({ offset: (dx + Math.floor(resolution / 2) * width) * 4, factor: 1.25 });
     buildSphereBrush(sphereBrushes.small, resolution * 0.6);
     buildSphereBrush(sphereBrushes.medium, resolution * 1.0);
     buildSphereBrush(sphereBrushes.large, resolution * 1.6);
@@ -126,6 +130,11 @@ function generateMaskForText(txt) {
     targetMask.textStyle(BOLD);           
     targetMask.textSize(FONT_SIZE);        
 
+    // un mot entier : la taille s'adapte pour qu'il tienne dans 86 % de la largeur ; un centre d'ondes par lettre
+    let size = FONT_SIZE;
+    targetMask.textSize(size);
+    const tw = targetMask.textWidth(txt);
+    if (tw > width * 0.86) { size = FONT_SIZE * (width * 0.86) / tw; targetMask.textSize(size); }
     let localCenters = [];
     let charCenterX = width / 2;
     let charCenterY = height / 2;
@@ -135,10 +144,8 @@ function generateMaskForText(txt) {
     targetMask.text(txt, 0, 0);              
     targetMask.pop();                         
     
-    localCenters.push({
-        x: charCenterX / resolution,
-        y: charCenterY / resolution
-    });
+    let cursorX = charCenterX - targetMask.textWidth(txt) / 2;
+    for (const ch of txt) { const w = targetMask.textWidth(ch); localCenters.push({ x: (cursorX + w / 2) / resolution, y: charCenterY / resolution }); cursorX += w; }
 
     targetMask.loadPixels(); 
     let localContour = new Float32Array(cols * rows);
@@ -340,9 +347,8 @@ function updateDynamicMask() {
             for (let i = 0; i < baseContourMask.length; i++) {
                 baseContourMask[i] = lerp(maskA[i], maskB[i], morphProgress);
             }
-            if (centersA.length > 0 && centersB.length > 0) {
-                charCenters[0].x = lerp(centersA[0].x, centersB[0].x, morphProgress);
-                charCenters[0].y = lerp(centersA[0].y, centersB[0].y, morphProgress);
+            if (centersB.length > 0) {
+                charCenters = centersB.map((b, k) => { const a = centersA[Math.min(k, centersA.length - 1)] || b; return { x: lerp(a.x, b.x, morphProgress), y: lerp(a.y, b.y, morphProgress) }; });
             }
         }
     }
@@ -369,17 +375,21 @@ function updateDynamicMask() {
 // ==========================================
 // GESTION DES ENTRÉES CLAVIER
 // ==========================================
+let typedWord = false;
 function keyTyped() {
-    if (isMorphBatching || isImageBatching || key.length !== 1 || !key.trim()) return;
-    currentText = key;
+    if (isMorphBatching || isImageBatching || key.length !== 1 || (key === ' ' && !typedWord)) return;
+    const next = ((typedWord ? currentText : '') + key).slice(-8);
+    typedWord = true; currentText = next;
     if (customImage !== null) { customImage = null; updateMaskSource(); return; }
-    startMorph(key);
+    startMorph(next);
 }
 
 function keyPressed() {
     if (isMorphBatching || isImageBatching) return; 
 
+    if (keyCode === BACKSPACE && typedWord && currentText.length > 1 && customImage === null) { currentText = currentText.slice(0, -1); startMorph(currentText); return false; }
     if (keyCode === ESCAPE) {
+        typedWord = false;
         customImage = null;
         currentText = "a";
         isMorphing = false;
@@ -671,7 +681,8 @@ function renderToPixels() {
                 let baseIdx = (x * resolution + yResWidth) * 4;
                 
                 let brush;
-                if (maskVal > 0.45) {
+                if (RENDER !== 'trame') brush = RENDER === 'pixels' ? BLOCK : LINES;
+                else if (maskVal > 0.45) {
                     brush = sphereBrushes.small;   
                 } else if (maskVal > 0.20) {
                     brush = sphereBrushes.medium;  
@@ -715,8 +726,14 @@ function feed(mx, my) {
             if (Math.random() < 0.18 * (1 - d)) grid[i] = 1;
         }
 }
-function mouseDragged() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) feed(mouseX, mouseY); }
-function mousePressed() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) feed(mouseX, mouseY); }
+function erase(mx, my) {
+    const cx = mx / resolution, cy = my / resolution, r = 13;
+    for (let y = Math.max(0, Math.floor(cy - r)); y < Math.min(rows, cy + r); y++)
+        for (let x = Math.max(0, Math.floor(cx - r)); x < Math.min(cols, cx + r); x++) if (Math.hypot(x - cx, y - cy) < r) { const i = x + y * cols; grid[i] = 0; food[i] = 0; dynamicContourMask[i] = 0; }
+}
+const erasing = () => keyIsDown(SHIFT) || mouseButton === RIGHT;
+function mouseDragged() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) (erasing() ? erase : feed)(mouseX, mouseY); }
+function mousePressed() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) (erasing() ? erase : feed)(mouseX, mouseY); }
 function touchMoved() { mouseDragged(); return false; }
 
 (() => {
@@ -730,6 +747,9 @@ function touchMoved() { mouseDragged(); return false; }
     addEventListener('drop', (e) => { e.preventDefault(); document.body.classList.remove('over'); useImage(e.dataTransfer.files[0]); });
     $('#invert').onclick = () => { for (let k = 0; k < 3; k++) [BG_COLOR[k], TEXT_COLOR[k]] = [TEXT_COLOR[k], BG_COLOR[k]]; document.body.classList.toggle('light'); };
     $('#save').onclick = () => saveCanvas('lettres-qui-poussent', 'png');
+    const MODES = ['trame', 'pixels', 'lignes'];
+    $('#render').onclick = () => { RENDER = MODES[(MODES.indexOf(RENDER) + 1) % 3]; $('#render').textContent = 'rendu : ' + RENDER; };
+    document.addEventListener('contextmenu', (e) => { if (e.target.tagName === 'CANVAS') e.preventDefault(); }); // clic droit : gommer
     const rec = $('#rec');
     rec.onclick = () => {
         if (!window.MediaRecorder || rec.dataset.on) return;
@@ -740,4 +760,15 @@ function touchMoved() { mouseDragged(); return false; }
         rec.dataset.on = '1'; mr.start(); let t = 6; rec.textContent = `● ${t} s`;
         const iv = setInterval(() => { t--; rec.textContent = `● ${t} s`; if (t <= 0) { clearInterval(iv); mr.stop(); } }, 1000);
     };
+})();
+
+// mode jour / nuit du site : jour = encre sur papier clair, nuit = l'inverse (le bouton « inverser » permute ensuite)
+(() => {
+    const setTheme = (night) => {
+        const paper = [240, 240, 235], ink = [15, 15, 18], bg = night ? ink : paper, fg = night ? paper : ink;
+        for (let k = 0; k < 3; k++) { BG_COLOR[k] = bg[k]; TEXT_COLOR[k] = fg[k]; }
+        document.body.classList.toggle('light', !night);
+    };
+    setTheme(!!window.kkNight);
+    addEventListener('kk:theme', (e) => setTheme(e.detail.night));
 })();

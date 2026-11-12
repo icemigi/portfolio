@@ -699,12 +699,18 @@ async function showGameOver() {
         }
         updateProfileBadge(gameState.username);
 
+        // record : si le score entre dans les dix meilleurs, on entre ses initiales (trois lettres, comme sur une borne)
+        let initials = gameState.username;
+        try {
+            const top = await (await fetch('/api/leaderboard')).json();
+            if (gameState.score > 0 && (top.length < 10 || gameState.score > top[top.length - 1].score)) initials = await askInitials(gameState.username);
+        } catch (e) { /* */ }
         try {
             await fetch('/api/score', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    username: gameState.username,
+                    username: initials,
                     score: gameState.score,
                     mode: gameState.mode,
                     theme: 'Partie Rapide'
@@ -770,7 +776,8 @@ function todayLabel() { return new Date().toLocaleDateString('fr-FR', { day: 'nu
 function showDailyBest() {
     const el = document.getElementById('daily-best'); if (!el) return;
     const r = JSON.parse(localStorage.getItem('quiz_daily_' + todayKey()) || 'null');
-    el.innerText = r ? `Défi du ${todayLabel()} : déjà joué, ${r.correct}/10 et ${r.score.toLocaleString('fr-FR')} points. Tu peux retenter.` : '';
+    const n = streak();
+    el.innerText = (r ? `Défi du ${todayLabel()} : déjà joué, ${r.correct}/10 et ${r.score.toLocaleString('fr-FR')} points. Tu peux retenter.` : '') + (n > 1 ? `${r ? ' · ' : ''}Série : ${n} jours d'affilée.` : '');
 }
 function shareDaily() {
     const marks = gameState.answers ? gameState.answers.join('') : '';
@@ -779,4 +786,34 @@ function shareDaily() {
     const done = () => { btn.innerText = 'Copié'; setTimeout(() => (btn.innerText = 'Copier mon résultat'), 1600); };
     if (navigator.share && matchMedia('(pointer: coarse)').matches) navigator.share({ text }).catch(() => {});
     else navigator.clipboard?.writeText(text).then(done, done);
+}
+
+
+// série : jours d'affilée où le défi du jour a été joué (jusqu'à aujourd'hui, ou jusqu'à hier si pas encore joué aujourd'hui)
+function streak() {
+    const key = (d) => 'quiz_daily_' + `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const d = new Date(); if (!localStorage.getItem(key(d))) d.setDate(d.getDate() - 1);
+    let n = 0; while (localStorage.getItem(key(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+}
+
+// initiales de borne : trois cases, lettres au clavier, Entrée pour valider (ou le bouton)
+function askInitials(fallback) {
+    return new Promise((resolve) => {
+        const box = document.createElement('div'); box.className = 'initials';
+        box.innerHTML = `<p class="mono">New record ! Tes initiales</p><div class="ini"><span></span><span></span><span></span></div><button class="btn-quick" type="button">OK <i>+</i></button>`;
+        document.getElementById('final-stats').after(box);
+        const cells = [...box.querySelectorAll('.ini span')]; let v = '';
+        const paint = () => cells.forEach((c, k) => { c.textContent = v[k] || ''; c.classList.toggle('cur', k === v.length); });
+        const done = () => { removeEventListener('keydown', key, true); box.remove(); resolve(v.length ? v.padEnd(3, '-') : String(fallback || 'AAA').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3) || 'AAA'); };
+        const key = (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); done(); return; }
+            if (e.key === 'Backspace') { v = v.slice(0, -1); paint(); e.preventDefault(); return; }
+            const ch = e.key.toUpperCase();
+            if (/^[A-Z0-9]$/.test(ch) && v.length < 3) { v += ch; paint(); e.preventDefault(); }
+        };
+        addEventListener('keydown', key, true);
+        box.querySelector('button').onclick = done;
+        paint();
+    });
 }

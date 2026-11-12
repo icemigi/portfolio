@@ -1,0 +1,18 @@
+/* Barre commune des pièces du Lab : aide à gauche (après la flèche retour), actions à droite ; mêmes mots, même typo,
+   couleurs du mode jour / nuit du site. Dans une salle du Lab (cadre), la barre se recale à gauche. Aide de premier lancement. */
+@font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-display: swap; }
+:root { --k-fg: #111; --k-mu: #777; --k-bg: rgba(243, 243, 243, .92); --k-ac: #FF8716; }
+html[data-theme='nuit'] { --k-fg: #ece5d8; --k-mu: #8b8476; --k-bg: rgba(18, 17, 15, .92); }
+.kk-bar { position: fixed; z-index: 50; top: 18px; left: 96px; right: 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; pointer-events: none; font: 12px/1 'Geist Mono', ui-monospace, monospace; }
+html.in-frame .kk-bar { left: 20px; }
+.kk-bar p { margin: 0; }
+.kk-bar .hint { color: var(--k-mu); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kk-bar .act { pointer-events: auto; display: flex; gap: 16px; flex: none; }
+.kk-bar button { padding: 0; background: none; border: 0; color: var(--k-fg); font: inherit; cursor: pointer; }
+.kk-bar button:hover, .kk-bar button[aria-pressed='true'], .kk-bar button[data-on] { color: var(--k-ac); }
+.kk-bar .sep { width: 1px; align-self: stretch; background: var(--k-mu); opacity: .4; }
+@media (max-width: 700px) { .kk-bar .hint { display: none; } .kk-bar { justify-content: flex-end; top: 56px; left: 16px; right: 16px; } html.in-frame .kk-bar { top: 14px; } .kk-bar .act { gap: 12px; flex-wrap: wrap; justify-content: flex-end; } }
+/* aide de premier lancement : une phrase en bas, qui s'efface au premier geste */
+.kk-intro { position: fixed; z-index: 60; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); margin: 0; padding: 12px 16px; background: var(--k-bg); color: var(--k-fg); font: 13px/1.45 'Geist Mono', ui-monospace, monospace; text-align: center; box-shadow: 0 0 0 1px rgba(127, 127, 127, .25); transition: opacity .5s, transform .5s; pointer-events: none; }
+.kk-intro.out { opacity: 0; transform: translate(-50%, 8px); }
+@media (prefers-reduced-motion: reduce) { .kk-intro { transition: none; } }

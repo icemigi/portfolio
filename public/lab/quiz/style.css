@@ -234,3 +234,10 @@ input[type="range"] { height: 10px; background: repeating-linear-gradient(90deg,
 .filter-pill input:checked + span { background: var(--cy); border-color: var(--cy); color: var(--bg); }
 @media (max-width: 600px) { .opts { grid-template-columns: 1fr; } .mode-card { grid-template-columns: 26px 1fr; } }
 @media (prefers-reduced-motion: reduce) { .insert, .mode-card.selected .n::before { animation: none; } }
+
+/* initiales de borne */
+.initials { margin: 18px 0 24px; }
+.initials p { color: var(--mg); font-family: var(--px); font-size: 12px; animation: blink 1s steps(2) infinite; }
+.ini { display: flex; gap: 12px; margin: 14px 0 18px; }
+.ini span { width: 54px; height: 64px; display: grid; place-items: center; font-family: var(--px); font-size: 28px; color: var(--ac); border-bottom: 5px solid var(--cy); text-shadow: 0 0 10px rgba(255, 212, 0, .5); }
+.ini span.cur { border-color: var(--ac); animation: blink 1s steps(2) infinite; }

@@ -319,5 +319,46 @@
     return posters[k];
   }
 
-  window.LR = { read, demo, facts, script, score, verdict, stars, poster };
+  // ---------- à deux : compatibilité de deux exports ----------
+  // films communs (par lien Letterboxd, sinon titre + année), accord des notes, plus grands désaccords, coups de cœur partagés,
+  // recommandations croisées (adoré par l'un, jamais vu par l'autre), qui est le plus sévère, le plus curieux
+  function duo(A, B, lang) {
+    const L = (fr, en) => (lang === 'en' ? en : fr);
+    const key = (f) => (f.uri ? uriSlug(f.uri) : `${slug(f.title)}-${f.year}`);
+    const seen = (raw) => { const m = new Map(); for (const f of [...raw.watched, ...raw.ratings, ...raw.diary]) if (f.title) m.set(key(f), { ...m.get(key(f)), ...f }); return m; };
+    const rated = (raw) => { const m = new Map(); for (const f of (raw.ratings.length ? raw.ratings : raw.diary)) if (f.rating != null) m.set(key(f), f); return m; };
+    const sa = seen(A), sb = seen(B), ra = rated(A), rb = rated(B);
+    const common = [...sa.keys()].filter((k) => sb.has(k));
+    const both = [...ra.keys()].filter((k) => rb.has(k)).map((k) => ({ f: ra.get(k), a: ra.get(k).rating, b: rb.get(k).rating }));
+    const agree = both.length ? both.filter((x) => Math.abs(x.a - x.b) <= 0.5).length / both.length : 0;
+    // corrélation des notes communes (si assez de films), mêlée à l'accord simple et à la part de films en commun
+    let corr = 0;
+    if (both.length >= 5) { const ma = both.reduce((s, x) => s + x.a, 0) / both.length, mb = both.reduce((s, x) => s + x.b, 0) / both.length; let n = 0, da = 0, db = 0; for (const x of both) { n += (x.a - ma) * (x.b - mb); da += (x.a - ma) ** 2; db += (x.b - mb) ** 2; } corr = da && db ? n / Math.sqrt(da * db) : 0; }
+    const overlap = common.length / Math.max(1, Math.min(sa.size, sb.size));
+    const comp = Math.round(clamp(agree * 45 + Math.max(0, corr) * 35 + Math.min(1, overlap * 2) * 20));
+    const fights = [...both].sort((x, y) => Math.abs(y.a - y.b) - Math.abs(x.a - x.b)).filter((x) => Math.abs(x.a - x.b) >= 1.5).slice(0, 3);
+    const loved = shuffle(both.filter((x) => x.a >= 4.5 && x.b >= 4.5)).slice(0, 3);
+    const recoAB = shuffle([...ra.values()].filter((f) => f.rating >= 4.5 && !sb.has(key(f)))).slice(0, 3); // à montrer à B
+    const recoBA = shuffle([...rb.values()].filter((f) => f.rating >= 4.5 && !sa.has(key(f)))).slice(0, 3); // à montrer à A
+    const avg = (m) => { const v = [...m.values()].map((f) => f.rating); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+    const FA = facts(A), FB = facts(B);
+    const na = A.username || L('toi', 'you'), nb = B.username || L('l\'autre', 'the other');
+    const verdict = comp >= 75 ? L('Même canapé, même plaid.', 'Same couch, same blanket.') : comp >= 55 ? L('Compatibles, avec quelques disputes au générique.', 'Compatible, with a few fights at the credits.') : comp >= 35 ? L('Une séance sur deux ensemble.', 'Every other screening together.') : L('Séances séparées conseillées.', 'Separate screenings recommended.');
+    return {
+      na, nb, comp, verdict, common: common.length, both: both.length, agree: Math.round(agree * 100),
+      harsher: avg(ra) != null && avg(rb) != null ? (avg(ra) < avg(rb) ? na : nb) : null, avgA: avg(ra), avgB: avg(rb),
+      curious: FA.entropy === FB.entropy ? null : FA.entropy > FB.entropy ? na : nb,
+      fights, loved, recoAB, recoBA, totalA: FA.total, totalB: FB.total,
+    };
+  }
+  // deuxième profil exemple : mêmes goûts de base, quelques désaccords francs et d'autres films
+  function demo2() {
+    const d = demo(); const swap = { 'Inception': 5, 'Barbie': 4.5, 'Cats': 3, 'Parasite': 2.5, 'Interstellar': 5, 'Fast X': 4, 'Whiplash': 3, 'Stalker': 1.5 };
+    const tweak = (f) => (swap[f.title] != null ? { ...f, rating: swap[f.title] } : f);
+    const extra = [['Top Gun: Maverick', 2022, 5], ['The Grand Budapest Hotel', 2014, 4.5], ['Drive', 2011, 4.5], ['Arrival', 2016, 5]].map(([t, y, r]) => ({ title: t, year: String(y), uri: '', rating: r }));
+    const gone = (f) => !['Metropolis', 'Le Samouraï', 'Breathless', 'Aftersun', 'Spirited Away', 'Portrait of a Lady on Fire'].includes(f.title);
+    return { username: 'ami·e', diary: d.diary.filter(gone).map(tweak), ratings: [...d.ratings.filter(gone).map(tweak), ...extra], watched: d.watched.slice(80).filter(gone), watchlist: d.watchlist.slice(0, 40), reviews: [] };
+  }
+
+  window.LR = { read, demo, demo2, facts, script, score, verdict, stars, poster, duo };
 })();

@@ -65,4 +65,8 @@ nameIn.addEventListener('keydown', (e) => {
   nameIn.value = ''; nameIn.blur();
 });
 nameIn.addEventListener('click', (e) => e.stopPropagation());
+// mode jour / nuit du site : l'écu suit (le bouton « clair » permute ensuite)
+const theme = (night) => { if (!!app.isLightMode === !night) return; app.isLightMode = !night; app.renderSVG(); sync(); };
+theme(!!window.kkNight);
+addEventListener('kk:theme', (e) => theme(e.detail.night));
 sync();

@@ -373,10 +373,23 @@
         .verdict li { font-weight: 500; font-size: 17px; letter-spacing: -0.01em; }
         .vhs .paper .dt, .sv-t { font-family: Geist, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
     </style>
+
+    <style>
+        /* ---------- à deux ---------- */
+        .demos { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+        .duo-btn { color: var(--hi); border-color: var(--or); }
+        #duo-stage { display: none; width: 100vw; min-height: 100vh; flex-direction: column; justify-content: center; align-items: flex-start; padding: var(--m); }
+        .duo-card { width: min(100%, 620px); }
+        #duo-stage, #final-stage { padding-top: max(var(--m), 64px); }
+        .duo-card .final-rank { color: var(--gr); }
+        .duo-sec { margin-top: 16px; }
+        .duo-sec ul { margin: 0; padding: 0; list-style: none; }
+        .duo-sec li { padding: 5px 0; border-bottom: 1px solid var(--ln2, #33291f); color: var(--hi); font-size: 15px; }
+        .mut { color: var(--tx); font-size: 13px; margin-left: 6px; }
+    </style>
 </head>
 <body>
     <div class="stage-fullscreen" id="stage-home">
-        <a class="lr-back" data-own-back data-back href="/fr/lab/">← lab</a>
         <h1 class="home-title" aria-label="Letteroastd">Lettero<span class="l2">astd<span class="bands" aria-hidden="true"><i></i><i></i><i></i></span></span></h1>
         <div></div>
         <div class="home-low">
@@ -399,7 +412,7 @@
                 </div>
                 <p class="err" data-err role="alert"></p>
                 <div class="home-actions">
-                    <button type="button" class="demo-btn" data-demo data-t="demo"></button>
+                    <span class="demos"><button type="button" class="demo-btn" data-demo data-t="demo"></button><button type="button" class="demo-btn duo-btn" data-duo data-t="duo"></button></span>
                     <button type="button" class="lang-btn" data-lang></button>
                 </div>
             </div>
@@ -413,6 +426,14 @@
         <p class="step-count" data-count></p>
         <div class="text-container"><div class="main-dialogue-text" id="dialogue-text"></div></div>
         <div class="action-area" id="action-area"></div>
+    </div>
+
+    <div id="duo-stage">
+        <div class="export-wrapper duo-card" id="duo-target"></div>
+        <div class="action-buttons-row">
+            <button class="btn-action-primary" data-dl="duo" data-t="dl"></button>
+            <button class="btn-action-secondary" data-restart data-t="again"></button>
+        </div>
     </div>
 
     <div id="final-stage">
@@ -433,6 +454,7 @@
         </div>
     </div>
 
+    <script src="/lab/back.js"></script>
     <script src="jszip.min.js"></script>
     <script src="api.js"></script>
     <script>
@@ -445,11 +467,14 @@
                 howS: ['Connecte-toi sur <strong>letterboxd.com</strong>.', 'Profil, puis <strong>Settings</strong>.', 'Onglet <strong>Data</strong>, tout à droite.', '<strong>Export your data</strong>, puis glisse le .zip ici.'],
                 demo: 'Pas de compte ? Essayer avec un profil exemple', bill: "Un roast de <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur<br>seuls des titres de films partent<br>chez Wikipédia, pour les affiches", quit: '← Recommencer',
                 dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', ok: 'Valider', read: 'Lecture de ton export…', step: 'question',
+                duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
                 notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour un vrai roast (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
             en: { sub: 'The no-filter film-buff assessment. Hand over your export, we read everything, we forgive nothing.', exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
                 howS: ['Sign in on <strong>letterboxd.com</strong>.', 'Profile, then <strong>Settings</strong>.', 'The <strong>Data</strong> tab, far right.', '<strong>Export your data</strong>, then drop the .zip here.'],
                 demo: 'No account? Try a sample profile', bill: 'A roast by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser<br>only film titles go to Wikipedia,<br>to fetch the posters', quit: '← Start over',
                 dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
+                duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
+                duo: 'Two of you? Compare two profiles', duoOff: 'Solo after all', duoDrop: 'Drop both .zip files,<br>yours then theirs <span class="ar">→</span>', duoOne: 'One profile loaded. Now the second one.', duoDemo: 'Try a sample duo',
                 notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a proper roast (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
         };
         const t = (k) => T[lang][k];
@@ -458,7 +483,6 @@
             document.documentElement.lang = lang;
             document.querySelectorAll('[data-t]').forEach((el) => { const v = t(el.dataset.t); el.innerHTML = Array.isArray(v) ? v.map((s, i) => `<div class="step-pill"><span class="step-num">${i + 1}</span><span>${s}</span></div>`).join('') : v; });
             $('[data-lang]').textContent = t('other');
-            $('[data-back]').href = `/${lang}/lab/`;
         };
         paint();
         $('[data-lang]').onclick = () => { lang = lang === 'fr' ? 'en' : 'fr'; paint(); };
@@ -468,14 +492,24 @@
         zone.onclick = () => fi.click();
         ['dragenter', 'dragover'].forEach((e) => zone.addEventListener(e, (ev) => { ev.preventDefault(); zone.classList.add('over'); }));
         ['dragleave', 'drop'].forEach((e) => zone.addEventListener(e, () => zone.classList.remove('over')));
-        zone.addEventListener('drop', (ev) => { ev.preventDefault(); if (ev.dataTransfer.files[0]) load(ev.dataTransfer.files[0]); });
-        fi.onchange = () => fi.files[0] && load(fi.files[0]);
-        $('[data-demo]').onclick = () => begin(LR.demo(), true);
+        zone.addEventListener('drop', (ev) => { ev.preventDefault(); [...ev.dataTransfer.files].slice(0, duoMode ? 2 : 1).reduce((p, f) => p.then(() => load(f)), Promise.resolve()); });
+        fi.onchange = () => [...fi.files].slice(0, duoMode ? 2 : 1).reduce((p, f) => p.then(() => load(f)), Promise.resolve());
+        // à deux : la zone attend deux exports (ensemble ou l'un après l'autre), puis la fiche duo
+        let duoMode = false, pending = null;
+        const setDuo = (on) => {
+            duoMode = on; pending = null; err.textContent = ''; fi.multiple = on;
+            zone.querySelector('[data-t]').innerHTML = t(on ? 'duoDrop' : 'drop');
+            $('[data-duo]').textContent = t(on ? 'duoOff' : 'duo'); $('[data-demo]').textContent = t(on ? 'duoDemo' : 'demo');
+        };
+        $('[data-duo]').onclick = () => setDuo(!duoMode);
+        $('[data-demo]').onclick = () => (duoMode ? showDuo(LR.demo(), LR.demo2(), true) : begin(LR.demo(), true));
         async function load(file) {
             err.textContent = '';
             if (!/\.zip$/i.test(file.name)) { err.textContent = t('notzip'); return; }
             let raw; try { raw = await LR.read(file); } catch { err.textContent = t('bad'); return; }
-            begin(raw, false);
+            if (!duoMode) return begin(raw, false);
+            if (!pending) { pending = raw; err.textContent = t('duoOne'); return; }
+            showDuo(pending, raw, false);
         }
 
         // ---------- parcours ----------
@@ -562,11 +596,41 @@
         });
         document.querySelectorAll('[data-dl]').forEach((b) => (b.onclick = () => {
             const card = $('#capture-target');
+            if (b.dataset.dl === 'duo') return shot($('#duo-target'));
             if (b.dataset.dl === 'card') return shot(card);
             const box = document.createElement('div'); box.className = 'story'; box.appendChild(card.cloneNode(true)); document.body.appendChild(box);
             shot(box, 540, 960).finally(() => box.remove());
         }));
-        $('[data-restart]').onclick = () => location.reload();
+        document.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => location.reload()));
+
+        // ---------- fiche duo ----------
+        function showDuo(A, B, isDemo) {
+            const D = LR.duo(A, B, lang), st = (r) => LR.stars(r) || '½';
+            const n = (v) => Number(v).toLocaleString(lang === 'en' ? 'en-GB' : 'fr-FR', { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+            const L = (fr, en) => (lang === 'en' ? en : fr);
+            const list = (title, items) => items.length ? `<div class="duo-sec"><p class="final-badge">${title}</p><ul>${items.join('')}</ul></div>` : '';
+            $('#duo-target').innerHTML = `
+                <p class="member"><span>${L('Carte duo', 'Duo card')}</span><span>${isDemo ? L('exemple', 'sample') : ''}</span></p>
+                <div class="final-badge">${D.na} × ${D.nb}</div>
+                <div class="final-score">${D.comp}<small>/100</small></div>
+                <div class="final-rank">${D.verdict}</div>
+                <div class="final-stats-grid">
+                    <div class="stat-card"><div class="stat-value">${D.common}</div><div class="stat-label">${L('films en commun', 'films in common')}</div></div>
+                    <div class="stat-card"><div class="stat-value">${D.both}</div><div class="stat-label">${L('notés tous les deux', 'rated by both')}</div></div>
+                    <div class="stat-card"><div class="stat-value">${D.agree} %</div><div class="stat-label">${L('d\'accord à ½ ★ près', 'agree within ½ ★')}</div></div>
+                </div>
+                <ul class="verdict">
+                    ${D.harsher ? `<li>${L('Le plus sévère', 'The harsher one')} : ${D.harsher} <span class="mut">(${n(D.avgA)} ★ / ${n(D.avgB)} ★)</span></li>` : ''}
+                    ${D.curious ? `<li>${L('Le plus curieux', 'The more curious one')} : ${D.curious}</li>` : ''}
+                </ul>
+                ${list(L('Coups de cœur communs', 'Shared favourites'), D.loved.map((x) => `<li>${x.f.title}</li>`))}
+                ${list(L('La guerre', 'The war'), D.fights.map((x) => `<li>${x.f.title} <span class="mut">${D.na} ${st(x.a)} · ${D.nb} ${st(x.b)}</span></li>`))}
+                ${list(L(`À montrer à ${D.nb}`, `Show ${D.nb}`), D.recoAB.map((f) => `<li>${f.title} <span class="mut">${f.year}</span></li>`))}
+                ${list(L(`À montrer à ${D.na}`, `Show ${D.na}`), D.recoBA.map((f) => `<li>${f.title} <span class="mut">${f.year}</span></li>`))}
+                <div class="card-foot"><span>Letteroastd · ${L('vidéoclub', 'video store')}</span><span>kerningkastle.com/lab</span></div>`;
+            $('#stage-home').style.display = 'none';
+            const ds = $('#duo-stage'); ds.style.display = 'flex'; ds.classList.add('fade-in-up');
+        }
     })();
     </script>
 </body>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-intro="Clic ou espace : un nouvel écu, né d'une clé. Tape ton prénom en bas pour obtenir le tien.">
 <head>
   <meta charset="UTF-8">
 <meta name="robots" content="noindex, follow">
@@ -7,18 +7,19 @@
   <title>Algorithmic Heraldry — générateur</title>
     <meta name="description" content="Algorithmic Heraldry, le générateur de kerningkastle : des blasons écrits selon les règles de l'héraldique, chacun né d'une clé qui le redonne à l'identique. Tape ton prénom pour obtenir ton écu, partage-le par lien, exporte-le en SVG ou en PNG." />
     <link rel="canonical" href="https://kerningkastle.com/lab/heraldry/" />
+  <link rel="stylesheet" href="/lab/ui.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <!-- Conteneur principal du blason SVG -->
   <main id="container" role="main" aria-label="Zone d'affichage du blason vectoriel"></main>
 
-  <nav id="tools" aria-label="Commandes">
+  <nav id="tools" class="kk-bar" aria-label="Commandes"><p class="hint">clic ou espace : nouvel écu · ← → historique</p><p class="act">
     <button id="t-prev" title="Écu précédent (←)">←</button><button id="t-new" title="Nouvel écu (espace)">nouvel écu</button><button id="t-next" title="Écu suivant (→)">→</button>
     <span class="sep"></span>
     <button id="t-part" aria-pressed="false" title="Partitions (P)">partitions</button><button id="t-light" aria-pressed="false" title="Clair / sombre (L)">clair</button>
     <span class="sep"></span>
-    <button id="t-link" title="Copier le lien de cet écu">lien</button><button id="t-svg" title="Exporter en SVG (S)">svg</button><button id="t-png" title="Exporter en PNG">png</button>
+    <button id="t-link" title="Copier le lien de cet écu">lien</button><button id="t-png" title="Enregistrer en PNG">enregistrer</button><button id="t-svg" title="Enregistrer en SVG (S)">svg</button></p>
   </nav>
   <p id="who" aria-live="polite"></p>
   <!-- Interface minimale centrée -->
@@ -39,8 +40,8 @@
   </footer>
 
   <!-- Chargement des modules JavaScript -->
+  <script src="/lab/back.js"></script>
   <script type="module" src="src/main.js"></script>
   <script type="module" src="src/extras.js"></script>
-<script src="/lab/back.js"></script>
 </body>
 </html>

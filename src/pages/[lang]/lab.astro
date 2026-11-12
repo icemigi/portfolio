@@ -13,7 +13,8 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const fr = lang === 'fr';
 const items = [
-  ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year, href: `/${lang}/lab/${r.id}/` })),
+  // une pièce autonome (embed) s'ouvre directement, avec la même enveloppe que les autres
+  ...rooms.map((r) => ({ id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, year: r.year, href: r.kind === 'embed' && r.src ? `${r.src}?lang=${lang}` : `/${lang}/lab/${r.id}/` })),
   ...labApps.map((a) => ({ id: a.id, title: a[lang].title, cat: a[lang].cat, year: a.year, href: `${a.src}?lang=${lang}` })),
 ];
 const N = items.length;
@@ -26,8 +27,8 @@ const start = Math.floor((N - 1) / 2);
         <h1 class="lab mono mu par" id="lb-t">{t.nav.lab} {pad(N)}</h1>
         <div class="stage" data-stage>
           {items.map((x, i) => (
-            <a class="cv" href={x.href} aria-label={`${x.title} — ${x.cat}, ${x.year}`} draggable="false" tabindex={i === start ? 0 : -1}>
-              <img src={`/lab/covers/${x.id}.webp`} width="600" height="600" alt="" draggable="false" decoding="async" />
+            <a class:list={['cv', { on: i === start }]} href={x.href} aria-label={`${x.title} — ${x.cat}, ${x.year}`} draggable="false" tabindex={i === start ? 0 : -1}>
+              <img class="art" src={`/lab/covers/${x.id}.webp`} width="800" height="800" alt="" draggable="false" decoding="async" />
             </a>
           ))}
         </div>
@@ -52,7 +53,10 @@ const start = Math.floor((N - 1) / 2);
   .stage { position: relative; width: 100%; height: var(--s); touch-action: pan-y; user-select: none; cursor: grab; }
   .stage.drag { cursor: grabbing; }
   .cv { position: absolute; left: calc(50% - var(--s) / 2); top: 0; width: var(--s); will-change: transform; -webkit-user-drag: none; }
-  .cv img { display: block; width: 100%; height: auto; background: #ddd; box-shadow: 0 0 0 1px rgba(0, 0, 0, .06), 0 24px 50px -24px rgba(0, 0, 0, .35); }
+  .cv .art { display: block; aspect-ratio: 1; box-shadow: 0 0 0 1px var(--ln, rgba(0, 0, 0, .08)), 0 24px 50px -24px rgba(0, 0, 0, .35); transition: filter .4s; }
+  .cv .art { width: 100%; height: auto; background: #ddd; }
+  /* covers : le vrai rendu de chaque pièce ; celles de côté passent en gris, seule celle du centre a sa couleur */
+  .cv:not(.on) .art { filter: grayscale(1); }
   /* estompe : un voile de la couleur du fond (opaque, donc on ne voit pas les pochettes de derrière à travers) */
   .cv::after { content: ''; position: absolute; inset: 0; background: var(--bg); opacity: var(--f, 0); pointer-events: none; }
   .cv:focus-visible { outline: 2px solid var(--ac); outline-offset: 6px; }
@@ -82,20 +86,20 @@ const start = Math.floor((N - 1) / 2);
     const still = reduced();
     let cur = Number(root.dataset.start) || 0, target = cur, raf = 0, shown = cur;
     const size = () => cards[0].offsetWidth;
-    // pochettes de côté : inclinées à 45°, plus petites, de plus en plus estompées
+    // pochettes de côté : inclinées à 32°, plus petites, de plus en plus estompées
     const place = () => {
       const S = size(), G0 = S * 0.78, G = S * 0.34, P = S * 3.2;
       cards.forEach((c, k) => {
         const d = k - cur, a = Math.abs(d), sg = Math.sign(d), near = Math.min(a, 1);
         const x = sg * (near * G0 + Math.max(a - 1, 0) * G);
-        c.style.transform = `perspective(${P.toFixed(0)}px) translateX(${x.toFixed(1)}px) rotateY(${(-sg * near * 45).toFixed(2)}deg) scale(${(1 - near * 0.18).toFixed(3)})`;
+        c.style.transform = `perspective(${P.toFixed(0)}px) translateX(${x.toFixed(1)}px) rotateY(${(-sg * near * 32).toFixed(2)}deg) scale(${(1 - near * 0.18).toFixed(3)})`;
         c.style.setProperty('--f', Math.min(0.85, Math.max(a - 0.4, 0) * 0.28).toFixed(3));
         c.style.zIndex = String(100 - Math.round(a * 10));
       });
       const i = Math.round(cur);
       if (i !== shown) {
         shown = i;
-        cards.forEach((c, k) => (c.tabIndex = k === i ? 0 : -1));
+        cards.forEach((c, k) => { c.tabIndex = k === i ? 0 : -1; c.classList.toggle('on', k === i); });
         caps.forEach((c, k) => c.classList.toggle('on', k === i));
         num.textContent = `(${String(i + 1).padStart(2, '0')})`;
       }
@@ -116,6 +120,29 @@ const start = Math.floor((N - 1) / 2);
     };
     place();
     addEventListener('resize', place);
+
+    // apparition : après le chargement d'entrée du site, les pochettes arrivent une à une, de la pochette du centre vers les bords
+    // (elles montent en se redressant, léger rebond), puis la légende et le compteur. Animées sur l'image : la position en 3D
+    // de la galerie (sur la pochette) n'est pas touchée.
+    if (!still) {
+      const imgs = cards.map((c) => c.querySelector<HTMLElement>('.art')!);
+      const tail = [...root.querySelectorAll<HTMLElement>('.cap, .lab')];
+      imgs.forEach((im) => (im.style.opacity = '0'));
+      tail.forEach((el) => (el.style.opacity = '0'));
+      const enter = () => {
+        imgs.forEach((im, k) => {
+          const d = Math.abs(k - cur);
+          im.animate([{ opacity: 0, transform: `translateY(70px) rotate(${(k - cur) * 3}deg) scale(.94)` }, { opacity: 1, transform: 'none' }],
+            { duration: 820, delay: 90 + d * 95, easing: 'cubic-bezier(.34, 1.4, .64, 1)', fill: 'backwards' });
+          im.style.opacity = '';
+        });
+        tail.forEach((el, k) => {
+          el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 420 + k * 90, easing: 'cubic-bezier(.2, .7, .2, 1)', fill: 'backwards' });
+          el.style.opacity = '';
+        });
+      };
+      ((window as any).kkReady ?? Promise.resolve()).then(() => document.fonts.ready).then(enter);
+    }
 
     // molette : comme les écrans du site, un geste = une pochette, et une molette roulée sans pause enchaîne les pochettes.
     // La galerie ne prend la molette que si son écran est en place (pas pendant que le pied de page est affiché) ;
