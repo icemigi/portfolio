@@ -43,6 +43,7 @@ const L = aboutLabels[lang];
 </style>
 
 <script>
+  import { reduced } from '../scripts/motion';
   // L'adresse remplit exactement la largeur des colonnes.
   const fit = () => document.querySelectorAll<HTMLElement>('[data-fit]').forEach((a) => {
     const W = a.parentElement!.clientWidth;
@@ -59,7 +60,7 @@ const L = aboutLabels[lang];
   // « Réduire les animations » : ouverture directe.
   document.querySelectorAll<HTMLAnchorElement>('.last .mail').forEach((a) => a.addEventListener('click', (e) => {
     const seal = a.closest('.last')?.querySelector<HTMLImageElement>('.seal');
-    if (!seal || matchMedia('(prefers-reduced-motion: reduce)').matches || e.metaKey || e.ctrlKey || e.shiftKey) return;
+    if (!seal || reduced() || e.metaKey || e.ctrlKey || e.shiftKey) return;
     e.preventDefault();
     const s = seal.getBoundingClientRect(), m = a.getBoundingClientRect();
     const size = Math.min(m.height * 1.5, s.width);

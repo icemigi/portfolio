@@ -98,6 +98,7 @@ const t = ui[lang];
 </style>
 
 <script>
+  import { reduced } from '../../scripts/motion';
   // Le nom remplit la largeur (ligne du milieu), puis on le cale verticalement pour que le bas de l'écran
   // coupe « le » au premier tiers bas de l'œil du e : on reconnaît la lettre, la coupe reste franche.
     const n = document.getElementById('name')!, hero = n.closest<HTMLElement>('.hero')!, s1 = n.closest<HTMLElement>('.scr')!;
@@ -214,7 +215,7 @@ const t = ui[lang];
 
   // titre qui joue (souris) : chaque lettre survolée passe par quelques signes au hasard, puis revient ; une lettre en cours
   // ne se relance pas, si bien qu'un passage rapide de la souris fait courir une vague le long du nom
-  if (matchMedia('(hover: hover) and (pointer: fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (matchMedia('(hover: hover) and (pointer: fine)').matches && !reduced()) {
     const POOL = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>{}[]$€'];
     const busy = new WeakSet<HTMLElement>();
     n.addEventListener('pointerover', (e) => {

@@ -1,7 +1,7 @@
 // Comportements communs à toutes les pages.
 import './loader';
 import { initScreens } from './screens';
-import { reveal } from './motion';
+import { reveal, reduced } from './motion';
 import './sound';
 import { initHola } from './hola';
 import { initParens } from './parens';
@@ -59,7 +59,7 @@ if (host) {
   document.addEventListener('visibilitychange', () => {
     clearTimeout(timer);
     if (document.hidden) { document.title = away; return; }
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { document.title = base; return; }
+    if (reduced()) { document.title = base; return; }
     const t0 = performance.now(), D = 700;
     const step = () => {
       const u = Math.min(1, (performance.now() - t0) / D), fixed = Math.floor(u * base.length);
