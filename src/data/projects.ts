@@ -47,7 +47,7 @@ const all: Project[] = [
         role: 'Conception, code, édition',
         tools: 'p5.js, Python',
       },
-      lead: "Un blason est un texte. Je lui ai appris à s'écrire tout seul.",
+      lead: "Un blason est un texte{m:depuis le XIIe siècle}. Je lui ai appris à s'écrire tout seul{m:ou presque}.",
       sections: [
         { h: "Un blason est un texte", paras: [{ p: "Tout est parti d'un traité d'héraldique, celui de Neubecker. Un blason ne se transmettait pas par le dessin mais par une phrase assez précise pour qu'un héraut le redessine sans l'avoir vu : la première charte graphique était déjà une règle." }] },
         { h: "Une soirée, des centaines d'écus", paras: [{ p: "Un soir, j'ai traduit ces règles en code, et le programme a sorti des centaines d'écus d'un coup. Tout le reste a suivi en quelques semaines." }] },
@@ -65,7 +65,7 @@ const all: Project[] = [
         role: 'Concept, code, editorial',
         tools: 'p5.js, Python',
       },
-      lead: "A coat of arms is a text. I taught it to write itself.",
+      lead: "A coat of arms is a text{m:since the 12th century}. I taught it to write itself{m:almost}.",
       sections: [
         { h: "A coat of arms is a text", paras: [{ p: "It all started with a heraldry treatise, Neubecker's. Coats of arms were passed on not as drawings but as a sentence precise enough for a herald to redraw one he had never seen: the first brand guidelines were already a rule." }] },
         { h: "One evening, hundreds of shields", paras: [{ p: "One evening I turned those rules into code, and the program produced hundreds of shields at once. Everything else followed within a few weeks." }] },
@@ -92,7 +92,7 @@ const all: Project[] = [
         role: 'Naming, identité, typographie',
         tools: '—', // à compléter quand l'identité sera dessinée
       },
-      lead: "Un château, pour abriter le travail des autres.",
+      lead: "Un château{m:sans douves}, pour abriter le travail des autres.",
       sections: [
         { h: "Un château pour abriter", paras: [{ p: "Kerningkastle, c'est la recherche ; le studio, son écho en français, abrite le travail de commande. Deux lieux, une même enceinte." }] },
         { h: "Le signe plutôt que le nom", paras: [{ p: "D'autres « château » existent déjà : l'identité se distingue par la forme, des parenthèses et un ™ portés comme un style, sans changer de nom." }] },
@@ -110,7 +110,7 @@ const all: Project[] = [
         role: 'Naming, identity, type',
         tools: '—', // à compléter quand l'identité sera dessinée
       },
-      lead: "A castle, to house other people's work.",
+      lead: "A castle{m:no moat}, to house other people's work.",
       sections: [
         { h: "A castle to shelter work", paras: [{ p: "Kerningkastle is the research; the studio, its echo in French, shelters commissioned work. Two places within the same walls." }] },
         { h: "The sign rather than the name", paras: [{ p: "Other “château” studios already exist: the identity stands out by its form, with parentheses and a ™ worn as a style, without changing the name." }] },
@@ -137,7 +137,7 @@ const all: Project[] = [
         role: 'Direction artistique, logotype, typographie, print',
         tools: 'Illustrator, Photoshop, Procreate',
       },
-      lead: "Une pochette s'écoute avant de se dessiner.",
+      lead: "Une pochette, je l'écoute{m:en boucle} avant de la dessiner.",
       sections: [
         { h: "Un collectif pour commencer", paras: [{ p: "Tout est parti d'un collectif, que je dirigeais avec ses deux fondateurs et dont j'étais le graphiste. Ses pochettes ont circulé, le bouche-à-oreille a fait le reste : d'autres artistes ont suivi." }] },
         { h: "Écouter avant de dessiner", paras: [{ p: "Chaque sortie, je l'écoute en boucle en notant des mots ; les paroles et les thèmes évoqués guident le reste, avec une référence forte trouvée en veille." }] },
@@ -155,7 +155,7 @@ const all: Project[] = [
         role: 'Art direction, logotype, type, print',
         tools: 'Illustrator, Photoshop, Procreate',
       },
-      lead: "A sleeve is heard before it is drawn.",
+      lead: "A sleeve, I listen to it{m:on repeat} before I draw it.",
       sections: [
         { h: "It started with a collective", paras: [{ p: "It all began with a collective I ran with its two founders, as its designer and art director. Its sleeves got around, word of mouth did the rest: other artists followed." }] },
         { h: "Listening before drawing", paras: [{ p: "I listen to each release on repeat, noting words; the lyrics and themes guide the rest, along with one strong reference found while digging." }] },
@@ -177,7 +177,7 @@ const all: Project[] = [
       title: 'ASAPHR',
       short: 'Écriture inventée',
       meta: { year: '2026 —', context: 'Recherche personnelle', role: "Système d'écriture, dessin de caractères", tools: 'Glyphs 4' },
-      lead: "Une écriture qui ne se lit ni de gauche à droite, ni de haut en bas.",
+      lead: "Une écriture{m:et la langue qui va avec} qui ne se lit ni de gauche à droite, ni de haut en bas.",
       sections: [
         { h: "Au départ, un service", paras: [{ p: "Un ami designer avait besoin de signes d'alphabet pour son jeu de cartes. Ça ne s'est pas fait, mais l'idée est restée, et je l'ai poussée jusqu'à une écriture complète." }] },
         { h: "Comme chez Tolkien", paras: [{ p: "Une écriture n'existe pas sans sa langue. J'ai dessiné les signes et écrit la langue en même temps, dans des carnets entiers, jusqu'à ce que les deux se répondent." }] },
@@ -190,7 +190,7 @@ const all: Project[] = [
       title: 'ASAPHR',
       short: 'Invented script',
       meta: { year: '2026 —', context: 'Personal research', role: 'Writing system, type design', tools: 'Glyphs 4' },
-      lead: "A script that reads neither left to right nor top to bottom.",
+      lead: "A script{m:and the language that comes with it} that reads neither left to right nor top to bottom.",
       sections: [
         { h: "It started as a favour", paras: [{ p: "A designer friend needed alphabet signs for his trading card game. It never happened, but the idea stayed with me, and I pushed it into a complete script." }] },
         { h: "As Tolkien did", paras: [{ p: "A script does not exist without its language. I drew the signs and wrote the language at the same time, filling whole notebooks, until each answered the other." }] },
@@ -214,7 +214,7 @@ const all: Project[] = [
       title: 'kern.outdoor',
       short: "Direction artistique d'un média outdoor",
       meta: { year: '2023 —', context: 'Projet personnel, autoproduit, non commercial', role: 'Direction artistique, identité, écriture, tournage, montage', tools: '—' },
-      lead: "Pour une fois, le client, c'était moi.",
+      lead: "Pour une fois, le client, c'était moi{m:le plus pénible de tous}.",
       sections: [
         { h: "Partager un terrain", paras: [{ p: "La montagne depuis l'enfance, le Pays basque, la préparation du diplôme d'accompagnateur : kern.outdoor partage ce terrain depuis 2023, d'abord sans direction artistique." }] },
         { h: "Un nom à double sens", paras: [{ p: "Kern, pour le kerning des typographes et pour le cairn, ce tas de pierres qui balise un sentier. Mon métier et mon terrain dans un même mot." }] },
@@ -227,7 +227,7 @@ const all: Project[] = [
       title: 'kern.outdoor',
       short: 'Art direction for an outdoor media',
       meta: { year: '2023 —', context: 'Personal project, self-produced, non-commercial', role: 'Art direction, identity, writing, filming, editing', tools: '—' },
-      lead: "For once, the client was me.",
+      lead: "For once, the client was me{m:the most demanding of all}.",
       sections: [
         { h: "Sharing a terrain", paras: [{ p: "Mountains since childhood, the Basque Country, training for the mountain-leader diploma: kern.outdoor has shared this terrain since 2023, at first without art direction." }] },
         { h: "A name with two meanings", paras: [{ p: "Kern, for the typographer's kerning and for the cairn, the pile of stones that marks a trail. My trade and my terrain in a single word." }] },
@@ -249,7 +249,7 @@ const all: Project[] = [
       title: 'BMS E-Sport',
       short: 'Site web et boutique',
       meta: { year: '2023', context: 'Commande client', role: 'Direction artistique, UX/UI, web design', tools: 'Figma' },
-      lead: "Un écusson doit tenir à vingt pixels comme sur un maillot.",
+      lead: "Un écusson doit tenir à vingt pixels{m:un avatar de stream} comme sur un maillot.",
       sections: [
         { h: "Une commande du club", paras: [{ p: "BMS forme des jeunes et aligne des joueurs classés en jeux de combat. Son site daté et sa boutique à part ne le montraient pas : le club est venu me chercher en 2023." }] },
         { h: "Trois sources", paras: [{ p: "Les initiales du club, l'univers des jeux (écrans de sélection, fiches de personnages, lettrages d'arcade) et les codes du sport classique : de quoi parler aux joueurs comme aux supporters." }] },
@@ -262,7 +262,7 @@ const all: Project[] = [
       title: 'BMS E-Sport',
       short: 'Website and store',
       meta: { year: '2023', context: 'Client commission', role: 'Art direction, UX/UI, web design', tools: 'Figma' },
-      lead: "A crest has to hold at twenty pixels and on a jersey.",
+      lead: "A crest has to hold at twenty pixels{m:a stream avatar} and on a jersey.",
       sections: [
         { h: "Commissioned by the club", paras: [{ p: "BMS trains young players and fields ranked ones in fighting games. Its dated website and separate store did not show it, so the club came to me in 2023." }] },
         { h: "Three sources", paras: [{ p: "The club's initials, the world of the games (select screens, character sheets, arcade lettering) and the codes of traditional sport: enough to speak to players and fans alike." }] },
@@ -284,7 +284,7 @@ const all: Project[] = [
       title: 'Sports Aventure®',
       short: 'Refonte non sollicitée',
       meta: { year: '2024', context: 'Initiative personnelle, présentée au magasin', role: 'Direction artistique, identité, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
-      lead: "Personne ne me l'a demandé. Je l'ai fait pour un magasin que j'aimais.",
+      lead: "Personne ne me l'a demandé{m:c'est souvent comme ça que ça commence}. Je l'ai fait pour un magasin que j'aimais.",
       sections: [
         { h: "Aider un magasin du coin", paras: [{ p: "Un magasin indépendant que je connais bien, une équipe que j'avais envie d'aider, et pour moi l'exercice d'une refonte complète : j'ai repris l'identité et le site de moi-même." }] },
         { h: "Observer avant de dessiner", paras: [{ p: "D'abord le magasin et ce que les clients demandent au comptoir, puis la façon dont les grandes marques outdoor parlent de terrain. L'arborescence est venue avant le design." }] },
@@ -297,7 +297,7 @@ const all: Project[] = [
       title: 'Sports Aventure®',
       short: 'Unsolicited redesign',
       meta: { year: '2024', context: 'Self-initiated, pitched to the store', role: 'Art direction, identity, UX/UI', tools: 'Figma, Illustrator, Photoshop' },
-      lead: "Nobody asked. I did it for a shop I loved.",
+      lead: "Nobody asked{m:that's often how it starts}. I did it for a shop I loved.",
       sections: [
         { h: "Helping a local shop", paras: [{ p: "An independent shop I know well, a team I wanted to help, and for me the exercise of a full redesign: I took on the identity and the website on my own initiative." }] },
         { h: "Observing before drawing", paras: [{ p: "First the shop and what customers ask at the counter, then how the big outdoor brands talk about terrain. The site map came before the design." }] },

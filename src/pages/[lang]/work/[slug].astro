@@ -95,6 +95,8 @@ const workLd = {
   ...(project.years.length ? { dateCreated: String(project.years[0]) } : {}),
   creator: { '@id': `${home}#me` }, isPartOf: { '@id': `${home}#site` },
 };
+// apartés {m:…} : petite note mono entre parenthèses, écrite au fil du texte (comme l'accueil et À propos)
+const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) => { const m = x.match(/^\{m:([^}]+)\}$/); return m ? { n: m[1] } : { t: x }; });
 ---
 <Base lang={lang} title={c.title} description={c.lead.length < 110 ? `${c.lead} ${c.meta.role} · ${c.meta.tools}.` : c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
@@ -162,7 +164,7 @@ const workLd = {
         <section class="scr">
           <div class="in g mag hook">
             <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <p class="bd t56" data-hola data-fit>{b.p}</p>
+            <p class="bd t56" data-hola data-fit>{parts(b.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>
             {b.img && ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'sm', '(max-width: 760px) 40vw, 20vw', -0.12))}
           </div>
         </section>
@@ -170,7 +172,7 @@ const workLd = {
         <section class="scr">
           <div class:list={['in g mag spread', b.tpl]}>
             <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <div class="tx" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+            <div class="tx" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
             {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
           </div>
         </section>
@@ -178,7 +180,7 @@ const workLd = {
         <section class="scr">
           <div class="in g">
             <h2 class="lab mono mu par">{b.k}</h2>
-            <div class="bd tx solo" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{p.p}</p>)}</div>
+            <div class="bd tx solo" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
           </div>
         </section>
       ) : b.kind === 'list' ? (
@@ -267,6 +269,7 @@ const workLd = {
 </style>
 
 <style>
+  .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
   /* Gabarit : libellé entre parenthèses en colonnes 1 à 3, contenu sur la grille de 12 colonnes du site.
      Doubles pages : la ligne utile va du dessous du menu au bas de l'écran ; chaque élément s'y pose (haut, milieu, bas). */
   .lab { grid-column: 1 / 4; align-self: first baseline; }
