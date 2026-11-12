@@ -51,7 +51,7 @@ if (S.length === 7) {
     if (g.length === 1 || len(ps) <= 720) groups.push({ k: names[gi], paras: ps });
     else g.forEach((i) => groups.push({ k: S[i].h.toLowerCase(), paras: S[i].paras }));
   });
-} else S.forEach((s) => groups.push({ k: s.h.toLowerCase(), paras: s.paras }));
+} else S.forEach((s) => groups.push({ k: s.r ? `${s.r} — ${s.h.toLowerCase()}` : s.h.toLowerCase(), paras: s.paras })); // rubrique fixe (r) + titre propre au projet (h)
 groups.forEach((g) => { if (g.paras.length > 1 && g.paras.every((x) => x.t)) g.list = true; });
 
 // visuels : la couverture d'abord, puis la galerie ; chaque double page prend ce qu'il lui faut, le reste finit en planche
