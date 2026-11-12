@@ -45,7 +45,7 @@ const POS = [[17, 40, 17, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
     {projects.map((p, i) => (
       <section class="scr mo" aria-labelledby={`mo-${i}`}>
         <div class="in g">
-          <p class="lab mono mu par">{pad(i + 1)} / {pad(projects.length)}</p>
+          <p class="lab mono mu par"><span class="ac">({pad(i + 1)})</span> / {pad(projects.length)}</p>
           <a class="mo-v" href={`/${lang}/work/${p.slug}/`} tabindex="-1" aria-hidden="true"><ObjectShape kind={p.object} /></a>
           <h2 class="mo-t t56" id={`mo-${i}`}><a href={`/${lang}/work/${p.slug}/`}>{p[lang].title}</a></h2>
           <p class="mo-m mono mu">{p[lang].short} — {p.yearLabel}</p>
@@ -84,6 +84,9 @@ const POS = [[17, 40, 17, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
     .ttl { position: absolute; }
     .mindex { display: grid; padding-bottom: 72px; }
     .mlist { grid-column: 1 / -1; }
+    /* numéros comme sur ordinateur : « (01) » en orange */
+    .mlist :global(.row .n) { color: var(--ac); }
+    .mlist :global(.row .n)::before { content: '('; } .mlist :global(.row .n)::after { content: ')'; }
     .mo { display: block; }
     .mo-v { grid-column: 1 / -1; justify-self: center; width: 58vw; margin-bottom: 40px; }
     .mo-v :global(.shape) { display: block; width: 100%; height: auto; filter: drop-shadow(0 22px 20px rgba(0, 0, 0, .2)); }

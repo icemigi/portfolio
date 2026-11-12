@@ -171,7 +171,7 @@ const t = ui[lang];
   place();
   document.fonts.ready.then(() => { place(); s1.classList.add('placed'); });
   // bulle de message au survol du portrait : trois points pendant qu'il « écrit », puis une phrase (une nouvelle à chaque survol,
-  // jamais deux fois la même de suite) ; elle reste un instant après le départ de la souris, le temps de la lire
+  // jamais deux fois la même de suite) ; elle part avec la souris, et chaque retour sur le portrait en écrit une nouvelle
   if (pt && matchMedia('(hover: hover) and (pointer: fine)').matches) {
     const bub = document.getElementById('bub')!, msg = bub.querySelector<HTMLElement>('.msg')!;
     // vannes écrites dans chaque langue (pas traduites mot à mot) ; ponctuation française : espace fine insécable avant ? ! et dans « »
@@ -186,14 +186,13 @@ const t = ui[lang];
     };
     const enter = () => {
       over = true; clearTimeout(t1); clearTimeout(t2);
-      if (bub.classList.contains('on')) return;
       place(); bub.classList.add('typing'); msg.textContent = ''; bub.classList.add('on');
       t1 = window.setTimeout(() => {
         msg.textContent = LINES[k % LINES.length]; k++; try { sessionStorage.setItem('kk-bub', String(k)); } catch { /* */ }
         bub.classList.remove('typing'); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' }));
       }, 750 + Math.random() * 350);
     };
-    const leave = () => { over = false; clearTimeout(t2); t2 = window.setTimeout(() => { if (!over) { clearTimeout(t1); bub.classList.remove('on'); } }, bub.classList.contains('typing') ? 200 : 1400); };
+    const leave = () => { over = false; clearTimeout(t1); clearTimeout(t2); bub.classList.remove('on'); };
     // le portrait laisse passer la souris (les lettres dessous réagissent) : on teste sa zone à la main
     addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'mouse') return;
