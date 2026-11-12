@@ -15,7 +15,7 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 // centre de l'objet en % de la scène, taille en % de la largeur, rotation, profondeur (parallaxe)
 // tailles agrandies (×1,3) ; le vinyle (photo plus large que haute) un peu plus
-const POS = [[17, 40, 17, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [81, 28, 13, 8, 0.9], [27, 72, 17, -4, 0.7], [50, 66, 13, 4, 0.8], [70, 70, 16, -5, 0.45], [88, 60, 14, 6, 1]];
+const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [81, 28, 13, 8, 0.9], [27, 72, 17, -4, 0.7], [50, 66, 13, 4, 0.8], [70, 70, 16, -5, 0.45], [88, 60, 14, 6, 1]];
 ---
 <Base lang={lang} title={t.nav.work} description={`${lang === 'fr' ? 'Études de cas de kerningkastle, type designer et créatif digital : identités, typographie, génératif, web' : 'Case studies by kerningkastle, type designer and digital creative: identities, type, generative, web'} — ${projects.map((p) => p[lang].title).join(' · ')}.`} path="work/" active="work">
   <div class="screens-host" data-screens>

@@ -77,7 +77,7 @@
     const vntg = gauss((diary.filter((f) => yearOk(f.year) && +f.year < 2000).length / Math.max(1, n)) * 100, 35, 20, 10, 100);
     const div = Math.min(100, Math.max(10, 10 + (c.vo ? 8 : 0) + ((c.foreign_ratio ?? 3) / 10) * 15 + ((a.top_100_pct || 0) / 100) * 50));
     let s = Math.round((vol * 0.3 + eng * 0.1 + sev * 0.15 + risq * 0.15 + vntg * 0.1 + div * 0.2) * 10) / 10; s = Math.min(100, Math.max(0, s));
-    const rank = s >= 88 ? 'I. LÉGENDE DU 7ᵉ ART 🏆' : s >= 76 ? 'II. ÉLITE CINÉPHILE 💎' : s >= 65 ? 'III. CINÉASTE AVISÉ ⚔️' : s >= 50 ? 'IV. SPECTATEUR ÉCLAIRÉ 🎯' : s >= 38 ? 'V. AMATEUR RÉGULIER 🥈' : s >= 25 ? 'VI. SPECTATEUR CASUAL 🥉' : s >= 15 ? 'VII. PASSEUR DE TEMPS 🍿' : 'VIII. NÉOPHYTE DU MULTIPLEXE 🎟️';
+    const rank = s >= 88 ? 'I. LÉGENDE DU 7ᵉ ART' : s >= 76 ? 'II. ÉLITE CINÉPHILE' : s >= 65 ? 'III. CINÉASTE AVISÉ' : s >= 50 ? 'IV. SPECTATEUR ÉCLAIRÉ' : s >= 38 ? 'V. AMATEUR RÉGULIER' : s >= 25 ? 'VI. SPECTATEUR CASUAL' : s >= 15 ? 'VII. PASSEUR DE TEMPS' : 'VIII. NÉOPHYTE DU MULTIPLEXE';
     return { score: s, rank, details: { VOL: Math.round(vol), ENG: Math.round(engV), SEV: Math.round(sev), RISQ: Math.round(risq), VNTG: Math.round(vntg), DIV: Math.round(div) }, advanced_stats: a };
   }
 

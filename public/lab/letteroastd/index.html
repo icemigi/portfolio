@@ -5,229 +5,121 @@
     <meta charset="UTF-8">
 <meta name="robots" content="noindex, follow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Letteroastd 🍿</title>
+    <title>Letteroastd</title>
     <meta name="description" content="Letteroastd, par kerningkastle : importe ton export Letterboxd et découvre ce que ta cinéphilie dit de toi. Tout se passe dans ton navigateur, rien n'est envoyé." />
     <link rel="canonical" href="https://kerningkastle.com/lab/letteroastd/" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <style>
-        :root {
-            --bg-color: #14181c;
-            --accent: #00e054;
-            --text-main: #9ab;
-            --text-white: #ffffff;
-            --border-color: #2c3440;
-        }
-
+        /* Letteroastd : une affiche de cinéma. Titre géant coupé par le bord, texte calé à gauche,
+           bandes orange / verte / bleue (les couleurs de Letterboxd) comme éléments graphiques, mentions en bloc-générique. */
+        @font-face { font-family: Geist; src: url('/fonts/Geist-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+        @font-face { font-family: Geist; src: url('/fonts/Geist-Medium.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+        @font-face { font-family: Geist; src: url('/fonts/Geist-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+        :root { --bg: #14181c; --bg2: #1c2228; --tx: #9ab; --hi: #fff; --ln: #456; --or: #ff8000; --gr: #00e054; --bl: #40bcf4; --m: clamp(20px, 3vw, 48px); }
         * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--tx); font: 400 15px/1.45 Geist, system-ui, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        button { font: inherit; color: inherit; }
+        /* les trois bandes */
+        .bands { display: flex; flex-direction: column; justify-content: space-between; }
+        .bands i { display: block; flex: 1; }
+        .bands i + i { margin-top: .06em; }
+        .bands i:nth-child(1) { background: var(--or); } .bands i:nth-child(2) { background: var(--gr); } .bands i:nth-child(3) { background: var(--bl); }
+        /* bloc-générique : capitales serrées, comme le bas d'une affiche */
+        .billing, .option-label, .final-badge, .stat-label, .wrapped-title, .tooltip-header, .micro-loader, .hint-text { font-size: 12px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; line-height: 1.35; }
 
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg-color); color: var(--text-white);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            overflow-x: hidden;
-        }
+        #hover-poster { display: none; }
+        .word-fade { display: inline-block; opacity: 0; animation: fadeIn .35s ease-out forwards; margin-right: .22em; }
+        .fade-in-up { animation: fadeIn .35s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .highlight { color: var(--gr); }
 
-        /* --- VIGNETTE D'AFFICHE FLOTTANTE AU HOVER --- */
-        #hover-poster {
-            position: fixed;
-            pointer-events: none;
-            z-index: 9999;
-            width: 140px;
-            height: 205px;
-            border-radius: 10px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7), 0 0 12px rgba(0, 224, 84, 0.4);
-            border: 2px solid var(--accent);
-            object-fit: cover;
-            display: none;
-            opacity: 0;
-            transition: opacity 0.15s ease-in-out;
-            top: 0;
-            left: 0;
-        }
-
-        .word-fade { display: inline-block; opacity: 0; animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; margin-right: 6px; }
-        .fade-in-up { animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(12px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .highlight {
-            color: var(--accent);
-            font-weight: 900;
-            text-shadow: 0 0 12px rgba(0, 224, 84, 0.3);
-        }
-
-        /* --- SECTION ACCUEIL --- */
-        .stage-fullscreen { width: 100vw; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; position: relative; }
-        .home-title { font-size: 52px; font-weight: 900; letter-spacing: -2px; margin: 0 0 10px 0; text-align: center; }
-        .home-subtitle { font-size: 17px; color: var(--text-main); margin-bottom: 35px; text-align: center; }
-        
-        .forms-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; }
-        
-        .input-fullscreen { width: 100%; padding: 16px 20px; background: #1c2228; border: 1px solid var(--border-color); border-radius: 12px; color: white; font-size: 15px; outline: none; transition: border 0.2s; }
-        .input-fullscreen:focus { border-color: var(--accent); }
-        .btn-fullscreen { width: 100%; padding: 16px; background: var(--accent); color: #14181c; border: none; border-radius: 12px; font-size: 15px; font-weight: 800; cursor: pointer; }
-
-        .option-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .option-label { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-main); }
-        .badge-fast { font-size: 11px; font-weight: 800; color: #ffb703; background: rgba(255, 183, 3, 0.15); padding: 3px 8px; border-radius: 6px; }
-        .badge-full { font-size: 11px; font-weight: 800; color: var(--accent); background: rgba(0, 224, 84, 0.15); padding: 3px 8px; border-radius: 6px; }
-
+        /* ---------- accueil : l'affiche ---------- */
+        .stage-fullscreen { position: relative; width: 100vw; min-height: 100vh; overflow: hidden; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; padding: var(--m) 0 var(--m); }
+        .home-title { margin: 0; padding-left: calc(var(--m) - .04em); font-size: 24.5vw; font-weight: 700; line-height: .78; letter-spacing: -0.045em; color: var(--hi); text-transform: uppercase; white-space: nowrap; }
+        .home-title .l2 { display: flex; align-items: stretch; gap: .05em; margin-top: .02em; }
+        .home-title .bands { flex: 1; margin: .1em 0 .02em; }
+        .home-low { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: var(--m); align-items: end; padding: 0 var(--m); }
+        .home-subtitle { margin: 0; font-size: clamp(18px, 2vw, 26px); font-weight: 500; line-height: 1.15; letter-spacing: -0.02em; color: var(--hi); max-width: 16em; }
+        .forms-container { width: 100%; }
+        .option-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .badge-fast, .badge-full { font-size: 12px; color: var(--tx); }
         .zip-button-wrapper { position: relative; width: 100%; }
-        .help-icon { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; border-radius: 50%; background: #2c3440; color: #9ab; font-size: 11px; font-weight: 900; margin-left: 6px; cursor: help; }
-        
-        .tooltip-box {
-            visibility: hidden;
-            opacity: 0;
-            width: 360px;
-            background: rgba(17, 21, 24, 0.96);
-            backdrop-filter: blur(12px);
-            color: #d1d8e0;
-            text-align: left;
-            border-radius: 14px;
-            padding: 18px;
-            position: absolute;
-            z-index: 20;
-            bottom: 125%;
-            left: 50%;
-            transform: translateX(-50%) translateY(8px);
-            border: 1px solid rgba(0, 224, 84, 0.3);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            font-size: 12px;
-            line-height: 1.4;
+        .btn-fullscreen { width: 100%; min-height: 120px; padding: 18px; background: transparent; color: var(--hi); border: 1px dashed var(--ln); border-radius: 0; font-size: 17px; font-weight: 500; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-end; transition: border-color .15s, background .15s; }
+        .btn-fullscreen:hover, .btn-fullscreen.over { border: 1px solid var(--gr); }
+        .btn-fullscreen.over { background: rgba(0, 224, 84, .06); }
+        .btn-fullscreen .ar { color: var(--gr); }
+        .help-icon { font-size: 12px; color: var(--tx); cursor: help; border-bottom: 1px solid var(--ln); }
+        .tooltip-box { visibility: hidden; opacity: 0; width: 340px; background: var(--hi); color: var(--bg); padding: 16px; position: absolute; z-index: 20; bottom: calc(100% + 8px); left: 0; transition: opacity .15s, visibility .15s; font-size: 13px; line-height: 1.45; }
+        .zip-button-wrapper:hover .tooltip-box { visibility: visible; opacity: 1; }
+        .tooltip-header { margin-bottom: 10px; color: #567; }
+        .tooltip-steps-container { display: flex; flex-direction: column; gap: 6px; }
+        .step-pill { display: flex; gap: 10px; }
+        .step-pill strong { font-weight: 700; }
+        .step-num { font-weight: 700; flex-shrink: 0; min-width: 1em; }
+        .billing { color: var(--tx); text-align: right; }
+        .billing b { color: var(--hi); font-weight: 700; }
+        .footer-credit { display: none; }
+
+        /* ---------- questions : le texte comme un carton de générique ---------- */
+        #interactive-stage { display: none; position: fixed; inset: 0; background: var(--bg); flex-direction: column; justify-content: flex-end; align-items: stretch; padding: var(--m); z-index: 100; text-align: left; }
+        #interactive-stage::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: linear-gradient(90deg, var(--or) 0 33.33%, var(--gr) 0 66.66%, var(--bl) 0); }
+        .text-container { max-width: 1100px; margin-bottom: 40px; min-height: 90px; display: flex; align-items: flex-end; flex-wrap: wrap; }
+        .main-dialogue-text { font-size: clamp(28px, 4.6vw, 64px); font-weight: 700; line-height: 1.02; letter-spacing: -0.04em; color: var(--hi); }
+        .action-area { min-height: 260px; display: flex; justify-content: flex-start; align-items: flex-start; width: 100%; max-width: 720px; opacity: 0; transition: opacity .3s; gap: 0; flex-direction: column; }
+        .progress-box { width: 100%; max-width: 480px; display: flex; flex-direction: column; gap: 10px; }
+        .progress-bar-bg { width: 100%; height: 12px; background: var(--bg2); overflow: hidden; }
+        .progress-bar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--or) 0 33.33%, var(--gr) 0 66.66%, var(--bl) 0); background-size: 480px 100%; transition: width .3s; }
+        .progress-status-text { font-size: 13px; }
+        .micro-loader { display: flex; align-items: center; gap: 10px; }
+        .dot-pulse { width: 8px; height: 8px; background: var(--gr); animation: pulse .6s infinite alternate; }
+        @keyframes pulse { from { opacity: .25; } to { opacity: 1; } }
+        .btn-choice-large { width: 100%; padding: 16px 0; background: transparent; border: 0; border-top: 1px solid var(--ln); color: var(--hi); font-size: clamp(17px, 1.6vw, 22px); font-weight: 500; letter-spacing: -0.01em; cursor: pointer; text-align: left; line-height: 1.25; transition: color .15s; }
+        .btn-choice-large:last-child { border-bottom: 1px solid var(--ln); }
+        .btn-choice-large strong { font-weight: 700; }
+        .btn-choice-large:hover { color: var(--gr); }
+        .slider-container-raw { width: 100%; display: flex; flex-direction: column; gap: 24px; align-items: flex-start; }
+        .slider-value-display { font-size: clamp(64px, 9vw, 128px); font-weight: 700; line-height: .85; letter-spacing: -0.06em; color: var(--hi); font-variant-numeric: tabular-nums; }
+        .slider-input-large { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; background: linear-gradient(90deg, var(--or) 0 33.33%, var(--gr) 0 66.66%, var(--bl) 0); outline: none; cursor: pointer; }
+        .slider-input-large::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 32px; background: var(--hi); cursor: pointer; }
+        .slider-input-large::-moz-range-thumb { width: 12px; height: 32px; border: 0; border-radius: 0; background: var(--hi); cursor: pointer; }
+        .btn-slider-validate, .btn-action-primary, .btn-action-secondary { padding: 0 0 4px; background: none; border: 0; border-bottom: 2px solid var(--gr); border-radius: 0; color: var(--hi); font-size: 17px; font-weight: 500; cursor: pointer; display: inline-flex; gap: 8px; transition: color .15s; }
+        .btn-action-secondary { border-bottom-color: var(--ln); }
+        .btn-slider-validate:hover, .btn-action-primary:hover, .btn-action-secondary:hover { color: var(--gr); }
+        .poster-duel-container { display: flex; gap: 20px; justify-content: flex-start; width: 100%; }
+        .poster-card { width: 180px; cursor: pointer; }
+        .poster-img, .poster-fallback { width: 100%; height: 270px; object-fit: cover; display: block; border-radius: 4px; background: var(--bg2); box-shadow: inset 0 0 0 1px rgba(221, 238, 255, .25); outline: 3px solid transparent; outline-offset: -3px; transition: outline-color .15s; }
+        .poster-fallback { display: flex; align-items: flex-end; padding: 12px; color: var(--tx); font-size: 13px; }
+        .poster-card:hover .poster-img, .poster-card:hover .poster-fallback { outline-color: var(--gr); }
+        .poster-title { font-size: 13px; padding: 8px 0 0; line-height: 1.25; }
+        .poster-card:hover .poster-title { color: var(--hi); }
+        .hint-text { cursor: pointer; } .hint-text:hover { color: var(--hi); }
+
+        /* ---------- fiche finale : l'affiche du film de ton profil ---------- */
+        #final-stage { display: none; width: 100vw; min-height: 100vh; flex-direction: column; justify-content: center; align-items: flex-start; padding: var(--m); }
+        .export-wrapper { position: relative; width: min(100%, 560px); background: var(--bg); padding: 28px 0 0; text-align: left; }
+        .export-wrapper::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 12px; background: linear-gradient(90deg, var(--or) 0 33.33%, var(--gr) 0 66.66%, var(--bl) 0); }
+        .final-badge { margin-bottom: 10px; }
+        .final-username { font-size: 17px; font-weight: 500; color: var(--hi); }
+        .final-score { font-size: clamp(120px, 22vw, 200px); font-weight: 700; line-height: .8; letter-spacing: -0.07em; color: var(--hi); margin: 10px 0 14px -.04em; font-variant-numeric: tabular-nums; }
+        .final-rank { font-size: clamp(22px, 3vw, 32px); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; color: var(--gr); text-transform: uppercase; margin-bottom: 22px; }
+        .chart-container { width: 100%; max-width: 280px; margin: 0 0 20px; }
+        .final-stats-grid, .wrapped-banner { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 16px; padding: 12px 0; border-top: 1px solid var(--ln); }
+        .wrapped-banner { border-bottom: 1px solid var(--ln); margin-bottom: 16px; }
+        .stat-card, .wrapped-item { display: flex; flex-direction: column; }
+        .stat-value, .wrapped-val { order: 2; font-size: 20px; font-weight: 700; color: var(--hi); letter-spacing: -0.02em; }
+        .stat-label, .wrapped-title { order: 1; font-size: 11px; }
+        .final-quote { font-size: 17px; font-weight: 500; color: var(--hi); line-height: 1.3; letter-spacing: -0.01em; }
+        .action-buttons-row { display: flex; gap: 28px; margin-top: 28px; }
+        .icon-placeholder { display: none; }
+        @media (max-width: 760px) {
+            .home-low { grid-template-columns: 1fr; align-items: start; }
+            .billing { text-align: left; }
+            .poster-card { width: 42vw; } .poster-img, .poster-fallback { height: 63vw; }
+            .tooltip-box { width: calc(100vw - 2 * var(--m)); }
         }
-
-        .tooltip-box::after {
-            content: "";
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            margin-left: -6px;
-            border-width: 6px;
-            border-style: solid;
-            border-color: rgba(0, 224, 84, 0.3) transparent transparent transparent;
-        }
-
-        .zip-button-wrapper:hover .tooltip-box,
-        .help-icon:hover + .tooltip-box {
-            visibility: visible;
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .tooltip-header { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
-        .tooltip-steps-container { display: flex; flex-direction: column; gap: 10px; }
-        .step-pill { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #b0c0d0; line-height: 1.35; }
-        .step-pill strong { color: #ffffff; }
-        .step-num { width: 20px; height: 20px; border-radius: 50%; background: #2c3440; color: var(--accent); font-weight: 900; font-size: 11px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
-
-        .footer-credit { position: absolute; bottom: 25px; font-size: 12px; font-weight: 600; color: #456; letter-spacing: 0.5px; opacity: 0.7; }
-
-        /* --- SECTION INTERACTIVE / QUESTIONS --- */
-        #interactive-stage { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg-color); flex-direction: column; justify-content: center; align-items: center; padding: 0 10%; z-index: 100; text-align: center; }
-        .text-container { max-width: 800px; margin-bottom: 35px; min-height: 90px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; }
-        .main-dialogue-text { font-size: 26px; font-weight: 700; line-height: 1.45; color: var(--text-white); }
-        .action-area { min-height: 280px; display: flex; justify-content: center; align-items: center; width: 100%; max-width: 700px; opacity: 0; transition: opacity 0.3s ease; gap: 15px; flex-wrap: wrap; flex-direction: column; }
-
-        .progress-box { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; align-items: center; }
-        .progress-bar-bg { width: 100%; height: 8px; background: #1c2228; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-color); }
-        .progress-bar-fill { height: 100%; width: 0%; background: var(--accent); transition: width 0.3s ease-in-out; }
-        .progress-status-text { font-size: 13px; font-weight: 700; color: var(--text-main); }
-
-        .micro-loader { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; }
-        .dot-pulse { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; animation: pulse 0.6s infinite alternate; }
-        @keyframes pulse { from { opacity: 0.3; transform: scale(0.8); } to { opacity: 1; transform: scale(1.2); } }
-
-        .btn-choice-large { width: 100%; max-width: 520px; padding: 18px 24px; background: #1c2228; border: 1px solid var(--border-color); color: #c5d0d8; font-size: 15px; font-weight: 500; border-radius: 14px; cursor: pointer; transition: all 0.2s ease; text-align: center; line-height: 1.35; }
-        .btn-choice-large strong { color: #ffffff; font-weight: 900; }
-        .btn-choice-large:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-3px); }
-        .btn-choice-large:hover strong { color: var(--accent); }
-
-        .slider-container-raw { width: 100%; max-width: 700px; display: flex; flex-direction: column; gap: 25px; align-items: center; background: transparent; padding: 10px 0; }
-        .slider-value-display { font-size: 42px; font-weight: 900; color: var(--accent); text-shadow: 0 0 15px rgba(0, 224, 84, 0.3); }
-        
-        .slider-input-large { -webkit-appearance: none; width: 100%; height: 10px; background: #1c2228; border-radius: 10px; border: 1px solid var(--border-color); outline: none; cursor: pointer; }
-        .slider-input-large::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 12px rgba(0, 224, 84, 0.5); transition: transform 0.1s ease; }
-        .slider-input-large::-webkit-slider-thumb:hover { transform: scale(1.2); }
-        
-        .btn-slider-validate { padding: 14px 32px; background: var(--accent); color: #14181c; border: none; border-radius: 12px; font-weight: 900; cursor: pointer; font-size: 15px; margin-top: 10px; transition: transform 0.2s ease; }
-        .btn-slider-validate:hover { transform: translateY(-2px); }
-
-        .poster-duel-container { display: flex; gap: 24px; justify-content: center; width: 100%; }
-        .poster-card { background: #1c2228; border: 2px solid var(--border-color); border-radius: 16px; overflow: hidden; width: 170px; cursor: pointer; transition: all 0.25s ease; text-align: center; }
-        .poster-card:hover { border-color: var(--accent); transform: scale(1.05); box-shadow: 0 10px 30px rgba(0,224,84,0.2); }
-        .poster-img { width: 100%; height: 245px; object-fit: cover; background: #0c0f12; display: block; }
-        .poster-fallback { width: 100%; height: 245px; background: #182026; display: flex; align-items: center; justify-content: center; padding: 12px; color: var(--accent); font-weight: 800; font-size: 13px; text-align: center; line-height: 1.3; }
-        .poster-title { font-size: 13px; font-weight: 700; padding: 10px 8px; color: white; line-height: 1.25; }
-        .hint-text { color: var(--accent); font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; cursor: pointer; opacity: 0.85; }
-
-        /* --- SECTION RÉSULTAT FINAL --- */
-        #final-stage { display: none; width: 100vw; min-height: 100vh; flex-direction: column; justify-content: center; align-items: center; padding: 40px 20px; }
-        .export-wrapper { background: var(--bg-color); padding: 35px; border-radius: 20px; text-align: center; max-width: 580px; width: 100%; position: relative; }
-        .chart-container { width: 100%; max-width: 320px; margin: 0 auto 20px auto; display: flex; justify-content: center; }
-        
-        .final-badge { color: var(--accent); font-size: 12px; font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 15px; }
-        .final-username { font-size: 28px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
-        .final-score { font-size: 96px; font-weight: 900; line-height: 1; color: var(--accent); margin-bottom: 8px; letter-spacing: -3px; }
-        .final-rank { font-size: 22px; font-weight: 800; color: white; margin-bottom: 25px; }
-        
-        .final-stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 15px; }
-        .stat-card { background: #1c2228; border: 1px solid var(--border-color); padding: 15px 8px; border-radius: 12px; }
-        .stat-value { font-size: 18px; font-weight: 800; color: white; }
-        .stat-label { font-size: 10px; color: var(--text-main); text-transform: uppercase; margin-top: 4px; font-weight: 700; }
-        
-        .wrapped-banner { background: #1c2228; border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 20px; display: flex; justify-content: space-around; text-align: center; }
-        .wrapped-item { display: flex; flex-direction: column; align-items: center; }
-        .wrapped-title { font-size: 10px; color: var(--text-main); text-transform: uppercase; font-weight: 700; }
-        .wrapped-val { font-size: 16px; font-weight: 800; color: var(--accent); margin-top: 3px; }
-
-        .final-quote { font-size: 14px; font-style: italic; color: #b0d8be; border-left: 3px solid var(--accent); padding-left: 15px; text-align: left; margin-top: 15px; line-height: 1.45; }
-
-        .action-buttons-row { display: flex; gap: 12px; margin-top: 25px; width: 100%; max-width: 580px; justify-content: center; }
-        
-        .btn-action-secondary {
-            flex: 1;
-            padding: 15px 20px;
-            background: #1c2228;
-            border: 1px solid var(--border-color);
-            color: #c5d0d8;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-action-secondary:hover { border-color: var(--accent); color: white; transform: translateY(-2px); }
-
-        .btn-action-primary {
-            flex: 1;
-            padding: 15px 20px;
-            background: var(--accent);
-            border: 1px solid var(--accent);
-            color: #14181c;
-            border-radius: 14px;
-            font-size: 14px;
-            font-weight: 800;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-action-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 224, 84, 0.25); }
-        
-        .icon-placeholder { display: inline-flex; align-items: center; justify-content: center; opacity: 0.7; }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
     </style>
-<style>#hover-poster{display:none!important}</style>
 </head>
 <body>
 
@@ -236,41 +128,40 @@
 
     <!-- Étape 1 : Page d'accueil et formulaires d'import -->
     <div class="stage-fullscreen" id="stage-home">
-        <h1 class="home-title">Letteroastd 🍿</h1>
-        <div class="home-subtitle">L'évaluation de cinéphilie sans filtre.</div>
+        <h1 class="home-title" aria-label="Letteroastd">Lettero<span class="l2">astd<span class="bands" aria-hidden="true"><i></i><i></i><i></i></span></span></h1>
+        <div></div>
+        <div class="home-low">
+            <p class="home-subtitle">L'évaluation de cinéphilie sans filtre. Donne ton export, on lit tout, on ne pardonne rien.</p>
 
-        <div class="forms-container">
-            <form id="fast-form" hidden><input id="username-input"></form>
-
-            <div>
+            <div class="forms-container">
+                <form id="fast-form" hidden><input id="username-input"></form>
                 <div class="option-header">
                     <span class="option-label">Ton export Letterboxd</span>
-                    <span class="badge-full">🎯 Profil 100% complet</span>
+                    <span class="badge-full">.zip</span>
                 </div>
                 <form id="file-form">
-                    <input type="file" id="file-input" class="input-fullscreen" accept=".zip,.csv" style="display:none;">
-                    
+                    <input type="file" id="file-input" accept=".zip,.csv" style="display:none;">
                     <div class="zip-button-wrapper">
-                        <button type="button" class="btn-fullscreen" style="background:#1c2228; color:white; border:1px solid var(--border-color); display:flex; align-items:center; justify-content:center;" onclick="document.getElementById('file-input').click()">
-                            <span>Charger mon fichier export (.zip)</span>
-                            <span class="help-icon">?</span>
+                        <button type="button" class="btn-fullscreen" data-drop onclick="document.getElementById('file-input').click()">
+                            <span>Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span></span>
+                            <span class="help-icon">comment l'obtenir ?</span>
                         </button>
-
                         <div class="tooltip-box">
-                            <div class="tooltip-header">🛠️ Comment exporter en 15 secondes ?</div>
+                            <div class="tooltip-header">Exporter en 15 secondes</div>
                             <div class="tooltip-steps-container">
                                 <div class="step-pill"><span class="step-num">1</span><span>Connecte-toi sur <strong>Letterboxd.com</strong> (web ou mobile).</span></div>
-                                <div class="step-pill"><span class="step-num">2</span><span>Ouvre ton profil → clique sur <strong>Settings</strong>.</span></div>
-                                <div class="step-pill"><span class="step-num">3</span><span>Vas dans l'onglet <strong>Data</strong> tout à droite.</span></div>
-                                <div class="step-pill"><span class="step-num">4</span><span>Clique sur le bouton vert <strong>Export Your Data</strong> puis glisse le `.zip` ici.</span></div>
+                                <div class="step-pill"><span class="step-num">2</span><span>Ouvre ton profil, puis <strong>Settings</strong>.</span></div>
+                                <div class="step-pill"><span class="step-num">3</span><span>Onglet <strong>Data</strong>, tout à droite.</span></div>
+                                <div class="step-pill"><span class="step-num">4</span><span><strong>Export Your Data</strong>, puis glisse le .zip ici.</span></div>
                             </div>
                         </div>
                     </div>
                 </form>
             </div>
-        </div>
 
-        <div class="footer-credit">Fait avec 🧡💚💙 par Kern · tout se passe dans ton navigateur, rien n'est envoyé</div>
+            <p class="billing">Un roast de <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur<br>rien n'est envoyé</p>
+        </div>
+        <div class="footer-credit"></div>
     </div>
 
     <!-- Étape 2 : Séquence interactive des questions/roasts -->
@@ -288,7 +179,7 @@
                 <div class="final-badge">Fiche Cinéphile Officielle</div>
                 <div class="final-username" id="res-user">@Cinéphile</div>
                 <div class="final-score" id="res-score">77.5</div>
-                <div class="final-rank" id="res-rank">CINÉASTE AVISÉ ⚔️</div>
+                <div class="final-rank" id="res-rank">Cinéaste avisé</div>
 
                 <div class="chart-container">
                     <canvas id="radarChart"></canvas>
@@ -335,7 +226,7 @@
             </button>
             <button class="btn-action-primary" onclick="downloadCardPNG()">
                 <span class="icon-placeholder">⤓</span>
-                <span>Partager</span>
+                <span>Télécharger la fiche</span>
             </button>
         </div>
     </div>
@@ -382,6 +273,14 @@
                 fetchData('/api/complete', formData);
             }
         });
+
+        // glisser-déposer du .zip sur la zone
+        (() => {
+            const z = document.querySelector('[data-drop]'), fi = document.getElementById('file-input');
+            ['dragenter', 'dragover'].forEach((t) => z.addEventListener(t, (e) => { e.preventDefault(); z.classList.add('over'); }));
+            ['dragleave', 'drop'].forEach((t) => z.addEventListener(t, () => z.classList.remove('over')));
+            z.addEventListener('drop', (e) => { e.preventDefault(); if (e.dataTransfer.files.length) { fi.files = e.dataTransfer.files; fi.dispatchEvent(new Event('change')); } });
+        })();
 
         // Écouteur pour la soumission du formulaire d'analyse rapide par pseudo
         document.getElementById('fast-form').addEventListener('submit', function(e) {
@@ -525,7 +424,7 @@
             showTextWithFadeUp(step.text, () => {
                 setTimeout(() => {
                     if (step.type === 'dialogue') {
-                        area.innerHTML = `<div class="hint-text fade-in-up" onclick="directNextStep()">APPUIE SUR [ENTRÉE] OU CLIQUE POUR CONTINUER ▶</div>`;
+                        area.innerHTML = `<div class="hint-text fade-in-up" onclick="directNextStep()">Entrée ou clic pour continuer</div>`;
                         document.addEventListener('keydown', handleEnterKey);
                     } else if (step.type === 'question_roast') {
                         const btn1 = document.createElement('button');
@@ -564,11 +463,11 @@
                         area.innerHTML = `
                             <div class="poster-duel-container fade-in-up">
                                 <div class="poster-card" onclick="actionNextStep()">
-                                    <img src="${img1}" class="poster-img" alt="${step.f1}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>🎬<br>${step.f1}</div>';">
+                                    <img src="${img1}" class="poster-img" alt="${step.f1}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>${step.f1}</div>';">
                                     <div class="poster-title">${step.f1}</div>
                                 </div>
                                 <div class="poster-card" onclick="actionNextStep()">
-                                    <img src="${img2}" class="poster-img" alt="${step.f2}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>🎬<br>${step.f2}</div>';">
+                                    <img src="${img2}" class="poster-img" alt="${step.f2}" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=&quot;poster-fallback&quot;>${step.f2}</div>';">
                                     <div class="poster-title">${step.f2}</div>
                                 </div>
                             </div>
@@ -663,11 +562,11 @@
                             finalScoreData.details.VNTG,
                             finalScoreData.details.DIV
                         ],
-                        backgroundColor: 'rgba(0, 224, 84, 0.3)',
+                        backgroundColor: 'rgba(0, 224, 84, 0.18)',
                         borderColor: '#00e054',
-                        borderWidth: 2,
+                        borderWidth: 1.5,
                         pointBackgroundColor: '#00e054',
-                        pointBorderColor: '#fff',
+                        pointBorderColor: '#14181c',
                         pointHoverBackgroundColor: '#fff',
                         pointHoverBorderColor: '#00e054',
                         pointRadius: 0
@@ -682,7 +581,7 @@
                             ticks: { display: false, stepSize: 20 },
                             angleLines: { color: 'rgba(255, 255, 255, 0.1)' },
                             grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            pointLabels: { color: '#9ab', font: { size: 10, weight: 'bold', family: 'sans-serif' } }
+                            pointLabels: { color: '#9ab', font: { size: 11, family: 'Geist, sans-serif' } }
                         }
                     },
                     plugins: { legend: { display: false } }

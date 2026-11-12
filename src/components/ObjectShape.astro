@@ -9,7 +9,7 @@ const { kind } = Astro.props;
 const u = (n: string) => `${kind}-${n}`; // identifiants uniques par objet (plusieurs objets par page)
 const f = (n: string) => `url(#${u(n)})`;
 // essai : photos détourées à la place des objets dessinés (vinyle : identités musicales ; sac : prise d'escalade kern.outdoor)
-const photo = ({ vinyl: ['/work/music-identities/object.webp', 1200, 809], backpack: ['/work/kern-outdoor/object.webp', 1200, 907] } as Partial<Record<ObjectKind, [string, number, number]>>)[kind];
+const photo = ({ book: ['/work/algorithmic-heraldry/object.webp', 1000, 1407], vinyl: ['/work/music-identities/object.webp', 1200, 809], backpack: ['/work/kern-outdoor/object.webp', 1200, 907] } as Partial<Record<ObjectKind, [string, number, number]>>)[kind];
 ---
 {photo ? (
   <img class="shape" src={photo[0]} width={photo[1]} height={photo[2]} alt="" decoding="async" data-no-ascii />
