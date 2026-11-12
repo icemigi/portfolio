@@ -32,3 +32,15 @@ test('le changement de sens passe tout de suite', () => {
 test("un écran qui défile encore garde le geste", () => {
   assert.deepEqual(play(wheelGesture(() => false), [60, 80, 70]), []);
 });
+
+test('un nouveau geste commencé trop tôt passe à la fin du verrou au lieu d\'être perdu', () => {
+  const feed = wheelGesture(() => true);
+  assert.equal(feed(1000, 100), 1);
+  assert.deepEqual([1300, 1350, 1400, 1450, 1500].map((t) => feed(t, 100)), [0, 0, 0, 1, 0]);
+});
+
+test("l'élan qui repart trop tôt puis retombe reste ignoré", () => {
+  const feed = wheelGesture(() => true);
+  assert.equal(feed(1000, 100), 1);
+  assert.deepEqual([1300, 1330, 1360, 1390, 1420, 1450, 1480].map((t, i) => feed(t, 90 * 0.8 ** i)), [0, 0, 0, 0, 0, 0, 0]);
+});

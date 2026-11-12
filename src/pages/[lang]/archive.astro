@@ -272,11 +272,15 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
   const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
 
-  // molette : avance la bande
+  // molette : avance la bande en continu ; à la fin du geste, elle se pose sur l'affiche la plus proche
+  let snap = 0;
   addEventListener('wheel', (e) => {
-    if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
+    if (!desktop() || e.ctrlKey || document.querySelector('[data-lb]:not([hidden])')) return;
     const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
     seek(target + d);
+    // pose dans le sens du geste : un petit cran (molette lente) passe quand même à l'affiche suivante, au lieu de revenir en arrière
+    const f = d > 0 ? Math.ceil : Math.floor;
+    clearTimeout(snap); snap = setTimeout(() => seek(f(target / STEP - Math.sign(d) * 0.001) * STEP), 160);
   }, { passive: true });
   addEventListener('keydown', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
@@ -299,7 +303,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   prog.addEventListener('click', (e) => {
     const r = prog.getBoundingClientRect(), p = (e.clientX - r.left) / r.width;
     if (phone()) { track.scrollTo({ top: Math.round(p * (items.length - 1)) * track.clientHeight, behavior: reduced() ? 'auto' : 'smooth' }); return; }
-    seek(p * max());
+    seek(Math.round(p * (items.length - 1)) * STEP);
   });
   addEventListener('resize', () => { seek(target); render(); });
 

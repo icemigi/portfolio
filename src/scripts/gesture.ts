@@ -7,7 +7,7 @@ const LOCK = 440, PUSH = 200;
 
 // Renvoie le sens du passage à faire (1, -1), ou 0 s'il n'y en a pas. canLeave : l'écran en cours est à son bord dans ce sens.
 export function wheelGesture(canLeave: (dir: number) => boolean) {
-  let last = 0, acc = 0, used = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0, peak = 0, dip = false;
+  let last = 0, acc = 0, used = false, held = false, edge = false, gdir = 0, lastGo = 0, lastDir = 0, prev = 0, rise = 0, peak = 0, dip = false;
   return (now: number, deltaY: number): number => {
     const dir = Math.sign(deltaY);
     if (!dir) return 0;
@@ -20,13 +20,14 @@ export function wheelGesture(canLeave: (dir: number) => boolean) {
     if (abs < peak * 0.55) dip = true; // l'élan est retombé : une remontée franche sera un nouveau geste
     const push = used && dip && rise >= 3 && abs > 30 && now - lastGo > PUSH;
     const fresh = pause || dir !== gdir || push;
-    if (fresh) { acc = 0; used = false; gdir = dir; rise = 0; peak = abs; dip = false; edge = canLeave(dir); }
+    if (fresh) { acc = 0; used = false; held = false; gdir = dir; rise = 0; peak = abs; dip = false; edge = canLeave(dir); }
     if (used || !edge) return 0;
     acc += deltaY;
     // molette à crans : deux crans rapprochés ne font pas sauter deux écrans
     if (Math.abs(acc) <= 30) return 0;
+    // trop tôt après le passage précédent : le geste attend la fin du verrou au lieu d'être perdu, sauf si son élan retombe (inertie)
+    if ((!push && dir === lastDir && now - lastGo < LOCK) || (held && dip)) { held = true; used = dip; return 0; }
     used = true;
-    if (!push && dir === lastDir && now - lastGo < LOCK) return 0;
     lastGo = now; lastDir = dir;
     return dir;
   };
