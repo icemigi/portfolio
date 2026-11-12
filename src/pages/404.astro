@@ -11,67 +11,173 @@ import '../styles/global.css';
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" /><link rel="icon" href="/favicon.ico" sizes="48x48" /><link rel="apple-touch-icon" href="/apple-touch-icon.png" /><link rel="manifest" href="/site.webmanifest" />
   </head>
   <body>
-    <main class="nf g">
+    <main class="nf">
       <a class="home" href="/" aria-label="kerningkastle"><img src="/logo-icon-128.webp" alt="" width="22" height="22" /></a>
-      <p class="mono mu k">404</p>
-      <div class="v">
-        <p class="t28">This page does not exist.</p>
-        <p class="t28 mu" lang="fr">Cette page n'existe pas.</p>
-        <p class="links"><a class="bp" href="/en/">home</a><a class="bp" href="/fr/" lang="fr">accueil</a></p>
-      </div>
-      <!-- ticket à gratter : sous la couche, la pièce kerningkastle -->
-      <div class="tk" data-tk>
-        <img src="/logo-coin.webp" alt="kerningkastle coin" width="440" height="421" />
-        <canvas aria-hidden="true"></canvas>
-        <p class="mono win" data-win><span>(gagné : rien, mais bien joué)</span><span class="mu">(you won: nothing, but well played)</span></p>
-      </div>
+      <!-- ticket à gratter : papier, encre, zone argentée ; sous la zone, une lettre tirée au hasard -->
+      <div class="tw"><article class="tk" data-tk aria-label="Scratch card / ticket à gratter">
+        <header class="th">
+          <p class="mono">kerningkastle</p>
+          <p class="mono">ticket n° 404 · série k</p>
+        </header>
+        <h1 class="tt">Page perdue<span>Lost page</span></h1>
+        <p class="mono ti">grattez la zone · scratch the zone</p>
+        <div class="zone" data-zone>
+          <span class="gl" data-gl aria-hidden="true">g</span>
+          <p class="win"><span class="wg">GAGNÉ !</span><span class="mono" data-wl>(une lettre)</span></p>
+          <canvas class="cover" aria-hidden="true"></canvas>
+        </div>
+        <footer class="tf mono">
+          <p>Jeu gratuit, sans obligation d'achat. Gain : une lettre (au hasard). Cette page n'existe pas. Ne pas jeter sur la voie publique.</p>
+          <div class="bc"><svg data-bc viewBox="0 0 120 22" preserveAspectRatio="none" aria-hidden="true"></svg><span data-sn>000 000</span></div>
+        </footer>
+      </article></div>
+      <p class="links"><a class="bp d" href="/fr/" lang="fr"><span class="bl">accueil</span><i class="sg" aria-hidden="true">+</i></a><a class="bp d" href="/en/"><span class="bl">home</span><i class="sg" aria-hidden="true">+</i></a></p>
+      <canvas class="flakes" aria-hidden="true"></canvas>
     </main>
   </body>
 <script>
-  // Ticket à gratter : une couche grise marquée « 404 » couvre la pièce ; passé la moitié grattée, elle tombe d'elle-même
+  // Ticket à gratter. La zone argentée (grain, reflet, « 404 » imprimé) couvre une lettre tirée au hasard ; on la gratte « à la pièce » :
+  // bord du grattage irrégulier, résidus, copeaux qui tombent, bruit de grattage. Passé 55 %, le reste se décolle.
   {
-    const tk = document.querySelector<HTMLElement>('[data-tk]')!, c = tk.querySelector('canvas')!, x = c.getContext('2d')!;
-    let done = false, n = 0;
+    const tk = document.querySelector<HTMLElement>('[data-tk]')!, zone = tk.querySelector<HTMLElement>('[data-zone]')!;
+    const c = zone.querySelector('canvas')!, x = c.getContext('2d', { willReadFrequently: true })!;
+    const fc = document.querySelector<HTMLCanvasElement>('canvas.flakes')!, fx = fc.getContext('2d')!;
+    const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // numéro de série et code-barres (le même tirage)
+    const sn = String(Math.floor(Math.random() * 1e6)).padStart(6, '0');
+    tk.querySelector('[data-sn]')!.textContent = `${sn.slice(0, 3)} ${sn.slice(3)} · ${String(Date.now()).slice(-4)}`;
+    let bx = 0, bars = '';
+    for (const ch of sn + '404' + sn.split('').reverse().join('')) { const v = +ch; for (const w of [1 + (v % 3), 1, 1 + ((v >> 1) % 2), 2 - (v % 2)]) { bars += `<rect x="${bx}" width="${w * .9}" height="22"/>`; bx += w * 1.6; } }
+    tk.querySelector('[data-bc]')!.innerHTML = bars; tk.querySelector('[data-bc]')!.setAttribute('viewBox', `0 0 ${bx} 22`);
+
+    // le lot : une lettre au hasard, et son nom
+    const POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz&?!@§¶ßæœçøÆŒ';
+    const g = POOL[Math.floor(Math.random() * POOL.length)], code = 'U+' + g.codePointAt(0)!.toString(16).toUpperCase().padStart(4, '0');
+    tk.querySelector('[data-gl]')!.textContent = g;
+    tk.querySelector('[data-wl]')!.textContent = `(un ${g} ${code})`;
+    let done = false, n = 0, W = 0, H = 0;
     const cover = () => {
-      const d = Math.min(2, devicePixelRatio || 1), w = tk.clientWidth, h = tk.clientHeight;
-      c.width = w * d; c.height = h * d; x.setTransform(d, 0, 0, d, 0, 0);
-      x.globalCompositeOperation = 'source-over'; x.fillStyle = '#c9c9c9'; x.fillRect(0, 0, w, h);
-      x.fillStyle = '#b3b3b3'; x.font = `500 ${w * .42}px Geist, sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('404', w / 2, h * .47);
-      x.fillStyle = '#8f8f8f'; x.font = '400 11px "Geist Mono", monospace'; x.fillText('grattez · scratch', w / 2, h - 16);
+      if (done) return;
+      const d = Math.min(2, devicePixelRatio || 1); W = zone.clientWidth; H = zone.clientHeight;
+      c.width = W * d; c.height = H * d; x.setTransform(d, 0, 0, d, 0, 0);
+      x.globalCompositeOperation = 'source-over';
+      const gr = x.createLinearGradient(0, 0, W, H * 1.2);
+      gr.addColorStop(0, '#bdbdbd'); gr.addColorStop(.3, '#9a9a9a'); gr.addColorStop(.48, '#d9d9d9'); gr.addColorStop(.62, '#a4a4a4'); gr.addColorStop(1, '#b8b8b8');
+      x.fillStyle = gr; x.fillRect(0, 0, W, H);
+      // pigment métallique : paillettes claires et sombres
+      for (let i = 0; i < W * H / 3; i++) { const r = Math.random(); x.fillStyle = r < .45 ? 'rgba(255,255,255,.28)' : r < .9 ? 'rgba(40,40,40,.10)' : 'rgba(255,255,255,.7)'; x.fillRect(Math.random() * W, Math.random() * H, r > .9 ? .6 : 1, r > .9 ? .6 : 1); }
+      // impression sur la couche : « 404 » en quinconce, encre un peu passée
+      x.fillStyle = 'rgba(70,70,70,.22)'; x.font = '700 20px Geist, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+      for (let r = 0, yy = 18; yy < H + 10; r++, yy += 32) for (let xx = (r % 2) * 30 + 15; xx < W + 30; xx += 60) { x.save(); x.translate(xx, yy); x.rotate(-.06); x.fillText('404', 0, 0); x.restore(); }
+      x.fillStyle = 'rgba(30,30,30,.55)'; x.font = '600 13px "Geist Mono", monospace'; x.fillText('↓  grattez ici · scratch here  ↓', W / 2, H / 2);
     };
-    const cleared = () => { const a = x.getImageData(0, 0, c.width, c.height).data; let z = 0; for (let i = 3; i < a.length; i += 64) if (a[i] < 40) z++; return z / (a.length / 64); };
-    let lx = -1, ly = -1, down = false;
-    const scratch = (e: PointerEvent) => {
-      if (done || (e.pointerType !== 'mouse' && !down)) return;
-      const b = c.getBoundingClientRect(), px = e.clientX - b.left, py = e.clientY - b.top;
-      x.globalCompositeOperation = 'destination-out'; x.lineCap = 'round'; x.lineWidth = 34;
-      x.beginPath(); x.moveTo(lx < 0 ? px : lx, ly < 0 ? py : ly); x.lineTo(px + .1, py); x.stroke();
+    const cleared = () => { const a = x.getImageData(0, 0, c.width, c.height).data; let z = 0; for (let i = 3; i < a.length; i += 80) if (a[i] < 60) z++; return z / (a.length / 80); };
+
+    // copeaux : de petits éclats argentés qui tombent et s'effacent
+    type F = { x: number; y: number; vx: number; vy: number; r: number; s: number; l: number; c: string };
+    let fl: F[] = [], fr = 0;
+    const fitF = () => { const d = Math.min(2, devicePixelRatio || 1); fc.width = innerWidth * d; fc.height = innerHeight * d; fx.setTransform(d, 0, 0, d, 0, 0); };
+    fitF(); addEventListener('resize', fitF);
+    const flakes = () => {
+      fr = 0; fx.clearRect(0, 0, innerWidth, innerHeight);
+      fl = fl.filter((f) => (f.l -= .016) > 0 && f.y < innerHeight + 10);
+      for (const f of fl) {
+        f.vy += .25; f.vx *= .98; f.x += f.vx; f.y += f.vy; f.r += f.s;
+        fx.save(); fx.globalAlpha = Math.min(1, f.l * 2); fx.translate(f.x, f.y); fx.rotate(f.r); fx.fillStyle = f.c; fx.fillRect(-1.4, -.8, 2.8, 1.6); fx.restore();
+      }
+      if (fl.length) fr = requestAnimationFrame(flakes);
+    };
+
+    // bruit de grattage : bruit filtré, volume selon la vitesse du geste
+    let ac: AudioContext | null = null, gain: GainNode | null = null;
+    const audio = () => {
+      if (ac) return;
+      try {
+        ac = new AudioContext();
+        const len = ac.sampleRate * 2, buf = ac.createBuffer(1, len, ac.sampleRate), ch = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+        const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+        const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = .8;
+        gain = ac.createGain(); gain.gain.value = 0;
+        src.connect(bp).connect(gain).connect(ac.destination); src.start();
+      } catch { ac = null; }
+    };
+    const hiss = (v: number) => { if (ac && gain) gain.gain.setTargetAtTime(Math.min(.22, v), ac.currentTime, .03); };
+
+    let lx = -1, ly = -1, down = false, quiet = 0;
+    const scrape = (px: number, py: number) => {
+      // un coup de pièce : une série de petites empreintes irrégulières, un peu de matière reste dans les creux
+      x.globalCompositeOperation = 'destination-out';
+      const steps = lx < 0 ? 1 : Math.max(1, Math.ceil(Math.hypot(px - lx, py - ly) / 3));
+      for (let i = 1; i <= steps; i++) {
+        const cx = lx < 0 ? px : lx + ((px - lx) * i) / steps, cy = ly < 0 ? py : ly + ((py - ly) * i) / steps;
+        for (let k = 0; k < 7; k++) {
+          const a = Math.random() * Math.PI * 2, rr = Math.random() * 15, s = 3 + Math.random() * 7;
+          x.globalAlpha = .55 + Math.random() * .45;
+          x.beginPath(); x.ellipse(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr, s, s * .7, a, 0, Math.PI * 2); x.fill();
+        }
+      }
+      x.globalAlpha = 1;
+      const b = c.getBoundingClientRect(), sp = lx < 0 ? 0 : Math.hypot(px - lx, py - ly);
+      if (!still) for (let i = 0; i < Math.min(6, 1 + sp / 4); i++) fl.push({ x: b.left + px, y: b.top + py, vx: (Math.random() - .5) * 3 + (px - (lx < 0 ? px : lx)) * .15, vy: -Math.random() * 2, r: Math.random() * 6, s: (Math.random() - .5) * .4, l: .8 + Math.random() * .6, c: Math.random() < .5 ? '#b5b5b5' : '#8e8e8e' });
+      if (!fr && fl.length) fr = requestAnimationFrame(flakes);
+      hiss(sp / 60); clearTimeout(quiet); quiet = window.setTimeout(() => hiss(0), 70);
       lx = px; ly = py;
-      if (++n % 12 === 0 && cleared() > .5) { done = true; c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' }); tk.classList.add('won'); }
     };
-    c.addEventListener('pointerdown', (e) => { down = true; lx = ly = -1; c.setPointerCapture(e.pointerId); scratch(e); });
-    c.addEventListener('pointermove', scratch);
-    c.addEventListener('pointerup', () => { down = false; lx = ly = -1; });
-    c.addEventListener('pointerleave', () => { lx = ly = -1; });
-    document.fonts.ready.then(cover);
+    const move = (e: PointerEvent) => {
+      if (done || (e.pointerType !== 'mouse' && !down) || (e.pointerType === 'mouse' && !(e.buttons & 1) && !down && !hover)) return;
+      const b = c.getBoundingClientRect();
+      scrape(e.clientX - b.left, e.clientY - b.top);
+      if (++n % 10 === 0 && cleared() > .55) {
+        done = true; hiss(0);
+        // le reste de la couche se décolle en une fois, avec une pluie de copeaux
+        if (!still) for (let i = 0; i < 90; i++) { const b2 = c.getBoundingClientRect(); fl.push({ x: b2.left + Math.random() * b2.width, y: b2.top + Math.random() * b2.height, vx: (Math.random() - .5) * 4, vy: -Math.random() * 3, r: Math.random() * 6, s: (Math.random() - .5) * .5, l: 1 + Math.random(), c: Math.random() < .5 ? '#b5b5b5' : '#8e8e8e' }); }
+        if (!fr) fr = requestAnimationFrame(flakes);
+        c.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }); tk.classList.add('won');
+      }
+    };
+    const hover = true; // à la souris, il suffit de passer (comme on frotte) ; au doigt, il faut appuyer
+    c.addEventListener('pointerdown', (e) => { audio(); down = true; lx = ly = -1; c.setPointerCapture(e.pointerId); move(e); });
+    c.addEventListener('pointerenter', () => { lx = ly = -1; });
+    c.addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') audio(); move(e); });
+    c.addEventListener('pointerup', () => { down = false; lx = ly = -1; hiss(0); });
+    c.addEventListener('pointerleave', () => { lx = ly = -1; hiss(0); });
+    document.fonts.ready.then(cover); addEventListener('resize', cover);
   }
 </script>
 </html>
 
 <style>
-  .nf { min-height: 100dvh; align-content: center; position: relative; }
+  .nf { min-height: 100dvh; display: grid; place-items: center; align-content: center; row-gap: 40px; padding: 72px var(--m); position: relative; }
   .home { position: absolute; left: var(--m); top: 17px; }
-  .k { grid-column: 1 / 4; padding-top: 10px; }
-  .tk { grid-column: 4 / 8; position: relative; width: min(260px, 100%); aspect-ratio: 1; margin-bottom: 40px; display: grid; place-items: center; }
-  .tk img { width: 74%; height: auto; }
-  .tk canvas { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; touch-action: none; cursor: crosshair; }
-  .win { position: absolute; left: 0; top: calc(100% + 10px); display: grid; gap: 2px; opacity: 0; transition: opacity .4s .3s; text-transform: none; }
+  .flakes { position: fixed; inset: 0; width: 100vw; height: 100vh; max-width: none; pointer-events: none; z-index: 5; }
+  /* le ticket : carton orange imprimé (orange du site), bords haut et bas perforés, légère inclinaison */
+  /* inclinaison et ombre sur l'enveloppe : le masque des perforations reste droit (sinon des coutures apparaissent) */
+  .tw { width: min(420px, 100%); rotate: -1.5deg; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .25)) drop-shadow(0 22px 28px rgba(0, 0, 0, .2)); }
+  .tk { position: relative; padding: 30px 26px 24px; color: #141414;
+    background: linear-gradient(100deg, rgba(255, 255, 255, .14), transparent 35%), var(--ac); /* reflet léger du carton */
+    -webkit-mask: radial-gradient(circle 3.5px at 50% 0, transparent 97%, #000) top / 11px 51% repeat-x, radial-gradient(circle 3.5px at 50% 100%, transparent 97%, #000) bottom / 11px 51% repeat-x;
+    mask: radial-gradient(circle 3.5px at 50% 0, transparent 97%, #000) top / 11px 51% repeat-x, radial-gradient(circle 3.5px at 50% 100%, transparent 97%, #000) bottom / 11px 51% repeat-x;
+    }
+  /* encre : noir d'impression, un peu mangé par le papier */
+  .tk .mono, .tt, .tf { color: #141414; mix-blend-mode: multiply; }
+  .th { display: flex; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px dashed rgba(0, 0, 0, .5); }
+  .tt { margin-top: 18px; font-size: clamp(40px, 9vw, 64px); line-height: .92; font-weight: 500; letter-spacing: -.03em; }
+  .tt span { display: block; font-size: .42em; line-height: 1.2; font-weight: 400; letter-spacing: -.01em; margin-top: 6px; opacity: .75; }
+  .ti { margin-top: 18px; }
+  /* sous la couche : papier blanc à microtexte de sécurité, la pièce imprimée */
+  .zone { position: relative; margin-top: 8px; aspect-ratio: 4 / 3; display: grid; place-items: center; overflow: hidden; border-radius: 6px;
+    background: repeating-linear-gradient(-35deg, rgba(255, 135, 22, .09) 0 1px, transparent 1px 5px), #f6f1e8;
+    box-shadow: inset 0 0 0 1.5px #141414, inset 0 0 0 5px #f6f1e8, inset 0 0 0 6px rgba(20, 20, 20, .35); }
+  .gl { font-family: var(--sans); font-weight: 500; font-size: clamp(120px, 34vw, 190px); line-height: 1; letter-spacing: 0; color: #141414; margin-top: -18px; }
+  .zone .cover { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; touch-action: none; border-radius: 6px;
+    cursor: url(/coin-cursor.png) 15 14, crosshair; }
+  .win { position: absolute; left: 0; right: 0; bottom: 10px; display: grid; gap: 2px; text-align: center; opacity: 0; transition: opacity .4s .3s; }
+  .wg { font-weight: 600; font-size: 15px; letter-spacing: .02em; color: #141414; }
+  .win .mono { text-transform: none; }
   .tk.won .win { opacity: 1; }
-  .tk.won img { animation: kk-coin 1.2s cubic-bezier(.2, .7, .2, 1); }
-  @keyframes kk-coin { from { transform: rotateY(540deg) scale(.9); } }
-  @media (prefers-reduced-motion: reduce) { .tk.won img { animation: none; } }
-  .v { grid-column: 4 / 12; }
-  .links { display: flex; gap: 32px; margin-top: 32px; }
-  .nf { align-content: center; row-gap: 48px; }
-  @media (max-width: 760px) { .k, .v, .tk { grid-column: 1 / -1; } .k { margin-bottom: 16px; } }
+  .tf { margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(0, 0, 0, .5); font-size: 10px; line-height: 13px; text-transform: none; }
+  .bc { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .bc svg { width: 150px; height: 26px; fill: #141414; }
+  .links { display: flex; gap: 32px; }
 </style>
