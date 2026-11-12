@@ -32,7 +32,6 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
           </li>
         ))}
       </ol>
-      <div class="edge" aria-hidden="true"></div>
       <div class="pst" data-stage aria-hidden="true"><canvas class="cv-base"></canvas><canvas class="cv-fly"></canvas></div>
       <span class="hint-r mono" data-hint aria-hidden="true"><span>→</span></span>
       <div class="prog" data-prog role="slider" tabindex="0" aria-label={t.archiveCount} aria-valuemin="1" aria-valuemax={pieces.length} aria-valuenow="1">
@@ -75,7 +74,6 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   .hint-r span { animation: kk-nudge 2.4s var(--out) infinite; }
   @keyframes kk-nudge { 0%, 60%, 100% { transform: none; } 30% { transform: translateX(5px); } }
   @media (max-width: 760px) { .hint-r { display: none; } }
-  .edge { position: absolute; top: 0; bottom: 0; right: 0; width: 120px; background: linear-gradient(90deg, rgba(243, 243, 243, 0), var(--bg)); pointer-events: none; }
   .prog { position: absolute; left: var(--m); right: var(--m); bottom: 40px; height: 24px; cursor: pointer; }
   .prog::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: var(--ln); }
   .bar { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; background: var(--ac); transform-origin: 0 50%; transform: scaleX(0); }
@@ -85,7 +83,6 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   .pst { display: none; }
   @media all {
     .track { display: none; }
-    .edge { display: none; }
     .pst { display: block; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; }
     .pst canvas { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; }
     .cv-fly { touch-action: none; }
@@ -260,7 +257,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     if (lastN === null) lastN = n;
     else if (n !== lastN) { lastN = n; dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'tick', v: .55 } })); }
     const k = index() + 1;
-    if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${(window as any).kkArchive.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
+    if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${K.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;
@@ -284,17 +281,14 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   }, { passive: true });
   addEventListener('keydown', (e) => {
     if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
-    const step = STEP;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); seek(target + step); }
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); seek(target - step); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); seek(target + STEP); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); seek(target - STEP); }
     if (e.key === 'Home') seek(0);
     if (e.key === 'End') seek(max());
   });
-  // pavé tactile / doigt horizontal sur ordinateur tactile
-  let tx = 0;
   // doigt : glisser vers le haut jette des affiches, vers le bas les reprend
   let ty = 0;
-  root.addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, { passive: true });
+  root.addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
   root.addEventListener('touchmove', (e) => {
     if (phone() || document.querySelector('[data-lb]:not([hidden])')) return;
     const ny = e.touches[0].clientY, d = (ty - ny) * 1.6; ty = ny;
@@ -308,28 +302,27 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   addEventListener('resize', () => { seek(target); render(); });
 
   // pièce ouverte
-  const A = (window as any).kkArchive as { caps: string[]; ratios: number[]; srcs: string[] };
   const lb = document.querySelector<HTMLElement>('[data-lb]')!;
   const big = lb.querySelector<HTMLElement>('[data-big]')!;
   const cap = lb.querySelector<HTMLElement>('[data-cap]')!;
   let cur = -1, opener: HTMLElement | null = null;
   const behind = [...document.querySelectorAll<HTMLElement>('.skip, .site-header, [data-arc]')];
   const show = (i: number, push = true) => {
-    cur = (i + A.caps.length) % A.caps.length;
-    big.style.aspectRatio = String(A.ratios[cur]);
+    cur = (i + K.caps.length) % K.caps.length;
+    big.style.aspectRatio = String(K.ratios[cur]);
     // l'image réduite (déjà chargée) s'affiche tout de suite, la grande prend le relais
-    const small = A.srcs[cur] ? thumb(A.srcs[cur]) : '';
+    const small = K.srcs[cur] ? thumb(K.srcs[cur]) : '';
     big.style.background = '#d4d4d4';
     big.innerHTML = '';
-    if (A.srcs[cur]) {
+    if (K.srcs[cur]) {
       const k = cur, im = document.createElement('img');
-      im.alt = A.caps[cur]; im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      im.alt = K.caps[cur]; im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
       im.src = cards[cur]?.img.src || small;
       big.appendChild(im);
-      const hi = new Image(); hi.src = A.srcs[cur];
+      const hi = new Image(); hi.src = K.srcs[cur];
       hi.decode().then(() => { if (cur === k) im.src = hi.src; }).catch(() => {});
     }
-    cap.textContent = `${P(cur + 1)} — ${A.caps[cur]}`;
+    cap.textContent = `${P(cur + 1)} — ${K.caps[cur]}`;
     lb.hidden = false;
     behind.forEach((el) => (el.inert = true));
     if (push) history.replaceState(null, '', `#${P(cur + 1)}`);
@@ -381,7 +374,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { lifted = -1; show(cur + (e.key === 'ArrowRight' ? 1 : -1)); if (cardAt(cur)) lifted = cur; dirty = true; go(); }
   });
   const h = Number(location.hash.slice(1));
-  if (h >= 1 && h <= A.caps.length) show(h - 1, false);
+  if (h >= 1 && h <= K.caps.length) show(h - 1, false);
   // téléphone : images en haute définition, chargées à l'approche de leur écran ; le compteur suit la pièce verrouillée
   if (phone()) {
     // fenêtre glissante : seules les cartes autour de celle du dessus ont une image (les cartes passées restent collées à l'écran,
