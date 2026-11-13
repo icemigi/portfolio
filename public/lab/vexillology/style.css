@@ -1,0 +1,7 @@
+/* Systemic Vexillology : la planche tient dans la fenêtre, entre la barre du haut et le bas */
+@font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-display: swap; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #fff; transition: background .4s; }
+html[data-theme='nuit'], html[data-theme='nuit'] body { background: #000; }
+#stage { position: absolute; inset: 0; display: grid; place-items: center; }
+canvas { display: block; cursor: pointer; touch-action: manipulation; }
+.kk-bar .sw { display: inline-block; width: .8em; height: .8em; margin-left: .35em; vertical-align: -.05em; border-radius: 50%; background: var(--a, #F0D818); }

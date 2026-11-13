@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr" data-intro="Une planche de drapeaux, tous différents, tirés de seize systèmes, en noir, blanc et couleurs primaires. Clique sur un drapeau pour le relancer, ailleurs pour une nouvelle planche. Touches 3, 4, 5 : la grille.">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, follow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Systemic Vexillology — kerningkastle</title>
+    <meta name="description" content="Systemic Vexillology : un générateur de planches de drapeaux de kerningkastle. Seize systèmes graphiques, jamais deux fois le même sur une ligne. p5.js." />
+    <link rel="canonical" href="https://kerningkastle.com/fr/lab/vexillology/" />
+    <link rel="stylesheet" href="/lab/ui.css">
+    <link rel="stylesheet" href="style.css?v=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+</head>
+<body>
+    <main id="stage" aria-label="Une planche de drapeaux génératifs"></main>
+    <div class="kk-bar">
+        <p class="hint">clic sur un drapeau : le relancer · ailleurs : nouvelle planche · 3 4 5 : grille</p>
+        <p class="act"><button id="board">planche</button><button id="grid">grille : au hasard</button><button id="accent">couleur<span class="sw"></span></button><button id="guides" aria-pressed="false">repères</button><button id="save">enregistrer</button></p>
+    </div>
+    <script src="/lab/back.js"></script>
+    <script src="sketch.js?v=1"></script>
+</body>
+</html>

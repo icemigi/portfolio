@@ -2,12 +2,17 @@
 import './loader';
 import { initScreens } from './screens';
 import { reveal, reduced } from './motion';
+import { initCards } from './card';
 import './sound';
 import { initHola } from './hola';
 import { initParens } from './parens';
 import { initAscii } from './ascii';
 import './langswap';
 import { initTorch } from './torch';
+import { initTie } from './tie';
+
+// petits mots liés au suivant (pas de « Le » seul en fin de ligne) : avant toute découpe du texte en lettres
+initTie();
 
 // médias : chargement en ASCII (trame de caractères, puis deux rendus ASCII de l'image, puis l'image)
 initAscii();
@@ -33,6 +38,8 @@ initParens();
 
 // Évitement du curseur : découpe faite avant toute apparition, pour que les deux animations se cumulent.
 initHola();
+// visuels [data-card] : au survol, ils s'inclinent vers le curseur comme une carte (card.ts)
+initCards();
 
 // Pages en écrans
 const host = document.querySelector<HTMLElement>('[data-screens]');

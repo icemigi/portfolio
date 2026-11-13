@@ -44,7 +44,7 @@ html.theme-fade, html.theme-fade body, html.theme-fade .scr, html.theme-fade .si
 html[data-theme='nuit'] .logo-ic, html[data-theme='nuit'] .ld-fill { filter: invert(.92) sepia(.15); }
 /* le sceau de cire, la nuit : pris dans la pénombre (plus sombre, moins saturé, ombre plus profonde) */
 html[data-theme='nuit'] .seal { filter: brightness(.62) saturate(.82) sepia(.1) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
-.thm path { fill: transparent; transition: fill .35s var(--out); }
+.thm path { fill: transparent; transition: fill .35s var(--out), fill-opacity .35s var(--out); }
 html[data-theme='nuit'] .thm path { fill: currentColor; } /* la lune se remplit quand la nuit est active */
 /* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
 .fire { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
@@ -311,3 +311,40 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 /* apparition du texte : pendant le mélange, la vraie lettre reste en place (invisible) et le signe tiré au hasard se pose dessus */
 .ch.sx { position: relative; -webkit-text-fill-color: transparent; }
 .ch.sx::after { content: attr(data-s); position: absolute; left: 50%; top: 0; translate: -50% 0; -webkit-text-fill-color: var(--mu); } /* le signe de passage, en gris */
+
+/* ---------- vie du site (13/11) : de petites animations partout, le texte, lui, ne bouge pas ---------- */
+/* le cavalier : un tour sur lui-même, comme une pièce qu'on fait tourner, toutes les 9 s */
+@keyframes kk-coin { 0%, 84% { transform: perspective(240px) rotateY(0deg); } 100% { transform: perspective(240px) rotateY(360deg); } }
+.site-header .home img { animation: kk-coin 9s cubic-bezier(.65, 0, .35, 1) 2.5s infinite; }
+/* boutons du menu (son, mode nuit) et autres icônes : une petite réaction au survol */
+.site-header .hit svg { transition: scale .3s var(--out), rotate .45s var(--out); }
+@media (hover: hover) {
+  .site-header .snd:hover svg { scale: 1.15; }
+  /* la lune : au survol, elle se remplit à moitié (un avant-goût de la nuit) et s'incline ; la nuit, elle se vide à moitié */
+  .site-header .thm:hover svg { rotate: -14deg; }
+  .site-header .thm:hover path { fill: currentColor; fill-opacity: .4; }
+  html[data-theme='nuit'] .site-header .thm:hover path { fill-opacity: .45; }
+}
+/* liens du texte (sans style propre) : passent en orange au survol */
+a:not([class]) { transition: color .2s; }
+@media (hover: hover) { main a:not([class]):hover, footer a:not([class]):hover { color: var(--ac); } }
+
+/* objets (Projets) : oscillation lente en 3D, partout où ils apparaissent hors de la scène principale */
+@keyframes kk-sway { 0%, 100% { transform: perspective(800px) rotateY(-16deg) rotateX(5deg); } 50% { transform: perspective(800px) rotateY(16deg) rotateX(-5deg); } }
+/* visuels-cartes (card.ts) : inclinaison 3D vers le curseur, soulèvement, ombre opposée, reflet de lumière */
+[data-card] { position: relative; will-change: transform; }
+[data-card]::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: var(--go, 0); transition: opacity .3s;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 58%); mix-blend-mode: soft-light; }
+
+/* ---------- défilement libre (flow.ts, décidé le 13/11) : la page défile d'un bloc, sans écrans aimantés ---------- */
+html.screens:has(.screens-host.free), html.screens:has(.screens-host.free) body { height: auto; overflow: visible; }
+.screens-host.free { position: static; overflow: visible; scroll-snap-type: none; height: auto; }
+.screens-host.free > .scr { height: auto; min-height: 0; overflow: visible; scroll-snap-align: none; }
+html:has(.screens-host.free) .more-arrow { display: none; }
+.screens-host.free > .scr.last { min-height: 100svh; }
+/* blocs de contenu : de l'air au-dessus et au-dessous (l'en-tête du menu compris) */
+:where(.screens-host.free > .scr) > .in { min-height: 0; padding-block: calc(var(--head) + 6vh) 8vh; }
+/* lignes masquées : chaque lettre est une boîte qui peut glisser sous sa ligne (flow.ts) */
+.sc { display: inline-block; }
+.sw { white-space: nowrap; }
+.flow-off { visibility: hidden; }

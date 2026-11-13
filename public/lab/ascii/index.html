@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr" data-intro="Une matrice de caractères qui tourne en vortex autour du curseur. Clique pour un nouveau tirage, change de couleurs, enregistre l'affiche.">
+<head>
+    <meta charset="UTF-8">
+    <meta name="robots" content="noindex, follow">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrice systémique — kerningkastle</title>
+    <meta name="description" content="Matrice systémique : une trame de caractères mono de kerningkastle, qui tourne en vortex autour du curseur ; certains caractères s'allument en aplats de couleur. p5.js." />
+    <link rel="canonical" href="https://kerningkastle.com/fr/lab/ascii/" />
+    <link rel="stylesheet" href="/lab/ui.css">
+    <link rel="stylesheet" href="style.css?v=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+</head>
+<body>
+    <main id="stage" aria-label="Une matrice de caractères en vortex"></main>
+    <div class="kk-bar">
+        <p class="hint">bouge : le vortex suit · clic : nouveau tirage · espace : pause</p>
+        <p class="act"><button id="roll">tirage</button><button id="pal">couleurs : bleu / jaune</button><button id="pause" aria-pressed="false">pause</button><button id="save">enregistrer</button></p>
+    </div>
+    <script src="/lab/back.js"></script>
+    <script src="sketch.js?v=1"></script>
+</body>
+</html>

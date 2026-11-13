@@ -21,9 +21,9 @@ const N = items.length;
 const start = Math.floor((N - 1) / 2);
 ---
 <Base lang={lang} title={t.nav.lab} description={fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent, type modulaire), générateur héraldique, quiz et Letteroastd.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters, modular type), heraldry generator, quiz and Letteroastd.'} path="lab/" active="lab">
-  <div class="screens-host" data-screens>
+  <div class="screens-host free" data-screens data-no-arrow>
     <section class="scr" data-still aria-labelledby="lb-t">
-      <div class="cf" data-cf data-start={start}>
+      <div class="cf" data-cf data-start={start} data-lenis-prevent-wheel>
         <h1 class="lab mono mu par" id="lb-t">{t.nav.lab} {pad(N)}</h1>
         <div class="stage" data-stage>
           {items.map((x, i) => (
@@ -48,6 +48,8 @@ const start = Math.floor((N - 1) / 2);
 </Base>
 
 <style>
+  /* défilement libre : la galerie garde la hauteur de l'écran, le pied de page suit */
+  .screens-host > .scr:first-child { height: 100svh; }
   .cf { --s: min(46dvh, 34vw, 480px); position: relative; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding-top: var(--head); overflow: hidden; }
   .cf .lab { position: absolute; left: var(--m); top: calc(var(--head) + 16px); margin: 0; }
   .stage { position: relative; width: 100%; height: var(--s); touch-action: pan-y; user-select: none; cursor: grab; }
@@ -144,19 +146,24 @@ const start = Math.floor((N - 1) / 2);
       ((window as any).kkReady ?? Promise.resolve()).then(() => document.fonts.ready).then(enter);
     }
 
+    // (le lesté du site ignore la molette au-dessus de la galerie : data-lenis-prevent-wheel ; sans quoi la page défilait en même temps)
     // molette : comme les écrans du site, un geste = une pochette, et une molette roulée sans pause enchaîne les pochettes.
     // La galerie ne prend la molette que si son écran est en place (pas pendant que le pied de page est affiché) ;
     // au bout, le geste suivant part à l'écran suivant, mais l'inertie du geste en cours ne fait pas sauter l'écran.
     const screen = root.closest<HTMLElement>('.scr');
     const gesture = wheelGesture(() => true);
-    let mine = 0;
+    let mine = 0, blocked = 0;
+    // quand la galerie ne prend pas la molette, la page défile (en douceur, par le lesté du site)
+    const pass = (e: WheelEvent, dy: number) => { const l = (window as any).kkLenis; if (l) { e.preventDefault(); l.scrollTo(l.targetScroll + dy); } };
     root.addEventListener('wheel', (e) => {
-      if (screen && Math.abs(screen.getBoundingClientRect().top) > 2) return;
       // Firefox : une molette compte en lignes (deltaMode 1) ou en pages (2), pas en pixels
       const k = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? innerHeight : 1;
+      if (screen && Math.abs(screen.getBoundingClientRect().top) > 2) { pass(e, e.deltaY * k); return; }
       const dl = (Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY) * k, now = performance.now();
       const can = dl > 0 ? target < N - 1 : target > 0;
-      if (!can && now - mine > 300) return;
+      // au bout de la galerie : la page repart après une pause (nouveau geste) ou après 0,5 s de molette continue
+      // (l'inertie d'un trackpad ne s'arrête jamais assez longtemps pour faire une pause)
+      if (!can) { if (!blocked) blocked = now; if (now - mine > 300 || now - blocked > 500) { pass(e, e.deltaY * k); return; } } else blocked = 0;
       e.preventDefault(); e.stopPropagation(); mine = now; // la galerie prend la molette : la page ne défile pas
       const step = gesture(now, dl);
       if (step) go(target + step);
@@ -181,4 +188,8 @@ const start = Math.floor((N - 1) / 2);
     });
     addEventListener('pointerup', () => { down = false; stage.classList.remove('drag'); setTimeout(() => (moved = false), 0); });
   }
+
+  // ---------- défilement libre ----------
+  import { initFlow } from '../../scripts/flow';
+  initFlow();
 </script>

@@ -29,7 +29,7 @@ const K: Record<string, number> = { book: 0.82, vinyl: 1.3 };
   .pv { display: none; }
   @media (hover: hover) and (pointer: fine) {
     .pv { display: grid; place-items: center; position: absolute; left: 0; top: 0; z-index: 5; width: 180px; height: 180px; pointer-events: none; opacity: 0; scale: .8; transition: opacity .25s, scale .45s var(--out); will-change: transform; }
-    .pv :global(.shape) { display: block; width: 100%; height: 100%; object-fit: contain; scale: var(--k, 1); filter: drop-shadow(0 18px 18px rgba(0, 0, 0, .2)); }
+    .pv :global(.shape) { display: block; width: 100%; height: 100%; object-fit: contain; scale: var(--k, 1); filter: drop-shadow(0 18px 18px rgba(0, 0, 0, .2)); animation: kk-sway 6s ease-in-out infinite; }
     li:hover .pv { opacity: 1; scale: 1; }
   }
 </style>

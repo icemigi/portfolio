@@ -14,14 +14,14 @@ export type Room = {
 
 const all: Room[] = [
   {
-    id: 'vexillology', year: '2026', kind: 'slot',
-    fr: { title: 'Systemic Vexillology', cat: 'Générateur', note: 'Des générateurs de drapeaux. [Pièce à intégrer]' },
-    en: { title: 'Systemic Vexillology', cat: 'Generator', note: 'Flag generators. [Piece to integrate]' },
+    id: 'vexillology', year: '2026', kind: 'embed', src: '/lab/vexillology/index.html',
+    fr: { title: 'Systemic Vexillology', cat: 'Générateur', note: 'Des planches de drapeaux tirés de seize systèmes graphiques, jamais deux fois le même sur une ligne ou une colonne. Un clic relance un drapeau, ou toute la planche. p5.js.' },
+    en: { title: 'Systemic Vexillology', cat: 'Generator', note: 'Boards of flags drawn from sixteen graphic systems, never the same twice in a row or column. One click re-rolls a flag, or the whole board. p5.js.' },
   },
   {
-    id: 'ascii', year: '2025', kind: 'slot',
-    fr: { title: '[Nuage ASCII — nom à venir]', cat: 'Expérience', note: 'Un nuage de caractères qui se recompose au passage de la souris. [Pièce à intégrer]' },
-    en: { title: '[ASCII cloud — name to come]', cat: 'Experiment', note: 'A cloud of characters that rearranges as the cursor passes. [Piece to integrate]' },
+    id: 'ascii', year: '2026', kind: 'embed', src: '/lab/ascii/index.html',
+    fr: { title: 'Matrice systémique', cat: 'Expérience', note: 'Une trame de caractères mono qui tourne en vortex autour du curseur ; certains caractères s\'allument en aplats de couleur. p5.js.' },
+    en: { title: 'Systemic Matrix', cat: 'Experiment', note: 'A grid of mono characters spinning in a vortex around the cursor; some characters light up as flat colour blocks. p5.js.' },
   },
   {
     id: 'modular-type', year: '2026', kind: 'type',
@@ -39,9 +39,9 @@ const all: Room[] = [
     en: { title: 'Growing letters', cat: 'Cellular automaton', note: 'Letters that grow like a culture: a cellular automaton spreads inside the glyph outline, then morphs into the next letter. You can drop in your own image. p5.js.' },
   },
   {
-    id: 'free-font', year: '[Année]', kind: 'font',
-    fr: { title: '[Fonte libre]', cat: 'Fonte', note: 'Fonte libre, OTF et WOFF. [Fichier et nom à venir]' },
-    en: { title: '[Free typeface]', cat: 'Typeface', note: 'Free typeface, OTF and WOFF. [File and name to come]' },
+    id: 'free-font', year: '2026', kind: 'font', file: '/fonts/himare/himare.zip',
+    fr: { title: 'HIMARE', cat: 'Fonte', note: 'Une capitale de titrage horizontale, dessinée sur une grille de modules arrondis, en deux styles : plein et contour. OTF et WOFF2, à télécharger.' },
+    en: { title: 'HIMARE', cat: 'Typeface', note: 'A horizontal display typeface drawn on a grid of rounded modules, in two styles: solid and outline. OTF and WOFF2, to download.' },
   },
 ];
 // pièces vides (kind 'slot') masquées tant qu'elles ne sont pas intégrées (décision du 03/11)

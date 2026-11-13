@@ -3,6 +3,7 @@
 // TODO : années et lien de téléchargement de Farquaad et Himarë.
 import type { Lang } from './ui';
 import { contact } from './about';
+import { esc } from './text';
 
 export type Entry = { when?: string; what: string; where?: string; items?: string[] };
 export type Section = { id: string; cmd: string[]; title: string; intro?: string; entries?: Entry[]; list?: [string, string, string?][] };
@@ -11,8 +12,8 @@ export type Cv = { name: string; role: string; meta: string; sections: Section[]
 export const cv: Record<Lang, Cv> = {
   fr: {
     name: 'Xavier M. Diez',
-    role: 'Type designer & digital creative',
-    meta: 'Paris · remote · à l’écoute',
+    role: 'Type designer & créatif digital',
+    meta: 'Paris · à distance · à l’écoute',
     ui: {
       boot: 'Dernière connexion',
       help: 'commandes',
@@ -27,7 +28,7 @@ export const cv: Record<Lang, Cv> = {
       { id: 'profil', cmd: ['profil', 'profile', 'whoami'], title: 'profil',
         intro: 'Designer graphique et typographe, avec un bagage de code. Je pars toujours de la lettre, et je passe au code quand la main ne suffit plus (rarement l’inverse). Fil rouge : les systèmes et les grilles, qu’ils soient typographiques, génératifs ou éditoriaux.' },
       { id: 'xp', cmd: ['xp', 'experience', 'experiences'], title: 'expériences', entries: [
-        { when: '2020 — auj.', what: 'Directeur artistique freelance — (ChâteauStudio)™', where: 'Paris & remote · 5 à 9 clients par an', items: [
+        { when: '2020 — auj.', what: 'Directeur artistique freelance — (ChâteauStudio)™', where: 'Paris et à distance · 5 à 9 clients par an', items: [
           'Identités musicales, seul de bout en bout, pour des artistes de rap underground, d’électro et d’hyperpop : logotypes et lettrages toujours dessinés à la main, pochettes CD et vinyle (relief et découpe réellement produits), univers de tournée, merchandising, fichiers d’exécution print (sérigraphie, héliogravure).',
           'Méthode : le projet écouté en boucle, brief et références, puis deux pistes radicalement différentes ; l’objet physique est pensé en premier.',
           'Visuels live ponctuels : boucles et contenus temps réel sous TouchDesigner, dont des prestations d’artistes à la Gaîté Lyrique.',
@@ -94,7 +95,7 @@ export const cv: Record<Lang, Cv> = {
         ['tiktok', '@kern.outdoor', 'https://www.tiktok.com/@kern.outdoor'],
         ['instagram', '@kern.outdoor', 'https://www.instagram.com/kern.outdoor/'],
         ['langues', 'français, espagnol (bilingue) · anglais (C1)'],
-        ['dispo', 'à l’écoute — CDI ou missions, Paris & remote'],
+        ['dispo', 'à l’écoute — CDI ou missions, Paris et à distance'],
       ] },
     ],
   },
@@ -189,7 +190,6 @@ export const cv: Record<Lang, Cv> = {
   },
 };
 
-const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // Une section en HTML : une ligne = un bloc, pour l'affichage ligne par ligne.
 export function sectionHtml(s: Section): string {

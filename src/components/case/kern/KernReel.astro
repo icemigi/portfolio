@@ -1,0 +1,26 @@
+---
+// Showreel des logos kern.outdoor : une scène SVG (fond de la charte + logos qui se transforment), animée par src/scripts/kern-reel.ts
+import { kernD as D } from './data';
+interface Props { lang: 'fr' | 'en'; class?: string }
+const { lang, class: cls } = Astro.props;
+const fr = lang === 'fr';
+---
+<div class={cls} data-reel data-card role="img" aria-label={fr ? 'Showreel des logos kern.outdoor : la montagne devient le bonhomme, qui se pose sur les lettres, qui deviennent le lettrage' : 'kern.outdoor logo reel: the mountain becomes the figure, which lands on the letters, which become the lettering'}>
+  <svg viewBox="0 0 1000 1000" aria-hidden="true">
+    <rect class="bg0" width="1000" height="1000" fill="#353C15" />
+    <rect class="bgA" width="1000" height="1000" fill="#FFF8E3" transform="translate(0 1000)" />
+    <rect class="bg1" width="1000" height="1000" fill="#1C1C1C" transform="translate(0 1000)" />
+    <path class="body" d={D.cairn.body} fill="#DEDE1F" />
+    <path class="head" d={D.cairn.head} fill="#DEDE1F" />
+    {(['k', 'e', 'r', 'n'] as const).map((l) => <path class={`l ${l}`} d={D.cairn[l]} fill="#DEDE1F" />)}
+    <path class="w" d={D.word.w} fill="#1C1C1C" />
+    <path class="reg1" d={D.cairn.reg1} fill="#DEDE1F" />
+    <path class="reg2" d={D.cairn.reg2} fill="#DEDE1F" />
+  </svg>
+  <script type="application/json" data-reel-d set:html={JSON.stringify(D)} />
+</div>
+
+<style>
+  [data-reel] { position: relative; aspect-ratio: 1; overflow: hidden; }
+  [data-reel] svg { display: block; width: 100%; height: 100%; }
+</style>

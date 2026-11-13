@@ -5,8 +5,8 @@
 import type { Vig } from '../data/about';
 import type { Lang } from '../data/ui';
 import Door from './Door.astro';
-interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string }
-const { text, vigs, lang, tag = 'p', class: cls = '' } = Astro.props;
+interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string; sentences?: boolean }
+const { text, vigs, lang, tag = 'p', class: cls = '', sentences = false } = Astro.props;
 const Tag = tag as any;
 // vignette animée : sa version fixe (même nom + .still.webp, fabriquée par tools/vignettes.py) sert quand « Réduire les animations » est actif
 import { existsSync } from 'node:fs';
@@ -54,9 +54,22 @@ raw.forEach((p, i) => {
   }
   parts.push(p);
 });
+// sentences : chaque phrase devient un groupe (<span class="snt">) ; vignettes, apartés et mots collés restent dans leur phrase
+const groups: Part[][] = [[]];
+const END = /[.!?…]$/;
+for (const p of parts) {
+  if (sentences && p.kind === 'text') {
+    const bits = p.text.split(/(?<=[.!?…])(\s+)/);
+    bits.forEach((b) => { if (!b) return; groups[groups.length - 1].push({ kind: 'text', text: b }); if (/^\s+$/.test(b)) groups.push([]); });
+    continue;
+  }
+  groups[groups.length - 1].push(p);
+  if (sentences && 'punct' in p && p.punct && END.test(p.punct)) groups.push([]);
+}
+const G = groups.filter((g) => g.length && g.some((p) => p.kind !== 'text' || p.text.trim()));
 ---
 <Tag class:list={['t56 affiche', cls]} data-hola>
-  {parts.map((p) =>
+  {(sentences ? G : [parts]).map((g, gi) => { const inner = g.map((p) =>
     p.kind === 'logo' ? (
       <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
@@ -72,7 +85,7 @@ raw.forEach((p, i) => {
     ) : (
       <Fragment>{p.text}</Fragment>
     ),
-  )}
+  ); return sentences ? <span class="snt" data-s={gi}>{inner}</span> : inner; })}
 </Tag>
 
 <style>

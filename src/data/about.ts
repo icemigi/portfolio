@@ -19,7 +19,7 @@ export const homeVigs: Vig[] = [
 
 // À propos — 4 écrans
 export const aboutIntro = {
-  fr: "Designer à Paris{m:et à distance}, je pars toujours de la lettre, {0} du logotype au système d'écriture complet {1}. Quand les mains ne suffisent plus{m:ou qu'elles ont la flemme}, j'écris du code. Le reste vient des choses {door} que j'aime{m:ouvrez}.",
+  fr: "Designer à Paris{m:et à distance}, je pars toujours de la lettre, {0} du logotype au système d'écriture complet {1}. Quand les mains ne suffisent plus{m:ou qu'elles ont la flemme}, j'écris du code. Le reste vient des choses {door} que j'aime{m:vas-y, ouvre}.",
   en: "Designer in Paris{m:and remote}, I always start from the letter, {0} from a logotype to a complete writing system {1}. When hands aren't enough{m:or can't be bothered}, I write code. The rest comes from the things {door} I love{m:go on, open it}.",
 };
 export const aboutVigs: Vig[] = [

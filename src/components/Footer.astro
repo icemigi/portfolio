@@ -10,14 +10,14 @@ const fr = lang === 'fr';
 const nav = [['work/', t.nav.work], ['lab/', t.nav.lab], ['archive/', t.nav.archive], ['about/', t.nav.about]] as const;
 // humeur selon l'heure de Paris : [heure de début, texte]
 const moods = fr
-  ? [[0, '(sûrement en train de dessiner un g à deux étages)'], [7, '(café, puis crénage)'], [9, '(en train d\'ajuster un crénage)'], [12, '(pause déj, les lettres attendent)'], [14, '(en train de pousser des pixels)'], [19, '(en montagne, ou en plein speedrun)'], [22, '(un dernier glyphe et au lit)']]
+  ? [[0, '(sûrement en train de dessiner un g à deux étages)'], [7, '(café, puis crénage)'], [9, '(en train d\'ajuster un crénage)'], [12, '(pause déj, les lettres attendent)'], [14, '(le nez dans les calques)'], [19, '(en montagne, ou en plein speedrun)'], [22, '(un dernier glyphe et au lit)']]
   : [[0, '(probably drawing a double-storey g)'], [7, '(coffee, then kerning)'], [9, '(adjusting some kerning)'], [12, '(lunch break, the letters can wait)'], [14, '(pushing pixels)'], [19, '(in the mountains, or mid-speedrun)'], [22, '(one last glyph, then bed)']];
 ---
 <footer class:list={['ft g', cls]}>
   <div class="a">
     <p class="mono mu par">{t.contact}</p>
     <p><a class="lk" href={`mailto:${contact.email}`}>{contact.email}</a></p>
-    <p class="mu">{fr ? 'Freelance + CDI — Paris & remote' : 'Freelance + full-time — Paris & remote'}</p>
+    <p class="mu">{fr ? 'Freelance + CDI — Paris et à distance' : 'Freelance + full-time — Paris & remote'}</p>
   </div>
   <div class="b">
     <p class="mono mu par">{t.elsewhere}</p>

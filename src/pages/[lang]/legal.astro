@@ -28,7 +28,7 @@ const S = fr
     ];
 ---
 <Base lang={lang} title={fr ? 'Mentions légales' : 'Legal notice'} description={fr ? 'Mentions légales de kerningkastle.com : éditeur, hébergement (GitHub Pages), données personnelles (aucun cookie, mesure d\'audience GoatCounter) et crédits.' : 'Legal notice for kerningkastle.com: publisher, hosting (GitHub Pages), personal data (no cookies, GoatCounter analytics) and credits.'} path="legal/">
-  <div class="screens-host" data-screens>
+  <div class="screens-host free" data-screens data-no-arrow>
     <section class="scr all">
       <div class="page">
         <div class="g body">
@@ -76,3 +76,10 @@ const S = fr
     .v div + div { margin-top: min(20px, 2.2dvh); }
   }
 </style>
+
+<script>
+  // défilement libre : chaque rubrique s'écrit en lignes masquées à son entrée (rembobinée en remontant)
+  import { initFlow, enterOnce } from '../../scripts/flow';
+  initFlow();
+  enterOnce(document.querySelectorAll<HTMLElement>('.v > div'));
+</script>

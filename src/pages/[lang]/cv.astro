@@ -93,7 +93,8 @@ const PS = 'xavier@kerningkastle ~ %';
 </style>
 
 <script>
-  import { reduced } from '../../scripts/motion';  type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
+  import { reduced } from '../../scripts/motion';
+  import { esc } from '../../data/text';  type D = { lang: string; other: string; full: string; ui: Record<string, string>; sections: { id: string; cmd: string[]; html: string }[] };
   const root = document.querySelector<HTMLElement>('[data-term]')!;
   const d: D = JSON.parse(root.dataset.cv!);
   const out = root.querySelector<HTMLElement>('[data-out]')!;
@@ -102,7 +103,6 @@ const PS = 'xavier@kerningkastle ~ %';
   const PS = 'xavier@kerningkastle ~ %';
   const still = reduced();
   const wait = (ms: number) => new Promise((r) => setTimeout(r, still ? 0 : ms));
-  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let busy = false;
   const hist: string[] = []; let hi = 0;
 

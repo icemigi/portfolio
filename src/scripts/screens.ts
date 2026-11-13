@@ -20,6 +20,8 @@ export function initScreens(host: HTMLElement): Screens {
   // écrans affichés seulement (certains n'existent que sur téléphone, d'autres que sur ordinateur)
   const S = [...host.querySelectorAll<HTMLElement>(':scope > .scr')].filter((s) => getComputedStyle(s).display !== 'none');
   const header = document.querySelector<HTMLElement>('.site-header');
+  // défilement libre (flow.ts) : la page défile d'un bloc ; ce moteur ne garde que go() (liens « Haut ↑ »), le reste est inerte
+  const free = host.classList.contains('free');
   const key = `kk-scr:${location.pathname}`;
   let cur = 0;
 
@@ -73,7 +75,7 @@ export function initScreens(host: HTMLElement): Screens {
       const s = en.target as HTMLElement;
       if (en.isIntersecting) {
         const now = performance.now();
-        if (!s.hasAttribute('data-still') && !reduced() && now - (revealed.get(s) || -1e4) > 1400 && S.indexOf(s) !== cur) { revealed.set(s, now); reveal(s, 120); }
+        if (!free && !s.hasAttribute('data-still') && !reduced() && now - (revealed.get(s) || -1e4) > 1400 && S.indexOf(s) !== cur) { revealed.set(s, now); reveal(s, 120); }
       } else settle(s);
     }
   }, { root: host, threshold: 0 });
@@ -125,6 +127,7 @@ export function initScreens(host: HTMLElement): Screens {
 
   // aller à un écran (flèche, clavier, liens « Haut ↑ ») : défilement doux du navigateur, le calage fait le reste
   function go(to: number) {
+    if (free) { const y = S[Math.max(0, Math.min(S.length - 1, to))].getBoundingClientRect().top + scrollY; const l = (window as any).kkLenis; if (l) l.scrollTo(y); else scrollTo({ top: y, behavior: reduced() ? 'auto' : 'smooth' }); return; }
     if (to >= S.length) { emit('screens:beyond', { from: cur }); return; }
     if (to < 0 || to === nearest(host.scrollTop) && Math.abs(host.scrollTop - T[to]) < 2) return;
     host.scrollTo({ top: T[to], behavior: reduced() ? 'auto' : 'smooth' });
@@ -133,6 +136,7 @@ export function initScreens(host: HTMLElement): Screens {
   // au-delà du dernier écran (études de cas : ouvrir le projet suivant) : un geste vers le bas alors qu'on est déjà tout en bas
   let push = 0, pushT = 0, beyondT = 0;
   const beyond = (d: number) => {
+    if (free) return;
     if (cur !== S.length - 1 || host.scrollTop < max - 2 || d <= 0) { push = 0; return; }
     const now = performance.now();
     if (now - pushT > 300) push = 0;
@@ -153,6 +157,7 @@ export function initScreens(host: HTMLElement): Screens {
   const canScroll = (s: HTMLElement, dir: number) =>
     getComputedStyle(s).overflowY !== 'hidden' && (dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2);
   addEventListener('keydown', (e) => {
+    if (free) return; // défilement libre : le clavier fait défiler la page normalement
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target as Element | null;
     if (t?.closest?.(EDITABLE) || t?.closest?.('[data-own-keys]')) return;

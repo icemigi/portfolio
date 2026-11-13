@@ -1,0 +1,6 @@
+/* Matrice systémique : l'affiche (4:5) tient dans la fenêtre */
+@font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-display: swap; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #0e0e0e; transition: background .4s; }
+html[data-theme='jour'], html[data-theme='jour'] body { background: #f0f0eb; }
+#stage { position: absolute; inset: 0; display: grid; place-items: center; }
+canvas { display: block; cursor: crosshair; touch-action: none; }

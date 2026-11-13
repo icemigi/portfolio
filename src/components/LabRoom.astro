@@ -14,6 +14,7 @@ const r = room[lang];
 const fr = lang === 'fr';
 const intro = room.kind === 'type'
   ? (fr ? 'Tape un mot : il se compose en modules (Entrée pour une nouvelle ligne). Approche le curseur, clique pour changer de famille, molette pour la portée.' : 'Type a word: it is built from modules (Enter for a new line). Move the cursor close, click to change the family, wheel for the reach.')
+  : room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Type your text: it sets in HIMARE. Switch between solid and outline, then download the typeface.')
   : r.note;
 ---
 <Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
@@ -24,7 +25,7 @@ const intro = room.kind === 'type'
     <div class:list={['room', room.kind]}>
       {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} edit />}
       {room.kind === 'slot' && <p class="mono mu">({r.note})</p>}
-      {room.kind === 'font' && <p class="tester" contenteditable="plaintext-only" spellcheck="false" data-own-keys>Kerning</p>}
+      {room.kind === 'font' && <p class="tester" contenteditable="plaintext-only" spellcheck="false" data-own-keys data-tester>himare</p>}
       {room.kind === 'embed' && <p class="mono mu"><a href={`${room.src}?lang=${lang}`}>{r.title}</a></p>}
     </div>
   </div>
@@ -32,6 +33,7 @@ const intro = room.kind === 'type'
     <p class="hint">{room.kind === 'type' ? (fr ? 'tape · entrée : ligne · clic : modules · molette : portée' : 'type · enter: new line · click: modules · wheel: reach') : room.kind === 'font' ? t.typeHere : ''} <span data-fam></span></p>
     <p class="act">
       {room.kind === 'type' && <Fragment><button type="button" data-twave>{fr ? 'onde' : 'wave'}</button><button type="button" data-tsave>{fr ? 'enregistrer' : 'save'}</button><button type="button" data-tsvg>svg</button></Fragment>}
+      {room.kind === 'font' && <button type="button" data-fstyle aria-pressed="false">{fr ? 'contour' : 'outline'}</button>}
       {room.kind === 'font' && (room.file ? <a href={room.file} download>{t.download.toLowerCase()}</a> : <span>{t.fileSoon.toLowerCase()}</span>)}
     </p>
   </div>
@@ -47,9 +49,13 @@ const intro = room.kind === 'type'
   .room.slot { background: repeating-linear-gradient(45deg, #e6e6e6 0 10px, #dedede 10px 20px); }
   .room.slot p { max-width: 520px; text-align: center; }
   .room :global(.tc) { width: 100%; height: 100%; }
-  .tester { font-weight: 500; font-size: 160px; line-height: 160px; letter-spacing: -0.03em; text-align: center; outline: none; max-width: 100%; overflow-wrap: anywhere; caret-color: var(--fg); }
+  /* fonte (HIMARE) : le testeur s'écrit dans la fonte, plein ou contour */
+  @font-face { font-family: 'HIMARE'; src: url('/fonts/himare/HIMARE.woff2') format('woff2'); font-display: block; }
+  @font-face { font-family: 'HIMARE Outline'; src: url('/fonts/himare/HIMARE-Outline.woff2') format('woff2'); font-display: block; }
+  .tester { font-family: 'HIMARE', var(--sans, sans-serif); font-weight: 400; font-size: clamp(56px, 9vw, 150px); line-height: 1.25; text-align: center; outline: none; max-width: 100%; overflow-wrap: anywhere; caret-color: var(--ac); }
+  .tester.ol { font-family: 'HIMARE Outline', var(--sans, sans-serif); }
   .kk-bar :global(a), .kk-bar :global(span) { color: var(--k-fg); }
-  @media (max-width: 760px) { .tester { font-size: 52px; line-height: 56px; } }
+  @media (max-width: 760px) { .tester { font-size: 40px; } }
 </style>
 
 <script>
@@ -67,5 +73,8 @@ const intro = room.kind === 'type'
   const wv = document.querySelector<HTMLButtonElement>('[data-twave]');
   wv?.addEventListener('click', () => tc?.dispatchEvent(new CustomEvent('type:wave')));
   tc?.addEventListener('type:wavestate', (e) => wv?.setAttribute('aria-pressed', String((e as CustomEvent).detail.on)));
+  // fonte : bascule plein / contour
+  const fs = document.querySelector<HTMLButtonElement>('[data-fstyle]'), tester = document.querySelector<HTMLElement>('[data-tester]');
+  fs?.addEventListener('click', () => { const on = !!tester?.classList.toggle('ol'); fs.setAttribute('aria-pressed', String(on)); });
   tc?.addEventListener('type:family', (e) => { const f = document.querySelector('[data-fam]'); if (f) f.textContent = '· ' + (e as CustomEvent).detail.name; });
 </script>
