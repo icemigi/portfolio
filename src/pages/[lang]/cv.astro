@@ -22,7 +22,6 @@ const PS = 'xavier@kerningkastle ~ %';
   <h1 class="sr">CV — Xavier M. Diez</h1>
   <div class="term" data-term data-cv={JSON.stringify(data)}>
     <div class="bar">
-      <span class="dots"><a class="x" href={`/${lang}/`} aria-label={lang === 'fr' ? 'Fermer le CV' : 'Close the CV'}><span aria-hidden="true">×</span></a><i aria-hidden="true"></i><i aria-hidden="true"></i></span>
       <span class="ttl mu">xavier — cv — zsh</span>
       <span class="act">
         <span class="lg"><a href="/en/cv/" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>en</a> / <a href="/fr/cv/" data-lang="fr" aria-current={lang === 'fr' ? 'true' : undefined}>fr</a></span>
@@ -38,7 +37,7 @@ const PS = 'xavier@kerningkastle ~ %';
       <input id="cv-in" data-in type="text" spellcheck="false" autocapitalize="off" aria-label={c.ui.hint} />
     </form>
     <nav class="chips" aria-label={c.ui.help}>
-      {['help', ...c.sections.map((s) => s.cmd[0]), 'clear', 'exit'].map((k) => <button type="button" data-cmd={k}>{k}</button>)}
+      {c.sections.map((s) => s.cmd[0]).map((k) => <button type="button" data-cmd={k}>{k}</button>)}
     </nav>
   </div>
 </Base>
@@ -48,14 +47,8 @@ const PS = 'xavier@kerningkastle ~ %';
   :global(html:has(.term) body) { background: var(--bg); color: var(--fg); }
   .term { position: fixed; inset: 0; display: flex; flex-direction: column; font-family: var(--mono); font-size: 14px; line-height: 22px; padding: 0 var(--m); }
   .bar { display: flex; align-items: center; gap: 16px; height: var(--head); flex: none; border-bottom: 1px solid var(--ln); }
-  .dots { display: flex; gap: 8px; }
-  .dots i, .dots .x { width: 12px; height: 12px; border-radius: 50%; background: var(--ln); }
-  /* la pastille rouge ferme le CV, comme une fenêtre macOS (07/11) */
-  .dots .x { display: grid; place-items: center; background: #ff5f57; color: rgba(0, 0, 0, .55); font: 700 10px/1 var(--mono); text-decoration: none; }
-  .dots .x span { opacity: 0; transition: opacity .15s; }
-  .dots:hover .x span, .dots .x:focus-visible span { opacity: 1; }
-  .dots i:nth-child(2) { background: #febc2e; } .dots i:nth-child(3) { background: #28c840; }
-  .ttl { flex: 1; text-align: center; }
+  /* barre épurée (14/11) : le titre à gauche, langue et sortie à droite */
+  .ttl { flex: 1; }
   .act { display: flex; gap: 20px; }
   .act a:hover, .chips button:hover { color: var(--fg); text-decoration: underline; text-underline-offset: 3px; }
   .act a { color: var(--mu); } .act .lg [aria-current='true'] { color: var(--fg); }
