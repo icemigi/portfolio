@@ -8,7 +8,7 @@ import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media, type Img } from '../../../data/media';
 import { captions } from '../../../data/captions';
-import { rich, first } from '../../../data/text';
+import { rich } from '../../../data/text';
 import KernOutdoor from '../../../components/case/KernOutdoor.astro';
 
 export function getStaticPaths() {
@@ -25,12 +25,15 @@ const nc = next[lang];
 const N = pad(projects.length);
 
 type Para = { t?: string; p: string };
-type Group = { k: string; paras: Para[]; list?: boolean };
+type Tpl = 'ta' | 'tb' | 'tc';
 type Block =
   | { kind: 'hook'; k: string; p: string; img?: Img }
-  | { kind: 'chap'; side: 'l' | 'r'; k: string; phrase: string; notes: Para[]; img?: Img }
+  | { kind: 'spread'; tpl: Tpl; k: string; paras: Para[]; img: Img }
+  | { kind: 'rub'; k: string; paras: Para[] }
   | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'vis'; imgs: Img[] }
+  | { kind: 'pair'; imgs: Img[] }
+  | { kind: 'stair'; imgs: Img[] }
+  | { kind: 'sheet'; imgs: Img[] }
   | { kind: 'gen'; src: string };
 const M = media[project.slug];
 // grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
@@ -38,36 +41,53 @@ const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(
 const vid = (src: string) => /\.(mp4|webm)$/i.test(src);
 const len = (ps: Para[]) => ps.reduce((n, x) => n + (x.t?.length ?? 0) + x.p.length, 0);
 
-// rubriques : rubrique fixe (r) + titre propre au projet (h)
+// rubriques : le canevas habituel (7 rubriques) se lit en 4 temps ; deux rubriques courtes partagent un écran
 const S = c.sections;
+type Group = { k: string; paras: Para[]; list?: boolean };
 const groups: Group[] = [];
 if (c.text) groups.push({ k: fr ? 'le projet' : 'the project', paras: c.text.map((p) => ({ p })) });
-S.forEach((s) => groups.push({ k: s.r ? `${s.r} — ${s.h.toLowerCase()}` : s.h.toLowerCase(), paras: s.paras }));
+if (S.length === 7) {
+  const names = fr ? ['contexte', 'démarche', 'choix clés', 'résultat'] : ['context', 'process', 'key decisions', 'outcome'];
+  [[0, 1], [2, 3], [4], [5, 6]].forEach((g, gi) => {
+    const ps = g.flatMap((i) => S[i].paras);
+    if (g.length === 1 || len(ps) <= 720) groups.push({ k: names[gi], paras: ps });
+    else g.forEach((i) => groups.push({ k: S[i].h.toLowerCase(), paras: S[i].paras }));
+  });
+} else S.forEach((s) => groups.push({ k: s.r ? `${s.r} — ${s.h.toLowerCase()}` : s.h.toLowerCase(), paras: s.paras })); // rubrique fixe (r) + titre propre au projet (h)
 groups.forEach((g) => { if (g.paras.length > 1 && g.paras.every((x) => x.t)) g.list = true; });
 
-// Cadre commun : page de garde, accroche, projet suivant, et un texte court (une rubrique par écran : une grande phrase,
-// la suite en petite note mono). Le milieu peut être propre au projet (src/components/case/) ; sinon, la mise en page
-// par défaut : rubriques avec une image chacune, générateur, visuels restants. Aucune image n'est recadrée.
-const ALL: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src && !vid(im.src))] : [];
-const pool = [...ALL];
-// première phrase : jusqu'au premier point (ou ! ? …) suivi d'une majuscule ; le reste part en note
-const blocks: Block[] = [{ kind: 'hook', k: fr ? 'en bref' : 'in short', p: c.lead, img: pool.shift() }];
-groups.filter((g) => !g.list).forEach((g, i) => {
-  const [ph, rest] = first(g.paras[0].p);
-  blocks.push({ kind: 'chap', side: i % 2 ? 'l' : 'r', k: g.k, phrase: (g.paras[0].t ? `${g.paras[0].t} ` : '') + ph, notes: [...(rest ? [{ p: rest }] : []), ...g.paras.slice(1)], img: pool.shift() });
+// visuels : la couverture d'abord, puis la galerie ; chaque double page prend ce qu'il lui faut, le reste finit en planche
+const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src && !vid(im.src))] : [];
+const take = (n: number) => (pool.length >= n ? pool.splice(0, n) : null);
+const blocks: Block[] = [{ kind: 'hook', k: fr ? 'en bref' : 'in short', p: c.lead, img: take(1)?.[0] }];
+const TPL: Tpl[] = ['ta', 'tb', 'tc'];
+let ti = 0, vi = 0;
+groups.forEach((g, i) => {
+  if (g.list) blocks.push({ kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) });
+  else {
+    const im = take(1)?.[0];
+    blocks.push(im ? { kind: 'spread', tpl: TPL[ti++ % TPL.length], k: g.k, paras: g.paras, img: im } : { kind: 'rub', k: g.k, paras: g.paras });
+  }
+  // entre deux rubriques, une double page d'images (deux décalées, puis trois en escalier) — deux au plus
+  if (i < groups.length - 1 && vi < 2 && !g.list) {
+    const kind = vi % 2 === 0 ? 'pair' : 'stair', n = kind === 'pair' ? 2 : 3;
+    const imgs = take(n);
+    if (imgs) { blocks.push({ kind, imgs }); vi++; }
+  }
+  if (project.generator && i === groups.length - 2) blocks.push({ kind: 'gen', src: project.generator });
 });
-groups.filter((g) => g.list).forEach((g) => blocks.push({ kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) }));
-if (project.generator) blocks.push({ kind: 'gen', src: project.generator });
-while (pool.length) blocks.push({ kind: 'vis', imgs: pool.splice(0, 6) }); // six au plus par écran
+if (pool.length >= 3) blocks.push({ kind: 'sheet', imgs: pool.splice(0, 18) });
+else if (pool.length === 2) blocks.push({ kind: 'pair', imgs: pool.splice(0, 2) });
 if (c.blocks?.length) blocks.push({ kind: 'list', k: fr ? 'en bref' : 'in short', items: c.blocks });
-// projets à architecture propre : leur milieu remplace les blocs par défaut (l'accroche reste commune)
-const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor>)[project.slug];
 
 // textes alternatifs et légendes : celle de captions.ts, sinon « visuel 03/19 »
-const imgTotal = ALL.length;
-const imgNo = (im: Img) => ALL.indexOf(im) + 1;
+const allImgs: Img[] = blocks.flatMap((b) => ('imgs' in b ? b.imgs : 'img' in b && b.img ? [b.img] : []));
+const imgTotal = allImgs.length;
+const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
 const capOf = (im: Img) => captions[im.src]?.[lang] || `${fr ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
-const pic = (im: Img, sizes: string) => ({ i: ALL.indexOf(im), src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, r: +(im.w / im.h).toFixed(4), alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}` });
+const pic = (im: Img, cls: string, sizes: string, depth = 0) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}`, depth });
+// projets à architecture propre (src/components/case/) : leur milieu remplace les blocs par défaut (l'accroche reste commune)
+const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor>)[project.slug];
 type Pic = ReturnType<typeof pic>;
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
@@ -79,6 +99,8 @@ const workLd = {
   ...(project.years.length ? { dateCreated: String(project.years[0]) } : {}),
   creator: { '@id': `${home}#me` }, isPartOf: { '@id': `${home}#site` },
 };
+// apartés {m:…} : petite note mono entre parenthèses, écrite au fil du texte (comme l'accueil et À propos)
+const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) => { const m = x.match(/^\{m:([^}]+)\}$/); return m ? { n: m[1] } : { t: x }; });
 ---
 <Base lang={lang} title={c.title} description={c.lead.length < 110 ? `${c.lead} ${c.meta.role} · ${c.meta.tools}.` : c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
@@ -109,7 +131,7 @@ const workLd = {
     <p class="lbc mono"><span data-lbc></span><span class="mu" data-lbn></span></p>
   </div>
 
-  <div class="screens-host case free" data-screens data-no-arrow data-pi={index}>
+  <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
         <p class="lab mono mu par s1-late" data-cl><span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
@@ -144,19 +166,25 @@ const workLd = {
     {(Own ? blocks.filter((b) => b.kind === 'hook') : blocks).map((b) =>
       b.kind === 'hook' ? (
         <section class="scr">
-          <div class="in g ch hook">
+          <div class="in g mag hook">
             <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <p class="lead t56" data-hola data-fit set:html={rich(b.p)} />
-            {b.img && ((p: Pic) => <div class="slot" data-slot data-fly="cover" data-card style={`--r:${p.r}`}><img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-i={p.i} loading="lazy" decoding="async" /></div>)(pic(b.img, '(max-width: 760px) 100vw, 50vw'))}
+            <p class="bd t56" data-hola data-fit>{parts(b.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>
+            {b.img && ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'sm', '(max-width: 760px) 40vw, 20vw', -0.12))}
           </div>
         </section>
-      ) : b.kind === 'chap' ? (
+      ) : b.kind === 'spread' ? (
         <section class="scr">
-          <div class:list={['in g ch chap', b.side, { solo: !b.img }]}>
+          <div class:list={['in g mag spread', b.tpl]}>
             <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <p class="phr t56" data-hola data-fit set:html={rich(b.phrase)} />
-            {b.notes.length > 0 && <div class="nts mono mu">{b.notes.map((pp) => <p>{pp.t && <b>{pp.t} </b>}<Fragment set:html={rich(pp.p, 'note')} /></p>)}</div>}
-            {b.img && ((p: Pic) => <div class="slot" data-slot data-card style={`--r:${p.r}`}><img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-i={p.i} loading="lazy" decoding="async" /></div>)(pic(b.img, '(max-width: 760px) 100vw, 50vw'))}
+            <div class="tx" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
+          </div>
+        </section>
+      ) : b.kind === 'rub' ? (
+        <section class="scr">
+          <div class="in g">
+            <h2 class="lab mono mu par">{b.k}</h2>
+            <div class="bd tx solo" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
           </div>
         </section>
       ) : b.kind === 'list' ? (
@@ -170,11 +198,26 @@ const workLd = {
             </ul>
           </div>
         </section>
-      ) : b.kind === 'vis' ? (
+      ) : b.kind === 'pair' ? (
         <section class="scr" data-still>
-          <div class="in g ch vis">
+          <div class="in g mag pair">
             <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
-            <div class="rows">{b.imgs.map((im) => ((p: Pic) => <span class="cd" data-card style={`--r:${p.r}`}><img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-i={p.i} loading="lazy" decoding="async" /></span>)(pic(im, '(max-width: 760px) 50vw, 30vw')))}</div>
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[0], 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
+            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[1], 'sm', '(max-width: 760px) 50vw, 25vw', -0.14))}
+          </div>
+        </section>
+      ) : b.kind === 'stair' ? (
+        <section class="scr" data-still>
+          <div class="in g mag stair">
+            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
+            {b.imgs.map((im, i) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, `s${i}`, '(max-width: 760px) 50vw, 30vw', [0.08, -0.06, -0.16][i])))}
+          </div>
+        </section>
+      ) : b.kind === 'sheet' ? (
+        <section class="scr" data-still>
+          <div class="in g sheet">
+            <p class="lab mono mu par" data-caplab>{fr ? 'planche' : 'contact sheet'}</p>
+            <div class="grid">{b.imgs.map((im) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, 'th', '(max-width: 760px) 33vw, 15vw')))}</div>
           </div>
         </section>
       ) : (
@@ -190,7 +233,7 @@ const workLd = {
       ),
     )}
 
-    {Own && <Own lang={lang} c={c} M={M!} pic={pic} rich={rich} />}
+    {Own && M && <Own lang={lang} c={c} M={M} pic={(im: Img, sizes: string) => pic(im, '', sizes)} rich={rich} />}
 
     <section class="scr nx" aria-labelledby="next-l">
       <div class="in g">
@@ -232,8 +275,7 @@ const workLd = {
 </style>
 
 <style>
-  :global(.glue) { white-space: nowrap; }
-  :global(.case .note) { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
+  .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
   /* Gabarit : libellé entre parenthèses en colonnes 1 à 3, contenu sur la grille de 12 colonnes du site.
      Doubles pages : la ligne utile va du dessous du menu au bas de l'écran ; chaque élément s'y pose (haut, milieu, bas). */
   .lab { grid-column: 1 / 4; align-self: first baseline; }
@@ -247,54 +289,50 @@ const workLd = {
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
 
-  /* écrans de chapitre : texte d'un côté, image de l'autre (côté alterné), l'image dans sa proportion d'origine.
-     La case (.slot) prend la forme de l'image : largeur bornée par la colonne et par la hauteur utile. */
-  .ch { height: 100%; min-height: 0; align-content: center; align-items: center; padding-top: calc(var(--head) + 24px); padding-bottom: 48px; }
-  .ch .lab { align-self: start; }
-  .slot { --hmax: calc(100dvh - var(--head) - 120px); position: relative; width: min(100%, calc(var(--hmax) * var(--r))); aspect-ratio: var(--r); justify-self: center; }
-  .slot img { display: block; width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
-  .hook .lab { grid-column: 1 / 4; grid-row: 1; }
-  .hook .lead { grid-column: 1 / 7; grid-row: 1; align-self: center; font-size: clamp(28px, 6.6dvh, 54px); }
-  .hook .slot { grid-column: 8 / -1; grid-row: 1; }
-  /* chapitre : libellé, grande phrase, notes mono dessous ; l'image à droite, sortie de la planche */
-  .chap .lab { grid-column: 1 / -1; grid-row: 1; align-self: end; }
-  .chap .phr { grid-column: 1 / 7; grid-row: 2; margin-top: 18px; font-size: clamp(28px, 6.2dvh, 52px); }
-  .chap .nts { grid-column: 1 / 6; grid-row: 3; margin-top: 22px; font-size: 12px; line-height: 1.55; text-transform: none; max-width: 52ch; }
-  .chap .nts b { font-weight: 500; }
-  .chap .nts p + p { margin-top: .6em; }
-  .chap .slot { grid-column: 8 / -1; grid-row: 1 / 4; }
-  .chap.solo .phr { grid-column: 1 / 11; }
-  /* alternance (l'accroche est à gauche) : premier chapitre texte à droite, puis à gauche, etc. */
-  .chap.r .lab, .chap.r .phr { grid-column: 7 / -1; }
-  .chap.r .nts { grid-column: 7 / 12; }
-  .chap.r .slot { grid-column: 1 / 6; }
-  .chap.r.solo .lab, .chap.r.solo .phr { grid-column: 3 / -1; }
-  .chap.r.solo .nts { grid-column: 3 / 9; }
-  /* défilement libre : chaque bloc à sa hauteur, avec de l'air ; page de garde et fin à la hauteur de l'écran */
-  .case.free .s1 .head { height: auto; min-height: 100svh; }
-  .case.free .ch { height: auto; min-height: 86svh; }
-  .case.free .nx .in { min-height: 100svh; }
-  /* composition (ordinateur) : le libellé toujours au même endroit en haut ; tout le reste centré dans la hauteur de
-     l'écran — le visuel, et le bloc de texte (phrase + note) centré sur le milieu du visuel */
-  @media (min-width: 761px) {
-    .ch { align-content: center; align-items: center; padding-top: calc(var(--head) + 48px); padding-bottom: 56px; }
-    .ch .lab, .hook .lab, .chap .lab, .chap.r .lab, .chap.r.solo .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; grid-area: auto; }
-    .chap.r .lab { left: calc(var(--m) + (100% - 2 * var(--m) + var(--gut)) / 2); }
-    .chap.r.solo .lab { left: calc(var(--m) + (100% - 2 * var(--m) + var(--gut)) / 6); }
-    .slot { --hmax: calc(100dvh - var(--head) - 160px); }
-    .hook .lead, .hook .slot { align-self: center; }
-    .chap { grid-template-rows: 1fr auto auto 1fr; } /* phrase + note groupées au milieu, le visuel sur toute la hauteur */
-    .chap .phr { grid-row: 2; margin-top: 0; align-self: end; }
-    .chap .nts { grid-row: 3; align-self: start; }
-    .chap .slot { grid-row: 1 / 5; align-self: center; }
-  }
-  /* visuels restants : rangées d'images à hauteur égale, chacune à sa largeur naturelle (aucun rognage) */
-  .vis .rows { grid-column: 4 / -1; display: flex; flex-wrap: wrap; justify-content: flex-start; align-content: center; gap: var(--gut); }
-  .vis .rows .cd { display: block; height: min(26dvh, 240px); aspect-ratio: var(--r); }
-  .vis .rows img { height: 100%; width: 100%; aspect-ratio: var(--r); object-fit: contain; cursor: zoom-in; }
-  /* l'image qui voyage d'un écran à l'autre (transition morphée, pilotée par le défilement) */
-  /* passage d'un élément d'un écran au suivant (data-fly) : une copie fixe fait le trajet, les originaux s'effacent pendant ce temps */
-  :global(.fly) { position: fixed; z-index: 4; left: 0; top: 0; pointer-events: none; object-fit: contain; will-change: transform; }
+  /* texte courant des doubles pages : plus petit que l'affiche, pour laisser la place aux images */
+  .tx { font-size: clamp(16px, 2.5dvh, 21px); line-height: 1.38; letter-spacing: -0.005em; }
+  .tx.solo { font-size: clamp(18px, 3.7dvh, 28px); line-height: 1.286; letter-spacing: -0.01em; }
+  .tx p + p { margin-top: .8em; }
+  .tx b { font-weight: 500; }
+
+  .mag { height: 100%; min-height: 0; align-content: stretch; grid-template-rows: minmax(0, 1fr); padding-top: calc(var(--head) + 24px); padding-bottom: 40px; }
+  .mag > * { grid-row: 1; min-height: 0; }
+  .mag .lab { align-self: start; }
+  :where(.mag) img.md { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .H { --hh: calc(100dvh - var(--head) - 64px); }
+
+  /* accroche : la phrase en grand, une petite image calée en bas à droite */
+  .hook .bd { align-self: center; grid-column: 4 / 12; }
+  .hook .sm { grid-column: 10 / -1; align-self: end; height: 26dvh; width: auto; max-width: 100%; justify-self: end; object-fit: contain; }
+  .hook .bd { font-size: clamp(28px, 7.4dvh, 56px); }
+
+  /* A : texte étroit en bas à gauche, grande image qui file jusqu'au bord droit */
+  .ta .tx { grid-column: 4 / 7; align-self: end; }
+  .ta .big { grid-column: 8 / -1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
+  /* B : grande image à gauche, texte en haut à droite */
+  .tb .lab { grid-column: 9 / -1; }
+  .tb .big { grid-column: 1 / 8; }
+  .tb .tx { grid-column: 9 / -1; align-self: start; margin-top: 40px; }
+  /* C : image large en haut, texte dessous */
+  .tc { grid-template-rows: minmax(0, 1fr) auto; row-gap: 28px; }
+  .tc .big { grid-column: 4 / -1; grid-row: 1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
+  .tc .tx { grid-column: 4 / 10; grid-row: 2; }
+  .tc .lab { grid-row: 2; align-self: first baseline; }
+
+  /* deux images : une grande, une petite décalée vers le bas */
+  .pair .big { grid-column: 1 / 8; height: 100%; }
+  .pair .sm { grid-column: 9 / 12; align-self: end; height: 46% !important; }
+  .pair .lab { grid-column: 9 / -1; }
+  /* trois images en escalier */
+  .stair .lab { grid-column: 1 / 4; }
+  .stair .s0 { grid-column: 1 / 5; align-self: start; height: 52% !important; margin-top: 40px; }
+  .stair .s1 { grid-column: 5 / 9; align-self: center; height: 66% !important; }
+  .stair .s2 { grid-column: 9 / -1; align-self: end; height: 44% !important; }
+
+  /* planche contact : le reste des images en vignettes carrées */
+  .sheet .grid { grid-column: 4 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--gut); align-self: center; }
+  .sheet .th { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+  .sheet .grid { max-height: calc(100dvh - var(--head) - 100px); overflow: hidden; }
 
   .idx { display: grid; grid-template-columns: subgrid; row-gap: 20px; }
   .idx > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
@@ -331,18 +369,21 @@ const workLd = {
     .idx h3 { grid-column: 1; grid-row: 1; }
     .idx .n { grid-column: 2; grid-row: 1; justify-self: end; }
     .idx .dl { grid-column: 1 / -1; grid-row: 2; }
-    /* téléphone : l'image en haut, le texte dessous, toujours sur un écran */
-    .ch { align-content: end; row-gap: 18px; padding-top: calc(var(--head) + 48px); padding-bottom: min(56px, 7dvh); }
-    .ch .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; }
-    .slot { --hmax: 38dvh; grid-column: 1 / -1 !important; grid-row: auto !important; }
-    .hook .lead, .chap .phr, .chap .nts { grid-column: 1 / -1 !important; grid-row: auto; }
-    .hook .lead, .chap .phr { font-size: min(8.6vw, 4.2dvh); }
-    .chap .phr { margin-top: 0; }
-    .chap .nts { margin-top: 0; font-size: 11px; }
-    .ch .slot { order: -1; }
-    .hook .lab, .chap .lab, .chap.r .lab, .chap.r.solo .lab { grid-area: auto; }
-    .vis .rows { grid-column: 1 / -1; }
-    .vis .rows .cd { height: min(18dvh, 30vw); }
+    /* téléphone : les doubles pages s'empilent (libellé en haut, image, texte), toujours sur un écran */
+    .mag { grid-template-rows: auto minmax(0, 1fr) auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(56px, 7dvh); }
+    .mag > * { grid-row: auto; }
+    .mag .lab { grid-row: 1; grid-column: 1 / -1; margin: 0; position: static; }
+    .hook .bd { grid-row: 2; grid-column: 1 / -1; align-self: end; font-size: min(8.6vw, 4.2dvh); }
+    .hook .sm { grid-row: 3; grid-column: 2 / -1; height: 20dvh; }
+    .spread .big { grid-row: 2; grid-column: 1 / -1 !important; margin: 0 !important; width: 100% !important; }
+    .spread .tx { grid-row: 3; grid-column: 1 / -1 !important; margin: 0; align-self: start; }
+    .tc .lab { grid-row: 1; }
+    .pair .big { grid-row: 2; grid-column: 1 / -1; }
+    .pair .sm { grid-row: 3; grid-column: 2 / -1; height: 22dvh !important; }
+    .stair { grid-template-rows: auto repeat(3, minmax(0, 1fr)); }
+    .stair .s0, .stair .s1, .stair .s2 { height: 100% !important; margin: 0; align-self: stretch; }
+    .stair .s0 { grid-row: 2; grid-column: 1 / 3; } .stair .s1 { grid-row: 3; grid-column: 2 / 5; } .stair .s2 { grid-row: 4; grid-column: 1 / 4; }
+    .sheet .grid { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .nx .in { align-content: start; padding-top: calc(var(--head) + 56px); }
     .nx .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
     .ring { width: 112px; height: 112px; bottom: min(72px, 9dvh); left: var(--m); right: auto; }
@@ -351,7 +392,6 @@ const workLd = {
 
 <script>
   import { letters, reduced } from '../../../scripts/motion';
-  import { initFlow, enterOnce, maskIn, ScrollTrigger } from '../../../scripts/flow';
   const run = () => {
     const api = window.kkScreens!;
     const host = document.querySelector<HTMLElement>('[data-screens]')!;
@@ -449,13 +489,6 @@ const workLd = {
     document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
     addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
     if (api.current() === last) start();
-    // défilement libre : l'anneau démarre une fois tout en bas de la page (écran « projet suivant » entier), s'arrête si l'on remonte ;
-    // la page du projet suivant se précharge à l'approche
-    const nxs = document.querySelector<HTMLElement>('.scr.nx');
-    if (nxs) {
-      ScrollTrigger.create({ trigger: nxs, start: 'bottom bottom+=4', onEnter: start, onLeaveBack: stop });
-      ScrollTrigger.create({ trigger: nxs, start: 'top 200%', once: true, onEnter: () => { const l = document.createElement('link'); l.rel = 'prefetch'; l.href = ring.href; document.head.appendChild(l); } });
-    }
 
     // préchargement : les images de l'écran d'après, et la page du projet suivant à l'approche de la fin
     let pre = false;
@@ -466,10 +499,6 @@ const workLd = {
     });
     api.el(1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
 
-    // ---------- défilement libre : textes écrits à leur entrée, visuels découverts au masque, légère parallaxe ----------
-    const { still } = initFlow();
-    enterOnce(host.querySelectorAll<HTMLElement>(':scope > .scr:not(.s1):not(.nx) :is(.lab, .rk, .lead, .phr, .nts, .idx li, .gen > p)'));
-    maskIn(host.querySelectorAll<HTMLElement>(':scope > .scr:not(.s1) :is(.slot, .vis .cd, .gen iframe)'));
     // ---------- entrée des images : elles se découvrent de bas en haut, chacune à son tour ----------
     const play = (scr: HTMLElement, delay: number) => {
       if (reduced()) return;
@@ -502,51 +531,6 @@ const workLd = {
       im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });
       im.addEventListener('pointerleave', () => { lab.textContent = base; });
     });
-
-    const H = () => host.clientHeight || innerHeight;
-    const scrTop = (el: Element) => { const sc = el.closest('.scr')!; return sc.getBoundingClientRect().top + host.scrollTop; };
-    const ease = (t: number) => t * t * (3 - 2 * t);
-
-    // ---------- passages d'un écran à l'autre (data-fly="clé") ----------
-    // Deux éléments de même clé sur deux écrans voisins : pendant le défilement de l'un à l'autre, une copie glisse de la place
-    // du premier à celle du second (position, taille, arrondi). Au repos, les originaux sont là et la copie disparaît.
-    type Fr = { x: number; y: number; w: number; h: number; rad: number };
-    const pairs: { a: HTMLElement; b: HTMLElement; ta: number; tb: number; A?: Fr; B?: Fr; im: HTMLImageElement }[] = [];
-    if (!reduced()) {
-      const byKey = new Map<string, HTMLElement[]>();
-      document.querySelectorAll<HTMLElement>('[data-fly]').forEach((el) => byKey.set(el.dataset.fly!, [...(byKey.get(el.dataset.fly!) || []), el]));
-      byKey.forEach((els) => els.slice(1).forEach((b, i) => {
-        const a = els[i];
-        const src = (a.querySelector<HTMLImageElement>('img[data-fly-src]') || a.querySelector<HTMLImageElement>('img'))!;
-        const im = document.createElement('img'); im.className = 'fly'; im.alt = ''; im.hidden = true;
-        im.src = src.dataset.real || src.getAttribute('src') || ''; document.body.appendChild(im);
-        new MutationObserver(() => { if (src.dataset.real) im.src = src.dataset.real; }).observe(src, { attributes: true, attributeFilter: ['data-real'] });
-        pairs.push({ a, b, ta: 0, tb: 0, im });
-      }));
-    }
-    const rest = (el: HTMLElement): Fr => { const r = el.getBoundingClientRect(), sc = el.closest('.scr')!.getBoundingClientRect(); return { x: r.left, y: r.top - sc.top, w: r.width, h: r.height, rad: parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 }; };
-    const measureFly = () => pairs.forEach((p) => { p.ta = scrTop(p.a); p.tb = scrTop(p.b); p.A = rest(p.a); p.B = rest(p.b); });
-    const paintFly = (y: number) => pairs.forEach((p) => {
-      const t = (y - p.ta) / (p.tb - p.ta);
-      const moving = t > 0.002 && t < 0.998;
-      p.a.style.opacity = moving ? '0' : ''; p.b.style.opacity = moving ? '0' : '';
-      p.im.hidden = !moving;
-      if (!moving || !p.A || !p.B) return;
-      const e = ease(t), L = (u: number, v: number) => u + (v - u) * e;
-      p.im.style.transform = `translate3d(${L(p.A.x, p.B.x).toFixed(1)}px, ${L(p.A.y, p.B.y).toFixed(1)}px, 0)`;
-      p.im.style.width = `${L(p.A.w, p.B.w).toFixed(1)}px`; p.im.style.height = `${L(p.A.h, p.B.h).toFixed(1)}px`;
-      p.im.style.borderRadius = `${L(p.A.rad, p.B.rad).toFixed(1)}px`;
-    });
-
-    // les pièces propres à un projet (src/components/case/) suivent le même défilement : case:scroll { y, h } et case:measure
-    let fr = 0;
-    const paintAll = () => { fr = 0; const y = host.scrollTop, h = H(); paintFly(y); host.dispatchEvent(new CustomEvent('case:scroll', { detail: { y, h } })); };
-    const kickAll = () => { if (!fr) fr = requestAnimationFrame(paintAll); };
-    const remeasure = () => { host.dispatchEvent(new CustomEvent('case:measure')); measureFly(); kickAll(); }; // les pièces se remettent au repos d'abord
-    remeasure();
-    host.addEventListener('scroll', kickAll, { passive: true });
-    addEventListener('resize', () => setTimeout(remeasure, 180));
-    document.fonts?.ready.then(remeasure);
 
     // ---------- zoom ----------
     const lb = document.querySelector<HTMLElement>('[data-lb]')!, lbImg = lb.querySelector('img')!;

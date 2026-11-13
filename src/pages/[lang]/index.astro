@@ -1,12 +1,9 @@
 ---
-// Accueil, en défilement libre (flow.ts) : le nom en plein écran qui déborde dessous, puis les services (bloc figé au centre,
-// ses lettres s'écrivent au fil du défilement), les projets (chaque ligne s'écrit à son entrée) et le contact.
+// Accueil : trois écrans plein cadre (défilement forcé).
 import Base from '../../layouts/Base.astro';
 import ContactScreen from '../../components/ContactScreen.astro';
 import Affiche from '../../components/Affiche.astro';
-import ObjectShape from '../../components/ObjectShape.astro';
-// taille de chaque objet dans sa case (comme les vignettes de survol de la liste des projets, ProjectRows)
-const K: Record<string, number> = { book: 0.82, vinyl: 1.3 };
+import ProjectRows from '../../components/ProjectRows.astro';
 import Portrait3D from '../../components/Portrait3D.astro';
 import { ui, languages, getLangFromParam, pad } from '../../data/ui';
 import { projects } from '../../data/projects';
@@ -17,8 +14,8 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 ---
 <Base lang={lang} title="kerningkastle" description={`${t.phrase}. ${homeServices[lang].replace(/\{[^}]*\}\s?/g, '')}`} path="">
-  <div class="screens-host free" data-screens data-no-arrow>
-    <section class="scr s1" aria-label="kerningkastle" data-still>
+  <div class="screens-host" data-screens>
+    <section class="scr s1" aria-label="kerningkastle">
       <div class="hero g">
         <div class="nw"><h1 class="name" id="name" aria-label="kerningkastle" data-hola="0.1 0.035 200" data-par="140"><span aria-hidden="true">kern</span><span class="l2" aria-hidden="true"><span>—ing</span><span>kast</span></span><span aria-hidden="true" data-le>le</span><span class="sr mono">kerningkastle</span></h1></div>
       </div>
@@ -27,7 +24,7 @@ const t = ui[lang];
       <p class="phrase t28" data-par="60" set:html={t.phrase.replace(' + ', ' <span class="ac">+</span> ')} />
     </section>
 
-    <section class="scr blk" id="services" aria-labelledby="sv-l" data-still>
+    <section class="scr" id="services" aria-labelledby="sv-l">
       <div class="in g">
         <div class="big">
           <h2 class="mono mu lab par" id="sv-l">{t.services}</h2>
@@ -37,22 +34,12 @@ const t = ui[lang];
       </div>
     </section>
 
-    <section class="scr s3 hz" id="work" aria-labelledby="pj-l" data-still>
-      <div class="hz-in">
-        <h2 class="mono mu lab par hz-lab" id="pj-l">{t.work} {pad(projects.length)}</h2>
-        <ol class="hz-track" data-hz>
-          {projects.map((p, i) => {
-            return (
-              <li class="hz-card">
-                <a href={`/${lang}/work/${p.slug}/`}>
-                  <span class="hz-h"><span class="hz-n">{pad(i + 1)}</span><span class="hz-t">{p[lang].title}</span></span>
-                  <span class="hz-v"><span class="hz-o" style={`--k:${K[p.object] ?? 1}`}><ObjectShape kind={p.object} /></span></span>
-                  <span class="hz-m mono mu">{p[lang].short} — {p.yearLabel}</span>
-                </a>
-              </li>
-            );
-          })}
-        </ol>
+    <section class="scr s3" id="work" aria-labelledby="pj-l">
+      <div class="in g">
+        <div class="pj">
+          <h2 class="mono mu lab par" id="pj-l">{t.work} {pad(projects.length)}</h2>
+          <div class="list"><ProjectRows lang={lang} /></div>
+        </div>
       </div>
     </section>
 
@@ -61,11 +48,6 @@ const t = ui[lang];
 </Base>
 
 <style>
-  /* l'accueil garde la hauteur de l'écran, mais le nom déborde dessous : le « le » coupé se découvre en défilant */
-  :global(.screens-host.free > .s1) { height: 100svh; overflow: visible; z-index: 2; }
-  /* enchaînement continu : peu de blanc ; le bloc des services commence sous le débord du nom */
-  .blk .in { min-height: 0; padding-block: 8vh; }
-  #services .in { padding-top: calc(var(--spill, 0px) + 10vh); min-height: 100svh; align-content: center; }
   /* le nom coupé sur trois lignes, la ligne du milieu remplit la largeur, la dernière déborde en bas */
   .s1 { overflow: hidden; }
   .hero { padding-top: calc(var(--head) + 9vh); } /* recalculé par le script : le « e » coupé au tiers bas */
@@ -81,22 +63,7 @@ const t = ui[lang];
   .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }
   .bt, .more { grid-column: 4 / 12; }
   .more { margin-top: 32px; }
-  /* projets : défilement horizontal (la section se fige, la rangée de cartes glisse au fil du défilement) */
-  .hz { overflow: hidden; }
-  .hz-in { height: 100svh; display: grid; grid-template-rows: auto 1fr; align-content: center; row-gap: 4vh; padding-top: calc(var(--head) + 3vh); padding-bottom: 6vh; }
-  .hz-lab { padding-left: var(--m); margin: 0; }
-  /* la rangée part de la colonne 4 (comme le contenu du site) et déborde à droite : on voit tout de suite qu'elle défile */
-  .hz-track { display: flex; gap: clamp(16px, 1.6vw, 28px); padding-left: calc(var(--m) + 3 * (var(--col) + var(--gut))); padding-right: var(--m); width: max-content; will-change: transform; align-items: start; }
-  .hz-card { width: min(25vw, 50svh); min-width: 220px; flex: none; }
-  .hz-card a { display: grid; row-gap: 12px; }
-  .hz-h { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: clamp(16px, 1.4vw, 24px); letter-spacing: -0.01em; }
-  .hz-n { font-variant-numeric: tabular-nums; color: var(--mu); }
-  .hz-t { text-align: right; }
-  .hz-v { position: relative; display: block; aspect-ratio: 3 / 4; width: 100%; } /* l'objet seul, sans case autour */
-  .hz-o { position: absolute; inset: 16%; display: grid; place-items: center; will-change: transform; }
-  .hz-o :global(.shape) { width: 100%; height: 100%; object-fit: contain; scale: var(--k, 1); filter: drop-shadow(0 20px 20px rgba(0, 0, 0, .2)); }
-  .hz-m { font-size: 11px; text-transform: none; }
-  @media (hover: hover) { .hz-card a:hover .hz-t { color: var(--ac); } }
+  .list { grid-column: 4 / 13; }
 
 
   /* portrait : en haut à droite, à cheval sur « kast » (position et taille calculées par le script, d'après le nom) */
@@ -126,13 +93,7 @@ const t = ui[lang];
     .name .l2 > span { display: block; }
     .name .l2 > span + span { margin-left: .06em; }
     .phrase { left: var(--m); text-align: left; bottom: 72px; } /* à gauche du portrait */
-    .lab, .bt, .more { grid-column: 1 / -1; }
-    /* téléphone : la rangée se fait glisser au doigt, calée carte par carte */
-    .hz-in { height: auto; padding-block: calc(var(--head) + 2vh) 8vh; }
-    .hz-track { width: auto; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-    .hz-track::-webkit-scrollbar { display: none; }
-    .hz-track { padding-left: var(--m); }
-    .hz-card { width: 72vw; scroll-snap-align: start; scroll-margin-left: var(--m); }
+    .lab, .bt, .more, .list { grid-column: 1 / -1; }
   }
 </style>
 
@@ -276,44 +237,4 @@ const t = ui[lang];
   // ou si la hauteur bouge vraiment (rotation, fenêtre redimensionnée)
   let lw = innerWidth, lh = innerHeight;
   addEventListener('resize', () => { if (innerWidth === lw && Math.abs(innerHeight - lh) < 140) return; lw = innerWidth; lh = innerHeight; place(); });
-
-  // ---------- défilement libre ----------
-  import { initFlow, scrubLetters, contactIn, gsap, ScrollTrigger } from '../../scripts/flow';
-  {
-    const { still } = initFlow();
-    // débord du nom sous l'écran : le bloc des services commence juste après
-    const spill = () => s1.style.setProperty('--spill', `${Math.max(0, n.offsetTop + n.offsetHeight - s1.clientHeight)}px`);
-    spill(); document.fonts.ready.then(spill); addEventListener('resize', spill);
-    if (!still) {
-      // l'accueil part vers le haut : le nom monte moins vite que la page, le portrait plus vite, la phrase s'efface
-      // parallaxe : les trois lignes du nom montent chacune à sa vitesse, le chevalier s'éloigne en rétrécissant un peu
-      const tl = { trigger: s1, start: 'top top', end: 'bottom top', scrub: true };
-      const parts = [...n.querySelectorAll<HTMLElement>(':scope > span:not(.sr)')];
-      parts.forEach((el, i) => gsap.to(el, { y: () => -innerHeight * [0.34, 0.2, 0.08][i], ease: 'none', scrollTrigger: tl }));
-      if (pt) gsap.to(pt, { yPercent: -55, scale: 0.88, ease: 'none', scrollTrigger: tl });
-      gsap.to('.s1 .phrase', { opacity: 0, y: -40, ease: 'none', scrollTrigger: { ...tl, end: '40% top' } });
-    }
-    // services : le bloc se fige au centre, ses lettres s'écrivent au fil du défilement ; « en savoir plus » à la fin
-    const sv = document.getElementById('services')!, more = sv.querySelector<HTMLElement>('.more');
-    if (!still && more) gsap.set(more, { opacity: 0, y: 16 });
-    scrubLetters(sv.querySelector<HTMLElement>('.bt')!, sv.querySelector<HTMLElement>('.big')!, sv, 1.2, (done) => { if (more && !still) gsap.to(more, { opacity: done ? 1 : 0, y: done ? 0 : 16, duration: 0.4, overwrite: true }); });
-    // projets : défilement horizontal (ordinateur) — la section se fige en haut de l'écran, le défilement vertical fait glisser
-    // la rangée de cartes ; chaque image glisse un peu dans sa carte (profondeur) ; les cartes arrivent l'une après l'autre
-    // à l'entrée de la section et se replient en remontant
-    const hz = document.getElementById('work')!, track = hz.querySelector<HTMLElement>('[data-hz]')!;
-    const cards = [...track.querySelectorAll<HTMLElement>('.hz-card')];
-    if (!still) {
-      gsap.set(cards, { clipPath: 'inset(100% 0 0 0)', y: 60 });
-      ScrollTrigger.create({ trigger: hz, start: 'top 70%',
-        onEnter: () => gsap.to(cards, { clipPath: 'inset(0% 0 0 0)', y: 0, duration: 1, ease: 'expo.out', stagger: 0.08, overwrite: true }),
-        onLeaveBack: () => gsap.to(cards, { clipPath: 'inset(100% 0 0 0)', y: 60, duration: 0.5, ease: 'expo.in', stagger: { each: 0.05, from: 'end' }, overwrite: true }) });
-    }
-    if (matchMedia('(min-width: 761px)').matches) {
-      const dist = () => Math.max(0, track.scrollWidth - innerWidth);
-      const slide = gsap.to(track, { x: () => -dist(), ease: 'none', scrollTrigger: { trigger: hz, start: 'top top', end: () => `+=${dist()}`, pin: true, scrub: 0.6, invalidateOnRefresh: true, anticipatePin: 1 } });
-      // chaque objet glisse et pivote un peu dans sa case pendant le passage
-      if (!still) track.querySelectorAll<HTMLElement>('.hz-o').forEach((o, i) => gsap.fromTo(o, { xPercent: 10, rotate: i % 2 ? -6 : 6 }, { xPercent: -10, rotate: i % 2 ? 4 : -4, ease: 'none', scrollTrigger: { trigger: o.closest('.hz-card')!, containerAnimation: slide, start: 'left right', end: 'right left', scrub: true } }));
-    }
-    contactIn();
-  }
 </script>

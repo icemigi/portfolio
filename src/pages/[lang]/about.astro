@@ -17,11 +17,11 @@ const SEEN: string[][] = [['music-identities', 'bms-esport'], ['asaphr', 'music-
 const P = (slug: string) => projects.find((x) => x.slug === slug);
 ---
 <Base lang={lang} title={t.nav.about} description={aboutIntro[lang].replace(/\{[^}]*\}\s?/g, '')} path="about/" active="about">
-  <div class="screens-host free" data-screens data-no-arrow data-letters-slow>
+  <div class="screens-host" data-screens>
     <section class="scr" aria-labelledby="ab-1">
       <div class="in g">
         <h1 class="lab mono mu par" id="ab-1">{L.about}</h1>
-        <div class="bd intro" data-focus-zone><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} sentences /></div>
+        <div class="bd intro"><Affiche text={aboutIntro[lang]} vigs={aboutVigs} lang={lang} /></div>
       </div>
     </section>
 
@@ -60,8 +60,6 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
 </Base>
 
 <style>
-  /* défilement libre : l'introduction garde la hauteur de l'écran, les autres blocs prennent leur hauteur */
-  .screens-host > .scr:first-child > .in { min-height: 100svh; padding-block: calc(var(--head) + 24px) 64px; }
   /* libellé et texte partagent la même ligne de base : aucune marge posée à l'œil */
   .lab { grid-column: 1 / 4; align-self: first baseline; }
   .bd { grid-column: 4 / 12; align-self: first baseline; }
@@ -78,17 +76,6 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
   @media (hover: hover) { .svc .seen .lk:hover { transform: none; color: var(--ac); } }
   @media (hover: hover) { .svc > li:hover h3 { translate: 10px 0; } }
   .cvl { margin-top: 40px; }
-  /* intro : chaque phrase montre ce qu'elle dit au survol */
-  .intro { position: relative; }
-  .intro :global(.snt) { transition: color .35s var(--out); }
-  .intro[data-on='0'] :global(.snt.on) { color: transparent; -webkit-text-stroke: 1.2px var(--fg); }
-  .intro[data-on='0'] :global(.snt.on .note) { color: var(--mu); -webkit-text-stroke: 0; }
-  .intro :global(.caret) { position: absolute; width: 4px; background: var(--ac); opacity: 0; pointer-events: none; }
-  .intro[data-on='1'] :global(.caret) { opacity: 1; animation: caret 1.06s steps(1) infinite; }
-  @keyframes caret { 50% { opacity: 0; } }
-  .intro :global(.door.ajar .rt) { transform: scaleX(.72); }
-  .intro :global(.door.ajar .lf) { transform: scaleX(.94); }
-  @media (prefers-reduced-motion: reduce) { .intro[data-on='1'] :global(.caret) { animation: none; } }
 
 
   @media (max-width: 760px) {
@@ -104,35 +91,3 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
   }
 </style>
 
-<script>
-  // intro : au survol, chaque phrase montre ce qu'elle dit, sans rien ajouter ni faire bouger la mise en page (souris seulement)
-  // 1re « je pars de la lettre » : elle passe en contour, comme une lettre ouverte dans un éditeur de fontes
-  // 2e « j'écris du code » : un curseur de saisie clignote au bout de la phrase
-  // 3e « les choses que j'aime » : la porte (vers Ce que j'aime) s'entrouvre
-  const zone = document.querySelector<HTMLElement>('[data-focus-zone]');
-  if (zone && matchMedia('(hover: hover) and (pointer: fine)').matches) {
-    const caret = document.createElement('i'); caret.className = 'caret'; caret.setAttribute('aria-hidden', 'true'); zone.appendChild(caret);
-    let cur: HTMLElement | null = null;
-    const place = (s: HTMLElement) => {
-      const rs = [...s.getClientRects()].filter((r) => r.width > 2), r = rs[rs.length - 1], z = zone.getBoundingClientRect();
-      if (r) caret.style.cssText = `left:${r.right - z.left + 4}px;top:${r.top - z.top + r.height * 0.14}px;height:${r.height * 0.72}px`;
-    };
-    const set = (s: HTMLElement | null) => {
-      if (s === cur) return;
-      cur?.classList.remove('on'); cur = s; cur?.classList.add('on');
-      const k = cur?.dataset.s;
-      zone.dataset.on = k ?? '';
-      if (k === '1' && cur) place(cur);
-      zone.querySelector('.door')?.classList.toggle('ajar', k === '2');
-    };
-    zone.addEventListener('pointermove', (e) => set((e.target as Element).closest?.<HTMLElement>('.snt') ?? cur));
-    zone.addEventListener('pointerleave', () => set(null));
-  }
-
-  // ---------- défilement libre : blocs écrits en lignes masquées à leur entrée (rembobinés en remontant) ----------
-  import { initFlow, enterOnce, maskIn, contactIn } from '../../scripts/flow';
-  initFlow();
-  enterOnce(document.querySelectorAll<HTMLElement>('.screens-host > .scr:not(:first-child):not(.last) :is(.lab, .svc li, .bd > :not(.fanions):not(.cvl), .cvl)'));
-  maskIn(document.querySelectorAll<HTMLElement>('.screens-host > .scr :is(.fanions)'), 30);
-  contactIn();
-</script>
