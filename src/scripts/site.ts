@@ -49,12 +49,17 @@ if (host) {
   // arrivée par « Projet suivant » : l'étude gère elle-même son apparition
   // l'apparition attend la fin du chargement d'entrée (s'il y en a un)
   // après un changement de langue, le texte vient d'être réécrit sur place : la page s'ouvre telle quelle, sans apparition
+  // le premier écran reste masqué (html.rv-pre) jusqu'au lancement de son apparition : son texte n'est jamais visible
+  // une demi-seconde avant d'apparaître (effet de clignotement)
+  const shown = () => document.documentElement.classList.remove('rv-pre');
   if (!(window as any).kkArriving && !(window as any).kkSwapped) {
     const first = api.el(api.current());
-    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => document.fonts.ready).then(() => reveal(first, 150));
-  }
+    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => document.fonts.ready).then(() => { reveal(first, 150); shown(); });
+    else shown();
+  } else shown();
+  setTimeout(shown, 5000); // filet de sécurité
   document.dispatchEvent(new Event('kk:screens'));
-}
+} else document.documentElement.classList.remove('rv-pre');
 
 
 // Onglet quitté : son titre devient « (reviens) kerningkastle » ; au retour, il se réécrit en mélangé jusqu'au vrai titre

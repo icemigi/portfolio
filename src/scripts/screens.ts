@@ -3,7 +3,7 @@
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; arrivé à son bord, le défilement continue vers le suivant.
 // Le script ne fait plus défiler lui-même (sauf flèche, clavier, liens) : il suit la position pour l'écran courant,
 // l'apparition des textes, la parallaxe, les sons et les événements screens:leave / screens:enter / screens:beyond.
-import { reduced, reveal, settle } from './motion';
+import { reduced, revealScrub, settle } from './motion';
 
 export type Screens = {
   go: (to: number) => void;
@@ -67,18 +67,32 @@ export function initScreens(host: HTMLElement): Screens {
   };
   S.forEach((s) => s.addEventListener('scroll', () => header?.classList.toggle('solid', s.scrollTop > 8), { passive: true }));
 
-  // apparition des textes : dès qu'un écran commence à entrer dans le cadre (on n'en voit qu'un liseré), son texte est masqué
-  // puis monte ; un écran sorti du cadre est recollé tel quel, hors de la vue. Pas plus d'une apparition par écran et par 1,4 s.
-  const revealed = new Map<HTMLElement, number>();
-  const io = new IntersectionObserver((entries) => {
-    for (const en of entries) {
-      const s = en.target as HTMLElement;
-      if (en.isIntersecting) {
-        const now = performance.now();
-        if (!free && !s.hasAttribute('data-still') && !reduced() && now - (revealed.get(s) || -1e4) > 1400 && S.indexOf(s) !== cur) { revealed.set(s, now); reveal(s, 120); }
-      } else settle(s);
-    }
-  }, { root: host, threshold: 0 });
+  // apparition des textes pilotée par le défilement (14/11, comme le suivi de progression de Locomotive) : un écran qui entre
+  // par le bas s'écrit au fil de sa montée (libellés, lettres mélangées, vignettes, apartés), il est entièrement écrit une fois
+  // posé ; si l'on remonte, il s'efface à l'envers, au même rythme que le geste. Un écran posé, ou sorti du cadre, est recollé tel
+  // quel (crénage intact). Les écrans au-dessus du cadre restent écrits.
+  const ctl = new Map<HTMLElement, { total: number; text: number; set: (t: number) => void; t?: number }>();
+  let scrubY = 0;
+  const scrub = (y: number) => {
+    if (free || reduced()) return;
+    const up = y < scrubY; scrubY = y;
+    S.forEach((s) => {
+      if (s.hasAttribute('data-still')) return;
+      const d = s.offsetTop - y;                                  // haut de l'écran par rapport au cadre
+      const p = d >= H ? 0 : d <= 0 ? 1 : 1 - d / H;              // 0 = encore sous le cadre, 1 = posé (ou au-dessus)
+      let c = ctl.get(s);
+      if (p <= 0.001 || p >= 0.999) { if (c) { c.set(p >= 0.999 ? c.total : 0); settle(s); ctl.delete(s); } return; }
+      if (!c) { c = revealScrub(s); ctl.set(s, c); }
+      // descente : l'écriture démarre au premier mouvement (libellés et première lettre tout de suite), puis suit le trajet en
+      // ralentissant au début (courbe p^1,5), et finit au moment où l'écran se pose.
+      // remontée : le rembobinage part dès le premier pixel, depuis les dernières lettres écrites (les finitions invisibles sont
+      // sautées), et va plus vite : tout est effacé à mi-chemin.
+      const t = up
+        ? Math.min(c.t ?? c.text, c.text * Math.max(0, Math.min(1, (p - 0.5) / 0.48)))
+        : 110 + Math.pow(p, 1.5) * (c.text - 110);
+      c.t = t; c.set(t);
+    });
+  };
 
   // parallaxe : ordinateur seulement ; images (et data-par) décalées selon la distance de leur écran au cadre
   const phone = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
@@ -110,7 +124,7 @@ export function initScreens(host: HTMLElement): Screens {
       const y = host.scrollTop, now = performance.now();
       const n = nearest(y);
       if (n !== cur) { emit('screens:leave', { from: cur, to: n }); cur = n; place(); }
-      parallax(y); crank(y, now);
+      parallax(y); crank(y, now); scrub(y);
       lastY = y; lastT = now; settled = false;
       clearTimeout(idle);
       idle = window.setTimeout(arrive, 140); // (scrollend n'existe pas partout : on attend 140 ms de calme)
@@ -196,7 +210,7 @@ export function initScreens(host: HTMLElement): Screens {
   host.scrollTop = T[cur];
   lastY = host.scrollTop; cran = Math.floor(lastY / (H / 8));
   place();
-  S.forEach((s) => io.observe(s));
+  scrub(host.scrollTop);
   const api: Screens = { go, current: () => cur, count: S.length, el: (i) => S[i] };
   window.kkScreens = api;
   return api;

@@ -54,15 +54,19 @@ const SCR = { step: 70, mix: 400, fast: 48, slow: 115, overlay: false }; // 11/1
 // écritures mélangées en cours (titre, apartés) : on peut les arrêter net, chaque lettre reprenant la sienne (changement de langue)
 const LIVE = new Set<() => void>();
 export function stopScrambles() { [...LIVE].forEach((f) => f()); }
+// Apparition pilotée par le défilement (revealScrub, 14/11) : pendant sa préparation, les mélanges s'inscrivent ici au lieu
+// de partir seuls, et aucun son n'est joué ; ensuite, chaque mélange se rend à l'instant demandé (avant ou arrière).
+type Scr = { render: (t: number) => void; end: number };
+let SCRUB: Scr[] | null = null;
+let MUTE = false;
+// Mélange de lettres : chaque lettre passe par des signes tirés au hasard (calculés d'avance), puis se fixe. render(t) affiche
+// l'état à l'instant t (ms depuis le départ) : joué seul, une horloge l'appelle à chaque image ; piloté, le défilement l'appelle.
 function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () => void {
-  const fin = chars.map((sp) => sp.textContent!);
-  let left = chars.length;
   const fs = parseFloat(getComputedStyle(chars[0]).fontSize);
   const cx = document.createElement('canvas').getContext('2d')!;
   cx.font = `${getComputedStyle(chars[0]).fontWeight} ${fs}px ${getComputedStyle(chars[0]).fontFamily}`;
   const wOf = new Map(SCR_POOL.map((c) => [c, cx.measureText(c).width]));
-  const timers: number[] = [];
-  chars.forEach((sp, i) => {
+  const plan = chars.map((sp, i) => {
     const c = sp.textContent!, target = cx.measureText(c).width;
     let pool: string[];
     if (R.overlay) {                                                     // texte courant : même casse, largeur à 12 % près, sinon rien
@@ -74,23 +78,37 @@ function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () 
     }
     // titre : la case garde la largeur exacte de sa lettre (crénage reporté compris) ; texte courant (overlay) : la lettre reste
     // en place, invisible, et le signe tiré au hasard se pose par-dessus — la mise en page ne bouge jamais, aucun mot ne se coupe
-    if (!R.overlay) { sp.style.width = `${(sp.getBoundingClientRect().width / fs).toFixed(4)}em`; sp.style.textAlign = 'center'; }
+    if (!R.overlay && pool.length >= 2) { sp.style.width = `${(sp.getBoundingClientRect().width / fs).toFixed(4)}em`; sp.style.textAlign = 'center'; }
     const start = sp.dataset.d ? +sp.dataset.d : delay + i * R.step;   // instant propre à la lettre s'il est connu (cascade du texte)
-    let last = '', t = 0;
-    const pick = () => { let r; do r = pool[(Math.random() * pool.length) | 0]; while (r === last && pool.length > 1); last = r; return r; };
-    const tick = () => {
-      if (t >= R.mix) { if (R.overlay) sp.classList.remove('sx'); else { sp.textContent = c; sp.style.width = ''; sp.style.textAlign = ''; } if (--left === 0) LIVE.delete(stop); return; } // se fixe
-      if (R.overlay) { sp.dataset.s = pick(); sp.classList.add('sx'); } else sp.textContent = pick();
-      const gap = R.fast + (R.slow - R.fast) * (t / R.mix) ** 2; t += gap;
-      timers.push(window.setTimeout(tick, gap));
-    };
+    const steps: { t: number; ch: string }[] = [];
+    if (pool.length >= 2) {                                              // chiffre, ponctuation : la lettre apparaît telle quelle
+      let last = '', t = 0;
+      while (t < R.mix) { let r; do r = pool[(Math.random() * pool.length) | 0]; while (r === last && pool.length > 1); last = r; steps.push({ t: start + t, ch: r }); t += R.fast + (R.slow - R.fast) * (t / R.mix) ** 2; }
+    }
     sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60, delay: start, fill: 'backwards' });
-    if (pool.length < 2) { left--; return; }                            // chiffre, ponctuation : la lettre apparaît telle quelle
-    timers.push(window.setTimeout(tick, start));
+    return { sp, c, start, steps, endT: start + R.mix, shown: '' };
   });
-  // arrêt immédiat (écran quitté, nouvelle apparition, changement de langue) : chaque lettre reprend la sienne
-  const stop = () => { timers.forEach(clearTimeout); chars.forEach((sp, i) => { if (R.overlay) sp.classList.remove('sx'); else { sp.textContent = fin[i]; sp.style.width = ''; sp.style.textAlign = ''; } }); LIVE.delete(stop); };
-  if (left > 0) LIVE.add(stop);
+  const render = (t: number) => {
+    for (const p of plan) {
+      let ch = '';
+      if (p.steps.length && t >= p.start && t < p.endT) { for (const st of p.steps) { if (st.t <= t) ch = st.ch; else break; } }
+      if (ch === p.shown) continue;
+      p.shown = ch;
+      if (!ch) { if (R.overlay) p.sp.classList.remove('sx'); else { p.sp.textContent = p.c; if (t >= p.endT) { p.sp.style.width = ''; p.sp.style.textAlign = ''; } } }
+      else if (R.overlay) { p.sp.dataset.s = ch; p.sp.classList.add('sx'); }
+      else p.sp.textContent = ch;
+    }
+  };
+  const end = Math.max(...plan.map((p) => p.endT));
+  if (SCRUB) { SCRUB.push({ render, end }); return () => render(Infinity); }
+  // joué seul : une horloge rend l'état à chaque image ; arrêt immédiat (écran quitté, nouvelle apparition, changement de langue) :
+  // chaque lettre reprend la sienne
+  const t0 = performance.now();
+  let raf = 0;
+  const stop = () => { cancelAnimationFrame(raf); render(Infinity); LIVE.delete(stop); };
+  const loop = (now: number) => { const t = now - t0; render(t); if (t < end) raf = requestAnimationFrame(loop); else { render(Infinity); LIVE.delete(stop); } };
+  raf = requestAnimationFrame(loop);
+  LIVE.add(stop);
   return stop;
 }
 
@@ -129,7 +147,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   const stopText = mixed.length ? scramble(mixed, delay, slow ? { step, mix: Math.max(85, step * 2.6), fast: 30, slow: 46, overlay: true } : { step, mix: Math.max(60, step * 2.5), fast: 22, slow: 34, overlay: true }) : null;
   const stopScramble = named.length ? scramble(named, delay) : null;
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
-  dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
+  if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
   const textEnd = delay + k * step + 300;
   // les parenthèses du texte courant s'écrivent à leur place dans la cascade, comme le reste du texte
   const end = textEnd;
@@ -201,6 +219,23 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   return end;
 }
 
+// Apparition pilotée par le défilement (14/11, comme le suivi de progression de Locomotive) : la même chorégraphie que
+// reveal(), préparée à l'arrêt ; set(t) la place à l'instant t (0 → total), dans un sens comme dans l'autre (rembobinage).
+export function revealScrub(frame: Element) {
+  const prev = SCRUB; SCRUB = []; MUTE = true;
+  let end = 0;
+  try { end = reveal(frame, 0); } finally { MUTE = false; }
+  const scr = SCRUB!; SCRUB = prev;
+  const anims = frame.getAnimations({ subtree: true });
+  anims.forEach((a) => a.pause());
+  const total = Math.max(end, ...scr.map((x) => x.end), ...anims.map((a) => Number(a.effect?.getComputedTiming().endTime) || 0));
+  const set = (t: number) => { const v = Math.max(0, Math.min(total, t)); anims.forEach((a) => { a.currentTime = v; }); scr.forEach((x) => x.render(v >= total ? Infinity : v)); };
+  set(0);
+  // text : instant où la dernière lettre apparaît (sans les finitions du mélange) — le rembobinage part de là
+  const last = Math.max(0, ...[...frame.querySelectorAll<HTMLElement>('.ch[data-d]')].map((c) => +c.dataset.d!));
+  return { total, text: Math.min(total, last ? last + 60 : end), set };
+}
+
 // Une fois le texte écrit : les apartés entre parenthèses s'écrivent comme le titre de l'accueil — chaque caractère passe par
 // des signes au hasard avant de se fixer (Geist Mono, chasse fixe : rien ne bouge autour) ; les parenthèses, elles, sont posées
 // d'emblée. Puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans, et son + fait un tour pour attirer l'œil.
@@ -221,7 +256,7 @@ function type(el: HTMLElement, delay: number): number {
   }
   el.appendChild(f);
   if (mixed.length) scramble(mixed, delay + 40, NOTE_SCR);
-  dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
+  if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
   return delay + k * TYPE + NOTE_SCR.mix;
 }
 function afterText(frame: Element, end: number, start = end) {

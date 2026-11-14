@@ -32,7 +32,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
           </li>
         ))}
       </ol>
-      <p class="intro t56" aria-hidden="true"><span>{(lang === 'fr' ? 'Tout le reste.' : 'Everything else.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w" style={`--i:${i}`}>{w}</span></Fragment>)}</span></p>
+      <p class="intro t56" aria-hidden="true"><span>{lang === 'fr' ? 'Tout le reste.' : 'Everything else.'}</span></p>
       <div class="pst" data-stage aria-hidden="true"><canvas class="cv-base"></canvas><canvas class="cv-fly"></canvas></div>
       <span class="hint-r mono" data-hint aria-hidden="true"><span>→</span></span>
       <div class="prog" data-prog role="slider" tabindex="0" aria-label={t.archiveCount} aria-valuemin="1" aria-valuemax={pieces.length} aria-valuenow="1">
@@ -87,10 +87,8 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   @media (min-width: 761px) {
     .intro { display: grid; place-items: center; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; margin: 0; font-weight: 500; text-align: center; pointer-events: none; }
     .intro .w { display: inline-block; }
-    :global(html.js) .intro .w { animation: arc-in .9s cubic-bezier(.7, 0, .2, 1) both; animation-delay: calc(.35s + var(--i) * 90ms); }
   }
-  @keyframes arc-in { from { opacity: 0; translate: 0 .35em; } }
-  @media (prefers-reduced-motion: reduce) { :global(html.js) .intro .w { animation: none; } }
+
   @media all {
     .track { display: none; }
     .pst { display: block; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; }
@@ -208,8 +206,10 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
         }
         continue;
       }
-      if (a.kind === 'in') { const e = ease(p), s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * (1 - e), y + innerHeight * .75 * (1 - e), r0 + (c.rot - r0) * e, 1 + .12 * (1 - e)); }
-      else { const e = p * p * p, s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * e, y + innerHeight * .75 * e, c.rot + (r0 - c.rot) * e, 1 + .12 * e); } // le même geste à l'envers
+      // l'affiche arrive d'au-delà du bas du cadre et y repart en entier : jamais d'apparition ni de disparition à l'écran
+      const far = H - y + Math.hypot(...size(c.i)) * 0.62 + 40;
+      if (a.kind === 'in') { const e = ease(p), s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * (1 - e), y + far * (1 - e), r0 + (c.rot - r0) * e, 1 + .12 * (1 - e)); }
+      else { const e = p * p * p, s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * e, y + far * e, c.rot + (r0 - c.rot) * e, 1 + .12 * e); } // le même geste à l'envers
     }
     if (hold?.moved) { const c = cards[hold.i], [x, y] = pos(c); paint(fx, c, x, y, c.rot, 1.03); }
     if (air.length || dirty) go();

@@ -211,6 +211,9 @@ html:not(.js) .screens-host { position: static; }
 html:not(.js) .scr { position: relative; min-height: 100vh; height: auto; }
 html:not(.js).screens, html:not(.js).screens body { height: auto; overflow: visible; }
 
+/* premier écran d'une page : masqué jusqu'au lancement de son apparition (site.ts retire rv-pre) — aucun clignotement */
+html.js.rv-pre [data-screens] > .scr:not([data-still]) { visibility: hidden; }
+
 /* lettres : restent dans le flux, crénage intact */
 .ch { position: relative; }
 
