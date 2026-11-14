@@ -8,7 +8,7 @@ interface Props { lang: 'fr' | 'en'; class?: string; id?: string }
 const { lang, class: cls = '', id } = Astro.props;
 const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame';
 ---
-<figure class:list={['p3d', cls]} id={id} data-p3d>
+<figure class:list={['p3d', cls]} id={id} data-p3d transition:persist="portrait">
   <img src="/portrait3d/portrait-fallback-m.webp" alt={alt} width="972" height="1327" decoding="async" fetchpriority="high" data-no-ascii />
   <canvas aria-hidden="true"></canvas>
 </figure>

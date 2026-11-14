@@ -1,10 +1,21 @@
 // Portrait 3D (Portrait3D.astro, accueil) : relief WebGL du chevalier dans son cadre, suit la souris et la flamme du mode nuit,
-// volte-face au clic. Le contexte WebGL est rendu au départ de la page (aucune accumulation d'une navigation à l'autre).
-import { onPage } from '../page';
+// volte-face au clic. Persistant entre l'accueil français et l'accueil anglais (transition:persist) : au changement de langue,
+// le même portrait reste, rendu 3D compris — aucune réinitialisation, aucun saut. Il a donc sa propre portée de nettoyage,
+// libérée (contexte WebGL rendu) seulement quand il quitte vraiment le document.
+import { onPage, scope, type Ctx } from '../page';
 import { reduced } from '../motion';
 import { FLAME } from '../torch';
 
-onPage('[data-p3d]', (ctx) => {
+const live = new Map<HTMLElement, ReturnType<typeof scope>>();
+document.addEventListener('astro:after-swap', () => live.forEach((s, fig) => { if (!fig.isConnected) { s.dispose(); live.delete(fig); } }));
+// portrait gardé d'une langue à l'autre : sa description suit la langue de la page
+document.addEventListener('astro:before-swap', (e) => {
+  const next = (e as Event & { newDocument: Document }).newDocument.querySelector<HTMLImageElement>('[data-p3d] img');
+  const img = document.querySelector<HTMLImageElement>('[data-p3d] img');
+  if (next && img) img.alt = next.alt;
+});
+
+onPage('[data-p3d]', (page) => {
   const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
   const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
   // les deux faces du portrait : avec casque (textures 1-3), sans casque (textures 4-6, chargées après la première)
@@ -87,7 +98,7 @@ onPage('[data-p3d]', (ctx) => {
       else o = vec4(t.rgb * lit, t.a);                            // cadre (prémultiplié : la couleur seule est assombrie)
     }`;
 
-  function init(fig: HTMLElement) {
+  function init(fig: HTMLElement, ctx: Ctx) {
     const canvas = fig.querySelector('canvas')!, img = fig.querySelector('img')!;
     // face affichée (0 : avec casque, 1 : sans) — le site s'ouvre toujours avec le casque
     let face = 0;
@@ -342,5 +353,8 @@ onPage('[data-p3d]', (ctx) => {
     gate(loaded);                                             // textures prêtes (ou en échec : l'image fixe entre seule)
   }
 
-  document.querySelectorAll<HTMLElement>('[data-p3d]').forEach(init);
+  document.querySelectorAll<HTMLElement>('[data-p3d]').forEach((fig) => {
+    if (live.has(fig)) return; // déjà là (gardé d'une page à l'autre)
+    const s = scope(page); live.set(fig, s); init(fig, s);
+  });
 });

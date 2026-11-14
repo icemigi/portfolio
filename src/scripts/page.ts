@@ -32,7 +32,7 @@ export type Ctx = Nav & {
 
 type Mount = { sel: string | null; fn: (ctx: Ctx) => void; order: number };
 const mounts: Mount[] = [];
-let current: { ac: AbortController; raf: Set<number>; timers: Set<number>; intervals: Set<number>; done: (() => void)[] } | null = null;
+let current: ReturnType<typeof scope> | null = null;
 let nav: Nav = { first: true, type: 'load', from: null, info: {} };
 
 // Une page (ou un composant) s'inscrit : fn est appelée à chaque montage où le sélecteur trouve un élément (toujours si null).
@@ -42,11 +42,13 @@ export function onPage(sel: string | null, fn: (ctx: Ctx) => void, order = 0) {
   mounts.sort((a, b) => a.order - b.order);
 }
 
-function mount() {
+// Portée de nettoyage : écouteurs (signal), boucles, minuteurs, observateurs, éléments ajoutés et rangements divers, tous
+// libérés par dispose(). Une par page montée ; un composant persistant (transition:persist) peut avoir la sienne, libérée
+// quand il quitte vraiment le document.
+export function scope(n: Nav = nav): Ctx & { dispose: () => void } {
   const ac = new AbortController(), raf = new Set<number>(), timers = new Set<number>(), intervals = new Set<number>(), done: (() => void)[] = [];
-  current = { ac, raf, timers, intervals, done };
-  const ctx: Ctx = {
-    ...nav,
+  return {
+    ...n,
     signal: ac.signal,
     raf: (cb) => { if (ac.signal.aborted) return 0; const id = requestAnimationFrame((t) => { raf.delete(id); cb(t); }); raf.add(id); return id; },
     timeout: (fn, ms) => { if (ac.signal.aborted) return 0; const id = window.setTimeout(() => { timers.delete(id); fn(); }, ms); timers.add(id); return id; },
@@ -54,20 +56,26 @@ function mount() {
     observe: (o) => { done.push(() => o.disconnect()); return o; },
     own: (el) => { done.push(() => el.remove()); return el; },
     cleanup: (fn) => { done.push(fn); },
+    dispose: () => {
+      ac.abort();
+      raf.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); intervals.forEach(clearInterval);
+      for (const fn of done.splice(0).reverse()) { try { fn(); } catch (e) { console.error(e); } }
+    },
   };
+}
+
+function mount() {
+  current = scope();
   for (const m of mounts) {
     if (m.sel && !document.querySelector(m.sel)) continue;
-    try { m.fn(ctx); } catch (e) { console.error(e); } // une page en erreur n'empêche pas les autres de monter
+    try { m.fn(current); } catch (e) { console.error(e); } // une page en erreur n'empêche pas les autres de monter
   }
 }
 
 function unmount() {
   if (!current) return;
-  const { ac, raf, timers, intervals, done } = current;
+  current.dispose();
   current = null;
-  ac.abort();
-  raf.forEach(cancelAnimationFrame); timers.forEach(clearTimeout); intervals.forEach(clearInterval);
-  for (const fn of done.reverse()) { try { fn(); } catch (e) { console.error(e); } }
   // animations encore en cours sur la page quittée annulées (l'interface persistante, transition:persist, garde les siennes ;
   // l'image de l'ancienne page est déjà prise, rien ne se voit). Les animations en pause sont rendues par leur créateur
   // (revealScrub → cancel, écrans) : getAnimations() ne les voit plus une fois arrivées au bout.
