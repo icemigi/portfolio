@@ -54,7 +54,7 @@ if (host) {
   const shown = () => document.documentElement.classList.remove('rv-pre');
   if (!(window as any).kkArriving && !(window as any).kkSwapped) {
     const first = api.el(api.current());
-    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => document.fonts.ready).then(() => { reveal(first, 150); shown(); });
+    if (!first.hasAttribute('data-still')) window.kkReady!.then(() => document.fonts.ready).then(() => { api.revealFirst(150); shown(); });
     else shown();
   } else shown();
   setTimeout(shown, 5000); // filet de sécurité

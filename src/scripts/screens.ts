@@ -3,13 +3,14 @@
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; arrivé à son bord, le défilement continue vers le suivant.
 // Le script ne fait plus défiler lui-même (sauf flèche, clavier, liens) : il suit la position pour l'écran courant,
 // l'apparition des textes, la parallaxe, les sons et les événements screens:leave / screens:enter / screens:beyond.
-import { reduced, revealScrub, settle } from './motion';
+import { reduced, revealScrub } from './motion';
 
 export type Screens = {
   go: (to: number) => void;
   current: () => number;
   count: number;
   el: (i: number) => HTMLElement;
+  revealFirst: (delay?: number) => void;
 };
 
 declare global { interface Window { kkScreens?: Screens } }
@@ -67,31 +68,56 @@ export function initScreens(host: HTMLElement): Screens {
   };
   S.forEach((s) => s.addEventListener('scroll', () => header?.classList.toggle('solid', s.scrollTop > 8), { passive: true }));
 
-  // apparition des textes pilotée par le défilement (14/11, comme le suivi de progression de Locomotive) : un écran qui entre
-  // par le bas s'écrit au fil de sa montée (libellés, lettres mélangées, vignettes, apartés), il est entièrement écrit une fois
-  // posé ; si l'on remonte, il s'efface à l'envers, au même rythme que le geste. Un écran posé, ou sorti du cadre, est recollé tel
-  // quel (crénage intact). Les écrans au-dessus du cadre restent écrits.
-  const ctl = new Map<HTMLElement, { total: number; text: number; set: (t: number) => void; t?: number }>();
-  let scrubY = 0;
+  // apparition des textes (14/11) : le défilement la déclenche, elle se joue dans le temps, avec sa vraie durée — comme une
+  // timeline GSAP ou les classes « in-view » répétées de Locomotive. Un écran qui commence à entrer dans le cadre (par le bas ou par
+  // le haut) joue son apparition en entier (libellés, lettres mélangées, vignettes, apartés, images), depuis là où elle en est ;
+  // un écran qui commence à sortir la joue à l'envers, plus vite, depuis la dernière lettre écrite ; sorti du cadre, il est remis
+  // à zéro, prêt à rejouer. Chaque retour sur un écran rejoue donc son apparition.
+  // (Relier les lettres à la position du défilement ne marche pas avec des écrans aimantés : le navigateur fait la moitié du
+  // trajet en 100 ms, le début du texte apparaissait d'un bloc.)
+  // Les écrans sont préparés une seule fois, à l'arrêt (texte découpé en lettres) ; ensuite on ne règle que l'instant de leur
+  // apparition — découper le texte de l'écran calé en plein geste faisait recaler le navigateur (geste perdu).
+  type Ctl = { total: number; text: number; set: (t: number) => void; t: number; target: number; raf: number; d?: number };
+  const ctl = new Map<HTMLElement, Ctl>();
+  const BACK = 2.2; // vitesse du rembobinage
+  const run = (c: Ctl) => {
+    if (c.raf) return;
+    let last = performance.now();
+    const step = (now: number) => {
+      const dt = now - last; last = now;
+      if (c.target > c.t) c.t = Math.min(c.target, c.t + dt);
+      else if (c.target < c.t) c.t = Math.max(c.target, (c.t > c.text ? c.text : c.t) - dt * BACK); // à l'envers : depuis la dernière lettre écrite
+      c.set(c.t);
+      c.raf = c.t !== c.target ? requestAnimationFrame(step) : 0;
+    };
+    c.raf = requestAnimationFrame(step);
+  };
+  const aim = (c: Ctl, target: number) => { if (c.target === target) return; c.target = target; run(c); };
+  const make = (s: HTMLElement): Ctl => { const c = { ...revealScrub(s), t: 0, target: 0, raf: 0 }; ctl.set(s, c); return c; };
+  const first = S[cur];                                          // l'écran ouvert : préparé par son apparition (revealFirst)
+  const prepare = () => S.forEach((s) => {
+    if (free || reduced() || s.hasAttribute('data-still') || ctl.has(s) || s === first) return;
+    make(s);                                                      // caché (instant 0) jusqu'à son entrée dans le cadre
+  });
   const scrub = (y: number) => {
     if (free || reduced()) return;
-    const up = y < scrubY; scrubY = y;
-    S.forEach((s) => {
-      if (s.hasAttribute('data-still')) return;
-      const d = s.offsetTop - y;                                  // haut de l'écran par rapport au cadre
-      const p = d >= H ? 0 : d <= 0 ? 1 : 1 - d / H;              // 0 = encore sous le cadre, 1 = posé (ou au-dessus)
-      let c = ctl.get(s);
-      if (p <= 0.001 || p >= 0.999) { if (c) { c.set(p >= 0.999 ? c.total : 0); settle(s); ctl.delete(s); } return; }
-      if (!c) { c = revealScrub(s); ctl.set(s, c); }
-      // descente : l'écriture démarre au premier mouvement (libellés et première lettre tout de suite), puis suit le trajet en
-      // ralentissant au début (courbe p^1,5), et finit au moment où l'écran se pose.
-      // remontée : le rembobinage part dès le premier pixel, depuis les dernières lettres écrites (les finitions invisibles sont
-      // sautées), et va plus vite : tout est effacé à mi-chemin.
-      const t = up
-        ? Math.min(c.t ?? c.text, c.text * Math.max(0, Math.min(1, (p - 0.5) / 0.48)))
-        : 110 + Math.pow(p, 1.5) * (c.text - 110);
-      c.t = t; c.set(t);
+    ctl.forEach((c, s) => {
+      const ad = Math.abs(s.offsetTop - y);
+      const p = ad >= H ? 0 : 1 - ad / H;                         // 1 = posé, 0 = hors du cadre (dessous ou dessus)
+      const coming = c.d === undefined || ad < c.d, going = c.d !== undefined && ad > c.d;
+      c.d = ad;
+      if (p <= 0.001) { cancelAnimationFrame(c.raf); c.raf = 0; c.target = 0; if (c.t) { c.t = 0; c.set(0); } return; } // sorti : prêt à rejouer
+      if (p >= 0.999 || coming) aim(c, c.total);                  // il entre (dès le premier mouvement) ou il est posé : l'apparition se joue
+      else if (going) aim(c, 0);                                  // il commence à sortir : elle se rembobine
     });
+  };
+  // premier écran, à l'ouverture de la page : son apparition se joue après le délai demandé
+  const revealFirst = (delay = 150) => {
+    if (free || reduced()) return;
+    const s = S[cur]; if (!s || s.hasAttribute('data-still')) return;
+    const c = ctl.get(s) || make(s);
+    c.d = 0;
+    setTimeout(() => aim(c, c.total), delay);
   };
 
   // parallaxe : ordinateur seulement ; images (et data-par) décalées selon la distance de leur écran au cadre
@@ -210,8 +236,9 @@ export function initScreens(host: HTMLElement): Screens {
   host.scrollTop = T[cur];
   lastY = host.scrollTop; cran = Math.floor(lastY / (H / 8));
   place();
-  scrub(host.scrollTop);
-  const api: Screens = { go, current: () => cur, count: S.length, el: (i) => S[i] };
+  const api: Screens = { go, current: () => cur, count: S.length, el: (i) => S[i], revealFirst: (d) => { document.fonts.ready.then(() => { prepare(); revealFirst(d); scrub(host.scrollTop); }); } };
+  // les autres écrans sont préparés dès que les polices sont prêtes (à l'arrêt), et cachés jusqu'à leur entrée
+  document.fonts.ready.then(() => { prepare(); scrub(host.scrollTop); });
   window.kkScreens = api;
   return api;
 }
