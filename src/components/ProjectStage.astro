@@ -48,6 +48,9 @@ const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
   .obj .float { transition: opacity .45s var(--out); }
   .stage.focus .obj:not(.hov) .float { opacity: .65; }
   .stage.focus .obj:not(.hov) .lb { opacity: .65; }
+  /* voyage vers l'étude : tout s'efface sauf l'objet choisi */
+  .stage.leaving .obj:not(.chosen), .stage.leaving .obj .lb { opacity: 0 !important; transition: opacity .28s var(--out); }
+  :global(html:has(.stage.leaving)) .ttl, :global(html:has(.stage.leaving)) .site-header { opacity: 0; transition: opacity .28s var(--out); }
   .mindex { display: none; }
 
   @media (max-width: 760px) {
@@ -99,8 +102,23 @@ const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
       const end = () => { if (drag === o) { if (moved) dispatchEvent(new CustomEvent('kk:sound', { detail: 'drop' })); drag = null; o.el.classList.remove('drag'); } };
       o.a.addEventListener('pointerup', end);
       o.a.addEventListener('pointercancel', end);
-      o.a.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } });
+      o.a.addEventListener('click', (e) => {
+        if (moved) { e.preventDefault(); moved = false; return; }
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        // voyage (14/11) : la place de l'objet est notée ; la page d'étude l'affiche au même endroit puis le pose sur sa page de garde.
+        // Les autres objets et les libellés s'effacent, l'objet cliqué reste seul à l'écran le temps du changement de page.
+        const shape = o.f.querySelector<HTMLElement>('.shape'), r = (shape || o.f).getBoundingClientRect();
+        const slug = (o.a.getAttribute('href') || '').split('/').filter(Boolean).pop();
+        try { sessionStorage.setItem('kk-obj', JSON.stringify({ slug, x: r.left, y: r.top, w: r.width, h: r.height, r: parseFloat(getComputedStyle(o.el).getPropertyValue('--r')) || 0 })); } catch { /* */ }
+        if (still) return;
+        e.preventDefault();
+        stage.classList.add('leaving'); o.el.classList.add('chosen');
+        dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' }));
+        setTimeout(() => { location.href = o.a.href; }, 320);
+      });
     });
+    // retour arrière (page gardée en cache) : la scène revient entière
+    addEventListener('pageshow', (e) => { if (e.persisted) { stage.classList.remove('leaving'); O.forEach((o) => o.el.classList.remove('chosen')); } });
     // apparition : après le chargement, les objets tombent un à un en se redressant, puis leurs libellés
     const go = () => {
       const t0 = performance.now() + 120;

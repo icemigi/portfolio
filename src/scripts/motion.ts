@@ -26,6 +26,9 @@ function textNodes(root: Element, extraSkip?: string) {
 // de l'animation ferait sauter les lettres d'un coup. On garde donc les spans tant que le texte est à l'écran,
 // et on ne recolle qu'une fois l'écran sorti du cadre (settle), ou juste avant une nouvelle apparition.
 const pending = new Map<Element, () => void>();
+// animations posées par le script (apparitions) : les animations CSS (flottement, points de la bulle…) en sont exclues — elles sont
+// souvent infinies, et Firefox refuse de terminer une animation infinie (erreur relevée dans Zen, 14/11)
+const own = (root: Element) => root.getAnimations({ subtree: true }).filter((a) => !(a instanceof CSSAnimation) && !(a instanceof CSSTransition) && Number.isFinite(Number(a.effect?.getComputedTiming().endTime)));
 export function settle(root: Element) {
   for (const [el, fn] of pending) if (root === el || root.contains(el)) { fn(); pending.delete(el); }
 }
@@ -153,7 +156,7 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   const end = textEnd;
   pending.set(root, () => {
     stopScramble?.(); stopText?.();
-    root.getAnimations({ subtree: true }).forEach((a) => a.finish());
+    own(root).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
       if (!first.parentNode) continue;
       first.before(document.createTextNode(text));
@@ -226,7 +229,14 @@ export function revealScrub(frame: Element) {
   let end = 0;
   try { end = reveal(frame, 0); } finally { MUTE = false; }
   const scr = SCRUB!; SCRUB = prev;
-  const anims = frame.getAnimations({ subtree: true });
+  // images (études de cas) : elles se découvrent de bas en haut sous leur masque, avec une légère échelle, l'une après l'autre ;
+  // pilotées comme le texte, elles se recouvrent en remontant
+  const span = Math.max(700, end * 0.8);
+  [...frame.querySelectorAll<HTMLElement>('img.md')].slice(0, 8).forEach((m, i) => m.animate(
+    [{ clipPath: 'inset(100% 0 0 0)', scale: '1.08' }, { clipPath: 'inset(0 0 0 0)', scale: '1' }],
+    { duration: span, delay: i * 90, easing: EASE_SLIDE, fill: 'backwards' },
+  ));
+  const anims = own(frame);
   anims.forEach((a) => a.pause());
   const total = Math.max(end, ...scr.map((x) => x.end), ...anims.map((a) => Number(a.effect?.getComputedTiming().endTime) || 0));
   const set = (t: number) => { const v = Math.max(0, Math.min(total, t)); anims.forEach((a) => { a.currentTime = v; }); scr.forEach((x) => x.render(v >= total ? Infinity : v)); };

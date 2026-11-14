@@ -10,6 +10,7 @@ import { media, type Img } from '../../../data/media';
 import { captions } from '../../../data/captions';
 import { rich } from '../../../data/text';
 import KernOutdoor from '../../../components/case/KernOutdoor.astro';
+import ObjectShape from '../../../components/ObjectShape.astro';
 
 export function getStaticPaths() {
   return languages.flatMap((lang) => projects.map((p) => ({ params: { lang, slug: p.slug } })));
@@ -106,6 +107,8 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(workLd)} />
     <script is:inline>
+      // arrivée par un objet de la scène Projets : pas de fondu enchaîné du navigateur (l'objet fait lui-même le lien)
+      try { if (sessionStorage.getItem('kk-obj')) addEventListener('pagereveal', function (e) { var v = e.viewTransition; if (!v) return; [v.ready, v.finished, v.updateCallbackDone].forEach(function (pr) { pr && pr.catch(function () {}); }); v.skipTransition(); }); } catch (e) {}
       // arrivée par « Projet suivant » : drapeau lu tout de suite, puis effacé
       try { window.kkArriving = sessionStorage.getItem('kk-next') === '1'; sessionStorage.removeItem('kk-next'); } catch (e) { window.kkArriving = false; }
       // navigateurs sans transition entre pages (Firefox, Zen…) : la page arrive titre d'abord, par un repli en JS (voir plus bas)
@@ -136,6 +139,7 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
       <div class="head g">
         <p class="lab mono mu par s1-late" data-cl><span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
         <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
+        <div class="cobj" data-cobj data-slug={project.slug} aria-hidden="true"><span class="cfl"><ObjectShape kind={project.object} /></span></div>
         <dl class="fiche mono s1-late">
           <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
           <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
@@ -144,6 +148,20 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
         </dl>
       </div>
     </section>
+    <script is:inline>
+      // arrivée par un objet de la scène Projets (14/11) : l'objet est posé à la place qu'il avait sur la page d'avant, AVANT le
+      // premier affichage ; le script de la page le fait ensuite glisser jusqu'à sa place sur la page de garde
+      (function () {
+        var o = null; try { o = JSON.parse(sessionStorage.getItem('kk-obj') || 'null'); sessionStorage.removeItem('kk-obj'); } catch (e) {}
+        var el = document.querySelector('[data-cobj]');
+        if (!o || !el || o.slug !== el.dataset.slug) return;
+        var b = el.querySelector('.shape').getBoundingClientRect(); if (!b.width) return;
+        var dx = (o.x + o.w / 2) - (b.left + b.width / 2), dy = (o.y + o.h / 2) - (b.top + b.height / 2), k = o.w / b.width;
+        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ') rotate(' + (o.r || 0) + 'deg)';
+        el.dataset.from = el.style.transform;
+        document.documentElement.classList.add('kk-objarr');
+      })();
+    </script>
     <script is:inline>
       // arrivée par « Projet suivant » sans transition native (Firefox, Zen) : le titre est posé à son ancienne place
       // (position et taille de la page précédente) AVANT le premier affichage — aucune image sans titre, aucun saut ;
@@ -275,6 +293,16 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 </style>
 
 <style>
+  /* registre des rubriques (14/11) : ligne fixe et statique en bas de l'écran, centrée, sur la ligne de la flèche ; rubrique en cours entre parenthèses */
+  :global(.reg) { position: fixed; z-index: 40; left: 50%; bottom: 38px; translate: -50% 0; display: flex; gap: 10px; padding: 5px 12px; background: var(--bg); color: var(--mu); white-space: nowrap; visibility: hidden; }
+  :global(.reg.on) { visibility: visible; }
+  :global(.reg a) { position: relative; transition: color .2s; }
+  :global(.reg a[aria-current]) { color: var(--ac); }
+  /* les parenthèses sont toujours là (invisibles) : la ligne garde la même largeur, rien ne bouge quand la rubrique change */
+  :global(.reg a)::before { content: '('; color: transparent; } :global(.reg a)::after { content: ')'; color: transparent; }
+  :global(.reg a[aria-current])::before, :global(.reg a[aria-current])::after { color: var(--ac); }
+  @media (hover: hover) { :global(.reg a:hover) { color: var(--fg); } }
+  @media (max-width: 760px) { :global(.reg) { display: none; } }
   /* fil d'Ariane (14/11) : liens du libellé, soulignés au survol */
   :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
   @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
@@ -288,6 +316,12 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 24px; padding-top: calc(var(--head) + 24px); padding-bottom: 32px; }
   .s1 .lab { grid-row: 1; }
   .case-h1 { grid-column: 1 / -1; grid-row: 3; font-weight: 500; font-size: min(10.5vw, 17dvh); line-height: .86; letter-spacing: -0.05em; margin-left: -.05em; }
+  /* l'objet du projet (le même que sur la page Projets), à droite du titre ; il flotte doucement */
+  .cobj { grid-column: 7 / 12; grid-row: 1 / 3; align-self: center; justify-self: center; width: min(26vw, 44dvh); transform-origin: 50% 50%; will-change: transform; pointer-events: none; }
+  .cobj .cfl { display: block; animation: kk-float 6.5s ease-in-out infinite; }
+  .cobj :global(.shape) { display: block; width: 100%; height: auto; rotate: -4deg; filter: drop-shadow(0 30px 26px rgba(0, 0, 0, .22)); }
+  @keyframes kk-float { 0%, 100% { translate: 0 -7px; } 50% { translate: 0 7px; } }
+  @media (prefers-reduced-motion: reduce) { .cobj .cfl { animation: none; } }
   .fiche { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding-top: 12px; }
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
@@ -366,6 +400,7 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
     .lab, .bd, .gen { grid-column: 1 / -1; }
     .s1 .head { grid-template-rows: auto 1fr auto auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(32px, 4dvh); }
     .case-h1 { font-size: min(15vw, 12dvh); }
+    .cobj { grid-column: 1 / -1; grid-row: 2; width: min(52vw, 30dvh); }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
     .fiche > div { grid-column: auto; }
     .idx { grid-template-columns: 1fr auto; row-gap: min(20px, 2.4dvh); }
@@ -394,6 +429,47 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 </style>
 
 <script>
+  // ---------- registre des rubriques (14/11) ----------
+  // Une ligne fixe en bas de l'écran, centrée : les rubriques de l'étude dans l'ordre (en bref · contexte · enjeu…),
+  // comme les titres courants d'un livre. La rubrique de l'écran en cours est entre parenthèses orange ; chaque mot mène à son
+  // écran. Masquée sur la page de garde et sur l'écran « projet suivant ».
+  const register = () => {
+    const api = window.kkScreens!, host = document.querySelector<HTMLElement>('.screens-host.case');
+    if (!host) return;
+    const scr = [...host.querySelectorAll<HTMLElement>(':scope > .scr')];
+    const name = (sc: HTMLElement) => { const l = sc.querySelector('.lab.par .lt, .lab.par'); return (l?.textContent || '').split(' — ')[0].trim().toLowerCase(); };
+    const rubs: { k: string; i: number }[] = [], of: number[] = [];
+    scr.forEach((sc, i) => {
+      if (sc.classList.contains('s1') || sc.classList.contains('nx')) { of.push(-1); return; }
+      // les écrans d'images (visuels, planche) illustrent la rubrique qui les précède : ils s'y rattachent
+      const k = name(sc); if (!k || /^(visuels|visuals|planche|contact sheet)$/.test(k)) { of.push(Math.max(0, rubs.length - 1)); return; }
+      if (!rubs.length || rubs[rubs.length - 1].k !== k) rubs.push({ k, i });
+      of.push(rubs.length - 1);
+    });
+    if (rubs.length < 2) return;
+    const nav = document.createElement('nav'); nav.className = 'reg mono'; nav.setAttribute('aria-label', document.documentElement.lang === 'fr' ? 'Rubriques' : 'Sections');
+    nav.innerHTML = rubs.map((r, k) => `<a href="#" data-go="${r.i}" data-k="${k}">${r.k}</a>`).join('<span aria-hidden="true">·</span>');
+    document.body.appendChild(nav);
+    const links = [...nav.querySelectorAll<HTMLElement>('a')];
+    const set = (i: number) => {
+      const k = of[i] ?? -1;
+      nav.classList.toggle('on', k >= 0);
+      links.forEach((a, j) => a.toggleAttribute('aria-current', j === k));
+    };
+    set(api.current());
+    host.addEventListener('screens:leave', (e) => set((e as CustomEvent).detail.to));
+    host.addEventListener('screens:enter', (e) => set((e as CustomEvent).detail.index));
+  };
+  if (window.kkScreens) register(); else document.addEventListener('kk:screens', register, { once: true });
+
+  // ---------- arrivée par un objet (14/11) : il glisse de sa place sur la page d'avant jusqu'à la page de garde ----------
+  {
+    const el = document.querySelector<HTMLElement>('[data-cobj]');
+    if (el?.dataset.from) {
+      const from = el.dataset.from; el.style.transform = ''; delete el.dataset.from;
+      el.animate([{ transform: from }, { transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
+    }
+  }
   // ---------- fil d'Ariane (14/11) ----------
   // Chaque libellé orange d'un écran devient « (projets / nom du projet / libellé) » : « projets » ramène à la page Projets,
   // le nom du projet à la page de garde. Page de garde : « (projets / 04/07) ». L'écran « projet suivant » garde son libellé.
@@ -521,16 +597,7 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
     });
     api.el(1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
 
-    // ---------- entrée des images : elles se découvrent de bas en haut, chacune à son tour ----------
-    const play = (scr: HTMLElement, delay: number) => {
-      if (reduced()) return;
-      scr.querySelectorAll<HTMLElement>('img.md').forEach((m, i) => {
-        if (i > 5) return;
-        const a = m.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 900, delay: i * 110, easing: 'cubic-bezier(.7, 0, .2, 1)', fill: 'backwards' });
-        a.startTime = (document.timeline.currentTime as number) + delay;
-      });
-    };
-    host.addEventListener('screens:leave', (e) => { const el = api.el((e as CustomEvent).detail.to); if (el) play(el, 160); });
+    // (entrée des images : pilotée par le défilement, avec le texte — voir revealScrub dans motion.ts)
 
     // ---------- profondeur : pendant le passage d'un écran à l'autre, les images n'avancent pas toutes à la même vitesse ----------
     const deep = [...document.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({ el, k: +el.dataset.depth!, scr: el.closest<HTMLElement>('.scr')! }));
