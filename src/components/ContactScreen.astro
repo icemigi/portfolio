@@ -4,8 +4,9 @@
 import Footer from './Footer.astro';
 import { ui, type Lang } from '../data/ui';
 import { aboutLabels, contact } from '../data/about';
-interface Props { lang: Lang; id: string }
-const { lang, id } = Astro.props;
+// top : lien « haut » du pied de page (inutile quand l'écran est seul sur sa page)
+interface Props { lang: Lang; id: string; top?: boolean }
+const { lang, id, top = true } = Astro.props;
 const t = ui[lang];
 const L = aboutLabels[lang];
 ---
@@ -13,13 +14,15 @@ const L = aboutLabels[lang];
   <div class="ct g">
     <h2 class="lab4 mono mu par" id={id}>{L.contact}</h2>
     <p class="mailp"><a class="mail uline" href={`mailto:${contact.email}`} data-fit>{contact.email}</a></p>
+    <!-- taille de l'adresse posée avant le premier affichage (sinon elle déborde un instant, le temps que le script passe) -->
+    <script is:inline>(function(){var a=document.currentScript.previousElementSibling.firstElementChild;if(!document.fonts||!document.fonts.check('500 100px Geist'))return;var W=a.parentElement.clientWidth;a.style.fontSize='100px';a.style.fontSize=Math.floor(100*W/a.getBoundingClientRect().width*100)/100+'px'})()</script>
     <div class="links mono">
       <a class="lk hit" href={contact.instagram} rel="me noopener" target="_blank">Instagram <span class="ac">↗</span></a>
       <span class="mu">{t.available}</span>
     </div>
-    <div class="seal-w"><img class="seal" src="/seal-wax-280.webp" srcset="/seal-wax-168.webp 168w, /seal-wax-280.webp 280w, /seal-wax.webp 420w" sizes="(max-width: 760px) 100px, 15vw" alt="" width="160" height="152" loading="lazy" decoding="async" /></div>
+    <div class="seal-w"><img class="seal" src="/seal-wax-280.webp" srcset="/seal-wax-168.webp 168w, /seal-wax-280.webp 280w, /seal-wax.webp 420w" sizes="(max-width: 760px) 100px, 15vw" alt="" width="160" height="152" /></div>
   </div>
-  <Footer lang={lang} class="line" />
+  <Footer lang={lang} class="line" top={top} />
 </section>
 
 <style>

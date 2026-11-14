@@ -134,7 +134,7 @@ input, textarea, [contenteditable] { cursor: text; }
 .snd svg { display: block; }
 .snd[aria-pressed='true'] { color: var(--fg); }
 .lang { display: flex; gap: 4px; }
-.lang a { color: var(--mu); } .lang [aria-current='true'] { color: var(--fg); }
+.lang a { color: var(--fg); transition: color .2s; } .lang a:hover { color: var(--ac); } /* un seul bouton : l'autre langue */
 /* cibles de 44 px autour des libellés de 12 px */
 .hit { position: relative; display: inline-block; }
 .hit::before { content: ''; position: absolute; left: -6px; right: -6px; top: 50%; height: 44px; transform: translateY(-50%); }
@@ -161,7 +161,7 @@ input, textarea, [contenteditable] { cursor: text; }
   .site-header nav .count { padding-top: 2.2vw; font: 12px/1 var(--mono); letter-spacing: 0; }
   .site-header .lang-m { display: flex; align-items: baseline; gap: 6px; font: 12px/1 var(--mono); }
   .site-header .lang-m a, .site-header .lang-m span { padding: 0; line-height: 1; }
-  .site-header .lang-m a { color: var(--mu); } .site-header .lang-m [aria-current='true'] { color: var(--fg); }
+  .site-header .lang-m a { color: var(--fg); }
   .menu-open .more-arrow { opacity: 0; pointer-events: none; }
 }
 
@@ -309,8 +309,18 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: ease; }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
+/* départ vers une autre page (site.ts) : le contenu s'efface, le menu reste */
+main, .more-arrow, .scr-pos { transition: opacity .22s var(--out, ease); }
+html.kk-leaving main, html.kk-leaving .more-arrow, html.kk-leaving .scr-pos { opacity: 0; pointer-events: none; }
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }
+.scr-pos { position: fixed; right: calc(var(--m) + 52px); bottom: 40px; z-index: 40; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; transition: opacity .3s; }
+.scr-pos[hidden] { display: none; }
+.more-arrow[hidden] ~ .scr-pos { opacity: 0; } /* dernier écran : le pied de page occupe le coin (mentions légales) */
+/* adresse e-mail copiée au clic (site.ts) : « (copié) » s'affiche une seconde et demie à côté */
+a[data-copied] { position: relative; }
+a[data-copied]::after { content: attr(data-copied); position: absolute; left: 100%; top: 0; margin-left: .5em; font: 11px/1 var(--mono); color: var(--ac); white-space: nowrap; pointer-events: none; }
+.menu-open .scr-pos, .embed .scr-pos { opacity: 0; }
 .more-arrow[hidden] { display: grid; opacity: 0; pointer-events: none; }
 .more-arrow span { display: block; font-size: 16px; animation: kk-bob 1.6s ease-in-out infinite; }
 @keyframes kk-bob { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(5px); } }
@@ -321,8 +331,9 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .embed .site-header, .embed .skip, .embed .ld, .embed .more-arrow, .embed .lab .dots, .embed .lab .arw { display: none !important; }
 
 /* apparition du texte : pendant le mélange, la vraie lettre reste en place (invisible) et le signe tiré au hasard se pose dessus */
-.ch.sx { position: relative; -webkit-text-fill-color: transparent; }
-.ch.sx::after { content: attr(data-s); position: absolute; left: 50%; top: 0; translate: -50% 0; -webkit-text-fill-color: var(--mu); } /* le signe de passage, en gris */
+.ch.sx { -webkit-text-fill-color: transparent; }
+/* le signe de passage, en gris : posé au-dessus de sa lettre, hors du texte (motion.ts) — la ligne ne bouge jamais */
+.scx { position: absolute; z-index: 1; translate: -50% 0; color: var(--mu); white-space: pre; pointer-events: none; user-select: none; }
 
 /* ---------- vie du site (13/11) : de petites animations partout, le texte, lui, ne bouge pas ---------- */
 /* le cavalier : un tour sur lui-même, comme une pièce qu'on fait tourner, toutes les 9 s */

@@ -1,5 +1,5 @@
 ---
-// Menu fixe : le cavalier seul (accueil), rubriques, son, EN / FR (garde la page en cours).
+// Menu fixe : le cavalier seul (accueil), rubriques, son, langue (un seul bouton : l'autre langue, garde la page en cours).
 // Téléphone : « (menu) » ouvre un plein écran (rubriques en grand, numérotées, langue en bas) ; Échap ou un lien le referme.
 import { ui, pad, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
@@ -15,6 +15,8 @@ const items = [
   { key: 'about', href: `/${lang}/about/`, count: '' },
   { key: 'contact', href: `/${lang}/contact/`, count: '' },
 ] as const;
+// langue : un seul bouton, l'autre langue ; un clic réécrit la page sur place (langswap.ts) puis ouvre l'autre version
+const other: Lang = lang === 'fr' ? 'en' : 'fr';
 ---
 <header class="site-header g mono">
   <a class="home" href={`/${lang}/`} aria-label={t.home}><img class="logo-ic" src="/logo-icon-128.webp" srcset="/logo-icon-128.webp 1x, /logo-icon-256.webp 2x" alt="" width="50" height="50" /></a>
@@ -28,21 +30,13 @@ const items = [
         </li>
       ))}
     </ul>
-    <span class="lang lang-m" aria-label={lang === 'fr' ? 'Langue' : 'Language'}>
-      <a class="hit" href={`/en/${path}`} hreflang="en" lang="en" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>en</a>
-      <span aria-hidden="true">/</span>
-      <a class="hit" href={`/fr/${path}`} hreflang="fr" lang="fr" data-lang="fr" aria-current={lang === 'fr' ? 'true' : undefined}>fr</a>
-    </span>
+    <span class="lang lang-m"><a class="hit" href={`/${other}/${path}`} hreflang={other} lang={other} data-lang={other} aria-label={other === 'en' ? 'English version' : 'Version française'}>{other}</a></span>
   </nav>
   <div class="r">
     <button class="snd hit" type="button" data-sound aria-pressed="false" data-on={lang === 'fr' ? 'Son on' : 'Sound on'} data-off={lang === 'fr' ? 'Son off' : 'Sound off'} aria-label={lang === 'fr' ? 'Son off' : 'Sound off'}><svg viewBox="0 0 20 16" width="20" height="16" aria-hidden="true"><path d="M2 5.5h3.2L9.5 2v12L5.2 10.5H2Z" fill="currentColor"/><path d="m12.5 5.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
     <button class="thm hit" type="button" data-theme-toggle aria-pressed="false" aria-label={lang === 'fr' ? 'Mode nuit' : 'Night mode'} title={lang === 'fr' ? 'Mode nuit' : 'Night mode'}><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M13.2 10.4A5.6 5.6 0 0 1 5.6 2.8a5.6 5.6 0 1 0 7.6 7.6Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></button>
     <button class="burger bp hit" type="button" aria-controls="site-nav" aria-expanded="false" data-burger data-open="menu" data-close={lang === 'fr' ? 'fermer' : 'close'}>menu</button>
-    <span class="lang">
-      <a class="hit" href={`/en/${path}`} hreflang="en" lang="en" data-lang="en" aria-current={lang === 'en' ? 'true' : undefined}>en</a>
-      <span aria-hidden="true">/</span>
-      <a class="hit" href={`/fr/${path}`} hreflang="fr" lang="fr" data-lang="fr" aria-current={lang === 'fr' ? 'true' : undefined}>fr</a>
-    </span>
+    <span class="lang"><a class="hit" href={`/${other}/${path}`} hreflang={other} lang={other} data-lang={other} aria-label={other === 'en' ? 'English version' : 'Version française'}>{other}</a></span>
   </div>
 </header>
 

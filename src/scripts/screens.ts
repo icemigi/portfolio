@@ -28,7 +28,10 @@ export function initScreens(host: HTMLElement): Screens {
 
   const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   // retour, rechargement, ou changement de langue (on rouvre le même écran dans l'autre langue)
-  if (nav?.type === 'back_forward' || nav?.type === 'reload' || (window as any).kkSwapped) {
+  // écran d'ouverture choisi avant le premier affichage (Base.astro : langue, retour, rechargement, retour d'une étude de cas)
+  const at = (window as any).kkAt;
+  if (typeof at === 'number') cur = Math.min(S.length - 1, Math.max(0, at));
+  else if (nav?.type === 'back_forward' || nav?.type === 'reload' || (window as any).kkSwapped) {
     try { cur = Math.min(S.length - 1, Math.max(0, Number(sessionStorage.getItem(key)) || 0)); } catch { /* */ }
   }
   if (location.hash) {
@@ -45,6 +48,10 @@ export function initScreens(host: HTMLElement): Screens {
     arrow.addEventListener('click', () => go(cur + 1));
     document.body.appendChild(arrow);
   }
+  // repère de position (« 02 / 05 ») à gauche de la flèche : des écrans aimantés ne laissent pas deviner la longueur de la page
+  const pos = S.length > 1 && !free ? document.createElement('span') : null;
+  const p2 = (n: number) => String(n).padStart(2, '0');
+  if (pos) { pos.className = 'scr-pos mono mu'; pos.setAttribute('aria-hidden', 'true'); document.body.appendChild(pos); }
   const save = () => { try { sessionStorage.setItem(key, String(cur)); } catch { /* */ } };
   const emit = (name: string, detail: object) => host.dispatchEvent(new CustomEvent(name, { detail }));
   const sound = (name: string, v?: number) => dispatchEvent(new CustomEvent('kk:sound', { detail: { name, v } }));
@@ -63,6 +70,7 @@ export function initScreens(host: HTMLElement): Screens {
     header?.classList.toggle('solid', S[cur].scrollTop > 8);
     document.documentElement.dataset.screen = String(cur);
     if (arrow) arrow.hidden = cur >= S.length - 1 || host.hasAttribute('data-no-arrow');
+    if (pos) { pos.innerHTML = `<span class="ac">${p2(cur + 1)}</span> / ${p2(S.length)}`; pos.hidden = host.hasAttribute('data-no-arrow'); }
     // les images des écrans voisins se chargent d'avance : rien n'apparaît en retard à l'arrivée
     [cur - 1, cur + 1, cur + 2].forEach((i) => S[i]?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((im) => (im.loading = 'eager')));
   };
@@ -71,7 +79,8 @@ export function initScreens(host: HTMLElement): Screens {
   // apparition des textes (14/11) : le défilement la déclenche, elle se joue dans le temps, avec sa vraie durée — comme une
   // timeline GSAP ou les classes « in-view » répétées de Locomotive. Un écran qui commence à entrer dans le cadre (par le bas ou par
   // le haut) joue son apparition en entier (libellés, lettres mélangées, vignettes, apartés, images), depuis là où elle en est ;
-  // un écran qui commence à sortir la joue à l'envers, plus vite, depuis la dernière lettre écrite ; sorti du cadre, il est remis
+  // un écran qui commence à sortir par le bas (on remonte) la joue à l'envers, plus vite, depuis la dernière lettre écrite ; un écran
+  // qui sort par le haut (on descend) reste écrit (14/11, demandé) ; sorti du cadre, il est remis
   // à zéro, prêt à rejouer. Chaque retour sur un écran rejoue donc son apparition.
   // (Relier les lettres à la position du défilement ne marche pas avec des écrans aimantés : le navigateur fait la moitié du
   // trajet en 100 ms, le début du texte apparaissait d'un bloc.)
@@ -107,8 +116,8 @@ export function initScreens(host: HTMLElement): Screens {
       const coming = c.d === undefined || ad < c.d, going = c.d !== undefined && ad > c.d;
       c.d = ad;
       if (p <= 0.001) { cancelAnimationFrame(c.raf); c.raf = 0; c.target = 0; if (c.t) { c.t = 0; c.set(0); } return; } // sorti : prêt à rejouer
-      if (p >= 0.999 || coming) aim(c, c.total);                  // il entre (dès le premier mouvement) ou il est posé : l'apparition se joue
-      else if (going) aim(c, 0);                                  // il commence à sortir : elle se rembobine
+      if (p >= 0.999 || coming || s.offsetTop < y) aim(c, c.total); // il entre, il est posé, ou il sort par le haut (on descend) : l'apparition se joue / reste écrite
+      else if (going) aim(c, 0);                                  // il sort par le bas (on remonte) : elle se rembobine
     });
   };
   // premier écran, à l'ouverture de la page : son apparition se joue après le délai demandé

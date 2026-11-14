@@ -33,6 +33,36 @@ document.querySelectorAll<HTMLElement>('.bp:not(.d)').forEach((b) => {
   b.classList.add('d');
 });
 
+// Adresse e-mail : sur ordinateur, un clic la copie (« (copié) » à côté) au lieu d'ouvrir une messagerie qui n'est souvent
+// pas configurée ; ⌘/Ctrl-clic et téléphone gardent le lien mailto.
+document.addEventListener('click', (e) => {
+  const a = (e.target as Element).closest?.<HTMLAnchorElement>('a[href^="mailto:"]');
+  if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || !matchMedia('(hover: hover) and (pointer: fine)').matches || !navigator.clipboard) return;
+  e.preventDefault();
+  navigator.clipboard.writeText(a.href.slice(7)).then(() => {
+    a.dataset.copied = document.documentElement.lang === 'fr' ? '(copié)' : '(copied)';
+    dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' }));
+    clearTimeout(Number(a.dataset.ct)); a.dataset.ct = String(setTimeout(() => { delete a.dataset.copied; }, 1500));
+  }, () => { location.href = a.href; });
+});
+
+// Départ vers une autre page du site (14/11) : le contenu s'efface en fondu, puis la page suivante s'écrit à partir du vide.
+// Sans ce fondu, on passe net d'une page pleine à la page suivante encore vide (son texte n'est pas encore écrit) :
+// un clignotement, surtout dans Firefox, qui n'a pas de transition entre deux documents. Le menu, lui, ne bouge pas.
+// Les liens qui gèrent déjà leur départ (objet qui voyage, cachet, langue, ancres d'écran) l'ont annoncé par preventDefault.
+document.addEventListener('click', (e) => {
+  if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || reduced()) return;
+  const a = (e.target as Element).closest?.<HTMLAnchorElement>('a[href]');
+  if (!a || (a.target && a.target !== '_self') || a.hasAttribute('download') || a.dataset.lang) return;
+  const u = new URL(a.href, location.href);
+  if (u.origin !== location.origin || (u.pathname === location.pathname && u.search === location.search)) return;
+  e.preventDefault();
+  document.documentElement.classList.add('kk-leaving');
+  setTimeout(() => { location.href = u.href; }, 220);
+});
+// retour arrière depuis le cache du navigateur : la page revient telle qu'on l'a quittée, sans le fondu
+addEventListener('pageshow', (e) => { if (e.persisted) document.documentElement.classList.remove('kk-leaving'); });
+
 // Parenthèses du texte courant : isolées avant toute découpe en lettres.
 initParens();
 

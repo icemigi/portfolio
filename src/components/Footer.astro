@@ -41,16 +41,19 @@ const moods = fr
   {top && <a class="top bp hit" href="#main" data-go="0">{t.top.toLowerCase()}</a>}
 </footer>
 
-<script>
-  // Heure de Paris (minute près) et humeur du moment.
-  const tick = () => document.querySelectorAll<HTMLElement>('[data-clock]').forEach((el) => {
-    const now = new Date();
-    const hm = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
-    const h = parseInt(hm, 10);
-    const moods = JSON.parse(el.dataset.moods || '[]') as [number, string][];
-    const mood = moods.filter(([s]) => h >= s).pop();
-    el.querySelector('[data-time]')!.textContent = `Paris, ${hm.replace(':', ':')}`;
-    el.querySelector('[data-mood]')!.textContent = mood ? mood[1] : '';
-  });
-  tick(); setInterval(tick, 20000);
+<script is:inline>
+  // Heure de Paris (minute près) et humeur du moment. En ligne : posée avant le premier affichage, pas de case vide un instant.
+  (function () {
+    var tick = function () { document.querySelectorAll('[data-clock]').forEach(function (el) {
+      var now = new Date();
+      var hm = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
+      var h = parseInt(hm, 10);
+      var moods = JSON.parse(el.dataset.moods || '[]');
+      var mood = moods.filter(function (m) { return h >= m[0]; }).pop();
+      el.querySelector('[data-time]').textContent = 'Paris, ' + hm;
+      el.querySelector('[data-mood]').textContent = mood ? mood[1] : '';
+    }); };
+    tick();
+    if (!window.kkClock) window.kkClock = setInterval(tick, 20000);
+  })();
 </script>

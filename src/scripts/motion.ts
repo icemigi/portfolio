@@ -91,14 +91,34 @@ function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () 
     sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 60, delay: start, fill: 'backwards' });
     return { sp, c, start, steps, endT: start + R.mix, shown: '' };
   });
+  // texte courant (overlay) : le signe de passage est un élément à part, posé au-dessus de sa lettre, dans l'écran qui la
+  // contient (il défile avec elle). Un ::after dans la lettre coupait le crénage avec ses voisines (le mot s'élargissait
+  // d'environ 2 %, une ligne pleine passait à la ligne et le bloc sautait) ; ici la lettre ne contient que sa lettre.
+  const box = R.overlay ? (chars[0].closest<HTMLElement>('.scr') || document.body) : null;
+  const marks = new Map<HTMLElement, HTMLElement>();
+  const mark = (sp: HTMLElement, ch: string) => {
+    let m = marks.get(sp);
+    if (!m) {
+      m = document.createElement('span'); m.className = 'scx'; m.setAttribute('aria-hidden', 'true');
+      const cs = getComputedStyle(sp);
+      m.style.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize}/${cs.lineHeight} ${cs.fontFamily}`;
+      m.style.letterSpacing = cs.letterSpacing;
+      const r = sp.getBoundingClientRect(), b = box!.getBoundingClientRect();
+      const sx = box === document.body ? scrollX : box!.scrollLeft, sy = box === document.body ? scrollY : box!.scrollTop;
+      m.style.left = `${r.left + r.width / 2 - b.left + sx}px`; m.style.top = `${r.top - b.top + sy}px`;
+      box!.appendChild(m); marks.set(sp, m);
+    }
+    m.textContent = ch;
+  };
+  const unmark = (sp: HTMLElement) => { marks.get(sp)?.remove(); marks.delete(sp); };
   const render = (t: number) => {
     for (const p of plan) {
       let ch = '';
       if (p.steps.length && t >= p.start && t < p.endT) { for (const st of p.steps) { if (st.t <= t) ch = st.ch; else break; } }
       if (ch === p.shown) continue;
       p.shown = ch;
-      if (!ch) { if (R.overlay) p.sp.classList.remove('sx'); else { p.sp.textContent = p.c; if (t >= p.endT) { p.sp.style.width = ''; p.sp.style.textAlign = ''; } } }
-      else if (R.overlay) { p.sp.dataset.s = ch; p.sp.classList.add('sx'); }
+      if (!ch) { if (R.overlay) { p.sp.classList.remove('sx'); unmark(p.sp); } else { p.sp.textContent = p.c; if (t >= p.endT) { p.sp.style.width = ''; p.sp.style.textAlign = ''; } } }
+      else if (R.overlay) { mark(p.sp, ch); p.sp.classList.add('sx'); }
       else p.sp.textContent = ch;
     }
   };
@@ -131,11 +151,15 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
     const text = n.nodeValue!;
     const isName = !!n.parentElement?.closest('.name, .mail');          // titre de l'accueil et grande adresse : rythme du titre
     const f = document.createDocumentFragment();
+    // les lettres d'un mot restent soudées (span .sw insécable) : le signe posé par-dessus une lettre en cours de mélange
+    // (::after en position absolue) ouvre sinon une coupure au milieu du mot, la ligne se recoupe un instant et le bloc saute
+    let word: HTMLElement | null = null;
     for (const c of text) {
-      if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); continue; }
+      if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); word = null; continue; }
       const sp = document.createElement('span');
       sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
-      f.appendChild(sp);
+      if (!word) { word = document.createElement('span'); word.className = 'sw'; f.appendChild(word); }
+      word.appendChild(sp);
       if (isName) { named.push(sp); k++; continue; }
       // tout le texte s'écrit comme le titre : signes tirés au hasard, puis la bonne lettre, en cascade
       sp.dataset.d = String(delay + k++ * step);               // instant d'apparition (l'aparté et la vignette qui suivent en partent)
@@ -250,19 +274,22 @@ export function revealScrub(frame: Element) {
 // des signes au hasard avant de se fixer (Geist Mono, chasse fixe : rien ne bouge autour) ; les parenthèses, elles, sont posées
 // d'emblée. Puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans, et son + fait un tour pour attirer l'œil.
 const TYPE = 34; // ms entre deux caractères (11/11 : 26 → 34)
-const NOTE_SCR = { step: TYPE, mix: 240, fast: 35, slow: 80, overlay: false };
+// overlay (14/11) : la lettre reste en place, le signe se pose par-dessus — un signe plus large que sa lettre faisait déborder
+// la ligne (aparté en Geist, pas en Mono) et le paragraphe passait un instant sur une ligne de plus
+const NOTE_SCR = { step: TYPE, mix: 240, fast: 35, slow: 80, overlay: true };
 const NOTE_STAGGER = 220; // écart entre les départs de deux apartés
 function type(el: HTMLElement, delay: number): number {
   const text = (el.dataset.txt ??= el.textContent || '');
   el.textContent = '';
   const f = document.createDocumentFragment(), mixed: HTMLElement[] = [];
-  let k = 0;
+  let k = 0, word: HTMLElement | null = null; // mots soudés (.sw), comme dans letters()
   for (const c of text) {
-    if (c === ' ') { f.appendChild(document.createTextNode(' ')); continue; }
+    if (c === ' ') { f.appendChild(document.createTextNode(' ')); word = null; continue; }
     const sp = document.createElement('span'); sp.textContent = c;
     if (c === '(' || c === ')') sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: c === '(' ? delay : delay + k * TYPE, fill: 'backwards' });
-    else { mixed.push(sp); k++; }
-    f.appendChild(sp);
+    else { sp.className = 'ch'; mixed.push(sp); k++; } // .ch : lettre masquée pendant que son signe passe (.ch.sx)
+    if (!word) { word = document.createElement('span'); word.className = 'sw'; f.appendChild(word); }
+    word.appendChild(sp);
   }
   el.appendChild(f);
   if (mixed.length) scramble(mixed, delay + 40, NOTE_SCR);

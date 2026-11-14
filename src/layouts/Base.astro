@@ -47,7 +47,7 @@ const ld = {
     <meta charset="utf-8" />
     <!-- fond posé avant tout (Firefox et Zen affichent sinon un fond blanc entre deux pages) -->
     <style is:inline>html{background:#f3f3f3}html[data-theme='nuit']{background:#12110f}</style>
-    <script is:inline>document.documentElement.classList.add('js','rv-pre');if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed','ld-skip');try{if(sessionStorage.getItem('kk-ld'))document.documentElement.classList.add('ld-skip')}catch(e){}try{if(sessionStorage.getItem('kk-swap')===location.pathname)window.kkSwapped=true;sessionStorage.removeItem('kk-swap')}catch(e){}try{var th=localStorage.getItem('kk-theme');if(th==='nuit'||(!th&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='nuit'}catch(e){}</script>
+    <script is:inline>document.documentElement.classList.add('js','rv-pre');if(/[?&]embed\b/.test(location.search))document.documentElement.classList.add('embed','ld-skip');try{if(sessionStorage.getItem('kk-ld'))document.documentElement.classList.add('ld-skip')}catch(e){}try{if(sessionStorage.getItem('kk-swap')===location.pathname){window.kkSwapped=true;document.documentElement.classList.remove('rv-pre')}sessionStorage.removeItem('kk-swap')}catch(e){}try{var th=localStorage.getItem('kk-theme');if(th==='nuit'||(!th&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.dataset.theme='nuit'}catch(e){}</script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
@@ -102,6 +102,10 @@ const ld = {
     <main id="main" tabindex="-1">
       <slot />
     </main>
+    <!-- écran d'ouverture, calé avant le premier affichage (sinon la page se montre une image sur son premier écran avant que
+         site.ts ne la recale : le clignotement). Changement de langue, retour, rechargement : l'écran quitté ; arrivée depuis une
+         étude de cas : l'écran qui mène à ce projet (retour au même endroit). window.kkAt transmet le choix à screens.ts. -->
+    <script is:inline>(function(){try{var h=document.querySelector('[data-screens]:not(.free)');if(!h||location.hash)return;var S=[].filter.call(h.querySelectorAll(':scope > .scr'),function(s){return getComputedStyle(s).display!=='none'});var n=performance.getEntriesByType('navigation')[0],i=-1;if(window.kkSwapped||(n&&(n.type==='reload'||n.type==='back_forward')))i=Number(sessionStorage.getItem('kk-scr:'+location.pathname))||0;else{var r=document.referrer&&new URL(document.referrer);if(r&&r.origin===location.origin&&/^\/(fr|en)\/work\/[^/]+\/$/.test(r.pathname))for(var k=0;k<S.length;k++)if(S[k].querySelector('a[href="'+r.pathname+'"]')){i=k;break}}if(i<0)return;i=Math.min(S.length-1,i);window.kkAt=i;if(!i)return;var s=S[i],H=h.clientHeight||innerHeight;h.scrollTop=Math.min(h.scrollHeight-H,s.hasAttribute('data-peek')?s.offsetTop+s.offsetHeight-H:s.offsetTop)}catch(e){}})()</script>
     <DevMode />
     <script>import '../scripts/site';</script>
   </body>
