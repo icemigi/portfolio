@@ -14,15 +14,10 @@ export const media: Record<string, { cover: Img; gal: Img[][] }> = {
     ],
   },
 
-  // kern.outdoor (13/11) : couvertures de carrousels et déclinaisons du logo, tirées de Documents/kern.outdoor
+  // kern.outdoor (13/11) : couverture seule, le reste de l'étude est dessiné par KernOutdoor.astro
   'kern-outdoor': {
     cover: { src: '/work/kern-outdoor/cover.webp', w: 1080, h: 1440 },
-    gal: [
-      [{ src: '/work/kern-outdoor/01.webp', w: 1000, h: 1000 }, { src: '/work/kern-outdoor/02.webp', w: 1000, h: 1000 }],
-      [{ src: '/work/kern-outdoor/03.webp', w: 1080, h: 1440 }, { src: '/work/kern-outdoor/04.webp', w: 1080, h: 1440 }],
-      [{ src: '/work/kern-outdoor/05.webp', w: 1080, h: 1440 }, { src: '/work/kern-outdoor/06.webp', w: 1080, h: 1440 }],
-      [{ src: '/work/kern-outdoor/07.webp', w: 1000, h: 1000 }, { src: '/work/kern-outdoor/08.webp', w: 1000, h: 1000 }],
-    ],
+    gal: [], // mise en page propre (KernOutdoor.astro) : pas de galerie générique
   },
   // ASAPHR (13/11) : glyphes rendus depuis Asaphr.glyphs (tracés monolines sur la grille 3 × 5)
   'asaphr': {

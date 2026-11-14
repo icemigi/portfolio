@@ -4,8 +4,9 @@
 //    nouvelle page — les états de départ (texte à écrire, objets à faire tomber, écran ouvert) sont posés avant qu'on la voie ;
 //  - démontage : juste avant l'échange (astro:before-swap) — écouteurs, boucles d'animation, minuteurs, observateurs et
 //    éléments ajoutés hors de la page sont retirés : rien ne tourne ni ne s'accumule d'une page à l'autre.
-// Tous les scripts du site s'inscrivent ici au chargement (un seul module, voir site.ts) : une page vue pour la première
-// fois n'attend aucun script, son montage a lieu au même instant que les autres.
+// Les scripts propres à une page sont des morceaux chargés à la demande (onDemand) : au premier chargement avant le premier
+// montage, en navigation pendant la préparation de la page suivante (avant l'échange) — le montage a toujours lieu avant le
+// premier affichage, et chaque page ne télécharge que ses scripts.
 
 export type Nav = {
   first: boolean;                 // premier chargement du document (sinon : arrivée par navigation)
@@ -76,12 +77,23 @@ function unmount() {
   }
 }
 
-// premier chargement : monté dès que tous les scripts sont inscrits (fin du module principal, voir start())
-export function start() {
+// Script de page chargé à la demande : load() importe un module qui s'inscrit lui-même (onPage) ; il n'est téléchargé que
+// pour une page qui contient sel.
+type Chunk = { sel: string; load: () => Promise<unknown>; ready?: Promise<unknown> };
+const chunks: Chunk[] = [];
+export function onDemand(sel: string, load: () => Promise<unknown>) { chunks.push({ sel, load }); }
+const need = (doc: Document) => Promise.all(chunks.filter((c) => doc.querySelector(c.sel)).map((c) => (c.ready ??= c.load().catch((e) => { c.ready = undefined; console.error(e); }))));
+
+// premier chargement : monté dès que les scripts de la page sont là (fin du module principal, voir site.ts)
+export async function start() {
+  await need(document);
   mount();
   document.addEventListener('astro:before-preparation', (e) => {
-    const ev = e as Event & { from: URL; navigationType: Nav['type']; info?: NavInfo };
+    const ev = e as Event & { from: URL; navigationType: Nav['type']; info?: NavInfo; loader: () => Promise<void>; newDocument: Document };
     nav = { first: false, type: ev.navigationType, from: ev.from, info: ev.info ?? {} };
+    // la page suivante est chargée, puis ses scripts, avant l'échange
+    const load = ev.loader;
+    ev.loader = async () => { await load(); await need(ev.newDocument); };
   });
   document.addEventListener('astro:before-swap', unmount);
   document.addEventListener('astro:after-swap', mount);
