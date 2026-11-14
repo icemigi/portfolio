@@ -19,8 +19,10 @@ const t = ui[lang];
 const fullTitle = title === 'kerningkastle' ? `kerningkastle — ${t.tagline}` : `${title} — kerningkastle`;
 const site = Astro.site ?? new URL('https://kerningkastle.com');
 const canonical = new URL(`/${lang}/${path}`, site).href;
-// référencement : seul l'accueil anglais doit sortir dans les moteurs de recherche. Les autres pages restent explorables, leurs liens comptent.
-const indexable = lang === 'en' && path === '';
+// référencement (14/11) : seuls les deux accueils sortent dans les moteurs de recherche, déclarés comme une même page en deux
+// langues (hreflang) : un seul résultat, dans la langue de l'internaute. Les autres pages restent explorables, leurs liens comptent.
+const indexable = path === '';
+const alt = (l: string) => new URL(`/${l}/${path}`, site).href;
 // image d'aperçu au partage : /og/<langue>-<page>.png (générées, 1200 × 630)
 const seg = path.split('/').filter(Boolean);
 const ogRaw = !seg.length ? 'home' : seg[0] === 'work' && seg[1] ? `work-${seg[1]}` : seg[0];
@@ -52,6 +54,9 @@ const ld = {
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="fr" href={alt('fr')} />
+    <link rel="alternate" hreflang="en" href={alt('en')} />
+    <link rel="alternate" hreflang="x-default" href={alt('en')} />
     {!indexable && <meta name="robots" content="noindex, follow" />}
     <!-- favicon : noir sur navigateur clair, clair sur navigateur sombre (SVG qui suit le thème) ; .ico pour les anciens navigateurs -->
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />

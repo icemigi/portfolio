@@ -1,9 +1,11 @@
-// Plan du site pour les moteurs de recherche : seul l'accueil anglais doit sortir dans les résultats.
-// Toutes les autres pages portent un noindex (voir layouts/Base.astro).
+// Plan du site pour les moteurs de recherche : seuls les deux accueils sortent dans les résultats, déclarés comme une même
+// page en deux langues (hreflang, anglais par défaut). Toutes les autres pages portent un noindex (voir layouts/Base.astro).
 import type { APIRoute } from 'astro';
 
 export const GET: APIRoute = ({ site }) => {
   const base = site ?? new URL('https://kerningkastle.com');
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${new URL('/en/', base).href}</loc></url>\n</urlset>\n`;
+  const fr = new URL('/fr/', base).href, en = new URL('/en/', base).href;
+  const alts = `<xhtml:link rel="alternate" hreflang="fr" href="${fr}"/><xhtml:link rel="alternate" hreflang="en" href="${en}"/><xhtml:link rel="alternate" hreflang="x-default" href="${en}"/>`;
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n  <url><loc>${en}</loc>${alts}</url>\n  <url><loc>${fr}</loc>${alts}</url>\n</urlset>\n`;
   return new Response(xml, { headers: { 'Content-Type': 'application/xml; charset=utf-8' } });
 };
