@@ -22,6 +22,7 @@ const index = projects.findIndex((p) => p.slug === Astro.params.slug);
 const project = projects[index];
 const c = project[lang];
 const next = projects[(index + 1) % projects.length];
+const prev = projects[(index - 1 + projects.length) % projects.length];
 const nc = next[lang];
 const N = pad(projects.length);
 
@@ -116,7 +117,7 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
-        <p class="lab mono mu par s1-late" data-cl><span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
+        <p class="lab mono mu par s1-late" data-cl><a class="cr" href={`/${lang}/work/${prev.slug}/`} data-prev aria-label={`${fr ? 'Projet précédent' : 'Previous project'} : ${prev[lang].title}`}>←</a> <span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
         <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
         <div class="cobj" data-cobj data-slug={project.slug} aria-hidden="true"><span class="cfl"><ObjectShape kind={project.object} /></span></div>
         <dl class="fiche mono s1-late">

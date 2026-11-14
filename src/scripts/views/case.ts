@@ -7,12 +7,25 @@ import { onPage } from '../page';
 import { screens } from '../screens';
 import { letters, reduced } from '../motion';
 
+const CASE = /^\/(fr|en)\/work\/([^/]+)\/$/, STAGE = /^\/(fr|en)\/(work\/)?$/;
+// retour vers la scène (page Projets ou accueil) : l'objet de la page de garde repart à sa place sur la scène — le nom est posé
+// sur la page quittée avant le début de la transition (l'image de l'ancienne page est prise juste après la préparation)
+document.addEventListener('astro:before-preparation', (e) => {
+  const ev = e as Event & { to: URL };
+  if (reduced() || !CASE.test(location.pathname) || !STAGE.test(ev.to.pathname)) return;
+  const o = document.querySelector<HTMLElement>('[data-cobj] .shape'); if (o) o.style.viewTransitionName = 'case-object';
+});
 // noms de transition posés sur la page d'arrivée, le temps de l'échange (un seul élément par nom dans chaque page)
 document.addEventListener('astro:before-swap', (e) => {
-  const ev = e as Event & { info?: { next?: boolean; object?: { slug: string } }; newDocument: Document };
+  const ev = e as Event & { from: URL; to: URL; info?: { next?: boolean; object?: { slug: string } }; newDocument: Document };
   if (reduced()) return;
   if (ev.info?.next) { const v = ev.newDocument.querySelector<HTMLElement>('.case-h1 .vt'); if (v) v.style.viewTransitionName = 'case-title'; }
   if (ev.info?.object) { const o = ev.newDocument.querySelector<HTMLElement>(`[data-cobj][data-slug="${ev.info.object.slug}"] .shape`); if (o) o.style.viewTransitionName = 'case-object'; }
+  // retour vers la scène : l'objet du projet quitté, sur la scène d'arrivée
+  if (CASE.test(ev.from.pathname) && STAGE.test(ev.to.pathname)) {
+    const o = ev.newDocument.querySelector<HTMLElement>(`[data-projects] .obj a[href="${ev.from.pathname}"]`)?.closest('.obj')?.querySelector<HTMLElement>('.shape');
+    if (o) o.style.viewTransitionName = 'case-object';
+  }
 });
 // transition finie : les noms sont retirés (la page suivante pourra les reprendre)
 document.addEventListener('astro:page-load', () => document.querySelectorAll<HTMLElement>('.case-h1 .vt, [data-cobj] .shape, .obj .shape').forEach((el) => (el.style.viewTransitionName = '')));
@@ -148,6 +161,14 @@ onPage('.screens-host.case', (ctx) => {
     host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
     host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
     host.addEventListener('screens:beyond', open);
+    // projet précédent : geste vers le haut tout en haut de la page de garde, ou la flèche du libellé
+    const prev = document.querySelector<HTMLAnchorElement>('[data-prev]');
+    host.addEventListener('screens:above', () => { if (prev && !leaving) { leaving = true; navigate(prev.href); } });
+    // Échap : retour à la page Projets (l'objet repart à sa place sur la scène) — sauf visionneuse ou menu ouverts
+    addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || e.defaultPrevented || !document.querySelector('[data-lb]')?.hasAttribute('hidden') || document.documentElement.classList.contains('menu-open')) return;
+      navigate(`/${document.documentElement.lang === 'fr' ? 'fr' : 'en'}/work/`);
+    }, { signal: ctx.signal });
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
     document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); }, { signal: ctx.signal });
     document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, { capture: true, signal: ctx.signal });

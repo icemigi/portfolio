@@ -2,7 +2,7 @@
 // et un calage CSS (scroll-snap obligatoire) sur l'écran le plus proche à l'arrêt. Aucun geste n'est jamais perdu ni retardé.
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; arrivé à son bord, le défilement continue vers le suivant.
 // Le script ne fait plus défiler lui-même (sauf flèche, clavier, liens) : il suit la position pour l'écran courant,
-// l'apparition des textes, la parallaxe, les sons et les événements screens:leave / screens:enter / screens:beyond.
+// l'apparition des textes, la parallaxe, les sons et les événements screens:leave / screens:enter / screens:beyond / screens:above.
 // Monté à chaque arrivée sur une page (page.ts), démonté à son départ.
 import { reduced, revealScrub } from './motion';
 import type { Ctx } from './page';
@@ -25,14 +25,15 @@ const key = (path: string) => `kk-scr:${path}`;
 const PROJECT = /^\/(fr|en)\/work\/[^/]+\/$/;
 
 // Écran d'ouverture : changement de langue → l'écran quitté ; retour / avance / rechargement → l'écran mémorisé ;
-// arrivée depuis une étude de cas → l'écran qui mène à ce projet ; ancre → son écran ; sinon le premier.
+// arrivée depuis une étude de cas sur une page qui n'en est pas une (Projets, accueil) → l'écran qui mène à ce projet ;
+// ancre → son écran ; sinon le premier (d'une étude à l'autre, on arrive toujours sur la page de garde).
 function opening(ctx: Ctx, S: HTMLElement[]) {
   const clamp = (i: number) => Math.min(S.length - 1, Math.max(0, i));
   if (location.hash) { const i = S.findIndex((s) => s.id === location.hash.slice(1)); if (i >= 0) return i; }
   if (ctx.info.lang) return clamp(ctx.info.lang.screen);
   const reload = ctx.first && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
   if (ctx.type === 'traverse' || reload) { try { return clamp(Number(sessionStorage.getItem(key(location.pathname))) || 0); } catch { return 0; } }
-  if (ctx.from && PROJECT.test(ctx.from.pathname)) {
+  if (ctx.from && PROJECT.test(ctx.from.pathname) && !PROJECT.test(location.pathname)) {
     const i = S.findIndex((s) => s.querySelector(`a[href="${ctx.from!.pathname}"]`));
     if (i >= 0) return i;
   }
@@ -196,10 +197,29 @@ export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
     pushT = now; push += d;
     if (push > 140 && now - beyondT > 1200) { beyondT = now; push = 0; emit('screens:beyond', { from: cur }); }
   };
-  addEventListener('wheel', (e) => { if (!(e.target as Element | null)?.closest?.('[data-own-wheel]')) beyond(e.deltaY); }, { passive: true, signal });
+  // en deçà du premier écran (études de cas : ouvrir le projet précédent) : un geste vers le haut alors qu'on est déjà tout en haut
+  let pull = 0, pullT = 0, aboveT = 0;
+  const above = (d: number) => {
+    if (cur !== 0 || host.scrollTop > 2 || S[0].scrollTop > 2 || d >= 0) { pull = 0; return; }
+    const now = performance.now();
+    if (now - pullT > 300) pull = 0;
+    pullT = now; pull -= d;
+    if (pull > 140 && now - aboveT > 1200) { aboveT = now; pull = 0; emit('screens:above', { from: cur }); }
+  };
+  // gestes de bord désarmés à l'arrivée sur la page : l'élan du geste qui l'a ouverte (inertie de la molette, du trackpad) ne doit
+  // pas en ouvrir une autre — ils s'arment après 0,9 s, une fois ce geste fini (250 ms sans molette) ou un nouveau doigt posé
+  const born = performance.now();
+  let armed = false, lastWheel = born;
+  const edge = (d: number) => { if (armed) { beyond(d); above(d); } };
+  addEventListener('wheel', (e) => {
+    const now = performance.now();
+    if (!armed && now - born > 900 && now - lastWheel > 250) armed = true;
+    lastWheel = now;
+    if (!(e.target as Element | null)?.closest?.('[data-own-wheel]')) edge(e.deltaY);
+  }, { passive: true, signal });
   let ty = 0;
-  addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true, signal });
-  addEventListener('touchmove', (e) => { const y = e.touches[0].clientY; beyond(ty - y); ty = y; }, { passive: true, signal });
+  addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; if (performance.now() - born > 400) armed = true; }, { passive: true, signal });
+  addEventListener('touchmove', (e) => { const y = e.touches[0].clientY; edge(ty - y); ty = y; }, { passive: true, signal });
 
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : sa molette fait défiler la page
   host.querySelectorAll('iframe').forEach((f) => f.addEventListener('load', () => {
@@ -226,6 +246,7 @@ export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
     const s = S[cur];
     if (canScroll(s, dir)) s.scrollBy({ top: dir * (page ? s.clientHeight * 0.85 : 64), behavior: reduced() ? 'auto' : 'smooth' });
     else if (dir > 0 && cur === S.length - 1) emit('screens:beyond', { from: cur });
+    else if (dir < 0 && cur === 0) emit('screens:above', { from: cur });
     else go(cur + dir);
   }, { signal });
 

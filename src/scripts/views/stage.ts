@@ -67,7 +67,8 @@ onPage('[data-projects]', (ctx) => {
     };
     // changement de langue : la scène est déjà en place (aucune chute) ; sinon les objets restent cachés jusqu'à leur chute
     // (état de départ en CSS : .stage:not(.in))
-    if (ctx.info.lang) { O.forEach((o) => (o.t0 = -Infinity)); stage.classList.add('in'); }
+    // retour d'une étude de cas : de même (l'objet du projet quitté revole à sa place, views/case.ts)
+    if (ctx.info.lang || (ctx.from && /^\/(fr|en)\/work\/[^/]+\/$/.test(ctx.from.pathname))) { O.forEach((o) => (o.t0 = -Infinity)); stage.classList.add('in'); }
     // la scène tombe quand elle apparaît à l'écran (sur l'accueil, elle n'est pas au premier écran)
     else (window.kkReady ?? Promise.resolve()).then(() => document.fonts.ready).then(() => {
       if (ctx.signal.aborted) return;
