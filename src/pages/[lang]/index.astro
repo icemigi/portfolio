@@ -3,7 +3,7 @@
 import Base from '../../layouts/Base.astro';
 import ContactScreen from '../../components/ContactScreen.astro';
 import Affiche from '../../components/Affiche.astro';
-import ProjectRows from '../../components/ProjectRows.astro';
+import ProjectStage from '../../components/ProjectStage.astro';
 import Portrait3D from '../../components/Portrait3D.astro';
 import { ui, languages, getLangFromParam, pad } from '../../data/ui';
 import { projects } from '../../data/projects';
@@ -21,7 +21,7 @@ const t = ui[lang];
       </div>
       <Portrait3D lang={lang} id="pt3d" />
       <p class="bub" id="bub" aria-live="polite"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="msg"></span></p>
-      <p class="phrase t28" data-par="60" set:html={t.phrase.replace(' + ', ' <span class="ac">+</span> ')} />
+      <a class="phrase t28" href={`/${lang}/work/`} data-go="2" data-par="60" set:html={t.phrase.replace(' + ', ' <span class="ac">+</span> ')} />
     </section>
 
     <section class="scr" id="services" aria-labelledby="sv-l">
@@ -34,13 +34,8 @@ const t = ui[lang];
       </div>
     </section>
 
-    <section class="scr s3" id="work" aria-labelledby="pj-l">
-      <div class="in g">
-        <div class="pj">
-          <h2 class="mono mu lab par" id="pj-l">{t.work} {pad(projects.length)}</h2>
-          <div class="list"><ProjectRows lang={lang} /></div>
-        </div>
-      </div>
+    <section class="scr s3" id="work" data-still aria-labelledby="pj-l">
+      <ProjectStage lang={lang} title={t.work} id="pj-l" heading="h2" />
     </section>
 
     <ContactScreen lang={lang} id="ct-l" />
@@ -58,12 +53,14 @@ const t = ui[lang];
   .name .l2 > span { display: inline; }
   /* la phrase sur la même ligne que la flèche de défilement (centrée sur elle), juste à sa gauche */
   .phrase { position: absolute; right: calc(var(--m) + var(--col) + var(--gut)); bottom: 30px; text-align: right; } /* finit sur le bord droit de la colonne 11 ; la flèche occupe la 12 */
+  /* la phrase mène aux projets (14/11) : soulignée en orange au survol */
+  .phrase { text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color .3s var(--out); }
+  @media (hover: hover) { .phrase:hover { text-decoration-color: var(--ac); } }
 
-  .big, .pj { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
+  .big { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; }
   .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }
   .bt, .more { grid-column: 4 / 12; }
   .more { margin-top: 32px; }
-  .list { grid-column: 4 / 13; }
 
 
   /* portrait : en haut à droite, à cheval sur « kast » (position et taille calculées par le script, d'après le nom) */
@@ -93,7 +90,7 @@ const t = ui[lang];
     .name .l2 > span { display: block; }
     .name .l2 > span + span { margin-left: .06em; }
     .phrase { left: var(--m); text-align: left; bottom: 72px; } /* à gauche du portrait */
-    .lab, .bt, .more, .list { grid-column: 1 / -1; }
+    .lab, .bt, .more { grid-column: 1 / -1; }
   }
 </style>
 

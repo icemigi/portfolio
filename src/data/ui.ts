@@ -6,7 +6,7 @@ export const ui = {
   en: {
     tagline: 'Type designer + digital creative',
     phrase: 'Type designer + digital creative — Paris & remote',
-    nav: { work: 'Work', lab: 'Lab', archive: 'Archive', about: 'About' },
+    nav: { work: 'Work', lab: 'Lab', archive: 'Archive', about: 'About', contact: 'Contact' },
     home: 'kerningkastle — home',
     skip: 'Skip to content',
     services: 'Services',
@@ -36,7 +36,7 @@ export const ui = {
   fr: {
     tagline: 'Type designer + créatif digital',
     phrase: 'Type designer + créatif digital — Paris et à distance',
-    nav: { work: 'Projets', lab: 'Lab', archive: 'Archive', about: 'À propos' },
+    nav: { work: 'Projets', lab: 'Lab', archive: 'Archive', about: 'À propos', contact: 'Contact' },
     home: 'kerningkastle — accueil',
     skip: 'Aller au contenu',
     services: 'Services',

@@ -7,7 +7,7 @@ interface Props { lang: Lang; class?: string; top?: boolean }
 const { lang, class: cls = '', top = true } = Astro.props;
 const t = ui[lang];
 const fr = lang === 'fr';
-const nav = [['work/', t.nav.work], ['lab/', t.nav.lab], ['archive/', t.nav.archive], ['about/', t.nav.about]] as const;
+const nav = [['work/', t.nav.work], ['lab/', t.nav.lab], ['archive/', t.nav.archive], ['about/', t.nav.about], ['contact/', t.nav.contact]] as const;
 // humeur selon l'heure de Paris : [heure de début, texte]
 const moods = fr
   ? [[0, '(sûrement en train de dessiner un g à deux étages)'], [7, '(café, puis crénage)'], [9, '(en train d\'ajuster un crénage)'], [12, '(pause déj, les lettres attendent)'], [14, '(le nez dans les calques)'], [19, '(en montagne, ou en plein speedrun)'], [22, '(un dernier glyphe et au lit)']]

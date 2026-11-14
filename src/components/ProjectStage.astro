@@ -1,0 +1,137 @@
+---
+// Scène des projets (14/11 : commune à la page Projets et à l'accueil). Ordinateur : les objets des projets en lévitation
+// (composition libre, dérive lente, réaction à la souris, glisser-déposer ; un clic sans déplacement ouvre l'étude).
+// Téléphone : la liste classique des projets à la place. Les objets tombent un à un quand la scène apparaît à l'écran.
+import ObjectShape from './ObjectShape.astro';
+import ProjectRows from './ProjectRows.astro';
+import { pad, type Lang } from '../data/ui';
+import { projects } from '../data/projects';
+interface Props { lang: Lang; title: string; id?: string; heading?: 'h1' | 'h2' }
+const { lang, title, id = 'pj-t', heading = 'h1' } = Astro.props;
+const H = heading;
+// centre de l'objet en % de la scène, taille en % de la largeur, rotation, profondeur (parallaxe)
+const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [81, 28, 13, 8, 0.9], [27, 72, 17, -4, 0.7], [50, 66, 13, 4, 0.8], [70, 70, 16, -5, 0.45], [88, 60, 14, 6, 1]];
+---
+<div class="page">
+  <H class="ttl mono mu par" id={id}>{`${title} ${pad(projects.length)}`}</H>
+        <div class="stage" data-stage>
+          <ol class="objs">
+            {projects.map((p, i) => {
+              const [x, y, w, r, z] = POS[i];
+              return (
+                <li class="obj" style={`--x:${x}%;--y:${y}%;--w:${w}vw;--r:${r}deg;--d:${7 + i * 1.3}s`} data-depth={z}>
+                  <a href={`/${lang}/work/${p.slug}/`}>
+                    <span class="float"><ObjectShape kind={p.object} /></span>
+                    <span class="lb"><span class="ac mono">({pad(i + 1)})</span> {p[lang].title}</span>
+                  </a>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+  <div class="mindex g"><div class="mlist"><ProjectRows lang={lang} /></div></div>
+</div>
+
+<style>
+  .page { position: relative; min-height: 100%; height: 100%; display: flex; flex-direction: column; }
+  .stage { position: relative; flex: 1; min-height: 560px; }
+  .ttl { position: absolute; z-index: 2; left: var(--m); top: calc(var(--head) + 16px); }
+  .obj { position: absolute; left: var(--x); top: var(--y); width: var(--w); transform: translate(-50%, -50%); touch-action: none; }
+  .obj a { display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: grab; -webkit-user-drag: none; user-select: none; }
+  .obj.drag a { cursor: grabbing; }
+  .obj .float { display: block; width: 100%; will-change: transform; }
+  .obj :global(.shape) { width: 100%; height: auto; transform: rotate(var(--r)); filter: drop-shadow(0 var(--sh, 26px) 22px rgba(0, 0, 0, .22)); pointer-events: none; }
+  .obj .lb { white-space: nowrap; transition: transform .35s var(--out), opacity .6s var(--out); transition-delay: var(--ld, 0s); }
+  @media (hover: hover) { .obj a:hover .lb { transform: translateX(6px); } }
+  /* apparition : les libellés arrivent après leur objet ; survol : les autres objets s'effacent */
+  :global(html.js) .stage:not(.in) .obj .lb { opacity: 0; transform: translateY(10px); }
+  .obj .float { transition: opacity .45s var(--out); }
+  .stage.focus .obj:not(.hov) .float { opacity: .65; }
+  .stage.focus .obj:not(.hov) .lb { opacity: .65; }
+  .mindex { display: none; }
+
+  @media (max-width: 760px) {
+    .stage { display: none; }
+    .page { justify-content: flex-end; }
+    .ttl { position: absolute; }
+    .mindex { display: grid; padding-bottom: 72px; }
+    .mlist { grid-column: 1 / -1; }
+    /* numéros comme sur ordinateur : « (01) » en orange */
+    .mlist :global(.row .n) { color: var(--ac); }
+    .mlist :global(.row .n)::before { content: '('; } .mlist :global(.row .n)::after { content: ')'; }
+  }
+</style>
+
+<script>
+  import { reduced } from '../scripts/motion';
+  // M1 Flottement : chaque objet monte et descend à son rythme ; la souris les décale selon leur profondeur ;
+  // survol = l'objet se soulève de 14 px. Les objets se prennent à la main (glisser-déposer) et restent où on les pose.
+  // Un clic sans déplacement ouvre l'étude.
+  const stage = document.querySelector<HTMLElement>('[data-stage]');
+  // téléphone : la scène est masquée (liste à la place), on ne lance rien
+  if (stage && stage.offsetParent !== null) {
+    const still = reduced();
+    const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+    const O = [...stage.querySelectorAll<HTMLElement>('.obj')].map((el, i) => ({
+      el, a: el.querySelector('a')!, f: el.querySelector<HTMLElement>('.float')!, z: Number(el.dataset.depth),
+      ph: i * 1.7, sp: 0.55 + i * 0.09, dx: 0, dy: 0, px: 0, py: 0, lift: 0, sc: 1, hov: false, sh: 26, t0: Infinity,
+    }));
+    const m = { nx: 0, ny: 0, tx: 0, ty: 0 };
+    stage.addEventListener('pointermove', (e) => { const r = stage.getBoundingClientRect(); m.tx = (e.clientX - r.left) / r.width - 0.5; m.ty = (e.clientY - r.top) / r.height - 0.5; });
+    stage.addEventListener('pointerleave', () => { m.tx = 0; m.ty = 0; });
+    let drag: (typeof O)[number] | null = null, sx = 0, sy = 0, ox = 0, oy = 0, moved = false, top = 10;
+    O.forEach((o) => {
+      const hover = (on: boolean) => { o.hov = on; o.el.classList.toggle('hov', on); stage.classList.toggle('focus', O.some((x) => x.hov)); };
+      o.a.addEventListener('pointerenter', () => hover(true));
+      o.a.addEventListener('pointerleave', () => hover(false));
+      o.a.addEventListener('dragstart', (e) => e.preventDefault());
+      o.a.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        drag = o; moved = false; sx = e.clientX; sy = e.clientY; ox = o.dx; oy = o.dy;
+        o.el.style.zIndex = String(++top); o.a.setPointerCapture(e.pointerId);
+      });
+      o.a.addEventListener('pointermove', (e) => {
+        if (drag !== o) return;
+        const ddx = e.clientX - sx, ddy = e.clientY - sy;
+        if (!moved && Math.hypot(ddx, ddy) > 5) { moved = true; o.el.classList.add('drag'); dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })); }
+        if (moved) { o.dx = ox + ddx; o.dy = oy + ddy; }
+      });
+      const end = () => { if (drag === o) { if (moved) dispatchEvent(new CustomEvent('kk:sound', { detail: 'drop' })); drag = null; o.el.classList.remove('drag'); } };
+      o.a.addEventListener('pointerup', end);
+      o.a.addEventListener('pointercancel', end);
+      o.a.addEventListener('click', (e) => { if (moved) { e.preventDefault(); moved = false; } });
+    });
+    // apparition : après le chargement, les objets tombent un à un en se redressant, puis leurs libellés
+    const go = () => {
+      const t0 = performance.now() + 120;
+      O.forEach((o, i) => { o.t0 = still ? 0 : t0 + i * 110; o.el.style.setProperty('--ld', still ? '0s' : `${(i * 110 + 520) / 1000}s`); });
+      requestAnimationFrame(() => stage.classList.add('in'));
+      setTimeout(() => O.forEach((o) => o.el.style.removeProperty('--ld')), 2400); // le survol des libellés ne garde pas le retard
+    };
+    // la scène tombe quand elle apparaît à l'écran (sur l'accueil, elle n'est pas au premier écran)
+    (window.kkReady ?? Promise.resolve()).then(() => document.fonts.ready).then(() => {
+      new IntersectionObserver(([e], io) => { if (e.intersectionRatio > 0.5) { io.disconnect(); go(); } }, { threshold: [0, 0.5] }).observe(stage);
+    });
+    const ease = (p: number) => 1 + 2.2 * (p - 1) ** 3 + 1.2 * (p - 1) ** 2; // sortie avec léger dépassement
+    const tick = (now: number) => {
+      const t = now / 1000;
+      m.nx = lerp(m.nx, m.tx, 0.06); m.ny = lerp(m.ny, m.ty, 0.06);
+      O.forEach((o) => {
+        const held = drag === o && moved;
+        const float = still ? 0 : Math.sin(t * o.sp + o.ph) * 7;
+        o.px = lerp(o.px, still ? 0 : -m.nx * 28 * o.z, 0.08); o.py = lerp(o.py, still ? 0 : -m.ny * 20 * o.z, 0.08);
+        o.lift = lerp(o.lift, o.hov || held ? -14 : 0, still ? 1 : 0.14);
+        o.sc = lerp(o.sc, o.hov || held ? 1.05 : 1, still ? 1 : 0.12);
+        const p = Math.min(1, Math.max(0, (now - o.t0) / 1100)), e = p >= 1 ? 1 : ease(p), side = o.ph % 2 > 1 ? 1 : -1;
+        o.a.style.transform = `translate(${o.dx}px, ${o.dy}px)`;
+        o.f.style.transform = `translate(${o.px.toFixed(2)}px, ${(o.py + float + o.lift + (1 - e) * 110).toFixed(2)}px) rotate(${((1 - e) * 14 * side).toFixed(2)}deg) scale(${(o.sc * (0.82 + 0.18 * e)).toFixed(4)})`;
+        if (p < 1 || o.f.style.opacity) o.f.style.opacity = p >= 1 ? '' : String(Math.min(1, p * 3));
+        // l'ombre (filtre coûteux) n'est retouchée que quand l'objet se soulève vraiment
+        const sh = Math.round(26 - o.lift);
+        if (sh !== o.sh) { o.sh = sh; o.f.style.setProperty('--sh', `${sh}px`); }
+      });
+      if (!document.hidden) requestAnimationFrame(tick); else document.addEventListener('visibilitychange', () => requestAnimationFrame(tick), { once: true });
+    };
+    requestAnimationFrame(tick);
+  }
+</script>

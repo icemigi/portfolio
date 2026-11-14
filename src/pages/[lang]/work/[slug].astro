@@ -275,6 +275,9 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 </style>
 
 <style>
+  /* fil d'Ariane (14/11) : liens du libellé, soulignés au survol */
+  :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
+  @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
   .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
   /* Gabarit : libellé entre parenthèses en colonnes 1 à 3, contenu sur la grille de 12 colonnes du site.
      Doubles pages : la ligne utile va du dessous du menu au bas de l'écran ; chaque élément s'y pose (haut, milieu, bas). */
@@ -391,6 +394,25 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 </style>
 
 <script>
+  // ---------- fil d'Ariane (14/11) ----------
+  // Chaque libellé orange d'un écran devient « (projets / nom du projet / libellé) » : « projets » ramène à la page Projets,
+  // le nom du projet à la page de garde. Page de garde : « (projets / 04/07) ». L'écran « projet suivant » garde son libellé.
+  {
+    const host = document.querySelector<HTMLElement>('.screens-host.case');
+    const lang = document.documentElement.lang === 'fr' ? 'fr' : 'en';
+    const name = (document.querySelector('.case-h1 .vt')?.textContent || '').trim().toLowerCase();
+    host?.querySelectorAll<HTMLElement>(':scope > .scr .lab.par').forEach((lab) => {
+      if (lab.closest('.nx')) return;
+      const cover = !!lab.closest('.s1');
+      const lt = document.createElement('span'); lt.className = 'lt';
+      while (lab.firstChild) lt.appendChild(lab.firstChild);
+      const a = document.createElement('a'); a.className = 'cr'; a.href = `/${lang}/work/`; a.textContent = lang === 'fr' ? 'projets' : 'work';
+      lab.append(a, ' / ');
+      if (!cover) { const b = document.createElement('a'); b.className = 'cr'; b.href = '#'; b.dataset.go = '0'; b.textContent = name; lab.append(b, ' / '); }
+      else { const vl = lt.querySelector('.vl'); if (vl) vl.textContent = (vl.textContent || '').replace(/^\S+\s+/, ''); }
+      lab.append(lt);
+    });
+  }
   import { letters, reduced } from '../../../scripts/motion';
   const run = () => {
     const api = window.kkScreens!;
@@ -525,7 +547,8 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 
     // ---------- légende au survol : elle remplace le libellé de l'écran ----------
     document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {
-      const lab = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
+      const lab0 = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
+      const lab = lab0?.querySelector<HTMLElement>('.lt') || lab0; // le fil d'Ariane reste en place, seul le libellé change
       if (!lab) return;
       const base = lab.textContent || '';
       im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });

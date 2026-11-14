@@ -11,7 +11,7 @@ interface Props {
   title: string;
   description: string;
   path: string;            // chemin sans la langue, ex. 'about/' ou '' pour l'accueil
-  active?: 'work' | 'lab' | 'archive' | 'about';
+  active?: 'work' | 'lab' | 'archive' | 'about' | 'contact';
   bare?: boolean;          // page plein cadre sans menu du site (bureau du Lab)
 }
 const { lang, title, description, path, active, bare = false } = Astro.props;

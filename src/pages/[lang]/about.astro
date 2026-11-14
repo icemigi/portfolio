@@ -2,7 +2,6 @@
 // À propos : quatre écrans plein cadre, libellé en colonne 1, contenu sur l'axe de la colonne 4.
 import Base from '../../layouts/Base.astro';
 import Affiche from '../../components/Affiche.astro';
-import ContactScreen from '../../components/ContactScreen.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
 import { aboutIntro, aboutVigs, services, stack, stackVigs, stackBanners, path, pathVigs, aboutLabels } from '../../data/about';
 import Banners from '../../components/Banners.astro';
@@ -55,7 +54,6 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
       </div>
     </section>
 
-    <ContactScreen lang={lang} id="ab-4" />
   </div>
 </Base>
 

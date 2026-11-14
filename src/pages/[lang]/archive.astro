@@ -32,6 +32,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
           </li>
         ))}
       </ol>
+      <p class="intro t56" aria-hidden="true"><span>{(lang === 'fr' ? 'Tout le reste.' : 'Everything else.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w" style={`--i:${i}`}>{w}</span></Fragment>)}</span></p>
       <div class="pst" data-stage aria-hidden="true"><canvas class="cv-base"></canvas><canvas class="cv-fly"></canvas></div>
       <span class="hint-r mono" data-hint aria-hidden="true"><span>→</span></span>
       <div class="prog" data-prog role="slider" tabindex="0" aria-label={t.archiveCount} aria-valuemin="1" aria-valuemax={pieces.length} aria-valuenow="1">
@@ -81,6 +82,15 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
 
   /* ---------- ordinateur : la pile, dessinée sur deux toiles (dessous figé + affiches en mouvement) ---------- */
   .pst { display: none; }
+  /* arrivée (ordinateur) : la phrase au centre de la table, sous la pile ; les affiches jetées la recouvrent */
+  .intro { display: none; }
+  @media (min-width: 761px) {
+    .intro { display: grid; place-items: center; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; margin: 0; font-weight: 500; text-align: center; pointer-events: none; }
+    .intro .w { display: inline-block; }
+    :global(html.js) .intro .w { animation: arc-in .9s cubic-bezier(.7, 0, .2, 1) both; animation-delay: calc(.35s + var(--i) * 90ms); }
+  }
+  @keyframes arc-in { from { opacity: 0; translate: 0 .35em; } }
+  @media (prefers-reduced-motion: reduce) { :global(html.js) .intro .w { animation: none; } }
   @media all {
     .track { display: none; }
     .pst { display: block; position: absolute; left: 0; right: 0; top: var(--head); bottom: 84px; }
@@ -131,8 +141,11 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   // quel que soit le nombre d'affiches) ; seules les affiches en vol, celle qu'on tient ou celle qui s'ouvre
   // sont redessinées à chaque image, sur la toile du dessus.
   const STEP = 120; // un cran de molette = une affiche
-  const max = () => (items.length - 1) * STEP;
-  const index = () => Math.max(0, Math.min(items.length - 1, Math.floor(target / STEP + 0.001)));
+  // ordinateur (14/11) : un cran de plus au début — la table est vide, la phrase « Tout le reste. » au centre ;
+  // les affiches jetées la recouvrent (index −1 = aucune affiche posée)
+  const OFF = () => (desktop() ? 1 : 0);
+  const max = () => (items.length - 1 + OFF()) * STEP;
+  const index = () => Math.max(-OFF(), Math.min(items.length - 1, Math.floor(target / STEP + 0.001) - OFF()));
   const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
   const K = (window as any).kkArchive as { caps: string[]; ratios: number[]; srcs: string[] };
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
@@ -249,7 +262,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   if (desktop()) fit();
   addEventListener('resize', () => { if (desktop()) fit(); });
 
-  let lastK = 0, lastN: number | null = null;
+  let lastK = -1, lastN: number | null = null;
   const render = () => {
     const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
     // son de molette : un cran tous les 56 px parcourus (la bande avance par le script, pas par un défilement natif)
@@ -257,7 +270,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     if (lastN === null) lastN = n;
     else if (n !== lastN) { lastN = n; dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'tick', v: .55 } })); }
     const k = index() + 1;
-    if (k !== lastK) { lastK = k; count.textContent = `${P(k)} / ${P(items.length)} — ${K.caps[k - 1]}`; prog.setAttribute('aria-valuenow', String(k)); pile(); }
+    if (k !== lastK) { lastK = k; count.textContent = k ? `${P(k)} / ${P(items.length)} — ${K.caps[k - 1]}` : `00 / ${P(items.length)}`; prog.setAttribute('aria-valuenow', String(Math.max(1, k))); pile(); }
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;
@@ -297,7 +310,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   prog.addEventListener('click', (e) => {
     const r = prog.getBoundingClientRect(), p = (e.clientX - r.left) / r.width;
     if (phone()) { track.scrollTo({ top: Math.round(p * (items.length - 1)) * track.clientHeight, behavior: reduced() ? 'auto' : 'smooth' }); return; }
-    seek(Math.round(p * (items.length - 1)) * STEP);
+    seek((Math.round(p * (items.length - 1)) + OFF()) * STEP);
   });
   addEventListener('resize', () => { seek(target); render(); });
 
@@ -347,7 +360,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
     chrome().forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' }));
   };
   // clavier : Entrée sur la barre ouvre l'affiche du dessus (sur ordinateur, la pile est un dessin sans liens)
-  prog.addEventListener('keydown', (e) => { if (e.key === 'Enter') { opener = prog; open(index()); } });
+  prog.addEventListener('keydown', (e) => { if (e.key === 'Enter') { opener = prog; open(Math.max(0, index())); } });
   const close = () => {
     const done =() => { lifted = -1; if (desktop()) bake(); lb.hidden = true; behind.forEach((el) => (el.inert = false)); cur = -1; history.replaceState(null, '', location.pathname); opener?.focus(); };
     if (reduced() || lb.hidden) { done(); return; }

@@ -1,0 +1,17 @@
+---
+// Contact — PROVISOIRE (14/11) : l'écran contact actuel (adresse en grand, sceau, pied de page), en attendant la vraie page
+// dessinée dans Figma.
+import Base from '../../layouts/Base.astro';
+import ContactScreen from '../../components/ContactScreen.astro';
+import { ui, languages, getLangFromParam } from '../../data/ui';
+import { contact } from '../../data/about';
+
+export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
+const lang = getLangFromParam(Astro.params.lang);
+const t = ui[lang];
+---
+<Base lang={lang} title={t.nav.contact} description={`${contact.email} — ${t.available}`} path="contact/" active="contact">
+  <div class="screens-host" data-screens>
+    <ContactScreen lang={lang} id="ct-l" />
+  </div>
+</Base>

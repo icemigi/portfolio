@@ -121,6 +121,15 @@ input, textarea, [contenteditable] { cursor: text; }
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
 .site-header .r { grid-column: 10 / 13; justify-self: end; display: flex; align-items: center; white-space: nowrap; }
 .site-header .r { gap: 24px; }
+/* ordinateur (14/11) : les rubriques à égale distance du cavalier et du bloc son / nuit / langue ; noms en Geist,
+   le nombre un peu plus petit, en orange */
+@media (min-width: 761px) {
+  .site-header { display: flex; justify-content: space-between; }
+  .site-header nav { margin-inline: auto; }
+  .site-header nav a { font-family: var(--sans); font-size: 14px; letter-spacing: -0.01em; text-transform: lowercase; }
+  .site-header nav .count { font-size: 11px; color: var(--ac); font-variant-numeric: tabular-nums; }
+  .site-header nav a[aria-current='page']::before, .site-header nav a[aria-current='page']::after { top: 13px; }
+}
 .snd { font: inherit; text-transform: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
 .snd svg { display: block; }
 .snd[aria-pressed='true'] { color: var(--fg); }
