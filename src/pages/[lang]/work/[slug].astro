@@ -88,7 +88,7 @@ const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
 const capOf = (im: Img) => captions[im.src]?.[lang] || `${fr ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
 const pic = (im: Img, cls: string, sizes: string, depth = 0) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}`, depth });
 // projets à architecture propre (src/components/case/) : leur milieu remplace les blocs par défaut (l'accroche reste commune)
-const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor>)[project.slug];
+const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor | undefined>)[project.slug]; // mise en page propre à certaines études
 type Pic = ReturnType<typeof pic>;
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
@@ -106,27 +106,6 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 <Base lang={lang} title={c.title} description={c.lead.length < 110 ? `${c.lead} ${c.meta.role} · ${c.meta.tools}.` : c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
     <script type="application/ld+json" set:html={JSON.stringify(workLd)} />
-    <script is:inline>
-      // arrivée par un objet de la scène Projets : pas de fondu enchaîné du navigateur (l'objet fait lui-même le lien)
-      try { if (sessionStorage.getItem('kk-obj')) addEventListener('pagereveal', function (e) { var v = e.viewTransition; if (!v) return; [v.ready, v.finished, v.updateCallbackDone].forEach(function (pr) { pr && pr.catch(function () {}); }); v.skipTransition(); }); } catch (e) {}
-      // arrivée par « Projet suivant » : drapeau lu tout de suite, puis effacé
-      try { window.kkArriving = sessionStorage.getItem('kk-next') === '1'; sessionStorage.removeItem('kk-next'); } catch (e) { window.kkArriving = false; }
-      // navigateurs sans transition entre pages (Firefox, Zen…) : la page arrive titre d'abord, par un repli en JS (voir plus bas)
-      window.kkXVT = 'CSSViewTransitionRule' in window && 'onpagereveal' in window;
-      if (window.kkArriving && !window.kkXVT) document.documentElement.classList.add('kk-flip');
-      if (window.kkArriving) document.documentElement.classList.add('kk-arr');
-      // titre continu (transition entre documents) : seulement pour l'ouverture du projet suivant ; ailleurs, le fondu enchaîné de global.css
-      addEventListener('pageswap', (e) => {
-        if (!e.viewTransition) return;
-        if (!window.kkLeavingNext || !window.kkXVT) return; // sinon : fondu enchaîné commun
-        const h = document.querySelector('.next-title .vt'); if (h) h.style.viewTransitionName = 'case-title';
-      });
-      addEventListener('pagereveal', (e) => {
-        if (!e.viewTransition) return;
-        if (!window.kkArriving || !window.kkXVT) return;
-        const h = document.querySelector('.case-h1 .vt'); if (h) h.style.viewTransitionName = 'case-title';
-      });
-    </script>
   </Fragment>
 
   <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={fr ? 'Visuel agrandi' : 'Enlarged visual'}>
@@ -148,38 +127,6 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
         </dl>
       </div>
     </section>
-    <script is:inline>
-      // arrivée par un objet de la scène Projets (14/11) : l'objet est posé à la place qu'il avait sur la page d'avant, AVANT le
-      // premier affichage ; le script de la page le fait ensuite glisser jusqu'à sa place sur la page de garde
-      (function () {
-        var o = null; try { o = JSON.parse(sessionStorage.getItem('kk-obj') || 'null'); sessionStorage.removeItem('kk-obj'); } catch (e) {}
-        var el = document.querySelector('[data-cobj]');
-        if (!o || !el || o.slug !== el.dataset.slug) return;
-        var b = el.querySelector('.shape').getBoundingClientRect(); if (!b.width) return;
-        var dx = (o.x + o.w / 2) - (b.left + b.width / 2), dy = (o.y + o.h / 2) - (b.top + b.height / 2), k = o.w / b.width;
-        el.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ') rotate(' + (o.r || 0) + 'deg)';
-        el.dataset.from = el.style.transform;
-        document.documentElement.classList.add('kk-objarr');
-      })();
-    </script>
-    <script is:inline>
-      // arrivée par « Projet suivant » sans transition native (Firefox, Zen) : le titre est posé à son ancienne place
-      // (position et taille de la page précédente) AVANT le premier affichage — aucune image sans titre, aucun saut ;
-      // le script de la page le fait ensuite glisser jusqu'à sa place.
-      (function () {
-        var r = document.documentElement; if (!r.classList.contains('kk-arr')) return;
-        // la page de garde est affichée tout de suite (sans attendre le script des écrans) : pas d'image vide à l'arrivée
-        var s1 = document.querySelector('.s1'); if (s1) s1.classList.add('on');
-        if (!r.classList.contains('kk-flip')) return;
-        var h = document.querySelector('.case-h1'), v = h && h.querySelector('.vt'), f = null;
-        try { f = JSON.parse(sessionStorage.getItem('kk-next-r') || 'null'); sessionStorage.removeItem('kk-next-r'); } catch (e) {}
-        if (!v) return;
-        var b = v.getBoundingClientRect();
-        if (b.width > h.clientWidth) { h.style.fontSize = parseFloat(getComputedStyle(h).fontSize) * h.clientWidth / b.width * 0.98 + 'px'; b = v.getBoundingClientRect(); }
-        if (f) { var tr = 'translate(' + (f.x - b.left) + 'px,' + (f.y - b.top) + 'px) scale(' + (f.w ? f.w / b.width : 1) + ')'; v.style.transformOrigin = '0 0'; v.style.transform = tr; v.dataset.from = tr; }
-        v.style.opacity = '1';
-      })();
-    </script>
 
     {(Own ? blocks.filter((b) => b.kind === 'hook') : blocks).map((b) =>
       b.kind === 'hook' ? (
@@ -270,24 +217,17 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
 </Base>
 
 <style is:global>
-  /* Titre continu : le titre du projet suivant glisse jusqu'à sa place de titre, sans fondu ni déformation
-     (même texte, même taille, une seule ligne : seul le déplacement est animé). L'ancienne page disparaît net,
-     la nouvelle arrive une fois le titre posé. */
+  /* Voyages (transitions nommées, views/case.ts) : le titre « projet suivant » devient le titre de la page d'arrivée, l'objet
+     de la scène Projets se pose sur la page de garde. Même texte, même taille : seul le déplacement est animé. */
   .vt { display: inline-block; white-space: nowrap; }
-  ::view-transition-group(case-title) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
-  ::view-transition-old(case-title) { animation: none; opacity: 0; }
-  ::view-transition-new(case-title) { animation: none; }
-  ::view-transition { background: var(--bg); }
-  html.kk-arr::view-transition-old(root) { animation: none; opacity: 0; }
-  html.kk-arr::view-transition-new(root) { animation: kk-vt-in .9s both; }
-  @keyframes kk-vt-in { 0%, 70% { opacity: 0; } 100% { opacity: 1; } }
-  /* repli sans transition entre pages : le titre attend d'être replacé à son ancienne position, le menu arrive après lui */
-  html.kk-flip .case-h1 .vt, html.kk-flip .site-header { opacity: 0; }
+  ::view-transition-group(case-title), ::view-transition-group(case-object) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
+  ::view-transition-old(case-title), ::view-transition-old(case-object) { animation: none; opacity: 0; }
+  ::view-transition-new(case-title), ::view-transition-new(case-object) { animation: none; }
   /* page de garde : le numéro et la fiche n'apparaissent qu'une fois le titre posé (en CSS : aucun affichage avant le script) */
   html.js .s1-late { animation: kk-late .45s cubic-bezier(.2,.7,.2,1) 1s both; }
-  html.js.kk-arr .s1-late { animation-delay: 1.15s; }
+  html.js.case-next .s1-late { animation-delay: 1.15s; }
   html.js .s1-late + .s1-late { animation-delay: 1.12s; }
-  html.js.kk-arr .s1-late + .s1-late { animation-delay: 1.27s; }
+  html.js.case-next .s1-late + .s1-late { animation-delay: 1.27s; }
   @keyframes kk-late { from { opacity: 0; transform: translateY(6px); } }
   @media (prefers-reduced-motion: reduce) { html.js .s1-late { animation: none; } }
 </style>
@@ -428,241 +368,3 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   }
 </style>
 
-<script>
-  // ---------- registre des rubriques (14/11) ----------
-  // Une ligne fixe en bas de l'écran, centrée : les rubriques de l'étude dans l'ordre (en bref · contexte · enjeu…),
-  // comme les titres courants d'un livre. La rubrique de l'écran en cours est entre parenthèses orange ; chaque mot mène à son
-  // écran. Masquée sur la page de garde et sur l'écran « projet suivant ».
-  const register = () => {
-    const api = window.kkScreens!, host = document.querySelector<HTMLElement>('.screens-host.case');
-    if (!host) return;
-    const scr = [...host.querySelectorAll<HTMLElement>(':scope > .scr')];
-    const name = (sc: HTMLElement) => { const l = sc.querySelector('.lab.par .lt, .lab.par'); return (l?.textContent || '').split(' — ')[0].trim().toLowerCase(); };
-    const rubs: { k: string; i: number }[] = [], of: number[] = [];
-    scr.forEach((sc, i) => {
-      if (sc.classList.contains('s1') || sc.classList.contains('nx')) { of.push(-1); return; }
-      // les écrans d'images (visuels, planche) illustrent la rubrique qui les précède : ils s'y rattachent
-      const k = name(sc); if (!k || /^(visuels|visuals|planche|contact sheet)$/.test(k)) { of.push(Math.max(0, rubs.length - 1)); return; }
-      if (!rubs.length || rubs[rubs.length - 1].k !== k) rubs.push({ k, i });
-      of.push(rubs.length - 1);
-    });
-    if (rubs.length < 2) return;
-    const nav = document.createElement('nav'); nav.className = 'reg mono'; nav.setAttribute('aria-label', document.documentElement.lang === 'fr' ? 'Rubriques' : 'Sections');
-    nav.innerHTML = rubs.map((r, k) => `<a href="#" data-go="${r.i}" data-k="${k}">${r.k}</a>`).join('<span aria-hidden="true">·</span>');
-    document.body.appendChild(nav);
-    const links = [...nav.querySelectorAll<HTMLElement>('a')];
-    const set = (i: number) => {
-      const k = of[i] ?? -1;
-      nav.classList.toggle('on', k >= 0);
-      links.forEach((a, j) => a.toggleAttribute('aria-current', j === k));
-    };
-    set(api.current());
-    host.addEventListener('screens:leave', (e) => set((e as CustomEvent).detail.to));
-    host.addEventListener('screens:enter', (e) => set((e as CustomEvent).detail.index));
-  };
-  if (window.kkScreens) register(); else document.addEventListener('kk:screens', register, { once: true });
-
-  // ---------- arrivée par un objet (14/11) : il glisse de sa place sur la page d'avant jusqu'à la page de garde ----------
-  {
-    const el = document.querySelector<HTMLElement>('[data-cobj]');
-    if (el?.dataset.from) {
-      const from = el.dataset.from; el.style.transform = ''; delete el.dataset.from;
-      el.animate([{ transform: from }, { transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
-    }
-  }
-  // ---------- fil d'Ariane (14/11) ----------
-  // Chaque libellé orange d'un écran devient « (projets / nom du projet / libellé) » : « projets » ramène à la page Projets,
-  // le nom du projet à la page de garde. Page de garde : « (projets / 04/07) ». L'écran « projet suivant » garde son libellé.
-  {
-    const host = document.querySelector<HTMLElement>('.screens-host.case');
-    const lang = document.documentElement.lang === 'fr' ? 'fr' : 'en';
-    const name = (document.querySelector('.case-h1 .vt')?.textContent || '').trim().toLowerCase();
-    host?.querySelectorAll<HTMLElement>(':scope > .scr .lab.par').forEach((lab) => {
-      if (lab.closest('.nx')) return;
-      const cover = !!lab.closest('.s1');
-      const lt = document.createElement('span'); lt.className = 'lt';
-      while (lab.firstChild) lt.appendChild(lab.firstChild);
-      const a = document.createElement('a'); a.className = 'cr'; a.href = `/${lang}/work/`; a.textContent = lang === 'fr' ? 'projets' : 'work';
-      lab.append(a, ' / ');
-      if (!cover) { const b = document.createElement('a'); b.className = 'cr'; b.href = '#'; b.dataset.go = '0'; b.textContent = name; lab.append(b, ' / '); }
-      else { const vl = lt.querySelector('.vl'); if (vl) vl.textContent = (vl.textContent || '').replace(/^\S+\s+/, ''); }
-      lab.append(lt);
-    });
-  }
-  import { letters, reduced } from '../../../scripts/motion';
-  const run = () => {
-    const api = window.kkScreens!;
-    const host = document.querySelector<HTMLElement>('[data-screens]')!;
-    const last = api.count - 1;
-    const ring = document.querySelector<HTMLAnchorElement>('[data-next]')!;
-    const arc = document.querySelector<SVGCircleElement>('[data-arc]')!;
-    const RING = 3500;
-    let fill: Animation | null = null;
-    const root = document.documentElement;
-    const arriving = (window as any).kkArriving;
-
-    // arrivée par « Projet suivant », sans transition native : le titre, déjà posé à son ancienne place avant le premier
-    // affichage (script en ligne sous la page de garde), glisse et grandit jusqu'à sa place ; le menu revient après lui
-    if (root.classList.contains('kk-flip')) {
-      const v = document.querySelector<HTMLElement>('.case-h1 .vt')!, hd = document.querySelector<HTMLElement>('.site-header');
-      const from = v.dataset.from;
-      root.classList.remove('kk-flip');
-      if (from) {
-        v.style.transform = '';
-        v.animate([{ transformOrigin: '0 0', transform: from }, { transformOrigin: '0 0', transform: 'none' }], { duration: 1000, easing: 'cubic-bezier(.7, 0, .2, 1)' });
-      }
-      hd?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, delay: 620, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' });
-    }
-    if (arriving) letters(api.el(0), 650, '.case-h1');
-
-    // arrivée par la molette depuis le projet précédent : l'élan du geste qui a ouvert la page ne doit pas faire sauter
-    // la page de garde. La molette est ignorée tant que ce geste dure (au moins 0,9 s, puis jusqu'à 0,25 s de calme).
-    if (arriving) {
-      const t0 = performance.now();
-      let lastW = t0;
-      host.style.overflowY = 'hidden'; // défilement natif figé tant que dure l'élan du geste qui a ouvert la page
-      const onW = () => { lastW = performance.now(); };
-      addEventListener('wheel', onW, { passive: true, capture: true });
-      const check = () => {
-        const now = performance.now();
-        if (now - t0 > 900 && now - lastW > 250) { host.style.overflowY = ''; removeEventListener('wheel', onW, { capture: true }); return; }
-        setTimeout(check, 60);
-      };
-      check();
-    }
-
-    // texte : s'il ne tient pas dans son écran (téléphone, fenêtre basse), il descend par paliers jusqu'à tenir
-    const fit = () => document.querySelectorAll<HTMLElement>('[data-fit]').forEach((el) => {
-      const scr = el.closest<HTMLElement>('.scr')!;
-      const big = el.classList.contains('idx') ? [...el.querySelectorAll<HTMLElement>('h3')] : [el];
-      if (!big.length) return;
-      big.forEach((b) => { b.style.fontSize = ''; });
-      const min = innerWidth <= 760 ? 13 : 15;
-      const over = () => scr.scrollHeight > scr.clientHeight + 2;
-      let f = parseFloat(getComputedStyle(big[0]).fontSize);
-      while (over() && f > min) { f -= 1; big.forEach((b) => { b.style.fontSize = f + 'px'; }); }
-    });
-    const fitTitle = () => {
-      const h = document.querySelector<HTMLElement>('.case-h1'), v = h?.querySelector<HTMLElement>('.vt');
-      if (!h || !v) return;
-      h.style.fontSize = '';
-      const room = h.clientWidth, w = v.getBoundingClientRect().width;
-      if (w > room) h.style.fontSize = parseFloat(getComputedStyle(h).fontSize) * room / w * 0.98 + 'px';
-    };
-    let ft = 0;
-    const refit = () => { fitTitle(); fit(); };
-    if (!arriving) refit(); else fit();
-    document.fonts.ready.then(fit);
-    addEventListener('resize', () => { clearTimeout(ft); ft = window.setTimeout(refit, 150); });
-
-    const open = () => {
-      if ((window as any).kkLeavingNext) return;
-      (window as any).kkLeavingNext = !reduced();
-      try { if (!reduced()) sessionStorage.setItem('kk-next', '1'); } catch { /* */ }
-      // sans transition entre pages : tout s'efface autour du titre du projet suivant, qui reste seul à l'écran ; on note sa place
-      if (!reduced() && !(window as any).kkXVT) {
-        const h = document.querySelector<HTMLElement>('.next-title .vt'), b = h?.getBoundingClientRect();
-        try { if (b) sessionStorage.setItem('kk-next-r', JSON.stringify({ x: b.left, y: b.top, w: b.width })); } catch { /* */ }
-        const fade = [...document.querySelectorAll<HTMLElement>('.site-header, .more-arrow, .nx .lab, .nx .tt > p, .nx .ring')];
-        Promise.all(fade.map((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 280, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' }).finished))
-          .then(() => { location.href = ring.href; });
-        return;
-      }
-      location.href = ring.href;
-    };
-    const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } };
-    const start = () => {
-      stop();
-      if (reduced()) return; // pas d'ouverture automatique : l'anneau s'ouvre au clic
-      fill = arc.animate([{ strokeDashoffset: 339.3 }, { strokeDashoffset: 0 }], { duration: RING, easing: 'linear', fill: 'forwards' });
-      if (document.hidden) fill.pause();
-      dispatchEvent(new CustomEvent('kk:sound', { detail: 'ring' }));
-      fill.onfinish = open;
-    };
-    host.addEventListener('screens:enter', (e) => { if ((e as CustomEvent).detail.index === last) start(); });
-    host.addEventListener('screens:leave', (e) => { if ((e as CustomEvent).detail.from === last) stop(); });
-    host.addEventListener('screens:beyond', open);
-    ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
-    document.addEventListener('visibilitychange', () => { if (!fill) return; document.hidden ? fill.pause() : fill.play(); });
-    document.addEventListener('click', (e) => { if (!(e.target as Element).closest('[data-next]')) stop(); }, true);
-    addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted) { (window as any).kkLeavingNext = false; stop(); } });
-    if (api.current() === last) start();
-
-    // préchargement : les images de l'écran d'après, et la page du projet suivant à l'approche de la fin
-    let pre = false;
-    host.addEventListener('screens:enter', (e) => {
-      const i = (e as CustomEvent).detail.index;
-      api.el(i + 1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
-      if (!pre && i >= last - 2) { pre = true; const l = document.createElement('link'); l.rel = 'prefetch'; l.href = ring.href; document.head.appendChild(l); }
-    });
-    api.el(1)?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((m) => { m.loading = 'eager'; });
-
-    // (entrée des images : pilotée par le défilement, avec le texte — voir revealScrub dans motion.ts)
-
-    // ---------- profondeur : pendant le passage d'un écran à l'autre, les images n'avancent pas toutes à la même vitesse ----------
-    const deep = [...document.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({ el, k: +el.dataset.depth!, scr: el.closest<HTMLElement>('.scr')! }));
-    let praf = 0, until = 0;
-    const depth = () => {
-      for (const d of deep) {
-        const top = d.scr.getBoundingClientRect().top;
-        d.el.style.translate = Math.abs(top) < innerHeight * 1.2 ? `0 ${(top * d.k).toFixed(1)}px` : '';
-      }
-      praf = performance.now() < until ? requestAnimationFrame(depth) : 0;
-      if (!praf) deep.forEach((d) => { if (Math.abs(d.scr.getBoundingClientRect().top) < 1) d.el.style.translate = ''; });
-    };
-    if (!reduced() && deep.length) host.addEventListener('screens:leave', () => { until = performance.now() + 1500; if (!praf) praf = requestAnimationFrame(depth); });
-
-    // ---------- légende au survol : elle remplace le libellé de l'écran ----------
-    document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {
-      const lab0 = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
-      const lab = lab0?.querySelector<HTMLElement>('.lt') || lab0; // le fil d'Ariane reste en place, seul le libellé change
-      if (!lab) return;
-      const base = lab.textContent || '';
-      im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });
-      im.addEventListener('pointerleave', () => { lab.textContent = base; });
-    });
-
-    // ---------- zoom ----------
-    const lb = document.querySelector<HTMLElement>('[data-lb]')!, lbImg = lb.querySelector('img')!;
-    const lbc = lb.querySelector<HTMLElement>('[data-lbc]')!, lbn = lb.querySelector<HTMLElement>('[data-lbn]')!;
-    const all = [...document.querySelectorAll<HTMLImageElement>('img[data-cap]')];
-    let at = -1;
-    const show = (i: number) => {
-      at = (i + all.length) % all.length;
-      const m = all[at];
-      lbImg.src = m.getAttribute('data-real') || m.getAttribute('src') || ''; lbImg.width = m.width; lbImg.height = m.height;
-      const cap = m.dataset.cap || '', n = m.dataset.n || '';
-      lbc.textContent = cap; lbn.textContent = cap.endsWith(n) ? '' : n;
-    };
-    const block = (e: Event) => {
-      e.stopPropagation();
-      if (e.type === 'wheel') { close(); return; }
-      if (e.type !== 'keydown') return;
-      const k = (e as KeyboardEvent).key;
-      if (k === 'Escape') close();
-      else if (k === 'ArrowRight' || k === 'ArrowDown') show(at + 1);
-      else if (k === 'ArrowLeft' || k === 'ArrowUp') show(at - 1);
-      e.preventDefault();
-    };
-    const EVS = ['wheel', 'keydown', 'touchstart'] as const;
-    const openLb = (m: HTMLImageElement) => {
-      show(all.indexOf(m));
-      lb.hidden = false;
-      EVS.forEach((t) => addEventListener(t, block, { capture: true, passive: false }));
-      if (reduced()) return;
-      const a = m.getBoundingClientRect(), b = lbImg.getBoundingClientRect();
-      if (b.width) lbImg.animate([{ transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})`, opacity: 0.6 }, { transformOrigin: '0 0', transform: 'none', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.7, 0, .2, 1)' });
-      lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 360, easing: 'ease-out' });
-      lb.querySelector('.lbc')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' });
-    };
-    function close() {
-      if (lb.hidden) return;
-      EVS.forEach((t) => removeEventListener(t, block, { capture: true }));
-      if (reduced()) { lb.hidden = true; return; }
-      lb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(() => { lb.hidden = true; });
-    }
-    all.forEach((m) => m.addEventListener('click', () => openLb(m)));
-    lb.addEventListener('click', close);
-  };
-  if (window.kkScreens) run(); else document.addEventListener('kk:screens', run, { once: true });
-</script>

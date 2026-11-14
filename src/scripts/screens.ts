@@ -3,44 +3,52 @@
 // Un écran plus haut que la fenêtre se lit librement à l'intérieur ; arrivé à son bord, le défilement continue vers le suivant.
 // Le script ne fait plus défiler lui-même (sauf flèche, clavier, liens) : il suit la position pour l'écran courant,
 // l'apparition des textes, la parallaxe, les sons et les événements screens:leave / screens:enter / screens:beyond.
+// Monté à chaque arrivée sur une page (page.ts), démonté à son départ.
 import { reduced, revealScrub } from './motion';
+import type { Ctx } from './page';
 
 export type Screens = {
   go: (to: number) => void;
   current: () => number;
   count: number;
   el: (i: number) => HTMLElement;
-  revealFirst: (delay?: number) => void;
+  host: HTMLElement;
+  start: (delay?: number) => void; // joue l'apparition de l'écran ouvert
 };
 
-declare global { interface Window { kkScreens?: Screens } }
+let active: Screens | null = null;
+// écrans de la page affichée (null sur une page sans écrans)
+export const screens = () => active;
 
 const EDITABLE = 'input, textarea, select, [contenteditable], iframe';
+const key = (path: string) => `kk-scr:${path}`;
+const PROJECT = /^\/(fr|en)\/work\/[^/]+\/$/;
 
-export function initScreens(host: HTMLElement): Screens {
+// Écran d'ouverture : changement de langue → l'écran quitté ; retour / avance / rechargement → l'écran mémorisé ;
+// arrivée depuis une étude de cas → l'écran qui mène à ce projet ; ancre → son écran ; sinon le premier.
+function opening(ctx: Ctx, S: HTMLElement[]) {
+  const clamp = (i: number) => Math.min(S.length - 1, Math.max(0, i));
+  if (location.hash) { const i = S.findIndex((s) => s.id === location.hash.slice(1)); if (i >= 0) return i; }
+  if (ctx.info.lang) return clamp(ctx.info.lang.screen);
+  const reload = ctx.first && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload';
+  if (ctx.type === 'traverse' || reload) { try { return clamp(Number(sessionStorage.getItem(key(location.pathname))) || 0); } catch { return 0; } }
+  if (ctx.from && PROJECT.test(ctx.from.pathname)) {
+    const i = S.findIndex((s) => s.querySelector(`a[href="${ctx.from!.pathname}"]`));
+    if (i >= 0) return i;
+  }
+  return 0;
+}
+
+export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
+  const { signal } = ctx;
   // écrans affichés seulement (certains n'existent que sur téléphone, d'autres que sur ordinateur)
   const S = [...host.querySelectorAll<HTMLElement>(':scope > .scr')].filter((s) => getComputedStyle(s).display !== 'none');
   const header = document.querySelector<HTMLElement>('.site-header');
-  // défilement libre (flow.ts) : la page défile d'un bloc ; ce moteur ne garde que go() (liens « Haut ↑ »), le reste est inerte
-  const free = host.classList.contains('free');
-  const key = `kk-scr:${location.pathname}`;
-  let cur = 0;
-
-  const nav = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-  // retour, rechargement, ou changement de langue (on rouvre le même écran dans l'autre langue)
-  // écran d'ouverture choisi avant le premier affichage (Base.astro : langue, retour, rechargement, retour d'une étude de cas)
-  const at = (window as any).kkAt;
-  if (typeof at === 'number') cur = Math.min(S.length - 1, Math.max(0, at));
-  else if (nav?.type === 'back_forward' || nav?.type === 'reload' || (window as any).kkSwapped) {
-    try { cur = Math.min(S.length - 1, Math.max(0, Number(sessionStorage.getItem(key)) || 0)); } catch { /* */ }
-  }
-  if (location.hash) {
-    const i = S.findIndex((s) => s.id === location.hash.slice(1));
-    if (i >= 0) cur = i;
-  }
+  const path = location.pathname;
+  let cur = opening(ctx, S);
 
   // flèche « il y a une suite » (en bas à droite) ; un clic fait passer à l'écran suivant
-  const arrow = S.length > 1 ? document.createElement('button') : null;
+  const arrow = S.length > 1 ? ctx.own(document.createElement('button')) : null;
   if (arrow) {
     arrow.type = 'button'; arrow.className = 'more-arrow mono';
     arrow.setAttribute('aria-label', document.documentElement.lang === 'fr' ? 'Écran suivant' : 'Next screen');
@@ -49,10 +57,10 @@ export function initScreens(host: HTMLElement): Screens {
     document.body.appendChild(arrow);
   }
   // repère de position (« 02 / 05 ») à gauche de la flèche : des écrans aimantés ne laissent pas deviner la longueur de la page
-  const pos = S.length > 1 && !free ? document.createElement('span') : null;
+  const pos = S.length > 1 ? ctx.own(document.createElement('span')) : null;
   const p2 = (n: number) => String(n).padStart(2, '0');
   if (pos) { pos.className = 'scr-pos mono mu'; pos.setAttribute('aria-hidden', 'true'); document.body.appendChild(pos); }
-  const save = () => { try { sessionStorage.setItem(key, String(cur)); } catch { /* */ } };
+  const save = () => { try { sessionStorage.setItem(key(path), String(cur)); } catch { /* stockage indisponible */ } };
   const emit = (name: string, detail: object) => host.dispatchEvent(new CustomEvent(name, { detail }));
   const sound = (name: string, v?: number) => dispatchEvent(new CustomEvent('kk:sound', { detail: { name, v } }));
 
@@ -86,7 +94,7 @@ export function initScreens(host: HTMLElement): Screens {
   // trajet en 100 ms, le début du texte apparaissait d'un bloc.)
   // Les écrans sont préparés une seule fois, à l'arrêt (texte découpé en lettres) ; ensuite on ne règle que l'instant de leur
   // apparition — découper le texte de l'écran calé en plein geste faisait recaler le navigateur (geste perdu).
-  type Ctl = { total: number; text: number; set: (t: number) => void; t: number; target: number; raf: number; d?: number };
+  type Ctl = { total: number; text: number; set: (t: number) => void; cancel: () => void; t: number; target: number; raf: number; d?: number };
   const ctl = new Map<HTMLElement, Ctl>();
   const BACK = 2.2; // vitesse du rembobinage
   const run = (c: Ctl) => {
@@ -97,20 +105,26 @@ export function initScreens(host: HTMLElement): Screens {
       if (c.target > c.t) c.t = Math.min(c.target, c.t + dt);
       else if (c.target < c.t) c.t = Math.max(c.target, (c.t > c.text ? c.text : c.t) - dt * BACK); // à l'envers : depuis la dernière lettre écrite
       c.set(c.t);
-      c.raf = c.t !== c.target ? requestAnimationFrame(step) : 0;
+      c.raf = c.t !== c.target ? ctx.raf(step) : 0;
     };
-    c.raf = requestAnimationFrame(step);
+    c.raf = ctx.raf(step);
   };
   const aim = (c: Ctl, target: number) => { if (c.target === target) return; c.target = target; run(c); };
   const make = (s: HTMLElement): Ctl => { const c = { ...revealScrub(s), t: 0, target: 0, raf: 0 }; ctl.set(s, c); return c; };
-  const first = S[cur];                                          // l'écran ouvert : préparé par son apparition (revealFirst)
-  const prepare = () => S.forEach((s) => {
-    if (free || reduced() || s.hasAttribute('data-still') || ctl.has(s) || s === first) return;
-    make(s);                                                      // caché (instant 0) jusqu'à son entrée dans le cadre
-  });
+  ctx.cleanup(() => ctl.forEach((c) => c.cancel()));
+  const still = () => reduced();
+  // tous les écrans sont préparés (texte découpé, caché à l'instant 0) — l'écran ouvert compris : il n'est jamais visible complet
+  // avant son apparition. En navigation, les polices sont déjà là : préparés au montage, avant le premier affichage. Au premier
+  // chargement, on attend les polices (découpe mesurée) ; l'écran ouvert reste masqué jusque-là (html.rv-pre, Base.astro).
+  // Changement de langue : la page s'ouvre telle quelle, sans apparition.
+  const animate = !still() && !ctx.info.lang;
+  const prepare = () => { if (animate) S.forEach((s) => { if (!s.hasAttribute('data-still') && !ctl.has(s)) make(s); }); };
+  const fontsReady = document.fonts.status === 'loaded';
+  if (fontsReady) prepare();
   const scrub = (y: number) => {
-    if (free || reduced()) return;
+    if (!animate) return;
     ctl.forEach((c, s) => {
+      if (s === S[cur] && c.d === undefined) return;               // écran d'ouverture : son apparition part de start()
       const ad = Math.abs(s.offsetTop - y);
       const p = ad >= H ? 0 : 1 - ad / H;                         // 1 = posé, 0 = hors du cadre (dessous ou dessus)
       const coming = c.d === undefined || ad < c.d, going = c.d !== undefined && ad > c.d;
@@ -119,14 +133,6 @@ export function initScreens(host: HTMLElement): Screens {
       if (p >= 0.999 || coming || s.offsetTop < y) aim(c, c.total); // il entre, il est posé, ou il sort par le haut (on descend) : l'apparition se joue / reste écrite
       else if (going) aim(c, 0);                                  // il sort par le bas (on remonte) : elle se rembobine
     });
-  };
-  // premier écran, à l'ouverture de la page : son apparition se joue après le délai demandé
-  const revealFirst = (delay = 150) => {
-    if (free || reduced()) return;
-    const s = S[cur]; if (!s || s.hasAttribute('data-still')) return;
-    const c = ctl.get(s) || make(s);
-    c.d = 0;
-    setTimeout(() => aim(c, c.total), delay);
   };
 
   // parallaxe : ordinateur seulement ; images (et data-par) décalées selon la distance de leur écran au cadre
@@ -154,7 +160,7 @@ export function initScreens(host: HTMLElement): Screens {
   let raf = 0, idle = 0, settled = true;
   const onScroll = () => {
     if (raf) return;
-    raf = requestAnimationFrame(() => {
+    raf = ctx.raf(() => {
       raf = 0;
       const y = host.scrollTop, now = performance.now();
       const n = nearest(y);
@@ -162,7 +168,7 @@ export function initScreens(host: HTMLElement): Screens {
       parallax(y); crank(y, now); scrub(y);
       lastY = y; lastT = now; settled = false;
       clearTimeout(idle);
-      idle = window.setTimeout(arrive, 140); // (scrollend n'existe pas partout : on attend 140 ms de calme)
+      idle = ctx.timeout(arrive, 140); // (scrollend n'existe pas partout : on attend 140 ms de calme)
     });
   };
   const arrive = () => {
@@ -176,7 +182,6 @@ export function initScreens(host: HTMLElement): Screens {
 
   // aller à un écran (flèche, clavier, liens « Haut ↑ ») : défilement doux du navigateur, le calage fait le reste
   function go(to: number) {
-    if (free) { const y = S[Math.max(0, Math.min(S.length - 1, to))].getBoundingClientRect().top + scrollY; const l = (window as any).kkLenis; if (l) l.scrollTo(y); else scrollTo({ top: y, behavior: reduced() ? 'auto' : 'smooth' }); return; }
     if (to >= S.length) { emit('screens:beyond', { from: cur }); return; }
     if (to < 0 || to === nearest(host.scrollTop) && Math.abs(host.scrollTop - T[to]) < 2) return;
     host.scrollTo({ top: T[to], behavior: reduced() ? 'auto' : 'smooth' });
@@ -185,17 +190,16 @@ export function initScreens(host: HTMLElement): Screens {
   // au-delà du dernier écran (études de cas : ouvrir le projet suivant) : un geste vers le bas alors qu'on est déjà tout en bas
   let push = 0, pushT = 0, beyondT = 0;
   const beyond = (d: number) => {
-    if (free) return;
     if (cur !== S.length - 1 || host.scrollTop < max - 2 || d <= 0) { push = 0; return; }
     const now = performance.now();
     if (now - pushT > 300) push = 0;
     pushT = now; push += d;
     if (push > 140 && now - beyondT > 1200) { beyondT = now; push = 0; emit('screens:beyond', { from: cur }); }
   };
-  addEventListener('wheel', (e) => { if (!(e.target as Element | null)?.closest?.('[data-own-wheel]')) beyond(e.deltaY); }, { passive: true });
+  addEventListener('wheel', (e) => { if (!(e.target as Element | null)?.closest?.('[data-own-wheel]')) beyond(e.deltaY); }, { passive: true, signal });
   let ty = 0;
-  addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
-  addEventListener('touchmove', (e) => { const y = e.touches[0].clientY; beyond(ty - y); ty = y; }, { passive: true });
+  addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true, signal });
+  addEventListener('touchmove', (e) => { const y = e.touches[0].clientY; beyond(ty - y); ty = y; }, { passive: true, signal });
 
   // une iframe du même site (générateur) ne doit pas bloquer le défilement : sa molette fait défiler la page
   host.querySelectorAll('iframe').forEach((f) => f.addEventListener('load', () => {
@@ -206,7 +210,6 @@ export function initScreens(host: HTMLElement): Screens {
   const canScroll = (s: HTMLElement, dir: number) =>
     getComputedStyle(s).overflowY !== 'hidden' && (dir > 0 ? s.scrollTop + s.clientHeight < s.scrollHeight - 2 : s.scrollTop > 2);
   addEventListener('keydown', (e) => {
-    if (free) return; // défilement libre : le clavier fait défiler la page normalement
     if (e.defaultPrevented || e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target as Element | null;
     if (t?.closest?.(EDITABLE) || t?.closest?.('[data-own-keys]')) return;
@@ -224,30 +227,42 @@ export function initScreens(host: HTMLElement): Screens {
     if (canScroll(s, dir)) s.scrollBy({ top: dir * (page ? s.clientHeight * 0.85 : 64), behavior: reduced() ? 'auto' : 'smooth' });
     else if (dir > 0 && cur === S.length - 1) emit('screens:beyond', { from: cur });
     else go(cur + dir);
-  });
+  }, { signal });
 
-  // liens « Haut ↑ » et ancres internes
+  // liens « Haut ↑ » et ancres internes (phase de capture : avant le routeur du site, qui ignore alors le lien)
   document.addEventListener('click', (e) => {
     const a = (e.target as Element).closest?.('[data-go]') as HTMLElement | null;
     if (!a) return;
     e.preventDefault();
     go(Number(a.dataset.go));
-  });
+  }, { signal, capture: true });
 
-  addEventListener('pagehide', save);
+  // départ de la page : l'écran affiché est mémorisé (retour arrière, rechargement)
+  ctx.cleanup(save);
+  addEventListener('pagehide', save, { signal });
   let rz = 0;
   const relayout = () => { const keep = cur; measure(); host.scrollTop = T[keep]; parallax(host.scrollTop); };
-  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = requestAnimationFrame(relayout); });
-  document.fonts?.ready.then(() => { if (settled) relayout(); });
+  addEventListener('resize', () => { cancelAnimationFrame(rz); rz = ctx.raf(relayout); }, { signal });
 
   document.documentElement.classList.add('screens');
+  ctx.cleanup(() => { document.documentElement.classList.remove('screens'); delete document.documentElement.dataset.screen; });
   measure();
   host.scrollTop = T[cur];
   lastY = host.scrollTop; cran = Math.floor(lastY / (H / 8));
   place();
-  const api: Screens = { go, current: () => cur, count: S.length, el: (i) => S[i], revealFirst: (d) => { document.fonts.ready.then(() => { prepare(); revealFirst(d); scrub(host.scrollTop); }); } };
-  // les autres écrans sont préparés dès que les polices sont prêtes (à l'arrêt), et cachés jusqu'à leur entrée
-  document.fonts.ready.then(() => { prepare(); scrub(host.scrollTop); });
-  window.kkScreens = api;
-  return api;
+  // les écrans hors du cadre restent cachés (instant 0) ; l'écran ouvert attend start() pour jouer son apparition
+  scrub(host.scrollTop);
+  // polices arrivées (premier chargement) : mesures refaites, écrans préparés
+  if (!fontsReady) document.fonts.ready.then(() => { if (signal.aborted) return; if (settled) relayout(); prepare(); scrub(host.scrollTop); });
+
+  // apparition de l'écran ouvert (déjà préparé et caché) : il est traité comme s'il venait d'entrer dans le cadre
+  const start = (delay = 150) => {
+    const begin = () => { const c = ctl.get(S[cur]); document.documentElement.classList.remove('rv-pre'); if (!c) return; c.d = 0; ctx.timeout(() => aim(c, c.total), delay); };
+    if (document.fonts.status === 'loaded' && (ctl.has(S[cur]) || !animate || S[cur].hasAttribute('data-still'))) begin();
+    else document.fonts.ready.then(() => { if (!signal.aborted) begin(); });
+  };
+
+  active = { go, current: () => cur, count: S.length, el: (i) => S[i], host, start };
+  ctx.cleanup(() => { active = null; });
+  return active;
 }

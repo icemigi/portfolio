@@ -1,7 +1,7 @@
 ---
 // « Ce que j'aime » (easter egg de la porte, page À propos). L'écran est vide, puis les objets tombent du ciel.
 // On les prend et on les lance ; un clic ouvre le texte au milieu de l'écran, qui repousse les objets.
-// Chaque objet a sa propre adresse (#id). Physique : matter.js (MIT), servi depuis /vendor/.
+// Chaque objet a sa propre adresse (#id). Physique : matter.js (MIT), servi depuis /vendor/ et chargé à la demande (scripts/views/likes.ts).
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam } from '../../../data/ui';
 import { likes } from '../../../data/likes';
@@ -13,7 +13,8 @@ const fr = lang === 'fr';
 const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
 ---
 <Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac : Le Seigneur des anneaux, One Piece, films d\'horreur, rando, escalade, course, pignon fixe, jeu vidéo, musique et code. À attraper, lancer, ouvrir.' : 'Things I love, in no particular order: The Lord of the Rings, One Piece, horror films, hiking, climbing, running, fixed gear, video games, music and code. Grab, throw, open.'} path="about/likes/" active="about">
-  <Fragment slot="head"><script is:inline src="/vendor/matter.min.js"></script></Fragment>
+  {/* données des objets pour le script (views/likes.ts) */}
+  <script type="application/json" id="likes-data" set:html={JSON.stringify(data)} />
   <div class="likes" data-likes data-own-wheel>
     <p class="ttl"><a class="bp hit" href={`/${lang}/about/`}>{fr ? 'retour' : 'back'}</a></p>
     <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
@@ -37,7 +38,6 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   </div>
 </Base>
 
-<script is:inline define:vars={{ data }}>window.kkLikes = data;</script>
 
 <style>
   .likes { position: fixed; inset: 0; overflow: hidden; }
@@ -51,6 +51,8 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; }
   .stage:active { cursor: grabbing; }
   .it { position: absolute; left: 0; top: 0; display: grid; place-items: center; padding: 8px; background: #c9c9c9; color: #fff; text-align: center; will-change: transform; pointer-events: none; }
+  /* hors de l'écran tant que la physique ne les a pas placés (views/likes.ts) : ils tombent du ciel */
+  :global(html.js) .likes:not(.live) .it { visibility: hidden; }
   .it.circle { border-radius: 50%; }
   /* une ombre qui suit la forme de l'objet (pas de rectangle) ; l'objet soulevé ou ouvert s'élève */
   .it img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .16)); transition: filter .3s; }
@@ -84,217 +86,3 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   }
 </style>
 
-<script>
-  import { letters, reduced } from '../../../scripts/motion';
-  const M = (window as any).Matter;
-  const D = (window as any).kkLikes as { id: string; shape: string; w: number; h: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
-  const root = document.querySelector<HTMLElement>('[data-likes]')!;
-  const stage = root.querySelector<HTMLElement>('[data-stage]')!;
-  const card = root.querySelector<HTMLElement>('[data-card]')!;
-  const big = root.querySelector<HTMLElement>('[data-big]')!;
-  const still = reduced();
-  const small = matchMedia('(max-width: 760px)').matches;
-  const { Engine, Bodies, Body, Composite, Mouse, MouseConstraint, Query, Events, Vertices } = M;
-  // pas de temps fixe de 1/120 s (voir la boucle) : les piles restent stables sans pousser les itérations du solveur
-  const engine = Engine.create({ gravity: { y: 1.1 }, positionIterations: small ? 8 : 12, velocityIterations: small ? 6 : 8, constraintIterations: 4 });
-  let W = innerWidth, H = innerHeight;
-
-  // boîte fermée : sol, plafond et côtés (on ne peut rien lancer hors de l'écran)
-  const wallOpt = { isStatic: true, restitution: 0.2, friction: 0.6 };
-  let walls: any[] = [], closed = false;
-  // plafond : sous l'en-tête et le lien retour (les objets ne recouvrent jamais la navigation)
-  const top = () => root.querySelector('.ttl')!.getBoundingClientRect().bottom + 12;
-  const buildWalls = () => {
-    Composite.remove(engine.world, walls);
-    const T = 400; walls = [Bodies.rectangle(W / 2, H + T / 2, W + 2 * T, T, wallOpt), Bodies.rectangle(-T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt), Bodies.rectangle(W + T / 2, H / 2 - 1000, T, H + 2 * T + 2000, wallOpt)];
-    if (closed) walls.push(Bodies.rectangle(W / 2, top() - T / 2, W + 2 * T, T, wallOpt));
-    Composite.add(engine.world, walls);
-  };
-  buildWalls();
-
-  // pas d'échelle réelle : chaque objet a la même surface (seules ses proportions changent), le tout couvre ~32 % de l'écran
-  const real = D.map((d) => { const r = Math.sqrt(d.w / d.h); return [r, 1 / r]; });
-  const K = Math.sqrt((0.32 * innerWidth * innerHeight) / D.length);
-  // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
-  // une étagère par mot. Téléphone : pas d'étagère, le titre reste un décor derrière les objets, qui tombent jusqu'au sol
-  let shelves: any[] = [];
-  const buildShelf = () => {
-    Composite.remove(engine.world, shelves);
-    if (small) { shelves = []; return; }
-    shelves = [...big.querySelectorAll<HTMLElement>('.w')].map((w) => {
-      const r = w.getBoundingClientRect(), t = r.top + r.height * (small ? 0.24 : 0.12), b = r.bottom - r.height * (small ? 0.1 : 0.06);
-      return Bodies.rectangle(r.left + r.width / 2, (t + b) / 2, r.width, b - t, { isStatic: true, friction: 1, frictionStatic: 10, restitution: 0 });
-    });
-    Composite.add(engine.world, shelves);
-  };
-  buildShelf(); document.fonts.ready.then(() => { if (!big.hidden) buildShelf(); });
-  const items = D.map((d, i) => {
-    const el = stage.querySelector<HTMLElement>(`[data-id="${d.id}"]`)!;
-    let [w, h] = real[i].map((v) => v * K);
-    const cap = Math.min(1, (innerHeight * 0.42) / h, (innerWidth * (small ? 0.5 : 0.4)) / w); w *= cap; h *= cap;
-    el.style.width = `${w}px`; el.style.height = `${h}px`;
-    // points de chute répartis sur toute la largeur de l'écran, l'objet entier reste entre les murs
-    const u = (i * 0.37) % 1, x = Math.max(w / 2 + 8, Math.min(W - w / 2 - 8, W * (0.06 + 0.88 * u))), y = -h - 20;
-    const opt = { restitution: 0.12, friction: 0.8, frictionStatic: 1.2, frictionAir: 0.015, slop: 0.05, angle: (Math.random() - 0.5) * 0.25 };
-    // contour exact : enveloppe convexe du PNG (le corps physique colle à l'objet, plus de flottement)
-    let body: any, ox = 0, oy = 0;
-    if (d.shape === 'circle') body = Bodies.circle(x, y, w / 2, opt);
-    else {
-      const verts = d.hull.map(([u, v]) => ({ x: u * w, y: v * h }));
-      const c = Vertices.centre(verts); ox = w / 2 - c.x; oy = h / 2 - c.y;
-      body = Bodies.fromVertices(x, y, [verts], opt);
-    }
-    body.kk = d.id;
-    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, tf: '', home: null as null | { x: number; y: number; a: number } };
-  });
-  // le titre s'écrit au centre, puis les objets pleuvent dessus ; il s'efface quand un objet est ouvert, mais l'étagère reste (rien ne tombe)
-  const showTitle = (delay: number) => {
-    big.hidden = false;
-    letters(big, delay);
-  };
-  const hideTitle = () => {
-    big.hidden = true;
-  };
-  showTitle(150);
-  items.forEach((it, i) => setTimeout(() => Composite.add(engine.world, it.body), still ? 0 : 900 + i * 220));
-  // le plafond se ferme quand tous les objets sont entrés : ensuite, rien ne sort de la boîte
-  Events.on(engine, 'afterUpdate', () => {
-    if (closed) return;
-    if (items.every(({ body, h }) => Composite.get(engine.world, body.id, 'body') && body.position.y > top() + h / 2 + 8)) { closed = true; buildWalls(); }
-  });
-  // vitesse plafonnée : un lancer violent ne traverse pas les murs
-  Events.on(engine, 'beforeUpdate', () => items.forEach(({ body }) => { const v = body.velocity, s = Math.hypot(v.x, v.y); if (s > 32) Body.setVelocity(body, { x: (v.x / s) * 32, y: (v.y / s) * 32 }); }));
-
-  // glisser, lancer
-  const mouse = Mouse.create(stage);
-  mouse.pixelRatio = 1;
-  stage.removeEventListener('wheel', mouse.mousewheel); stage.removeEventListener('mousewheel', mouse.mousewheel); stage.removeEventListener('DOMMouseScroll', mouse.mousewheel);
-  // prise plus franche (moins d'élastique) ; l'objet tenu garde son orientation (sinon il pivote dès qu'on clique dessus)
-  const mc = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.1, damping: 0.06, render: { visible: false } } });
-  Composite.add(engine.world, mc);
-  let down = { x: 0, y: 0, t: 0 };
-  Events.on(mc, 'startdrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'pick' })));
-  Events.on(mc, 'enddrag', () => dispatchEvent(new CustomEvent('kk:sound', { detail: 'drop' })));
-  stage.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
-  stage.addEventListener('pointerup', (e) => {
-    if (Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6 || performance.now() - down.t > 400) return;
-    const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
-    if (hit && sel && hit === sel.body) close(); // second clic sur l'objet ouvert : on referme
-    else if (hit) open(hit.kk, true);
-    else if (sel) close(); // toucher le vide referme
-  });
-  let hovered: string | null = null;
-  stage.addEventListener('pointermove', (e) => {
-    const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
-    const id = hit ? hit.kk : null;
-    if (id && id !== hovered) dispatchEvent(new CustomEvent('kk:sound', { detail: 'hover' }));
-    hovered = id; stage.style.cursor = id ? 'grab' : '';
-  });
-
-  // clic : l'objet vient au premier plan, agrandi, à gauche ; le texte apparaît à droite ; les autres objets sont chassés
-  let sel: (typeof items)[number] | null = null;
-  // objet ouvert : la physique est suspendue (rien ne bouge, rien n'est poussé) jusqu'à ce que l'objet soit revenu à sa place
-  let paused = false;
-  const tween = (it: (typeof items)[number], tx: number, ty: number, ts: number, ta = 0, done?: () => void) => {
-    const b = it.body, x0 = b.position.x, y0 = b.position.y, a0 = b.angle, s0 = it.s, t0 = performance.now(), dur = still ? 1 : 700, tok = ++it.tw;
-    const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    // rotation par le plus court chemin : un objet qui a roulé a un angle de plusieurs tours, il ne doit pas les refaire
-    const TAU = Math.PI * 2, da = ((((ta - a0) % TAU) + TAU + Math.PI) % TAU) - Math.PI;
-    const step = (now: number) => {
-      if (tok !== it.tw) return; // un nouveau mouvement a pris le relais
-      const p = ease(Math.min(1, (now - t0) / dur));
-      Body.setPosition(b, { x: x0 + (tx - x0) * p, y: y0 + (ty - y0) * p }); Body.setAngle(b, a0 + da * p); it.s = s0 + (ts - s0) * p;
-      if (p < 1) requestAnimationFrame(step); else done?.();
-    };
-    requestAnimationFrame(step);
-  };
-  // l'objet refermé retourne exactement là où on l'a pris (sur l'étagère, dans le tas), puis la physique le reprend
-  const release = () => {
-    if (!sel) return;
-    const it = sel, h = it.home!; sel = null;
-    it.el.classList.remove('sel'); it.el.style.willChange = '';
-    const land = () => { if (sel === it || !it.body.isStatic) return; Body.setPosition(it.body, { x: h.x, y: h.y }); Body.setAngle(it.body, h.a); it.s = 1; Body.setStatic(it.body, false); Body.setVelocity(it.body, { x: 0, y: 0 }); Body.setAngularVelocity(it.body, 0); if (!sel) paused = false; };
-    tween(it, h.x, h.y, 1, h.a, land);
-    setTimeout(land, still ? 0 : 760); // filet de sécurité si l'animation est suspendue (onglet en arrière-plan)
-  };
-  // le titre s'écrit lettre à lettre ; le texte apparaît d'un bloc (découper un paragraphe en lettres le fait sauter de ligne)
-  const reveal = () => {
-    if (still) return;
-    // téléphone : une seule animation, une fois l'objet presque posé (lettres et blocs par-dessus sa fin le faisaient saccader)
-    if (small) { card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 620, easing: 'ease-out', fill: 'backwards' }); return; }
-    letters(card.querySelector('[data-title]')!, 200);
-    card.querySelectorAll<HTMLElement>('.sub, .txt, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: 260 + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
-  };
-  const open = (id: string, push: boolean) => {
-    const d = D.find((x) => x.id === id); const it = items.find((x) => x.d.id === id); if (!d || !it) return;
-    release();
-    if (!big.hidden) hideTitle();
-    card.querySelector('[data-sub]')!.textContent = d.sub;
-    const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
-    lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
-    // lecteur intégré (iPod) : chargé une fois l'objet posé, pour ne pas alourdir son arrivée
-    const mount = () => {
-      it.el.style.willChange = 'auto'; // un calque will-change garde la résolution de sa petite taille : sans lui, l'objet agrandi est redessiné net
-      const emb = it.el.querySelector<HTMLElement>('[data-emb]');
-      if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
-      // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions
-      // (assez haut pour que Spotify affiche aussi la liste des morceaux)
-      if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.width = '300px'; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; }
-    };
-    card.querySelector('[data-title]')!.textContent = d.title;
-    card.querySelector('[data-text]')!.textContent = d.text;
-    card.hidden = false;
-    card.scrollTop = 0;
-    const r = (small ? card : card.querySelector('.in')!).getBoundingClientRect();
-    // le monde se fige, les autres objets s'effacent (rien n'est chassé, tout reste à sa place)
-    paused = true; root.classList.add('open');
-    if (!it.body.isStatic) it.home = { x: it.body.position.x, y: it.body.position.y, a: it.body.angle };
-    sel = it; it.el.classList.add('sel'); Body.setStatic(it.body, true);
-    if (small) {
-      // téléphone : l'objet se pose au centre de l'espace libre au-dessus de la feuille
-      const t0 = top(), room = r.top - t0 - 32;
-      tween(it, W / 2, t0 + 16 + room / 2, Math.min(d.embed ? 3.6 : 2.4, room / it.h, (W * 0.72) / it.w), 0, mount);
-    } else {
-      // ordinateur : l'objet au centre de la moitié gauche, le texte à droite (colonnes 7 à 10)
-      const room = Math.min(r.left - 2 * 48, H - 2 * 140);
-      tween(it, r.left / 2, H / 2, Math.min(d.embed ? 3.6 : 2.6, room / Math.max(it.w, it.h) * (d.embed ? 1.15 : 1)), 0, mount);
-    }
-    reveal();
-    if (push) history.replaceState(null, '', `#${id}`);
-    card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
-  };
-  const close = () => {
-    card.hidden = true; history.replaceState(null, '', location.pathname);
-    root.classList.remove('open');
-    release();
-    showTitle(80);
-  };
-  card.querySelector('[data-close]')!.addEventListener('click', close);
-  addEventListener('keydown', (e) => { if (e.key === 'Escape' && !card.hidden) close(); });
-  // clavier : chaque objet est un bouton (Tab puis Entrée)
-  items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true))); });
-
-  addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); if (!big.hidden) buildShelf(); });
-
-  const draw = () => items.forEach((it) => {
-    const { el, body, w, h, ox, oy } = it; const sc = it.s;
-    const ca = Math.cos(body.angle), sa = Math.sin(body.angle);
-    const cx = body.position.x + ox * ca - oy * sa, cy = body.position.y + ox * sa + oy * ca;
-    const tf = `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${body.angle.toFixed(4)}rad) scale(${sc.toFixed(3)})`;
-    if (tf !== it.tf) { it.tf = tf; el.style.transform = tf; }
-  });
-  // pas fixe : Matter avance toujours de 1/120 s, autant de fois que le temps écoulé l'exige (écran 60, 120 ou 144 Hz,
-  // image en retard) ; un pas variable donnait des à-coups et des piles qui tremblent
-  const STEP = 1000 / 120;
-  if (still) { setTimeout(() => { for (let i = 0; i < 1200; i++) Engine.update(engine, STEP); }, 10); }
-  let last = performance.now(), acc = 0;
-  const tick = (now: number) => {
-    acc += Math.min(100, now - last); last = now;
-    if (document.hidden || paused) acc = 0;
-    else { let n = 0; while (acc >= STEP && n++ < 12) { Engine.update(engine, STEP); acc -= STEP; } }
-    draw(); requestAnimationFrame(tick);
-  };
-  draw(); requestAnimationFrame(tick);
-  const h0 = location.hash.slice(1);
-  if (h0) setTimeout(() => open(h0, false), still ? 0 : 1600);
-</script>

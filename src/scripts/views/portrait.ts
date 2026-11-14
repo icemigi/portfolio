@@ -1,0 +1,346 @@
+// Portrait 3D (Portrait3D.astro, accueil) : relief WebGL du chevalier dans son cadre, suit la souris et la flamme du mode nuit,
+// volte-face au clic. Le contexte WebGL est rendu au départ de la page (aucune accumulation d'une navigation à l'autre).
+import { onPage } from '../page';
+import { reduced } from '../motion';
+import { FLAME } from '../torch';
+
+onPage('[data-p3d]', (ctx) => {
+  const ASPECT = 1709 / 2334, FOCUS = 0.55, GMAX = 21.8872;
+  const BOX = [0.08192, 0.13496, 0.91281, 0.89974];        // emprise du chevalier dans le cadre (uv)
+  // les deux faces du portrait : avec casque (textures 1-3), sans casque (textures 4-6, chargées après la première)
+  const FACES = [
+    { box: BOX, gmax: GMAX, tex: [1, 2, 3] },
+    { box: [0.08192, 0.08483, 0.91281, 0.89974], gmax: 33.2264, tex: [4, 5, 6] },
+  ];
+  const FLIP = 720;                                          // volte-face (ms)
+  const GRID = [300, 380];
+  const SET = { relief: 0.42, angle: 10, spec: 0.45, shade: 0.2 };
+  // fond de la fenêtre : le bleu-gris de la photo d'origine, posé un peu derrière le cadre (il glisse sous les montants)
+  const BG = [0xc2 / 255, 0xd3 / 255, 0xdf / 255], BG_Z = -0.05;
+  const PAD = 1.5;                                           // canvas = 150 % du portrait (marge pour le saut de la volte-face)
+  // entrée : pendant que le titre s'écrit, le portrait monte en fondu ; le chevalier sort du cadre (relief de 0 au plein),
+  // pivote pour se poser face au visiteur, et un éclat de lumière glisse sur l'acier, de gauche à droite
+  const INTRO = 1500, INTRO_AT = 380, YAW = 0.38, PITCH = -0.12;   // ms, ms après l'apparition de l'écran, radians (~22°, ~-7°)
+
+  const KNIGHT_VS = `#version 300 es
+    in vec2 aUV; uniform mat4 uMVP; uniform highp sampler2D uGeo; uniform float uRelief, uAspect, uFocus;
+    out vec2 vUV; out float vZ;
+    float dep(ivec2 p, ivec2 s) {
+      vec4 g = texelFetch(uGeo, clamp(p, ivec2(0), s - 1), 0);
+      return (g.r * 65280. + g.g * 255.) / 65535.;
+    }
+    float depthAt(vec2 uv) {                                  // bilinéaire sur la profondeur 16 bits décodée
+      ivec2 s = textureSize(uGeo, 0);
+      vec2 f = uv * vec2(s) - .5; ivec2 i = ivec2(floor(f)); vec2 t = fract(f);
+      return mix(mix(dep(i, s), dep(i + ivec2(1, 0), s), t.x), mix(dep(i + ivec2(0, 1), s), dep(i + ivec2(1, 1), s), t.x), t.y);
+    }
+    void main() {
+      vUV = aUV; vZ = (depthAt(aUV) - uFocus) * uRelief;
+      gl_Position = uMVP * vec4((aUV.x - .5) * uAspect, .5 - aUV.y, vZ, 1.);
+    }`;
+  const KNIGHT_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D uKnight, uNrm; uniform vec3 uLight; uniform float uRelief, uAspect, uSpec, uShade, uGmax, uNight; uniform vec2 uCandle;
+    in vec2 vUV; in float vZ; out vec4 o;
+    void main() {
+      vec4 c = texture(uKnight, vUV);
+      if (c.a < .003) discard;
+      vec3 nr = texture(uNrm, vUV).rgb;
+      vec2 e = nr.rg * 2. - 1.;
+      vec2 g = sign(e) * e * e * uGmax;                       // pente de la profondeur par unité d'uv
+      vec3 n = normalize(vec3(-g.x * uRelief / uAspect, g.y * uRelief, 1.));
+      vec3 L = normalize(uLight), H = normalize(L + vec3(0, 0, 1));
+      vec3 rgb = c.rgb / c.a;
+      float sat = max(rgb.r, max(rgb.g, rgb.b)) - min(rgb.r, min(rgb.g, rgb.b));
+      float face = nr.b;                                      // visage, cheveux, sourcils : ni reflet ni ombrage
+      float metal = smoothstep(.22, .07, sat) * smoothstep(.12, .3, dot(rgb, vec3(.333))) * (1. - face);
+      float diff = clamp(dot(n, L), 0., 1.);
+      float spec = pow(max(dot(n, H), 0.), 56.) * metal;
+      vec3 day = min(rgb * (1. + uShade * (diff - .8) * (1. - face)) + uSpec * spec, 1.);
+      // nuit : la flamme est une source ponctuelle, devant le portrait. Lumière qui chute avec la distance réelle (3D) et
+      // n'éclaire que les surfaces tournées vers elle (le relief du métal s'allume, le reste plonge dans le noir) ; reflet chaud
+      vec3 warm = vec3(1., .72, .45);
+      vec3 pos = vec3((vUV.x - .5) * uAspect, .5 - vUV.y, vZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 9. * dot(Ld, Ld)); vec3 Lf = normalize(Ld);
+      float dif = max(dot(n, Lf), 0.), spf = pow(max(dot(n, normalize(Lf + vec3(0, 0, 1))), 0.), 48.) * metal;
+      // pénombre de la pièce (le portrait reste lisible partout) + la flamme, qui porte assez loin pour éclairer tout le buste
+      // la peau prend une lumière enveloppante (la forme reste, sans ombres dures dans les traits)
+      float difN = mix(dif, .55 + .45 * dif, face);
+      vec3 night = rgb * (vec3(.20, .19, .21) + warm * 1.5 * att * difN) + warm * uSpec * 2.2 * spf * att;
+      rgb = mix(day, min(night, 1.), uNight);
+      o = vec4(rgb * c.a, c.a);
+    }`;
+  const PLANE_VS = `#version 300 es
+    in vec2 aUV; uniform mat4 uMVP; uniform float uAspect, uZ, uScale; out vec2 vUV;
+    void main() { vUV = aUV; gl_Position = uMVP * vec4(vec2((aUV.x - .5) * uAspect, .5 - aUV.y) * uScale, uZ, 1.); }`;
+  const PLANE_FS = `#version 300 es
+    precision highp float;
+    uniform sampler2D uTex; uniform int uMode; uniform vec3 uColor; uniform float uNight, uAspect, uZ, uScale; uniform vec2 uCandle; in vec2 vUV; out vec4 o;
+    void main() {
+      vec4 t = texture(uTex, vUV);
+      // nuit : le cadre et le fond, plats, reçoivent la flamme de biais (même source ponctuelle que le chevalier)
+      vec3 pos = vec3(vec2((vUV.x - .5) * uAspect, .5 - vUV.y) * uScale, uZ), fl = vec3((uCandle.x - .5) * uAspect, .5 - uCandle.y, .2);
+      vec3 Ld = fl - pos; float att = 1. / (1. + 9. * dot(Ld, Ld));
+      vec3 lit = mix(vec3(1.), vec3(.20, .19, .21) + vec3(1., .72, .45) * 1.5 * att * max(normalize(Ld).z, 0.), uNight);
+      if (uMode == 0) { if (t.b < .5) discard; o = vec4(0.); }   // pochoir : trou du cadre
+      else if (uMode == 2) o = vec4(uColor * lit, 1.);            // fond uni (limité au pochoir)
+      else o = vec4(t.rgb * lit, t.a);                            // cadre (prémultiplié : la couleur seule est assombrie)
+    }`;
+
+  function init(fig: HTMLElement) {
+    const canvas = fig.querySelector('canvas')!, img = fig.querySelector('img')!;
+    // face affichée (0 : avec casque, 1 : sans) — le site s'ouvre toujours avec le casque
+    let face = 0;
+    try { localStorage.removeItem('kk-face'); } catch { /* */ }
+    const FALLBACK = ['/portrait3d/portrait-fallback-m.webp', '/portrait3d/portrait-fallback2-m.webp'];
+    if (face === 1) img.src = FALLBACK[1];
+    // sans rendu 3D (ou « Réduire les animations ») : le clic échange simplement les deux images
+    const flipImg = (e: MouseEvent) => {
+      const r = fig.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return;
+      face = 1 - face; img.src = FALLBACK[face];
+      dispatchEvent(new CustomEvent('kk:flip', { detail: { face } }));
+    };
+    if (reduced()) { addEventListener('click', flipImg, { signal: ctx.signal }); return; } // image fixe, déjà en place
+    // entrée : le portrait reste caché jusqu'à la fin du chargement d'entrée, puis apparaît avec le titre
+    // (après un changement de langue, la page s'ouvre telle quelle : pas d'entrée)
+    const swapped = !!ctx.info.lang;
+    if (!swapped) fig.classList.add('pre');
+    let introT0 = swapped ? -1e9 : Infinity, kickRef = () => {};
+    const begin = () => {
+      if (swapped) return;
+      fig.classList.remove('pre');
+      fig.animate([{ opacity: 0, translate: '0 5%', scale: 0.94 }, { opacity: 1, translate: '0 0', scale: 1 }], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      introT0 = performance.now(); kickRef();
+    };
+    // avec l'écran de chargement d'entrée (première visite), on attend qu'il ait quitté la page (il monte et découvre le haut,
+    // où est le portrait, en dernier) ; garde-fou : 5 s au plus
+    const gone = () => new Promise<void>((r) => {
+      const ld = document.querySelector('[data-ld]');
+      if (!ld?.parentNode) { r(); return; }
+      const mo = ctx.observe(new MutationObserver(() => { if (!ld.isConnected) { mo.disconnect(); r(); } }));
+      mo.observe(ld.parentNode, { childList: true }); ctx.timeout(() => { mo.disconnect(); r(); }, 5000);
+    });
+    const gate = (p: Promise<unknown>) => Promise.all([window.kkReady ?? Promise.resolve(), document.fonts.ready, p.catch(() => {})])
+      .then(() => { const wait = !!document.querySelector('[data-ld]'); return gone().then(() => ctx.timeout(begin, wait ? 60 : INTRO_AT)); });
+    const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: true, stencil: true, depth: true });
+    if (!gl) { gate(Promise.resolve()); addEventListener('click', flipImg, { signal: ctx.signal }); return; }
+    ctx.cleanup(() => gl.getExtension('WEBGL_lose_context')?.loseContext());
+
+    const compile = (vs: string, fs: string) => {
+      const p = gl.createProgram()!;
+      for (const [t, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as const) {
+        const s = gl.createShader(t)!; gl.shaderSource(s, src); gl.compileShader(s);
+        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) || 'shader');
+        gl.attachShader(p, s);
+      }
+      gl.bindAttribLocation(p, 0, 'aUV'); gl.linkProgram(p);
+      if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link');
+      const cache: Record<string, WebGLUniformLocation | null> = {};
+      return { p, u: (n: string) => (n in cache ? cache[n] : (cache[n] = gl.getUniformLocation(p, n))) };
+    };
+    let knightP: ReturnType<typeof compile>, planeP: ReturnType<typeof compile>;
+    try { knightP = compile(KNIGHT_VS, KNIGHT_FS); planeP = compile(PLANE_VS, PLANE_FS); } catch (e) { console.warn(e); gate(Promise.resolve()); return; }
+
+    const vao = (data: Float32Array, index?: Uint32Array) => {
+      const v = gl.createVertexArray(); gl.bindVertexArray(v);
+      gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      if (index) { gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index, gl.STATIC_DRAW); }
+      gl.bindVertexArray(null); return v;
+    };
+    const quad = vao(new Float32Array([0, 0, 1, 0, 0, 1, 1, 1]));
+    const [gx, gy] = GRID, idx = new Uint32Array(gx * gy * 6);
+    for (let j = 0, k = 0; j < gy; j++) for (let i = 0; i < gx; i++, k += 6) {
+      const a = j * (gx + 1) + i, b = a + 1, c = a + gx + 1, d = c + 1;
+      idx.set([a, c, b, b, c, d], k);
+    }
+    // un maillage par face (chacune a sa propre emprise dans le cadre)
+    const meshes = FACES.map(({ box }) => {
+      const verts = new Float32Array((gx + 1) * (gy + 1) * 2);
+      for (let j = 0, k = 0; j <= gy; j++) for (let i = 0; i <= gx; i++, k += 2) {
+        verts[k] = box[0] + ((box[2] - box[0]) * i) / gx; verts[k + 1] = box[1] + ((box[3] - box[1]) * j) / gy;
+      }
+      return vao(verts, idx);
+    });
+
+    // couleurs : prémultipliées, mip-maps ; données (geo, nrm) : brutes, sans gestion de couleur
+    const tex = (url: string, unit: number, data: boolean, nearest = false) => new Promise<void>((ok, ko) => {
+      const im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous';
+      im.onload = () => {
+        const t = gl.createTexture(); gl.activeTexture(gl.TEXTURE0 + unit); gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, !data);
+        gl.pixelStorei(gl.UNPACK_COLORSPACE_CONVERSION_WEBGL, data ? gl.NONE : gl.BROWSER_DEFAULT_WEBGL);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, gl.RGBA, gl.UNSIGNED_BYTE, im);
+        if (nearest) {
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        } else {
+          gl.generateMipmap(gl.TEXTURE_2D);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+          const an = gl.getExtension('EXT_texture_filter_anisotropic');
+          if (an) gl.texParameterf(gl.TEXTURE_2D, an.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+        }
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        ok();
+      };
+      im.onerror = ko; im.src = url;
+    });
+
+    type M = Float32Array;
+    const mul = (a: M, b: M) => { const r = new Float32Array(16);
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { let s = 0; for (let k = 0; k < 4; k++) s += a[k * 4 + j] * b[i * 4 + k]; r[i * 4 + j] = s; }
+      return r; };
+    const persp = (fov: number, asp: number, n: number, f: number) => { const t = 1 / Math.tan(fov / 2);
+      return new Float32Array([t / asp, 0, 0, 0, 0, t, 0, 0, 0, 0, (f + n) / (n - f), -1, 0, 0, (2 * f * n) / (n - f), 0]); };
+    const tr = (x: number, y: number, z: number) => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1]);
+    const rx = (a: number) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([1, 0, 0, 0, 0, c, s, 0, 0, -s, c, 0, 0, 0, 0, 1]); };
+    const ry = (a: number) => { const c = Math.cos(a), s = Math.sin(a); return new Float32Array([c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, 0, 0, 0, 1]); };
+    const sc = (k: number) => new Float32Array([k, 0, 0, 0, 0, k, 0, 0, 0, 0, k, 0, 0, 0, 0, 1]);
+
+    // souris : direction du pointeur par rapport au centre du portrait ; au repos (ou au doigt), lente oscillation
+    const fine = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const tgt = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
+    // mode nuit : position de la bougie (uv du portrait), amortie ; passage jour / nuit en fondu
+    const cand = { x: .5, y: .35, tx: .5, ty: .35 };
+    let night = document.documentElement.dataset.theme === 'nuit' ? 1 : 0;
+    let lastMove = -1e9, visible = true, raf = 0, ready = false;
+    // volte-face : la face affichée, et le retournement en cours (de → vers)
+    let flip: { t0: number; from: number; to: number; swapped: boolean } | null = null;
+
+    const FOV = (20 * Math.PI) / 180, DIST = 0.5 / Math.tan(FOV / 2);
+    const kick = () => { if (!raf && ready) raf = ctx.raf(draw); };
+    kickRef = kick;
+    const draw = (t: number) => {
+      raf = 0;
+      if (!visible || document.hidden || !canvas.width) return;
+      const idle = !fine || t - lastMove > 2500;
+      const gxv = idle ? Math.sin(t / 2600) * 0.45 : tgt.x, gyv = idle ? Math.sin(t / 3300 + 1) * 0.3 : tgt.y;
+      cur.x += (gxv - cur.x) * 0.07; cur.y += (gyv - cur.y) * 0.07;
+      night += ((document.documentElement.dataset.theme === 'nuit' ? 1 : 0) - night) * 0.06;
+      if (idle) { cand.tx = .5 + Math.sin(t / 1900) * .22; cand.ty = .38 + Math.sin(t / 2700) * .12; }
+      cand.x += (cand.tx - cand.x) * 0.12; cand.y += (cand.ty - cand.y) * 0.12;
+      const flick = 1 + (Math.sin(t / 97) * .5 + Math.sin(t / 61 + 1.3) * .3) * .012 * night;   // la flamme vacille à peine
+
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.clearColor(0, 0, 0, 0); gl.clearStencil(0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
+      gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      const a = (SET.angle * Math.PI) / 180;
+      const ip = Math.max(0, Math.min(1, (t - introT0) / INTRO)), e = 1 - (1 - ip) ** 3;   // entrée (0 → 1)
+      // volte-face : demi-tour autour de l'axe vertical ; à mi-course (vu par la tranche) la face change, et le cadre
+      // s'avance un peu vers le visiteur pendant qu'il tourne
+      // élan (il recule de 12°), tour très rapide qui passe la tranche en un éclair, léger dépassement puis il se pose
+      // (ressort amorti) ; il saute un peu vers le visiteur pendant le tour
+      let f = face, fa = 0, fz = 0, fk = 1;
+      if (flip) {
+        const p = Math.min(1, (t - flip.t0) / FLIP), BACK = .21, OVER = .17;
+        if (p < .15) fa = -BACK * Math.sin((p / .15) * Math.PI / 2);
+        else if (p < .72) { const u = (p - .15) / .57, q = u < .5 ? 8 * u ** 4 : 1 - 8 * (1 - u) ** 4; fa = -BACK + (Math.PI + OVER + BACK) * q; }
+        else { const u = (p - .72) / .28; fa = Math.PI + OVER * Math.exp(-4 * u) * Math.cos(u * Math.PI * 1.6); }
+        const hop = Math.sin(Math.min(1, Math.max(0, (p - .12) / .62)) * Math.PI);
+        fz = .12 * hop; fk = 1 + .025 * hop;
+        if (fa >= Math.PI / 2) { f = flip.to; fa -= Math.PI; if (!flip.swapped) { flip.swapped = true; dispatchEvent(new CustomEvent('kk:flip', { detail: { face: flip.to } })); } }
+        else f = flip.from;
+        if (p >= 1) flip = null;
+      }
+      const model = mul(tr(0, 0, fz), mul(rx(cur.y * a + PITCH * (1 - e)), mul(ry(-cur.x * a + YAW * (1 - e) + fa), sc(fk / PAD))));
+      const mvp = mul(persp(FOV, canvas.width / canvas.height, 0.1, 10), mul(tr(0, 0, -DIST), model));
+
+      // 1. pochoir : le trou du cadre, dans le plan du cadre (le chevalier n'en dépasse jamais, quel que soit l'angle)
+      gl.enable(gl.STENCIL_TEST); gl.colorMask(false, false, false, false);
+      gl.stencilFunc(gl.ALWAYS, 1, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.REPLACE);
+      gl.useProgram(planeP.p); gl.bindVertexArray(quad);
+      gl.uniformMatrix4fv(planeP.u('uMVP'), false, mvp); gl.uniform1f(planeP.u('uAspect'), ASPECT);
+      gl.uniform1f(planeP.u('uZ'), 0); gl.uniform1f(planeP.u('uScale'), 1);
+      gl.uniform1i(planeP.u('uTex'), 2); gl.uniform1i(planeP.u('uMode'), 0);
+      gl.uniform1f(planeP.u('uNight'), night); gl.uniform2f(planeP.u('uCandle'), cand.x, cand.y);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      gl.colorMask(true, true, true, true);
+
+      // 2. fond uni, un peu derrière le cadre et plus grand que lui : il remplit toujours le trou, quel que soit l'angle
+      gl.stencilFunc(gl.EQUAL, 1, 0xff); gl.stencilOp(gl.KEEP, gl.KEEP, gl.KEEP);
+      gl.uniform1f(planeP.u('uZ'), BG_Z); gl.uniform1f(planeP.u('uScale'), 1.2);
+      gl.uniform1i(planeP.u('uMode'), 2); gl.uniform3f(planeP.u('uColor'), BG[0], BG[1], BG[2]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      // 3. chevalier en relief, limité au pochoir
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
+      const F = FACES[f];
+      gl.useProgram(knightP.p); gl.bindVertexArray(meshes[f]);
+      gl.uniformMatrix4fv(knightP.u('uMVP'), false, mvp);
+      gl.uniform1i(knightP.u('uKnight'), F.tex[0]); gl.uniform1i(knightP.u('uGeo'), F.tex[1]); gl.uniform1i(knightP.u('uNrm'), F.tex[2]);
+      // pendant le tour, le relief s'aplatit (carte plate de profil, aucun étirement visible) puis se regonfle à l'arrivée
+      const flat = flip ? Math.min(1, Math.abs(Math.sin(fa)) * 1.6) : 0;
+      gl.uniform1f(knightP.u('uRelief'), SET.relief * (0.04 + 0.96 * e) * (1 - .97 * flat)); gl.uniform1f(knightP.u('uAspect'), ASPECT); gl.uniform1f(knightP.u('uFocus'), FOCUS);
+      gl.uniform1f(knightP.u('uSpec'), SET.spec * (1 + 1.4 * Math.sin(Math.PI * e))); gl.uniform1f(knightP.u('uShade'), SET.shade); gl.uniform1f(knightP.u('uGmax'), F.gmax);
+      // jour : la lumière suit la souris de loin ; nuit : la bougie est devant le portrait, là où est le pointeur
+      const lx = (cand.x - .5) * 2.4, ly = -(cand.y - .5) * 2.4;
+      gl.uniform3f(knightP.u('uLight'), (cur.x * 0.9 - 1.6 * (1 - e)) * (1 - night) + lx * night, (-cur.y * 0.9 + 0.25) * (1 - night) + ly * night, 1.1 - .35 * night);
+      gl.uniform1f(knightP.u('uNight'), night * flick); gl.uniform2f(knightP.u('uCandle'), cand.x, cand.y);
+      gl.drawElements(gl.TRIANGLES, idx.length, gl.UNSIGNED_INT, 0);
+      gl.disable(gl.DEPTH_TEST); gl.disable(gl.STENCIL_TEST);
+
+      // 4. cadre par-dessus — son image a 4 % de marge transparente tout autour (rien ne touche le bord du rectangle :
+      // la queue du dragon n'est plus tranchée net), le rectangle est agrandi d'autant
+      gl.useProgram(planeP.p); gl.bindVertexArray(quad);
+      gl.uniform1f(planeP.u('uZ'), 0); gl.uniform1f(planeP.u('uScale'), 1.08);
+      gl.uniform1i(planeP.u('uTex'), 0); gl.uniform1i(planeP.u('uMode'), 1);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+
+      kick();
+    };
+
+    addEventListener('pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      const r = fig.getBoundingClientRect();
+      cand.tx = (e.clientX + FLAME.x - r.left) / r.width; cand.ty = (e.clientY + FLAME.y - r.top) / r.height;   // la flamme de la torche
+      tgt.x = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / (innerWidth / 2)));
+      tgt.y = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / (innerHeight / 2)));
+      lastMove = performance.now(); kick();
+    }, { passive: true, signal: ctx.signal });
+    document.documentElement.addEventListener('pointerleave', () => { lastMove = -1e9; }, { signal: ctx.signal });
+
+
+    const resize = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      canvas.width = Math.round(canvas.clientWidth * dpr); canvas.height = Math.round(canvas.clientHeight * dpr);
+      kick();
+    };
+    ctx.observe(new ResizeObserver(resize)).observe(canvas);
+    ctx.observe(new IntersectionObserver(([e]) => { visible = e.isIntersecting; kick(); })).observe(fig);
+    document.addEventListener('visibilitychange', kick, { signal: ctx.signal });
+
+    // seconde face : chargée une seule fois, après la première (ou d'abord, si c'est elle qu'on avait laissée)
+    let face2: Promise<unknown> | null = null;
+    const loadFace2 = () => (face2 ??= Promise.all([tex('/portrait3d/knight2.webp', 4, false), tex('/portrait3d/geo2.png', 5, true, true), tex('/portrait3d/nrm2.png', 6, true)]));
+    const toggle = () => {
+      if (!ready || flip) return;
+      const to = 1 - face;
+      loadFace2().then(() => {
+        flip = { t0: performance.now(), from: face, to, swapped: false }; face = to; kick();
+        dispatchEvent(new CustomEvent('kk:sound', { detail: 'flip' }));
+      });
+    };
+    // le portrait laisse passer la souris (les lettres dessous réagissent) : on teste sa zone au clic
+    addEventListener('click', (e) => {
+      const r = fig.getBoundingClientRect();
+      if (e.clientX > r.left + r.width * .1 && e.clientX < r.right - r.width * .1 && e.clientY > r.top + r.height * .06 && e.clientY < r.bottom - r.height * .08) toggle();
+    }, { signal: ctx.signal });
+    const loaded = Promise.all([
+      tex('/portrait3d/frame-m.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
+      tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
+      ...(face === 1 ? [loadFace2()] : []),
+    ]).then(() => {
+      if (ctx.signal.aborted) return;
+      if (face === 0) ctx.timeout(loadFace2, 1500);
+      ready = true; resize();
+      // après un changement de langue, le rendu 3D remplace l'image fixe d'un coup (un fondu montrerait deux portraits décalés)
+      if (swapped) fig.classList.add('now');
+      ctx.raf(() => fig.classList.add('gl')); kick();
+    });
+    loaded.catch((e) => console.warn('portrait 3D :', e));
+    gate(loaded);                                             // textures prêtes (ou en échec : l'image fixe entre seule)
+  }
+
+  document.querySelectorAll<HTMLElement>('[data-p3d]').forEach(init);
+});

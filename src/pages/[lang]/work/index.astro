@@ -8,7 +8,6 @@ import ObjectShape from '../../../components/ObjectShape.astro';
 import ProjectStage from '../../../components/ProjectStage.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
-import { media } from '../../../data/media';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);

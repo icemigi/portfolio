@@ -4,6 +4,7 @@
 // (décalage par top/left, crénage intact) ; l'apparition anime ses propres spans .ch à l'intérieur, les deux décalages s'additionnent.
 // Cibles : [data-hola] ; réglages par cible : data-hola="poussée écart rayon". Ordinateur seulement ; rien si « Réduire les animations ».
 import { reduced } from './motion';
+import type { Ctx } from './page';
 const DEF = { A: 0.26, SPREAD: 0.06, SIGMA: 90 }; // poussée verticale (em), écart horizontal (em), rayon (px)
 const SKIP = '.note, .bp, .vi, .door, .mono, svg';
 const SOLID = '.vi, .door'; // images : bougent d'un bloc
@@ -26,7 +27,7 @@ function wrap(root: HTMLElement): HTMLElement[] {
   return [...root.querySelectorAll<HTMLElement>('.hc'), ...root.querySelectorAll<HTMLElement>(SOLID)];
 }
 
-export function initHola() {
+export function initHola(ctx: Ctx) {
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
   document.querySelectorAll<HTMLElement>('[data-hola]').forEach((el) => {
     const [a, s, r] = (el.dataset.hola || '').split(' ').map(Number);
@@ -44,7 +45,7 @@ export function initHola() {
         it.cx = b.left + b.width / 2 - it.x * fs; it.cy = b.top + b.height / 2 - it.y * fs;
       }
     };
-    const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
+    const kick = () => { if (!raf) raf = ctx.raf(loop); };
     const loop = () => {
       let moving = false;
       for (const it of items) {
@@ -67,6 +68,6 @@ export function initHola() {
     el.addEventListener('pointermove', (e) => { mx = e.clientX; my = e.clientY; if (inside) kick(); });
     el.addEventListener('pointerleave', () => { inside = false; kick(); });
     // l'écran glisse : on remesure au prochain passage
-    addEventListener('resize', () => inside && measure());
+    addEventListener('resize', () => inside && measure(), { signal: ctx.signal });
   });
 }

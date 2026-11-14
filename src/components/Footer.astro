@@ -23,7 +23,7 @@ const moods = fr
     <p class="mono mu par">{t.elsewhere}</p>
     <a class="lk" href={contact.instagram} rel="me noopener" target="_blank">Instagram <span class="ac">↗</span></a>
     <a class="lk" href={contact.behance} rel="me noopener" target="_blank">Behance <span class="ac">↗</span></a>
-    <a class="lk" href={`/${lang}/cv/`}>{t.cv}</a>
+    <a class="lk" href={`/${lang}/cv/`} data-astro-reload>{t.cv}</a>
   </div>
   <nav class="n" aria-label={fr ? 'Plan du site' : 'Sitemap'}>
     <p class="mono mu par">{fr ? 'Plan' : 'Index'}</p>
@@ -41,19 +41,3 @@ const moods = fr
   {top && <a class="top bp hit" href="#main" data-go="0">{t.top.toLowerCase()}</a>}
 </footer>
 
-<script is:inline>
-  // Heure de Paris (minute près) et humeur du moment. En ligne : posée avant le premier affichage, pas de case vide un instant.
-  (function () {
-    var tick = function () { document.querySelectorAll('[data-clock]').forEach(function (el) {
-      var now = new Date();
-      var hm = new Intl.DateTimeFormat('fr-FR', { timeZone: 'Europe/Paris', hour: '2-digit', minute: '2-digit', hour12: false }).format(now);
-      var h = parseInt(hm, 10);
-      var moods = JSON.parse(el.dataset.moods || '[]');
-      var mood = moods.filter(function (m) { return h >= m[0]; }).pop();
-      el.querySelector('[data-time]').textContent = 'Paris, ' + hm;
-      el.querySelector('[data-mood]').textContent = mood ? mood[1] : '';
-    }); };
-    tick();
-    if (!window.kkClock) window.kkClock = setInterval(tick, 20000);
-  })();
-</script>

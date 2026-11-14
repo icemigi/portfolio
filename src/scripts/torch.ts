@@ -87,7 +87,7 @@ export function initTorch() {
       glow = document.createElement('div'); glow.className = 'torch-glow'; glow.setAttribute('aria-hidden', 'true');
       cv = document.createElement('canvas'); cv.className = 'fire'; cv.setAttribute('aria-hidden', 'true');
       ctx = cv.getContext('2d');
-      document.body.append(glow, cv); resize(); addEventListener('resize', resize); pmx = mx; pmy = my; kick();
+      (document.querySelector('[data-layer]') || document.body).append(glow, cv); resize(); // calque global, gardé d'une page à l'autre (Base.astro) addEventListener('resize', resize); pmx = mx; pmy = my; kick();
     } else if (!on && cv) {
       cancelAnimationFrame(raf); raf = 0; cv.remove(); glow!.remove(); cv = glow = null; ctx = null; ps.length = 0;
       removeEventListener('resize', resize);

@@ -50,7 +50,7 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
     <section class="scr" aria-labelledby="ab-3">
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-3">{L.path}</h2>
-        <div class="bd"><Affiche text={path[lang]} vigs={pathVigs} lang={lang} /><p class="cvl mono"><a class="lk" href={`/${lang}/cv/`}>{lang === 'fr' ? 'cv complet' : 'full cv'} &gt;_</a></p></div>
+        <div class="bd"><Affiche text={path[lang]} vigs={pathVigs} lang={lang} /><p class="cvl mono"><a class="lk" href={`/${lang}/cv/`} data-astro-reload>{lang === 'fr' ? 'cv complet' : 'full cv'} &gt;_</a></p></div>
       </div>
     </section>
 

@@ -304,14 +304,20 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .ld-logo img:first-child { opacity: .12; }
 .ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-icon-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
-/* entre deux pages : fondu enchaîné court (Chrome, Safari ; ailleurs, coupe nette) */
-@view-transition { navigation: auto; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; animation-timing-function: ease; }
-@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
-
-/* départ vers une autre page (site.ts) : le contenu s'efface, le menu reste */
-main, .more-arrow, .scr-pos { transition: opacity .22s var(--out, ease); }
-html.kk-leaving main, html.kk-leaving .more-arrow, html.kk-leaving .scr-pos { opacity: 0; pointer-events: none; }
+/* ---------- d'une page à l'autre (navigation sans rechargement, transitions de vue du navigateur) ----------
+   Le menu ne bouge pas. Le contenu quitté s'efface vite ; la page d'arrivée est déjà là dessous, dans l'état de départ de son
+   apparition (texte à écrire, objets à faire tomber), qui commence aussitôt. Changement de langue (data-nav="lang") : aucun
+   fondu, la page réécrite sur place est remplacée par la même, dans l'autre langue. Voyages nommés : views/case.ts. */
+.site-header { view-transition-name: site-header; }
+/* le menu ne bouge pas : seule sa nouvelle image est montrée (l'ancienne et la nouvelle superposées s'additionnent —
+   mix-blend-mode plus-lighter du navigateur — et un menu clair sur fond clair blanchissait jusqu'à disparaître) */
+::view-transition-group(site-header), ::view-transition-new(site-header) { animation: none; }
+::view-transition-old(site-header) { animation: none; opacity: 0; }
+::view-transition-old(root) { animation: kk-vt-out .22s var(--out) both; }
+::view-transition-new(root) { animation: none; }
+html[data-nav='lang']::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition { background: var(--bg); }
+@keyframes kk-vt-out { to { opacity: 0; } }
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }
 .scr-pos { position: fixed; right: calc(var(--m) + 52px); bottom: 40px; z-index: 40; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; transition: opacity .3s; }
@@ -359,15 +365,5 @@ a:not([class]) { transition: color .2s; }
 [data-card]::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 2; opacity: var(--go, 0); transition: opacity .3s;
   background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, .42), rgba(255, 255, 255, 0) 58%); mix-blend-mode: soft-light; }
 
-/* ---------- défilement libre (flow.ts, décidé le 13/11) : la page défile d'un bloc, sans écrans aimantés ---------- */
-html.screens:has(.screens-host.free), html.screens:has(.screens-host.free) body { height: auto; overflow: visible; }
-.screens-host.free { position: static; overflow: visible; scroll-snap-type: none; height: auto; }
-.screens-host.free > .scr { height: auto; min-height: 0; overflow: visible; scroll-snap-align: none; }
-html:has(.screens-host.free) .more-arrow { display: none; }
-.screens-host.free > .scr.last { min-height: 100svh; }
-/* blocs de contenu : de l'air au-dessus et au-dessous (l'en-tête du menu compris) */
-:where(.screens-host.free > .scr) > .in { min-height: 0; padding-block: calc(var(--head) + 6vh) 8vh; }
-/* lignes masquées : chaque lettre est une boîte qui peut glisser sous sa ligne (flow.ts) */
-.sc { display: inline-block; }
+/* mots soudés pendant l'écriture (motion.ts) : une lettre en cours de mélange ne coupe jamais un mot en fin de ligne */
 .sw { white-space: nowrap; }
-.flow-off { visibility: hidden; }

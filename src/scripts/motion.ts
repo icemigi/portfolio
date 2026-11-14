@@ -1,8 +1,5 @@
 // Mouvement validé (étape 6) : lettres et vignettes.
 export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
-// téléphone : les lettres apparaissent en fondu, sans la petite montée (invisible à cette taille, mais coûteuse : elle
-// force le navigateur à recalculer la mise en page du paragraphe à chaque image)
-const PHONE = matchMedia('(max-width: 760px), (pointer: coarse)').matches;
 export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
 export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
@@ -57,6 +54,8 @@ const SCR = { step: 70, mix: 400, fast: 48, slow: 115, overlay: false }; // 11/1
 // écritures mélangées en cours (titre, apartés) : on peut les arrêter net, chaque lettre reprenant la sienne (changement de langue)
 const LIVE = new Set<() => void>();
 export function stopScrambles() { [...LIVE].forEach((f) => f()); }
+// départ de la page : écritures en cours arrêtées, textes en attente de rassemblement oubliés (leurs éléments s'en vont avec la page)
+export function resetMotion() { stopScrambles(); pending.clear(); }
 // Apparition pilotée par le défilement (revealScrub, 14/11) : pendant sa préparation, les mélanges s'inscrivent ici au lieu
 // de partir seuls, et aucun son n'est joué ; ensuite, chaque mélange se rend à l'instant demandé (avant ou arrière).
 type Scr = { render: (t: number) => void; end: number };
@@ -194,7 +193,9 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
 // Libellés Geist Mono et cachet : ils ouvrent la cascade, en fondu, à intervalles réguliers. Renvoie le départ des lettres (ms).
 export function fadeMono(root: Element, delay = 300): number {
   if (reduced()) return delay;
-  const items = [...root.querySelectorAll<HTMLElement>('.mono:not(.note):not(.bp), .seal-w')];
+  // .s1-late (page de garde des études) : apparition propre en CSS, une fois le titre posé — un second fondu ici la montrait
+  // trop tôt, puis la sienne la recachait jusqu'à son heure (clignotement)
+  const items = [...root.querySelectorAll<HTMLElement>('.mono:not(.note):not(.bp):not(.s1-late), .seal-w')];
   if (!items.length) return delay;
   const gap = Math.min(60, 480 / items.length);
   items.forEach((el, i) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, delay: delay + i * gap, easing: EASE_OUT, fill: 'backwards' }));
@@ -242,7 +243,7 @@ export function reveal(frame: Element, delay = 300, extraSkip?: string) {
   const start = fadeMono(frame, delay);
   const end = letters(frame, start, extraSkip);
   cascadeVignettes(frame, start);
-  afterText(frame, end, start);
+  afterText(frame, end);
   return end;
 }
 
@@ -267,7 +268,8 @@ export function revealScrub(frame: Element) {
   set(0);
   // text : instant où la dernière lettre apparaît (sans les finitions du mélange) — le rembobinage part de là
   const last = Math.max(0, ...[...frame.querySelectorAll<HTMLElement>('.ch[data-d]')].map((c) => +c.dataset.d!));
-  return { total, text: Math.min(total, last ? last + 60 : end), set };
+  // cancel : les animations mises en pause ici restent sinon attachées au document (avec leurs éléments) après le départ de la page
+  return { total, text: Math.min(total, last ? last + 60 : end), set, cancel: () => anims.forEach((a) => a.cancel()) };
 }
 
 // Une fois le texte écrit : les apartés entre parenthèses s'écrivent comme le titre de l'accueil — chaque caractère passe par
@@ -296,7 +298,7 @@ function type(el: HTMLElement, delay: number): number {
   if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
   return delay + k * TYPE + NOTE_SCR.mix;
 }
-function afterText(frame: Element, end: number, start = end) {
+function afterText(frame: Element, end: number) {
   if (reduced()) return;
   // les apartés entre parenthèses s'écrivent au fil du texte : chacun part quand la cascade atteint le mot qu'il commente
   // (sa dernière lettre vient d'apparaître) ; à défaut, après le texte, en cascade comme avant

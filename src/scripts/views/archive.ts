@@ -1,0 +1,343 @@
+// Page Archive ([lang]/archive.astro) : la pile d'affiches (ordinateur : toile, jetées et reprises à la molette ;
+// téléphone : une affiche par écran), la barre de progression, la pièce ouverte en grand.
+import { onPage } from '../page';
+import { reduced } from '../motion';
+
+onPage('[data-track]', (ctx) => {
+  // indice « → » : il s'efface au premier geste
+  const hint = document.querySelector('[data-hint]');
+  const gone = () => hint?.classList.add('gone');
+  ['wheel', 'keydown', 'pointerdown', 'touchstart'].forEach((e) => addEventListener(e, gone, { once: true, passive: true, signal: ctx.signal }));
+  const root = document.querySelector<HTMLElement>('[data-arc]')!;
+  const track = document.querySelector<HTMLElement>('[data-track]')!;
+  const bar = document.querySelector<HTMLElement>('[data-bar]')!;
+  const prog = document.querySelector<HTMLElement>('[data-prog]')!;
+  const count = document.querySelector<HTMLElement>('[data-count]')!;
+  const items = [...track.querySelectorAll<HTMLElement>('.pc')];
+  const phone = () => matchMedia('(max-width: 760px)').matches;
+  const desktop = () => !phone(); // téléphone : une pièce par écran, en défilement verrouillé (voir plus bas)
+  const P = (n: number) => String(n).padStart(2, '0');
+  let x = 0, target = 0, raf = 0;
+
+  // ---------- la pile ----------
+  // Dessinée sur deux toiles : la pile posée est peinte une fois sur la toile du dessous (elle ne coûte plus rien,
+  // quel que soit le nombre d'affiches) ; seules les affiches en vol, celle qu'on tient ou celle qui s'ouvre
+  // sont redessinées à chaque image, sur la toile du dessus.
+  const STEP = 120; // un cran de molette = une affiche
+  // ordinateur (14/11) : un cran de plus au début — la table est vide, la phrase « Tout le reste. » au centre ;
+  // les affiches jetées la recouvrent (index −1 = aucune affiche posée)
+  const OFF = () => (desktop() ? 1 : 0);
+  const max = () => (items.length - 1 + OFF()) * STEP;
+  const index = () => Math.max(-OFF(), Math.min(items.length - 1, Math.floor(target / STEP + 0.001) - OFF()));
+  const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+  // données des pièces, posées par la page (bloc JSON, lu au montage)
+  const K = JSON.parse(document.getElementById('archive-data')!.textContent || '{}') as { caps: string[]; ratios: number[]; srcs: string[] };
+  const stage = root.querySelector<HTMLElement>('[data-stage]')!;
+  const base = stage.querySelector<HTMLCanvasElement>('.cv-base')!, fly = stage.querySelector<HTMLCanvasElement>('.cv-fly')!;
+  const bx = base.getContext('2d')!, fx = fly.getContext('2d')!;
+  type Card = { i: number; x0: number; y0: number; rot: number; dx: number; dy: number; img: HTMLImageElement; ok: boolean };
+  let order: number[] = []; // affiches posées, de dessous à dessus
+  let air: { i: number; t0: number; kind: 'in' | 'out' }[] = [];
+  let hold: { i: number; sx: number; sy: number; dx0: number; dy0: number; moved: boolean } | null = null;
+  let lifted = -1, dirty = false, W = 0, H = 0, dpr = 1, raf2 = 0, shown = 0;
+  const cards: Card[] = items.map((_, i) => {
+    const img = new Image(); img.decoding = 'async';
+    return { i, x0: i === 0 ? .5 : .14 + rnd(i) * .72, y0: i === 0 ? .5 : .32 + rnd(i + 99) * .36, rot: ((i === 0 ? -2 : (rnd(i + 7) - .5) * 18) * Math.PI) / 180, dx: 0, dy: 0, img, ok: false };
+  });
+  // vignettes chargées au fil de la pile ; la toile décode chaque image sur le fil principal à son premier dessin :
+  // les vignettes sont donc en JPEG (2 à 3 fois plus rapide à décoder que le WebP), aplaties sur le gris de la carte (#d4d4d4)
+  const thumb = (src: string) => src.replace('/archive/', '/archive/s/').replace(/\.webp$/, '.jpg');
+  const want = (i: number) => {
+    const c = cards[i]; if (!c || c.img.src || !K.srcs[i]) return;
+    c.img.src = thumb(K.srcs[i]);
+    c.img.decode().then(() => { c.ok = true; if (order.indexOf(i) >= order.length - DEPTH) { dirty = true; go(); } }).catch(() => {});
+  };
+  const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * (phone() ? .42 : .52)) * r, innerWidth * (phone() ? .62 : .34)); return [w, w / r]; };
+  // sur téléphone, la pile se resserre vers le centre (les affiches y sont plus grandes que l'écran n'est large)
+  const pos = (c: Card) => [(phone() ? .5 + (c.x0 - .5) * .45 : c.x0) * W + c.dx, c.y0 * H + c.dy];
+  const paint = (g: CanvasRenderingContext2D, c: Card, x: number, y: number, rot: number, s = 1, alpha = 1) => {
+    const [w, h] = size(c.i);
+    g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s); g.globalAlpha = alpha;
+    g.shadowColor = 'rgba(0,0,0,.14)'; g.shadowBlur = 22; g.shadowOffsetY = 10; g.fillStyle = '#d4d4d4'; g.fillRect(-w / 2, -h / 2, w, h);
+    g.shadowColor = 'transparent';
+    const im = c.img;
+    if (c.ok) {
+      const ir = im.naturalWidth / im.naturalHeight, r = w / h; let sw = im.naturalWidth, sh = im.naturalHeight, sx = 0, sy = 0;
+      if (ir > r) { sw = sh * r; sx = (im.naturalWidth - sw) / 2; } else { sh = sw / r; sy = (im.naturalHeight - sh) / 2; }
+      g.drawImage(im, sx, sy, sw, sh, -w / 2, -h / 2, w, h);
+    }
+    g.restore();
+  };
+  const off = (i: number) => i === lifted || hold?.i === i || air.some((a) => a.i === i && a.kind === 'in');
+  // repeindre la pile ne coûte que ses DEPTH affiches du dessus : en dessous, tout est recouvert (≈ 0,02 % de surface visible),
+  // sinon chaque retour en arrière repeignait les 150 affiches et leurs ombres
+  const DEPTH = 40;
+  const bake = () => { bx.setTransform(dpr, 0, 0, dpr, 0, 0); bx.clearRect(0, 0, W, H); for (const i of order.slice(-DEPTH)) if (!off(i)) { const c = cards[i], [x, y] = pos(c); paint(bx, c, x, y, c.rot); } };
+  const fit = () => { const r = stage.getBoundingClientRect(); W = r.width; H = r.height; dpr = Math.min(2, devicePixelRatio || 1); for (const cv of [base, fly]) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); } dirty = true; go(); };
+  const go = () => { if (!raf2) raf2 = ctx.raf(tick); };
+  const ease = (p: number) => 1 - Math.pow(1 - p, 3);
+  function tick(now: number) {
+    raf2 = 0;
+    if (dirty) { dirty = false; bake(); }
+    fx.setTransform(dpr, 0, 0, dpr, 0, 0); fx.clearRect(0, 0, W, H);
+    for (const a of [...air]) {
+      const c = cards[a.i], [x, y] = pos(c), p = (now - a.t0) / (a.kind === 'in' ? 520 : 420);
+      if (p < 0) continue;
+      if (p >= 1) {
+        air.splice(air.indexOf(a), 1);
+        if (a.kind === 'in') {
+          // posée : peinte directement sur la pile si rien de déjà posé n'est au-dessus d'elle, sinon la pile est repeinte
+          const k = order.indexOf(a.i);
+          if (k >= 0 && order.slice(k + 1).every((j) => off(j)) && a.i !== lifted && hold?.i !== a.i) { bx.setTransform(dpr, 0, 0, dpr, 0, 0); paint(bx, c, x, y, c.rot); } else dirty = true;
+        }
+        continue;
+      }
+      // l'affiche arrive d'au-delà du bas du cadre et y repart en entier : jamais d'apparition ni de disparition à l'écran
+      const far = H - y + Math.hypot(...size(c.i)) * 0.62 + 40;
+      if (a.kind === 'in') { const e = ease(p), s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * (1 - e), y + far * (1 - e), r0 + (c.rot - r0) * e, 1 + .12 * (1 - e)); }
+      else { const e = p * p * p, s = rnd(a.i + 3) > .5 ? 1 : -1, r0 = (s * 24 * Math.PI) / 180; paint(fx, c, x + s * 140 * e, y + far * e, c.rot + (r0 - c.rot) * e, 1 + .12 * e); } // le même geste à l'envers
+    }
+    if (hold?.moved) { const c = cards[hold.i], [x, y] = pos(c); paint(fx, c, x, y, c.rot, 1.03); }
+    if (air.length || dirty) go();
+  }
+  const pile = () => {
+    if (!desktop()) return;
+    const n = index() + 1, now = performance.now();
+    // vignettes chargées d'avance (12) : une vignette qui arrive sous d'autres affiches oblige à repeindre la pile
+    for (let i = Math.max(0, n - DEPTH); i < Math.min(items.length, n + 12); i++) want(i);
+    if (n > shown) for (let i = shown; i < n; i++) { order = order.filter((o) => o !== i); order.push(i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (i - shown) * 45, kind: 'in' }); else dirty = true; }
+    else for (let i = shown - 1; i >= n; i--) { order = order.filter((o) => o !== i); air = air.filter((a) => a.i !== i); if (!reduced()) air.push({ i, t0: now + (shown - 1 - i) * 30, kind: 'out' }); dirty = true; }
+    // geste rapide : au plus 8 affiches en vol à la fois ; les plus anciennes se posent directement (sinon des dizaines d'ombres par image)
+    for (const kind of ['in', 'out'] as const) { const k = air.filter((a) => a.kind === kind); if (k.length > 8) { const drop = new Set(k.slice(0, k.length - 8)); air = air.filter((a) => !drop.has(a)); dirty = true; } }
+    shown = n; go();
+  };
+  // quelle affiche est sous le pointeur (la plus haute)
+  const hit = (cx: number, cy: number) => {
+    const r = stage.getBoundingClientRect(), px = cx - r.left, py = cy - r.top;
+    for (let k = order.length - 1; k >= 0; k--) {
+      const c = cards[order[k]], [x, y] = pos(c), [w, h] = size(c.i), co = Math.cos(-c.rot), si = Math.sin(-c.rot);
+      const lx = (px - x) * co - (py - y) * si, ly = (px - x) * si + (py - y) * co;
+      if (Math.abs(lx) <= w / 2 && Math.abs(ly) <= h / 2) return c.i;
+    }
+    return -1;
+  };
+  // ---------- glisser-déposer ----------
+  fly.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    const i = hit(e.clientX, e.clientY); if (i < 0) return;
+    if (e.pointerType === 'touch') { const sx = e.clientX, sy = e.clientY; fly.addEventListener('pointerup', (u) => { if (Math.hypot(u.clientX - sx, u.clientY - sy) < 8) open(i); }, { once: true }); return; }
+    fly.setPointerCapture(e.pointerId);
+    hold = { i, sx: e.clientX, sy: e.clientY, dx0: cards[i].dx, dy0: cards[i].dy, moved: false };
+  });
+  fly.addEventListener('pointermove', (e) => {
+    if (!hold) { fly.classList.toggle('stage', hit(e.clientX, e.clientY) >= 0); return; }
+    const mx = e.clientX - hold.sx, my = e.clientY - hold.sy;
+    if (!hold.moved && Math.hypot(mx, my) < 5) return;
+    if (!hold.moved) { hold.moved = true; order = order.filter((o) => o !== hold!.i); order.push(hold.i); dirty = true; document.documentElement.classList.add('grabbing'); }
+    cards[hold.i].dx = hold.dx0 + mx; cards[hold.i].dy = hold.dy0 + my; go();
+  });
+  const drop = () => {
+    if (!hold) return;
+    const h = hold; hold = null;
+    document.documentElement.classList.remove('grabbing');
+    if (h.moved) { dirty = true; go(); } else open(h.i);
+  };
+  fly.addEventListener('pointerup', drop);
+  fly.addEventListener('pointercancel', drop);
+  fly.addEventListener('pointerleave', () => { if (!hold) fly.classList.remove('stage'); });
+  if (desktop()) fit();
+  addEventListener('resize', () => { if (desktop()) fit(); }, { signal: ctx.signal });
+
+  let lastK = -1, lastN: number | null = null;
+  const render = () => {
+    const m = max(); bar.style.transform = `scaleX(${m ? x / m : 1})`;
+    // son de molette : un cran tous les 56 px parcourus (la bande avance par le script, pas par un défilement natif)
+    const n = Math.floor(x / 56);
+    if (lastN === null) lastN = n;
+    else if (n !== lastN) { lastN = n; dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'tick', v: .55 } })); }
+    const k = index() + 1;
+    if (k !== lastK) { lastK = k; count.textContent = k ? `${P(k)} / ${P(items.length)} — ${K.caps[k - 1]}` : `00 / ${P(items.length)}`; prog.setAttribute('aria-valuenow', String(Math.max(1, k))); pile(); }
+  };
+  const loop = () => {
+    const ease = reduced() ? 1 : 0.14;
+    x += (target - x) * ease;
+    if (Math.abs(target - x) < 0.5) x = target;
+    render();
+    raf = x !== target ? ctx.raf(loop) : 0;
+  };
+  const kick = () => { if (!raf) raf = ctx.raf(loop); };
+  const seek = (v: number) => { target = Math.max(0, Math.min(max(), v)); kick(); };
+
+  // molette : avance la bande en continu ; à la fin du geste, elle se pose sur l'affiche la plus proche
+  let snap = 0;
+  addEventListener('wheel', (e) => {
+    if (!desktop() || e.ctrlKey || document.querySelector('[data-lb]:not([hidden])')) return;
+    const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    seek(target + d);
+    // pose dans le sens du geste : un petit cran (molette lente) passe quand même à l'affiche suivante, au lieu de revenir en arrière
+    const f = d > 0 ? Math.ceil : Math.floor;
+    clearTimeout(snap); snap = ctx.timeout(() => seek(f(target / STEP - Math.sign(d) * 0.001) * STEP), 160);
+  }, { passive: true, signal: ctx.signal });
+  addEventListener('keydown', (e) => {
+    if (!desktop() || document.querySelector('[data-lb]:not([hidden])')) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === 'PageDown') { e.preventDefault(); seek(target + STEP); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); seek(target - STEP); }
+    if (e.key === 'Home') seek(0);
+    if (e.key === 'End') seek(max());
+  }, { signal: ctx.signal });
+  // doigt : glisser vers le haut jette des affiches, vers le bas les reprend
+  let ty = 0;
+  root.addEventListener('touchstart', (e) => { ty = e.touches[0].clientY; }, { passive: true });
+  root.addEventListener('touchmove', (e) => {
+    if (phone() || document.querySelector('[data-lb]:not([hidden])')) return;
+    const ny = e.touches[0].clientY, d = (ty - ny) * 1.6; ty = ny;
+    seek(target + d);
+  }, { passive: true });
+  prog.addEventListener('click', (e) => {
+    const r = prog.getBoundingClientRect(), p = (e.clientX - r.left) / r.width;
+    if (phone()) { track.scrollTo({ top: Math.round(p * (items.length - 1)) * track.clientHeight, behavior: reduced() ? 'auto' : 'smooth' }); return; }
+    seek((Math.round(p * (items.length - 1)) + OFF()) * STEP);
+  });
+  addEventListener('resize', () => { seek(target); render(); }, { signal: ctx.signal });
+
+  // pièce ouverte
+  const lb = document.querySelector<HTMLElement>('[data-lb]')!;
+  const big = lb.querySelector<HTMLElement>('[data-big]')!;
+  const cap = lb.querySelector<HTMLElement>('[data-cap]')!;
+  let cur = -1, opener: HTMLElement | null = null;
+  const behind = [...document.querySelectorAll<HTMLElement>('.skip, .site-header, [data-arc]')];
+  const show = (i: number, push = true) => {
+    cur = (i + K.caps.length) % K.caps.length;
+    big.style.aspectRatio = String(K.ratios[cur]);
+    // l'image réduite (déjà chargée) s'affiche tout de suite, la grande prend le relais
+    const small = K.srcs[cur] ? thumb(K.srcs[cur]) : '';
+    big.style.background = '#d4d4d4';
+    big.innerHTML = '';
+    if (K.srcs[cur]) {
+      const k = cur, im = document.createElement('img');
+      im.alt = K.caps[cur]; im.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+      im.src = cards[cur]?.img.src || small;
+      big.appendChild(im);
+      const hi = new Image(); hi.src = K.srcs[cur];
+      hi.decode().then(() => { if (cur === k) im.src = hi.src; }).catch(() => {});
+    }
+    cap.textContent = `${P(cur + 1)} — ${K.caps[cur]}`;
+    lb.hidden = false;
+    behind.forEach((el) => (el.inert = true));
+    if (push) history.replaceState(history.state, '', `#${P(cur + 1)}`); // état du routeur conservé
+    lb.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
+  };
+  // l'affiche posée sur la table, en coordonnées d'écran
+  const cardAt = (i: number) => {
+    if (!desktop() || !order.includes(i)) return null;
+    const c = cards[i], [x, y] = pos(c), r = stage.getBoundingClientRect(), [w] = size(i);
+    return { x: r.left + x, y: r.top + y, w, rot: c.rot };
+  };
+  const OUT = 'cubic-bezier(.2,.75,.25,1)';
+  const fromCard = (i: number) => { const c = cardAt(i), b = big.getBoundingClientRect(); return c ? `translate(${c.x - (b.left + b.width / 2)}px, ${c.y - (b.top + b.height / 2)}px) rotate(${c.rot}rad) scale(${c.w / b.width})` : 'translateY(24px) scale(.94)'; };
+  const chrome = () => [...lb.querySelectorAll<HTMLElement>('figcaption, .x, .arw')];
+  const open = (i: number) => {
+    show(i);
+    if (reduced()) return;
+    const t = fromCard(cur);
+    if (cardAt(cur)) { lifted = cur; bake(); }
+    big.animate([{ transform: t }, { transform: 'none' }], { duration: 620, easing: OUT });
+    lb.animate([{ backgroundColor: 'rgba(243,243,243,0)' }, { backgroundColor: 'rgba(243,243,243,1)' }], { duration: 420, easing: 'ease-out' });
+    chrome().forEach((el) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' }));
+  };
+  // clavier : Entrée sur la barre ouvre l'affiche du dessus (sur ordinateur, la pile est un dessin sans liens)
+  prog.addEventListener('keydown', (e) => { if (e.key === 'Enter') { opener = prog; open(Math.max(0, index())); } });
+  const close = () => {
+    const done =() => { lifted = -1; if (desktop()) bake(); lb.hidden = true; behind.forEach((el) => (el.inert = false)); cur = -1; history.replaceState(history.state, '', location.pathname); opener?.focus(); };
+    if (reduced() || lb.hidden) { done(); return; }
+    const t = fromCard(cur), back = !!cardAt(cur);
+    chrome().forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+    lb.animate([{ backgroundColor: 'rgba(243,243,243,1)' }, { backgroundColor: 'rgba(243,243,243,0)' }], { duration: 480, easing: 'ease-in', fill: 'forwards' });
+    big.animate([{ transform: 'none', opacity: 1 }, { transform: t, opacity: back ? 1 : 0 }], { duration: 520, easing: 'cubic-bezier(.6,0,.3,1)', fill: 'forwards' }).onfinish = () => {
+      done(); lb.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+    };
+  };
+  track.addEventListener('click', (e) => {
+    const a = (e.target as Element).closest<HTMLElement>('[data-open]');
+    if (!a) return;
+    e.preventDefault(); opener = a; show(Number(a.dataset.open));
+  });
+  lb.addEventListener('click', (e) => {
+    const el = e.target as Element;
+    if (el.closest('[data-close]') || el === lb) close();
+    const s = el.closest<HTMLElement>('[data-step]'); if (s) { lifted = -1; dirty = true; go(); show(cur + Number(s.dataset.step)); if (cardAt(cur)) { lifted = cur; } }
+  });
+  addEventListener('keydown', (e) => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') close();
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { lifted = -1; show(cur + (e.key === 'ArrowRight' ? 1 : -1)); if (cardAt(cur)) lifted = cur; dirty = true; go(); }
+  }, { signal: ctx.signal });
+  const h = Number(location.hash.slice(1));
+  if (h >= 1 && h <= K.caps.length) show(h - 1, false);
+  // téléphone : images en haute définition, chargées à l'approche de leur écran ; le compteur suit la pièce verrouillée
+  if (phone()) {
+    // fenêtre glissante : seules les cartes autour de celle du dessus ont une image (les cartes passées restent collées à l'écran,
+    // un IntersectionObserver les gardait toutes, ~150 images HD décodées en mémoire) ; les autres sont vidées et ne se peignent plus
+    // seules les cartes qui changent d'état sont touchées (toucher les 150 à chaque carte forçait un recalcul complet de la page)
+    const boxes = items.map((it) => it.querySelector<HTMLElement>('.im')!);
+    let at = -1;
+    const set = (i: number, k: number) => {
+      const it = items[i], box = boxes[i]; if (!it) return;
+      const vis = i < k - 4 ? 'hidden' : ''; if (it.style.visibility !== vis) it.style.visibility = vis;
+      // une seule <img> par carte, gardée : on ne vide que sa source (recréer des images à chaque carte déclenchait le ramasse-miettes)
+      let im = box.firstElementChild as HTMLImageElement | null;
+      if (i < k - 4 || i > k + 2) { if (im?.hasAttribute('src')) im.removeAttribute('src'); return; }
+      if (!K.srcs[i]) return;
+      if (!im) { im = new Image(); im.alt = ''; im.decoding = 'async'; im.dataset.noAscii = ''; box.appendChild(im); }
+      if (!im.hasAttribute('src')) im.src = K.srcs[i];
+    };
+    const near = (k: number) => {
+      if (k === at) return;
+      const lo = at < 0 ? 0 : Math.min(at, k) - 6, hi = at < 0 ? items.length - 1 : Math.max(at, k) + 4;
+      at = k; for (let i = Math.max(0, lo); i <= hi; i++) set(i, k);
+    };
+    near(0);
+    track.addEventListener('scroll', () => {
+      const k = Math.max(0, Math.min(items.length - 1, Math.round(track.scrollTop / track.clientHeight)));
+      near(k);
+      if (k * STEP === target) return;
+      target = x = k * STEP; render();
+    }, { passive: true });
+
+    // le doigt : la carte le suit, sans inertie, et un geste ne peut jamais dépasser la carte voisine
+    // (même lancé fort, scroll-snap-stop seul laissait passer deux cartes)
+    let from = 0, y0 = 0, t0 = 0, anim = 0, touching = false;
+    const H = () => track.clientHeight;
+    const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+    const glide = (to: number) => {
+      const p0 = track.scrollTop, start = performance.now(), D = reduced() ? 0 : 360;
+      const tick = (now: number) => {
+        const p = D ? Math.min(1, (now - start) / D) : 1;
+        track.scrollTop = p0 + (to - p0) * (1 - (1 - p) ** 3);
+        if (p < 1) anim = ctx.raf(tick); else { anim = 0; track.style.scrollSnapType = ''; }
+      };
+      anim = ctx.raf(tick);
+    };
+    track.addEventListener('touchstart', (e) => {
+      if (touching) return;
+      cancelAnimationFrame(anim); touching = true;
+      track.style.scrollSnapType = 'none'; // le calage reprend à la fin du geste : il corrigerait sinon chaque position du doigt
+      from = Math.round(track.scrollTop / H()); y0 = e.touches[0].clientY; t0 = performance.now();
+    }, { passive: true });
+    track.addEventListener('touchmove', (e) => {
+      if (!touching) return;
+      const h = H();
+      track.scrollTop = clamp(from * h + y0 - e.touches[0].clientY, Math.max(0, from - 1) * h, Math.min(items.length - 1, from + 1) * h);
+    }, { passive: true });
+    const release = (e: TouchEvent) => {
+      if (!touching) return;
+      touching = false;
+      const d = y0 - e.changedTouches[0].clientY, quick = Math.abs(d) / Math.max(1, performance.now() - t0) > 0.35;
+      const step = Math.abs(d) > H() * 0.18 || (Math.abs(d) > 16 && quick) ? Math.sign(d) : 0;
+      glide(clamp(from + step, 0, items.length - 1) * H());
+    };
+    track.addEventListener('touchend', release, { passive: true });
+    track.addEventListener('touchcancel', release, { passive: true });
+  }
+  render();
+});

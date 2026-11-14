@@ -52,21 +52,22 @@ let lastTick = 0;
 export const play = (name: string, o: Opt = {}) => {
   if (!on || !ctx || document.hidden) return;
   if (name === 'tick' || name === 'key') { const t = performance.now(); if (t - lastTick < 26) return; lastTick = t; }
-  if (ctx.state === 'suspended') { ctx.resume(); return; } // pas encore réveillé (aucun geste) : on n'empile pas de sons en attente
+  if (ctx.state === 'suspended') { ctx.resume().catch(() => {}); return; } // pas encore réveillé (aucun geste) : on n'empile pas de sons en attente (réveil refusé si la page part : sans suite)
   S[name]?.(o);
 };
 
-// bouton du menu
-const btn = document.querySelector<HTMLButtonElement>('[data-sound]');
+// bouton du menu (recréé à chaque page : libellé posé à chaque montage, clic écouté sur le document)
 // haut-parleur : avec ondes quand le son est actif, barré quand il est coupé ; le libellé reste lisible par les lecteurs d'écran
 const ICON = (o: boolean) => `<svg viewBox="0 0 20 16" width="20" height="16" aria-hidden="true"><path d="M2 5.5h3.2L9.5 2v12L5.2 10.5H2Z" fill="currentColor"/>${o
   ? '<path d="M12.3 5.2a3.6 3.6 0 0 1 0 5.6M14.6 3a6.8 6.8 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'
   : '<path d="m12.5 5.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}</svg>`;
-const label = () => { if (!btn) return; btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', on ? btn.dataset.on! : btn.dataset.off!); btn.title = btn.getAttribute('aria-label')!; btn.innerHTML = ICON(on); };
-label();
-btn?.addEventListener('click', () => {
-  on = !on; try { localStorage.setItem('kk-sound', on ? 'on' : 'off'); } catch { /* */ }
-  label(); if (on) { init(); ctx!.resume().then(() => play('click')).catch(() => {}); } // le clic sur le bouton est lui-même le geste qui réveille
+export const soundLabel = () => document.querySelectorAll<HTMLButtonElement>('[data-sound]').forEach((btn) => {
+  btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', on ? btn.dataset.on! : btn.dataset.off!); btn.title = btn.getAttribute('aria-label')!; btn.innerHTML = ICON(on);
+});
+document.addEventListener('click', (e) => {
+  if (!(e.target as Element).closest?.('[data-sound]')) return;
+  on = !on; try { localStorage.setItem('kk-sound', on ? 'on' : 'off'); } catch { /* stockage indisponible */ }
+  soundLabel(); if (on) { init(); ctx!.resume().then(() => play('click')).catch(() => {}); } // le clic sur le bouton est lui-même le geste qui réveille
 });
 // le contexte audio est créé à l'avance, dans un temps mort (le créer pendant le premier geste figeait ce geste ~200 ms sur téléphone) ;
 // il naît suspendu, et le navigateur exige un geste pour le réveiller : le premier geste ne fait plus que ce réveil, instantané
@@ -82,8 +83,6 @@ const wake = () => {
   ctx!.resume().then(() => { if (ctx!.state === 'running') WAKE.forEach((t) => removeEventListener(t, wake, true)); }).catch(() => {});
 };
 WAKE.forEach((t) => addEventListener(t, wake, { capture: true, passive: true }));
-// retour arrière (page servie depuis le cache du navigateur) : le contexte audio revient endormi, on le relance
-addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && ctx && on && !document.hidden) ctx.resume().catch(() => {}); });
 
 // micro-interactions
 const TARGET = 'a, button, [role="button"]';
@@ -111,3 +110,5 @@ document.addEventListener('scroll', (e) => {
 }, { capture: true, passive: true });
 addEventListener('kk:sound', (e) => { const d = (e as CustomEvent).detail; if (typeof d === 'string') play(d); else play(d.name, d); });
 document.addEventListener('visibilitychange', () => { if (!ctx) return; (document.hidden ? ctx.suspend() : ctx.resume()).catch(() => {}); });
+// retour sur le site depuis un autre (page servie depuis le cache du navigateur) : le contexte audio revient endormi, on le relance
+addEventListener('pageshow', (e) => { if ((e as PageTransitionEvent).persisted && ctx && on && !document.hidden) ctx.resume().catch(() => {}); });

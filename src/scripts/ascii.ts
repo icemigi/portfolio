@@ -3,6 +3,7 @@
 // puis l'image réelle. Tout se fait dans la balise <img> elle-même (changement de src) : la mise en page, les
 // vignettes, la parallaxe et les écrans ne voient aucune différence. Sans JavaScript : images normales.
 import { reduced } from './motion';
+import type { Ctx } from './page';
 
 const RAMP = ' .,:;-=+*%#@';
 const FONT = '"Geist Mono", ui-monospace, monospace';
@@ -58,7 +59,7 @@ function pick(im: HTMLImageElement) {
   return best ? new URL(best.u, location.href).href : im.src;
 }
 
-export function initAscii(root: ParentNode = document) {
+export function initAscii(ctx: Ctx, root: ParentNode = document) {
   if (reduced()) return;
   const imgs = [...root.querySelectorAll<HTMLImageElement>('main img, .screens-host img')].filter((im) =>
     !im.complete && !im.closest('[data-no-ascii], .site-header, .lg, .logo, svg') && !/\.svg($|\?)/.test(im.src)
@@ -77,11 +78,11 @@ export function initAscii(root: ParentNode = document) {
     });
     return;
   }
-  const io = new IntersectionObserver((es) => es.forEach((e) => {
+  const io = ctx.observe(new IntersectionObserver((es) => es.forEach((e) => {
     if (!e.isIntersecting) return;
     io.unobserve(e.target);
     load(e.target as HTMLImageElement);
-  }), { rootMargin: '60% 0px' });
+  }), { rootMargin: '60% 0px' }));
   imgs.forEach((im) => {
     const real = pick(im);
     const W = Number(im.getAttribute('width')), H = Number(im.getAttribute('height')) || W;
@@ -99,8 +100,8 @@ export function initAscii(root: ParentNode = document) {
       try {
         const a = render(pre, 34, W, H), b = render(pre, 86, W, H);
         im.src = a;
-        setTimeout(() => { im.src = b; }, 160);
-        setTimeout(() => { im.src = real; }, 360);
+        ctx.timeout(() => { im.src = b; }, 160);
+        ctx.timeout(() => { im.src = real; }, 360);
       } catch { im.src = real; } // image d'un autre domaine : pas de lecture des pixels
     };
     pre.onerror = () => { im.src = real; };

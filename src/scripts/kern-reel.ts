@@ -60,7 +60,7 @@ export function buildReel(reel: HTMLElement, still: boolean): gsap.core.Timeline
     .set(head, { morphSVG: D.mont.head, fill: C.orange, y: 0, scale: 2.6, transformOrigin: '50% 60%' }, 0)
     .set(mHead, { attr: BIG }, 0)
     .set(body, { morphSVG: D.run.body, fill: C.cream, y: 0 }, 0).set(mBody, { attr: shutL(bx.runBody) }, 0)
-    .set(L, { morphSVG: (i: number) => D.cairn['kern'[i]], fill: C.lime, y: 0 }, 0)
+    .set(L, { morphSVG: ((i: number) => D.cairn['kern'[i]]) as unknown as string, fill: C.lime, y: 0 }, 0) // valeur par lettre (fonction acceptée par GSAP, absente de ses types)
     .set(W, { scale: 1, transformOrigin: '43% 55%' }, 0).set(mW, { attr: shutL(bx.w) }, 0)
     .set([reg1, reg2], { morphSVG: D.mont.reg1, fill: C.orange }, 0);
   mL.forEach((m, i) => tl!.set(m, { attr: shutB(bx.L[i]) }, 0));

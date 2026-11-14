@@ -52,6 +52,7 @@ const buildDate = new Date().toISOString().slice(0, 10);
 
 <script>
   import { reduced } from '../scripts/motion';
+  import { screens } from '../scripts/screens';
   const html = document.documentElement;
   const panel = document.querySelector<HTMLElement>('.dev-panel')!;
   const tip = document.querySelector<HTMLElement>('.dev-tip')!;
@@ -71,7 +72,7 @@ const buildDate = new Date().toISOString().slice(0, 10);
     set('vp', `${innerWidth} × ${innerHeight} @${devicePixelRatio}x`);
     set('bp', innerWidth <= 760 ? 'téléphone (≤ 760)' : innerWidth <= 1100 ? 'tablette' : 'ordinateur');
     set('rm', reduced() ? 'réduit' : 'complet');
-    const s = (window as any).kkScreens; set('scr', s ? `${String(s.current() + 1).padStart(2, '0')} / ${String(s.count).padStart(2, '0')}` : '—');
+    const s = screens(); set('scr', s ? `${String(s.current() + 1).padStart(2, '0')} / ${String(s.count).padStart(2, '0')}` : '—');
     set('build', panel.dataset.build || '—');
   }
   // images par seconde (mesurées seulement quand le mode est ouvert)

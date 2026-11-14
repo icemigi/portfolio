@@ -4,13 +4,14 @@
 // l'opposé et un reflet de lumière suit la souris ; quand on le quitte, il retrouve son oscillation en douceur.
 // Rien si « Réduire les animations ».
 import { reduced } from './motion';
+import type { Ctx } from './page';
 
 const MAX = 9;      // inclinaison maximale au survol (degrés)
 const IDLE = 0.33;  // oscillation au repos, en part de MAX (≈ 3°)
 
 type Card = { el: HTMLElement; tx: number; ty: number; x: number; y: number; lift: number; tl: number; ph: number; sp: number; vis: boolean; hov: boolean };
 
-export function initCards(root: ParentNode = document) {
+export function initCards(ctx: Ctx, root: ParentNode = document) {
   if (reduced()) return;
   const cards: Card[] = [...root.querySelectorAll<HTMLElement>('[data-card]')].map((el, i) => ({
     el, tx: 0, ty: 0, x: 0, y: 0, lift: 0, tl: 0, ph: i * 1.9 + Math.random() * 2, sp: 0.35 + Math.random() * 0.2, vis: false, hov: false,
@@ -32,12 +33,12 @@ export function initCards(root: ParentNode = document) {
       el.style.setProperty('--gx', `${(50 + c.x * 50).toFixed(1)}%`); el.style.setProperty('--gy', `${(50 + c.y * 50).toFixed(1)}%`);
       el.style.setProperty('--go', (c.lift * 0.9).toFixed(3));
     }
-    raf = any && !document.hidden ? requestAnimationFrame(loop) : 0;
+    raf = any && !document.hidden ? ctx.raf(loop) : 0;
   };
-  const kick = () => { if (!raf) raf = requestAnimationFrame(loop); };
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); });
+  const kick = () => { if (!raf) raf = ctx.raf(loop); };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) kick(); }, { signal: ctx.signal });
   // oscillation seulement pour les cartes visibles
-  const io = new IntersectionObserver((es) => { es.forEach((e) => { const c = cards.find((x) => x.el === e.target); if (c) c.vis = e.isIntersecting; }); kick(); });
+  const io = ctx.observe(new IntersectionObserver((es) => { es.forEach((e) => { const c = cards.find((x) => x.el === e.target); if (c) c.vis = e.isIntersecting; }); kick(); }));
   cards.forEach((c) => io.observe(c.el));
   // survol : ordinateur seulement
   if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
