@@ -52,10 +52,12 @@ public/
   vendor/           matter.js (MIT), physique de « Ce que j'aime »
   work/ archive/ likes/ logos/ stack/ og/   images (WebP, PNG) et images de partage
   fanions/          dessins des fanions de la Stack (SVG, écrits par tools/fanions.py)
+  ring/             images de l'anneau de l'accueil (WebP 16/9, écrites par tools/ring.mjs)
   lab/heraldry/     générateur d'Algorithmic Heraldry (servi dans le Lab)
 tools/
   og.mjs            fabrique les images de partage (public/og/)
   fanions.py        dessine les fanions de la Stack (public/fanions/)
+  ring.mjs          images de l'anneau de l'accueil (public/ring/), depuis assets/roue
 .github/workflows/  mise en ligne automatique sur GitHub Pages
 ```
 
