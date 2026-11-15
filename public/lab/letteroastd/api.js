@@ -102,6 +102,8 @@
       username: raw.username, total: films.length, rated: rated.length, avg, five, decs, oldest, top: top.length, heresy, topLoved, unseenTop,
       rewatch, rewatches: raw.diary.filter((f) => f.rewatch).length, diary: raw.diary.length, binge: binge && binge[1].length >= 3 ? { date: binge[0], films: binge[1] } : null,
       perMonth, watchlist: raw.watchlist.length, recent, reviews: raw.reviews.length, hot,
+      // pour l'affiche : tes critiques écrites (les plus longues d'abord) et tes films à 5 étoiles
+      revs: raw.reviews.filter((r) => r.text && r.text.trim()).sort((a, b) => b.text.length - a.text.length), fives: rated.filter((f) => f.rating === 5).map((f) => f.title),
       duels: duelPairs(rated),
       // étagère du vidéoclub : tes films (les mieux notés d'abord, puis le reste), pour les tranches de cassettes
       shelf: shuffle([...rated].sort((a, b) => b.rating - a.rating).slice(0, 40)).slice(0, 22).map((f) => ({ title: f.title, year: f.year, rating: f.rating })),
@@ -197,9 +199,10 @@
     {
       const pool = shuffle(F.shelf.filter((f) => yearOk(f.year))), trio = [];
       for (const f of pool) if (!trio.some((t) => t.year === f.year || t.title === f.title)) { trio.push(f); if (trio.length === 3) break; }
-      if (trio.length === 3) { const o = [...trio].sort((a, b) => a.year - b.year)[0];
+      if (trio.length === 3) { const s = [...trio].sort((a, b) => a.year - b.year), o = s[0], f = (x) => `${x.title} (${x.year})`;
+        // réponse : le verdict, puis les trois du plus vieux au plus récent (on lit un classement, pas une liste)
         S.push({ kind: 'choice', id: 'g_oldest', guess: o.title, text: L('Le plus vieux des trois ?', 'The oldest of the three?'),
-          options: trio.map((f) => ({ v: f.title, label: f.title })), reply: () => L(`${trio.map((f) => `${f.title} (${f.year})`).join(', ')}.`, `${trio.map((f) => `${f.title} (${f.year})`).join(', ')}.`) }); }
+          options: trio.map((f) => ({ v: f.title, label: f.title })), reply: (v) => L(`${v === o.title ? 'Bien vu' : 'Raté'}. Le plus vieux, c'est ${f(s[0])}. Puis ${f(s[1])}, puis ${f(s[2])}.`, `${v === o.title ? 'Spot on' : 'Nope'}. The oldest is ${f(s[0])}. Then ${f(s[1])}, then ${f(s[2])}.`) }); }
     }
     // --- personnalisation : ne note rien, colore les répliques et la fiche ---
     S.push({ kind: 'choice', id: 'popcorn', text: L('Pop-corn ?', 'Popcorn?'),
@@ -283,6 +286,15 @@
     else if (A.wl) out.push(A.wl.v === 'plan' ? L(`Pense encore finir sa watchlist de ${F.watchlist} films.`, `Still thinks they'll finish a ${F.watchlist}-film watchlist.`) : L(`A enterré ${F.watchlist} films dans sa watchlist.`, `Buried ${F.watchlist} films in their watchlist.`));
     if (out.length < 3 && A.credits?.v === 'coupe') out.push(L('Coupe avant le générique.', 'Leaves before the credits.'));
     if (out.length < 3 && A.popcorn) out.push(({ sale: L('Team pop-corn salé.', 'Team salted popcorn.'), sucre: L('Team pop-corn sucré.', 'Team sweet popcorn.'), rien: L('Mange rien devant un film.', 'Eats nothing during a film.') })[A.popcorn.v]);
+    // l'affiche veut toujours trois phrases : on complète avec ce que dit ton export
+    const more = [
+      F.five ? L(`A mis 5 étoiles à ${F.five} films.`, `Gave 5 stars to ${F.five} films.`) : null,
+      F.rewatch ? L(`A revu ${F.rewatch.f.title} ${F.rewatch.n + 1} fois.`, `Watched ${F.rewatch.f.title} ${F.rewatch.n + 1} times.`) : null,
+      F.binge ? L(`A enchaîné ${F.binge.films.length} films en une journée.`, `Binged ${F.binge.films.length} films in one day.`) : null,
+      F.oldest ? L(`Remonte jusqu'en ${F.oldest.year}, avec ${F.oldest.title}.`, `Goes back to ${F.oldest.year}, with ${F.oldest.title}.`) : null,
+      F.heresy && F.unseenTop.length ? L(`A toujours pas vu ${pretty(pick(F.unseenTop))}.`, `Still hasn't seen ${pretty(pick(F.unseenTop))}.`) : null,
+    ].filter(Boolean);
+    while (out.length < 3 && more.length) out.push(more.shift());
     return out.slice(0, 3);
   }
 

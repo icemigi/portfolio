@@ -391,6 +391,70 @@
         .duo-sec li { padding: 5px 0; border-bottom: 1px solid var(--ln2, #33291f); color: var(--hi); font-size: 15px; }
         .mut { color: var(--tx); font-size: 13px; margin-left: 6px; }
     </style>
+    <style>
+        /* ---------- v11 : l'affiche finale ----------
+           l'écran tient sans défiler ; la fiche devient l'affiche du film de ton profil, au format story (9:16) :
+           le mur de tes films les mieux notés, ton rang en titre, le score en pastille, tes phrases en citations de critiques,
+           les six axes, et le pavé de crédits de l'affiche avec tes chiffres. Composée à 540 × 960, réduite à l'écran. */
+        #final-stage { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; padding: 64px var(--m) var(--m); flex-direction: row; align-items: center; justify-content: center; gap: clamp(32px, 5vw, 96px); }
+        .fp-fit { position: relative; flex: none; }
+        .fp { position: absolute; left: 0; top: 0; width: 540px; height: 960px; transform-origin: 0 0; overflow: hidden; background: #16120e; color: #f3e7d0; font-family: Geist, system-ui, sans-serif; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7), 0 0 0 1px rgba(243, 231, 208, .1); }
+        .fp-bands { position: absolute; left: 0; right: 0; top: 0; z-index: 3; height: 10px; display: flex; }
+        .fp-bands i { flex: 1; } .fp-bands i:nth-child(1) { background: var(--or); } .fp-bands i:nth-child(2) { background: var(--gr); } .fp-bands i:nth-child(3) { background: var(--bl); }
+        .fp-head { position: absolute; left: 28px; right: 28px; top: 26px; z-index: 3; display: flex; justify-content: space-between; font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #f3e7d0; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+        /* le mur : huit affiches, deux rangées, légèrement inclinées, qui se fondent dans le noir */
+        .fp-wall { position: absolute; left: -24px; right: -24px; top: 0; height: 470px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 8px; transform: rotate(-4deg) scale(1.08); transform-origin: 50% 0; }
+        .fp-wall > * { aspect-ratio: 2 / 3; overflow: hidden; background: #2a2119; }
+        .fp-wall img { display: block; width: 100%; height: 100%; object-fit: cover; }
+        .fp-wall .tile { display: flex; align-items: flex-end; padding: 10px; font-size: 15px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; color: #16120e; }
+        .fp-shade { position: absolute; left: 0; right: 0; top: 0; height: 560px; background: linear-gradient(to bottom, rgba(22, 18, 14, .7) 0, rgba(22, 18, 14, .15) 16%, rgba(22, 18, 14, .25) 30%, rgba(22, 18, 14, .88) 52%, #16120e 72%); }
+        .fp-body { position: absolute; left: 32px; right: 32px; bottom: 28px; top: 234px; display: flex; flex-direction: column; }
+        .fp-in { font-size: 13px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #f3e7d0; }
+        .fp-in b { font-weight: 500; color: var(--or); }
+        .fp-title { margin: 8px 0 0; font-size: 70px; font-weight: 700; line-height: .88; letter-spacing: -0.045em; text-transform: uppercase; color: #f3e7d0; text-wrap: balance; }
+        /* le score : le chiffre géant, puis les trois bandes qui finissent la ligne (comme « ASTD » sur l'accueil), « /100 » au-dessus */
+        .fp-sc { display: flex; align-items: flex-end; gap: 14px; margin: 16px 0 0 -8px; }
+        .fp-sc b { font-size: 184px; font-weight: 700; line-height: .73; letter-spacing: -0.075em; color: #f3e7d0; } /* chasse proportionnelle : les bandes collent au chiffre, même un « 1 » */
+        .fp-scb { flex: 1; height: 131px; display: flex; flex-direction: column; gap: 7px; }
+        .fp-scb em { font-style: normal; font-size: 34px; font-weight: 700; line-height: .8; letter-spacing: -0.04em; color: var(--or); }
+        .fp-scb i { flex: 1; } .fp-scb i:nth-of-type(1) { background: var(--or); } .fp-scb i:nth-of-type(2) { background: var(--gr); } .fp-scb i:nth-of-type(3) { background: var(--bl); }
+        .fp-quotes { margin: 18px 0 0; padding: 0; list-style: none; }
+        .fp-quotes li { font-size: 18px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; color: #f3e7d0; padding: 2px 0; }
+        .fp-quotes li::before { content: '★ '; color: var(--gr); font-size: .8em; }
+        .fp-rev { margin: 14px 0 0; font-size: 14px; line-height: 1.35; color: #b8a88f; }
+        .fp-rev b { display: block; margin-bottom: 3px; font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--or); }
+        .fp-ax { margin: auto 0 0; padding: 14px 0 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px 18px; border-top: 1px solid rgba(243, 231, 208, .18); }
+        .fp-ax li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px 4px; font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: #b8a88f; }
+        .fp-ax li b { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: #f3e7d0; font-variant-numeric: tabular-nums; }
+        .fp-ax li i { grid-column: 1 / -1; height: 3px; background: rgba(243, 231, 208, .12); }
+        .fp-ax li i::after { content: ''; display: block; height: 100%; width: var(--v); background: var(--or); }
+        /* le pavé de crédits, comme au bas d'une affiche */
+        .fp-credits { margin: 12px 0 0; font-size: 10px; font-weight: 500; line-height: 1.35; letter-spacing: .02em; text-transform: uppercase; text-align: center; color: #b8a88f; transform: scaleY(1.25); transform-origin: 50% 100%; }
+        .fp-credits b { font-weight: 700; color: #f3e7d0; }
+        /* l'adresse, lisible et complète : ceux qui voient l'affiche peuvent faire la leur */
+        .fp-url { margin: 10px 0 0; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; background: #f3e7d0; color: #16120e; font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
+        .fp-url b { font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
+        /* à côté : le détail des six axes (ce que mesure chaque chiffre), puis les actions */
+        .fp-side { width: min(380px, 34vw); }
+        .fp-axes { margin: 14px 0 28px; padding: 0; list-style: none; border-top: 1px solid var(--ln); }
+        .fp-axes li { padding: 9px 0; border-bottom: 1px solid var(--ln2); font-size: 14px; line-height: 1.3; color: var(--hi); }
+        .fp-axes li span { display: block; font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--tx); }
+        .fp-axes li em { font-style: normal; color: var(--tx); }
+        .fp-acts { display: flex; flex-wrap: wrap; gap: 14px 28px; }
+        .fp-acts [hidden] { display: none; }
+        /* export : l'affiche recopiée hors écran, à taille réelle */
+        /* export : l'affiche recopiée hors écran, à plat (render() la pose ensuite dans le cadre story) */
+        .fp-out { position: fixed; left: -10000px; top: 0; }
+        .fp-out .fp { position: relative; transform: none; box-shadow: none; }
+        /* téléphone : l'affiche au-dessus, les actions dessous ; le détail des axes est déjà sur l'affiche */
+        @media (max-width: 760px) {
+            #final-stage { flex-direction: column; justify-content: center; gap: 18px; padding: 56px 16px 16px; }
+            .fp-side { width: auto; display: contents; }
+            .fp-side > .billing, .fp-axes { display: none; }
+            .fp-acts { justify-content: center; gap: 10px 24px; }
+            .fp-acts button { font-size: 15px; }
+        }
+    </style>
 </head>
 <body>
     <div class="stage-fullscreen" id="stage-home">
@@ -441,20 +505,17 @@
     </div>
 
     <div id="final-stage">
-        <div class="export-wrapper" id="capture-target">
-            <p class="member"><span data-t="club"></span><span>n° <b data-member></b></span></p>
-            <div class="final-badge" data-res-user></div>
-            <div class="final-score" data-res-score></div>
-            <div class="final-rank" data-res-rank></div>
-            <ul class="axes" data-res-axes></ul>
-            <ul class="verdict" data-res-verdict></ul>
-            <div class="final-quote" data-res-quote></div>
-            <div class="card-foot"><span>Letteroastd · vidéoclub</span><span>kerningkastle.com/lab</span></div>
-        </div>
-        <div class="action-buttons-row">
-            <button class="btn-action-primary" data-dl="card" data-t="dl"></button>
-            <button class="btn-action-primary" data-dl="story" data-t="story"></button>
-            <button class="btn-action-secondary" data-restart data-t="again"></button>
+        <!-- l'affiche : composée à 540 × 960, réduite à l'écran ; l'export (1080 × 1920) la pose au centre d'un cadre story, hors des zones qu'Instagram recouvre -->
+        <div class="fp-fit" data-fp-fit><div class="fp" id="capture-target" data-fp></div></div>
+        <div class="fp-side">
+            <p class="billing" data-t="ready"></p>
+            <ul class="fp-axes" data-fp-axes></ul>
+            <div class="fp-acts">
+                <button class="btn-action-primary" data-share data-t="share" hidden></button>
+                <button class="btn-action-secondary" data-copy data-t="copy"></button>
+                <button class="btn-action-primary" data-dl="card" data-t="dl"></button>
+                <button class="btn-action-secondary" data-restart data-t="again"></button>
+            </div>
         </div>
     </div>
 
@@ -470,13 +531,13 @@
             fr: { sub: "Balance ton export Letterboxd, je lis tout et je te dis quel cinéphile t'es.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', dropTouch: 'Touche ici<br>pour choisir ton .zip <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
                 howS: ['Connecte-toi sur <strong>letterboxd.com</strong>.', 'Profil, puis <strong>Settings</strong>.', 'Onglet <strong>Data</strong>, tout à droite.', '<strong>Export your data</strong>, puis glisse le .zip ici.'],
                 demo: 'Pas de compte ? Teste avec un profil exemple', bill: "Un site <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur", quit: '← Recommencer',
-                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', nextTouch: 'Touche pour continuer', ok: 'Valider', read: 'Je lis ton export…', step: 'question',
+                dl: 'Télécharger l\'affiche', share: 'Partager sur Instagram', copy: 'Copier le lien', copied: 'Lien copié', yours: 'Fais le tien', ready: 'Ton affiche est prête', present: 'Letteroastd présente', in: 'dans', critic: 'Ma critique', by: 'un film de', again: 'Recommencer', next: 'Entrée ou clic pour continuer', nextTouch: 'Touche pour continuer', ok: 'Valider', read: 'Je lis ton export…', step: 'question',
                 duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoDropTouch: 'Touche ici pour choisir les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
                 notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour une vraie analyse (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
             en: { sub: "Throw me your Letterboxd export, I'll read it all and tell you what kind of film buff you are.", exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', dropTouch: 'Tap here<br>to choose your .zip <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
                 howS: ['Sign in on <strong>letterboxd.com</strong>.', 'Profile, then <strong>Settings</strong>.', 'The <strong>Data</strong> tab, far right.', '<strong>Export your data</strong>, then drop the .zip here.'],
                 demo: 'No account? Try a sample profile', bill: 'A website by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser', quit: '← Start over',
-                dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', nextTouch: 'Tap to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
+                dl: 'Download the poster', share: 'Share to Instagram', copy: 'Copy the link', copied: 'Link copied', yours: 'Make yours', ready: 'Your poster is ready', present: 'Letteroastd presents', in: 'in', critic: 'My review', by: 'a film by', again: 'Start over', next: 'Enter or click to continue', nextTouch: 'Tap to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
                 duo: 'Two of you? Compare two profiles', duoOff: 'Solo after all', duoDrop: 'Drop both .zip files,<br>yours then theirs <span class="ar">→</span>', duoDropTouch: 'Tap here to choose both .zip files,<br>yours then theirs <span class="ar">→</span>', duoOne: 'One profile loaded. Now the second one.', duoDemo: 'Try a sample duo',
                 notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a real analysis (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
         };
@@ -583,31 +644,118 @@
             setTimeout(() => { const d = say(s.reply(v), 'reply'); setTimeout(() => cont(() => { i++; step(); }), d); }, 180);
         }
 
-        // ---------- fiche ----------
+        // ---------- fiche : l'affiche du film de ton profil ----------
+        const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+        // un seul rendu à la fois, partagé : deux captures simultanées se gênent (html2canvas perd son élément)
+        let fpReady = Promise.resolve(), fpBlob = null, fpJob = null;
+        const blob = () => (fpJob ??= fpReady.then(render).then((b) => (fpBlob = b), (e) => { fpJob = null; throw e; }));
         function finish() {
             stage.style.display = 'none';
-            const R = LR.score(F, A, lang), V = LR.verdict(F, A, lang);
-            $('[data-res-user]').textContent = `${t('card')} ${demo ? t('demoName') : F.username ? '@' + F.username : '—'}`;
-            { let h = 7; for (const c of (F.username || 'exemple')) h = (h * 31 + c.charCodeAt(0)) % 9973; $('[data-member]').textContent = String(h).padStart(4, '0'); }
-            $('[data-res-score]').innerHTML = `${R.total}<small>/100</small>`;
-            $('[data-res-rank]').textContent = R.rank;
-            $('[data-res-axes]').innerHTML = R.axes.map((a) => `<li><span class="an">${a.name}</span><span class="ab"><i style="width:${a.v}%"></i></span><span class="av">${a.v}</span><span class="al">${a.line} <em>${a.stat}</em></span></li>`).join('');
-            $('[data-res-verdict]').innerHTML = V.map((l) => `<li>${l}</li>`).join('');
-            const h = F.hot;
-            $('[data-res-quote]').textContent = h ? `« ${h.text.length > 180 ? h.text.slice(0, 177) + '…' : h.text} » — ${h.title}${h.rating != null ? ' ' + LR.stars(h.rating) : ''}` : '';
-            if (lang === 'en' && h) $('[data-res-quote]').textContent = $('[data-res-quote]').textContent.replace(/^« /, '“').replace(/ » —/, '” —');
+            const R = LR.score(F, A, lang), V = LR.verdict(F, A, lang), L = (fr, en) => (lang === 'en' ? en : fr);
+            const nf = (v, d = 0) => Number(v).toLocaleString(lang === 'en' ? 'en-GB' : 'fr-FR', { maximumFractionDigits: d, minimumFractionDigits: d });
+            const who = demo ? t('demoName') : F.username ? '@' + F.username : '—';
+            let num = 7; for (const c of (F.username || 'exemple')) num = (num * 31 + c.charCodeAt(0)) % 9973;
+            // le mur : tes huit films les mieux notés (répétés s'il y en a moins), une tuile titre en attendant l'affiche
+            const top = [...F.shelf].sort((a, b) => b.rating - a.rating).slice(0, 8);
+            const wall = top.length ? Array.from({ length: 8 }, (_, i) => top[i % top.length]) : [];
+            const cols = ['var(--or)', 'var(--gr)', 'var(--bl)'];
+            const cut = (x, n) => (x.length > n ? x.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : x);
+            const q = lang === 'en' ? ['“', '”'] : ['« ', ' »'];
+            // le pavé de crédits : tes chiffres, écrits comme au bas d'une affiche
+            const credits = [
+                `${t('by')} <b>${esc(who)}</b>`,
+                L(`avec <b>${nf(F.total)} films</b> vus`, `starring <b>${nf(F.total)} films</b> seen`),
+                F.avg != null ? L(`noté en moyenne <b>${nf(F.avg, 1)} ★</b>`, `rated <b>${nf(F.avg, 1)} ★</b> on average`) : '',
+                F.decs.length ? L(`tourné sur <b>${F.decs.length} décennies</b>`, `shot across <b>${F.decs.length} decades</b>`) : '',
+                F.watchlist ? L(`et <b>${nf(F.watchlist)} films</b> qui attendent leur tour`, `and <b>${nf(F.watchlist)} films</b> still waiting their turn`) : '',
+            ].filter(Boolean).join(' · ');
+            // tes critiques écrites (deux au plus) ; sans critique, tes films à 5 étoiles ; sinon, tes mieux notés
+            const revs = (F.revs || []).slice(0, 2);
+            const notes = revs.length
+                ? revs.map((r) => `<p class="fp-rev"><b>${t('critic')} · ${esc(r.title)}${r.rating != null ? ' ' + LR.stars(r.rating) : ''}</b>${q[0]}${esc(cut(r.text, revs.length > 1 ? 110 : 200))}${q[1]}</p>`).join('')
+                : `<p class="fp-rev"><b>${F.fives?.length ? L('Mes 5 étoiles', 'My 5 stars') : L('Mes mieux notés', 'My top rated')}</b>${esc((F.fives?.length ? F.fives : top.map((f) => f.title)).slice(0, 5).join(' · '))}</p>`;
+            const card = $('[data-fp]');
+            card.innerHTML = `
+                <div class="fp-wall">${wall.map((f, i) => `<div class="tile" style="background:${cols[i % 3]}">${esc(f.title)}</div>`).join('')}</div>
+                <div class="fp-shade"></div>
+                <div class="fp-bands"><i></i><i></i><i></i></div>
+                <p class="fp-head"><span>${t('present')}</span><span>n° ${String(num).padStart(4, '0')}</span></p>
+                <div class="fp-body">
+                    <p class="fp-in"><b>${esc(who)}</b> ${t('in')}</p>
+                    <h2 class="fp-title" data-fp-title>${esc(R.rank)}</h2>
+                    <div class="fp-sc"><b>${R.total}</b><span class="fp-scb"><em>/100</em><i></i><i></i><i></i></span></div>
+                    <ul class="fp-quotes">${V.map((l) => `<li>${l}</li>`).join('')}</ul>
+                    ${notes}
+                    <ul class="fp-ax">${R.axes.map((a) => `<li>${a.name}<b>${a.v}</b><i style="--v:${a.v}%"></i></li>`).join('')}</ul>
+                    <p class="fp-credits">${credits}</p>
+                    <p class="fp-url"><span>${t('yours')}</span><b>→ kerningkastle.com/lab/letteroastd</b></p>
+                </div>`;
+            // à côté de l'affiche : ce que mesure chaque axe
+            $('[data-fp-axes]').innerHTML = R.axes.map((a) => `<li><span>${a.name} · ${a.v}</span>${a.line} <em>${a.stat}</em></li>`).join('');
             const fs = $('#final-stage'); fs.style.display = 'flex'; fs.classList.add('fade-in-up');
+            // titre : le plus grand possible sur deux lignes au plus
+            const tt = card.querySelector('[data-fp-title]');
+            const fitTitle = () => { let z = 70; tt.style.fontSize = z + 'px'; while (tt.offsetHeight > z * 0.88 * 2 + 4 && z > 36) { z -= 2; tt.style.fontSize = z + 'px'; } };
+            fitTitle(); document.fonts.ready.then(fitTitle);
+            fitPoster(); addEventListener('resize', fitPoster);
+            // les affiches remplacent les tuiles une fois chargées (CORS : l'image doit pouvoir être exportée)
+            const tiles = card.querySelectorAll('.fp-wall > *');
+            fpReady = Promise.all(wall.map((f, i) => LR.poster(f.title, f.year).then((u) => u && new Promise((ok) => {
+                const img = new Image(); img.crossOrigin = 'anonymous'; img.alt = ''; img.decoding = 'async';
+                img.onload = () => { tiles[i].className = ''; tiles[i].style.background = ''; tiles[i].replaceChildren(img); ok(); };
+                img.onerror = () => ok(); img.src = u;
+            })))).then(() => document.fonts.ready);
+            // l'image est prête d'avance : « Partager » ouvre la feuille de partage tout de suite (Safari exige un geste récent)
+            fpBlob = null; fpJob = null; blob().catch(() => {});
         }
-        const shot = (node, w, h) => html2canvas(node, { backgroundColor: '#14181c', scale: 2, width: w, height: h }).then((c) => {
-            const a = document.createElement('a'); a.download = `letteroastd-${demo ? 'exemple' : F.username || 'fiche'}.png`; a.href = c.toDataURL('image/png'); a.click();
-        });
+        // l'affiche (540 × 960) réduite pour tenir dans l'écran, sans défilement
+        function fitPoster() {
+            const fs = $('#final-stage'), fit = $('[data-fp-fit]'), card = $('[data-fp]'), cs = getComputedStyle(fs);
+            const small = matchMedia('(max-width: 760px)').matches, gap = parseFloat(cs.rowGap) || 0;
+            let h = fs.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+            let w = fs.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+            if (small) h -= $('.fp-acts').offsetHeight + gap; else w -= $('.fp-side').offsetWidth + (parseFloat(cs.columnGap) || 0);
+            const k = Math.max(0.2, Math.min(h / 960, w / 540, 1));
+            fit.style.width = `${540 * k}px`; fit.style.height = `${960 * k}px`; card.style.transform = `scale(${k})`;
+        }
+        // export : une copie à taille réelle, hors écran, rendue ×2 (1080 × 1920, le format story)
+        function render() {
+            const box = document.createElement('div'); box.className = 'fp-out';
+            const c = $('[data-fp]').cloneNode(true); c.style.transform = ''; box.appendChild(c); document.body.appendChild(box);
+            return html2canvas(c, { backgroundColor: '#16120e', scale: 2, width: 540, height: 960, useCORS: true }).then((poster) => {
+                // le cadre story : l'affiche réduite à 74 % au centre, hors des zones qu'Instagram recouvre (haut : progression
+                // et profil ; bas : réponse), coins arrondis, ombre portée
+                const W = 1080, H = 1920, k = 0.74, w = W * k, h = H * k, x = (W - w) / 2, y = (H - h) / 2;
+                const out = document.createElement('canvas'); out.width = W; out.height = H;
+                const g = out.getContext('2d');
+                g.fillStyle = '#0e0b08'; g.fillRect(0, 0, W, H);
+                g.save(); g.shadowColor = 'rgba(0, 0, 0, .6)'; g.shadowBlur = 60; g.shadowOffsetY = 24;
+                g.beginPath(); g.roundRect(x, y, w, h, 12); g.fillStyle = '#16120e'; g.fill(); g.restore();
+                g.save(); g.beginPath(); g.roundRect(x, y, w, h, 12); g.clip(); g.drawImage(poster, x, y, w, h); g.restore();
+                return new Promise((ok) => out.toBlob(ok, 'image/png'));
+            }).finally(() => box.remove());
+        }
+        const SITE = 'https://kerningkastle.com/lab/letteroastd/';
+        // copier le lien : pour le sticker « lien » d'une story Instagram
+        { const cb = $('[data-copy]'); cb.onclick = () => navigator.clipboard?.writeText(SITE).then(() => { cb.textContent = t('copied'); setTimeout(() => (cb.textContent = t('copy')), 2000); }); }
+        const fname = () => `letteroastd-${demo ? 'exemple' : F.username || 'affiche'}.png`;
+        const save = (blob) => { const a = document.createElement('a'); a.download = fname(); a.href = URL.createObjectURL(blob); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+        const shot = (node) => html2canvas(node, { backgroundColor: '#16120e', scale: 2, useCORS: true }).then((c) => c.toBlob(save, 'image/png'));
         document.querySelectorAll('[data-dl]').forEach((b) => (b.onclick = () => {
-            const card = $('#capture-target');
             if (b.dataset.dl === 'duo') return shot($('#duo-target'));
-            if (b.dataset.dl === 'card') return shot(card);
-            const box = document.createElement('div'); box.className = 'story'; box.appendChild(card.cloneNode(true)); document.body.appendChild(box);
-            shot(box, 540, 960).finally(() => box.remove());
+            blob().then(save);
         }));
+        // partager : seulement là où le navigateur sait partager une image (téléphones surtout)
+        {
+            const sb = $('[data-share]');
+            try { sb.hidden = !(navigator.canShare && navigator.canShare({ files: [new File([''], 'a.png', { type: 'image/png' })] })); } catch { sb.hidden = true; }
+            sb.onclick = async () => {
+                const b = fpBlob || await blob();
+                const file = new File([b], fname(), { type: 'image/png' });
+                try { await navigator.share({ files: [file], title: 'Letteroastd', text: `${t('yours')} : ${SITE}` }); }
+                catch (e) { if (e.name !== 'AbortError') save(b); } // geste expiré ou refus : on télécharge
+            };
+        }
         document.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => location.reload()));
 
         // ---------- fiche duo ----------
