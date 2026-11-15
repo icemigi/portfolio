@@ -10,7 +10,7 @@ npm install
 npm run dev       # http://localhost:4321
 npm run build     # génère ./dist (site statique)
 npm run preview   # sert ./dist
-npm test          # règles du geste molette / pavé
+npm test          # liaisons typographiques (petits mots liés au suivant)
 ```
 
 Node ≥ 22.22.
@@ -18,6 +18,7 @@ Node ≥ 22.22.
 ## Principes
 
 - **Défilement forcé** : la plupart des pages sont des écrans plein cadre ; un geste (molette, pavé, doigt, clavier) = un écran. Un écran plus haut que la fenêtre se lit librement à l'intérieur.
+- **Navigation sans rechargement** : le menu et le logo restent, seul le contenu change (ClientRouter d'Astro) ; chaque page est montée avant son premier affichage et démontée à son départ.
 - **Mouvement** : apparition lettre par lettre, évitement du curseur sur les grands textes, curseur gantelet en CSS, parallaxe au passage des écrans, titre continu entre deux études. Tout respecte « Réduire les animations ».
 - **Fluidité** : chargement d'entrée une seule fois par visite, pages préchargées au survol de leur lien (`prefetch`), images des écrans voisins chargées d'avance, images en WebP.
 - **Son** : synthétisé en Web Audio, aucun fichier, actif par défaut (démarre au premier geste), coupé par le haut-parleur du menu.
@@ -36,12 +37,15 @@ src/
     archive.ts      pièces de l'archive (triées par année)
     likes.ts        « Ce que j'aime » : objets, textes, liens (Letterboxd, Spotify)
     lab.ts          pièces du Lab
-  components/       Header, Footer, Affiche (texte d'affiche à vignettes), Door, ProjectRows,
-                    ObjectShape, ContactScreen, LabRoom, TypeCanvas, DevMode
+  components/       Header, Footer, Affiche (texte d'affiche à vignettes), Door, ProjectRows, ProjectStage,
+                    Scene (objets en lévitation), ObjectShape, Portrait3D, Banners, ContactScreen,
+                    LabRoom, TypeCanvas, DevMode
   layouts/Base.astro
-  pages/[lang]/     index · work/ · work/[slug] · lab (bureau) · lab/[room] · archive · about · about/likes · legal
-  scripts/          site (point d'entrée), screens (défilement forcé), motion (lettres, vignettes),
-                    hola (évitement du curseur), gesture (molette / pavé), loader, sound
+  pages/[lang]/     index · work/ · work/[slug] · lab (liste) · lab/[room] · archive · about · about/likes · legal
+  scripts/          site (point d'entrée), page (cycle de vie des pages), screens (défilement forcé),
+                    motion (lettres), langswap (changement de langue), hola (évitement du curseur),
+                    tie (liaisons typographiques), loader, sound
+    views/          scripts des pages et des composants, chargés à la demande
   styles/global.css système : couleurs, grille 12 colonnes, typo, écrans
 public/
   fonts/            Geist et Geist Mono (OFL)
@@ -49,8 +53,7 @@ public/
   work/ archive/ likes/ logos/ stack/ og/   images (WebP, PNG) et images de partage
   lab/heraldry/     générateur d'Algorithmic Heraldry (servi dans le Lab)
 tools/
-  vignettes.py      fabrique les vignettes animées des textes d'affiche (public/vig/) à partir de l'archive
-  heraldry-frames/  blasons générés qui servent à la vignette « code »
+  og.mjs            fabrique les images de partage (public/og/)
 .github/workflows/  mise en ligne automatique sur GitHub Pages
 ```
 
@@ -59,7 +62,7 @@ tools/
 - Un texte : `src/data/*.ts`, en français et en anglais.
 - Une image d'étude : déposer le WebP dans `public/work/<projet>/`, puis l'ajouter dans `src/data/media.ts`.
 - Une pièce d'archive : `public/archive/` (1400 px) + sa miniature `public/archive/s/` (800 px) + une ligne dans `src/data/archive.ts` (l'année trie la page, de la plus récente à la plus ancienne).
-- Une vignette de texte d'affiche : `src` dans `src/data/about.ts` (vide = emplacement gris) ; `python3 tools/vignettes.py` les régénère.
+- Une vignette de texte d'affiche (À propos) : `src` dans `src/data/about.ts` (vide = emplacement gris) ; image fixe facultative à côté (même nom + `.still.webp`) pour « Réduire les animations ».
 - Liens de « Ce que j'aime » : constantes `LETTERBOXD` et `SPOTIFY` en haut de `src/data/likes.ts`.
 - Logos clients du parcours : `public/logos/playstation.webp`, `nespresso.webp`, `chanel.webp` (carrés 256 px, gris, même surface optique).
 

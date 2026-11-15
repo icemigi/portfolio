@@ -1,9 +1,9 @@
 // Accueil et À propos — textes de travail (rédaction définitive plus tard, même longueur).
-// Dans les phrases d'affiche, {n} = vignette n° n (image dans /public/vig/, ou emplacement gris).
+// Dans les phrases d'affiche, {n} = vignette n° n (image WebP dans /public/, ou emplacement gris).
 
 export type Vig = { src: string; label: { en: string; fr: string }; logo?: boolean }; // logo : image contenue (logo de logiciel), pas recadrée
 
-// Accueil, écran 2 : 3 vignettes (lettres, identités, images), animées, uniquement des travaux montrés en entier (jamais recadrés) ; régénérées par tools/vignettes.py.
+// Accueil, écran 2 : la phrase des services, sans vignette.
 export const homeServices = {
   fr: 'Je dessine des lettres{m:beaucoup}, des identités et des images, à\u00a0la\u00a0main ou en code{m:selon l\'humeur}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
   en: 'I draw letters{m:a lot}, identities and images, by\u00a0hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
