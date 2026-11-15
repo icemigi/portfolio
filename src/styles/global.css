@@ -116,6 +116,10 @@ input, textarea, [contenteditable] { cursor: text; }
 .site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; }
 .site-header .home img { width: 34px; height: auto; flex: none; transition: rotate .5s var(--out); }
 @media (hover: hover) { .site-header .home:hover img { rotate: -10deg; } }
+/* le logo fait un tour complet, dans le sens des aiguilles d'une montre (≈ 1,2 s, ease-in-out), toutes les 8 s ;
+   transform, qui s'ajoute à la rotation du survol (propriété rotate) sans l'écraser */
+@media (prefers-reduced-motion: no-preference) { .site-header .home img { animation: kk-spin 8s infinite; } }
+@keyframes kk-spin { 0%, 85% { transform: rotate(0deg); animation-timing-function: ease-in-out; } 100% { transform: rotate(360deg); } }
 .site-header .nn, .site-header .lang-m, .site-header .burger { display: none; }
 .site-header nav { grid-column: 7 / 10; }
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
@@ -234,7 +238,7 @@ html.js.rv-pre [data-screens] > .scr:not([data-still]) { visibility: hidden; }
 /* ---------- pied de page ---------- */
 .ft { padding-top: 24px; padding-bottom: 40px; row-gap: 32px; background: var(--bg); }
 .ft .a { grid-column: 1 / 5; } .ft .b { grid-column: 5 / 7; } .ft .n { grid-column: 7 / 9; } .ft .h { grid-column: 9 / 12; } .ft .top { grid-column: 12 / 13; grid-row: 1; justify-self: end; align-self: start; }
-.ft .col { grid-column: 1 / 7; max-width: 52ch; align-self: end; }
+.ft .col { grid-column: 1 / 9; max-width: 80ch; align-self: end; } /* en mono comme « © année kerningkastle » ; 80 signes : deux lignes */
 .ft .c { grid-column: 9 / 13; display: flex; gap: 24px; align-items: baseline; justify-content: space-between; align-self: end; }
 .ft p + p, .ft p + a, .ft a + a { margin-top: 4px; }
 .ft .c p + a { margin-top: 0; }

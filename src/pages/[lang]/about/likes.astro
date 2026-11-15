@@ -69,7 +69,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .emb :global(iframe) { width: 300px; height: 352px; max-width: none; border: 0; transform-origin: 0 0; }
   .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
   .card[hidden] { display: none; }
-  .card .in { grid-column: 7 / 12; pointer-events: auto; }
+  .card .in { grid-column: 7 / -1; pointer-events: auto; }
   /* comme les écrans du site : libellé en mono orange, texte d'affiche, apartés en mono gris en exposant */
   .card .tt { font-size: 12px; font-weight: 400; }
   .card .txt { margin-top: 20px; }

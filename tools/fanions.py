@@ -45,10 +45,13 @@ def figma(D, L):  # besanté
 def photoshop(D, L):  # Group 12 au pixel : cadre #002841 de 4, six franges de 7
     fr = ''.join(f'<rect x="{x}" y="{187 + D}" width="7" height="44" fill="#002841"/>' for x in (0, 14, 28, 41, 55, 69))
     return f'<rect width="76" height="{187 + D}" fill="#002841"/><rect x="4" y="4" width="68" height="{179 + D}" fill="#041f30"/>{fr}'
-def python(D, L):  # écartelé, couture
-    d = ogive(D)
-    return (f'{clip(d)}<g clip-path="url(#c)"><rect width="76" height="{L}" fill="#fbfaf6"/><rect x="38" width="38" height="110" fill="#d9e1ea"/>'
-            f'<rect y="110" width="38" height="{L - 110}" fill="#d9e1ea"/></g>'
+LOGO_Y = 152 - 0.6 * 76 / 2  # centre du logo (boîte carrée de 0,6 × 76, son bas à 152 : Banners.astro, banners.ts)
+
+
+def python(D, L):  # écartelé centré sur le logo, couture
+    d, y = ogive(D), LOGO_Y
+    return (f'{clip(d)}<g clip-path="url(#c)"><rect width="76" height="{L}" fill="#fbfaf6"/><rect x="38" width="38" height="{y}" fill="#d9e1ea"/>'
+            f'<rect y="{y}" width="38" height="{L - y}" fill="#d9e1ea"/></g>'
             f'<path d="{d}" transform="translate(6 5) scale(.842 {(L - 16) / L:.3f})" fill="none" stroke="#9fadbb" stroke-width="1.2" stroke-dasharray="4 3"/>')
 def typescript(D, L): return bordered(swallow(D), '#3178c6', '#4aa8ff')
 def procreate(D, L):  # pal
