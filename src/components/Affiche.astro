@@ -5,8 +5,8 @@
 import type { Vig } from '../data/about';
 import type { Lang } from '../data/ui';
 import Door from './Door.astro';
-interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string; sentences?: boolean }
-const { text, vigs, lang, tag = 'p', class: cls = '', sentences = false } = Astro.props;
+interface Props { text: string; vigs: Vig[]; lang: Lang; tag?: string; class?: string }
+const { text, vigs, lang, tag = 'p', class: cls = '' } = Astro.props;
 const Tag = tag as any;
 // vignette animée : sa version fixe (même nom + .still.webp, déposée à côté) sert quand « Réduire les animations » est actif
 import { existsSync } from 'node:fs';
@@ -54,22 +54,35 @@ raw.forEach((p, i) => {
   }
   parts.push(p);
 });
-// sentences : chaque phrase devient un groupe (<span class="snt">) ; vignettes, apartés et mots collés restent dans leur phrase
-const groups: Part[][] = [[]];
-const END = /[.!?…]$/;
-for (const p of parts) {
-  if (sentences && p.kind === 'text') {
-    const bits = p.text.split(/(?<=[.!?…])(\s+)/);
-    bits.forEach((b) => { if (!b) return; groups[groups.length - 1].push({ kind: 'text', text: b }); if (/^\s+$/.test(b)) groups.push([]); });
-    continue;
+// la porte n'est jamais en début ni en fin de ligne : un bloc insécable (.glue) la garde avec le mot d'avant et la fin de sa
+// phrase, jusqu'au point (apartés compris) ; ce bout de phrase passe à la ligne d'un seul tenant
+type Group = { glue: boolean; parts: Part[] };
+const G: Group[] = [{ glue: false, parts }];
+const di = parts.findIndex((p) => p.kind === 'door');
+if (di >= 0) {
+  const head = parts.slice(0, di), run: Part[] = [], rest = parts.slice(di + 1);
+  const prev = head[head.length - 1];
+  if (prev?.kind === 'text') {
+    const mm = prev.text.match(/^([\s\S]*?)(\S+\s)$/);
+    if (mm) { prev.text = mm[1]; run.push({ kind: 'text', text: mm[2] }); }
   }
-  groups[groups.length - 1].push(p);
-  if (sentences && 'punct' in p && p.punct && END.test(p.punct)) groups.push([]);
+  run.push(parts[di]);
+  while (rest.length) {
+    const q = rest[0];
+    if (q.kind === 'text') {
+      const end = q.text.search(/[.!?…]/);
+      if (end < 0) { run.push(rest.shift()!); continue; }
+      run.push({ kind: 'text', text: q.text.slice(0, end + 1) }); q.text = q.text.slice(end + 1);
+      break;
+    }
+    run.push(rest.shift()!);
+    if ('punct' in q && q.punct && /[.!?…]$/.test(q.punct)) break;
+  }
+  G.splice(0, 1, { glue: false, parts: head }, { glue: true, parts: run }, { glue: false, parts: rest });
 }
-const G = groups.filter((g) => g.length && g.some((p) => p.kind !== 'text' || p.text.trim()));
 ---
 <Tag class:list={['t56 affiche', cls]} data-hola>
-  {(sentences ? G : [parts]).map((g, gi) => { const inner = g.map((p) =>
+  {G.map((g) => { const inner = g.parts.map((p) =>
     p.kind === 'logo' ? (
       <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
@@ -85,7 +98,7 @@ const G = groups.filter((g) => g.length && g.some((p) => p.kind !== 'text' || p.
     ) : (
       <Fragment>{p.text}</Fragment>
     ),
-  ); return sentences ? <span class="snt" data-s={gi}>{inner}</span> : inner; })}
+  ); return g.glue ? <span class="glue">{inner}</span> : inner; })}
 </Tag>
 
 <style>

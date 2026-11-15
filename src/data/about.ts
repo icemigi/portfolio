@@ -14,13 +14,9 @@ export const homeRing: (string | null)[] = ['anim-simple.webp', null, 'bms.webp'
 
 // À propos — 4 écrans
 export const aboutIntro = {
-  fr: "Designer à Paris{m:et à distance}, je pars toujours de la lettre, {0} du logotype au système d'écriture complet {1}. Quand les mains ne suffisent plus{m:ou qu'elles ont la flemme}, j'écris du code. Le reste vient des choses {door} que j'aime{m:vas-y, ouvre}.",
-  en: "Designer in Paris{m:and remote}, I always start from the letter, {0} from a logotype to a complete writing system {1}. When hands aren't enough{m:or can't be bothered}, I write code. The rest comes from the things {door} I love{m:go on, open it}.",
+  fr: "Designer et directeur artistique à Paris{m:et à distance}, obsédé par des détails que personne ne remarque{m:sauf moi}. Le reste vient des choses {door} que j'aime{m:vas-y, ouvre}.",
+  en: "Designer and art director in Paris{m:and remote}, obsessed with details nobody notices{m:except me}. The rest comes from the things {door} I love{m:go on, open it}.",
 };
-export const aboutVigs: Vig[] = [
-  { src: '', label: { fr: 'logotype', en: 'logotype' } },
-  { src: '', label: { fr: 'glyphes', en: 'glyphs' } },
-];
 
 export const services = {
   fr: [
@@ -42,8 +38,8 @@ export const services = {
 // Chaque fanion a sa longueur (tools/fanions.py écrit les dessins). Au survol : nom du logiciel, et dessous, ce à quoi il me sert.
 // Ordre : suite de couleurs (vert, noirs, bleus et blanc, rouges) ; deux voisins n'ont jamais la même forme ni le même motif.
 export const stack = {
-  fr: 'Les armes que je dégaine le plus{m:de quoi tenir un siège, ou une deadline}.',
-  en: 'The weapons I draw the most{m:enough to hold a siege, or a deadline}.',
+  fr: "Les armes que je dégaine le plus{m:et celles que j'aiguise encore}, de quoi tenir un siège{m:ou une deadline}.",
+  en: "The weapons I draw the most{m:and the ones I'm still sharpening}, enough to hold a siege{m:or a deadline}.",
 };
 export const stackBanners = [
   { id: 'glyphs', name: 'Glyphs', mark: 'mk-glyphs.svg', note: { fr: 'je dessine mes caractères, du croquis au fichier de fonte', en: 'I draw my typefaces, from sketch to font file' } },

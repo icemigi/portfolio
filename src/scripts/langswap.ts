@@ -6,6 +6,7 @@
 import { navigate } from 'astro:transitions/client';
 import { reduced, settle, stopScrambles } from './motion';
 import { initParens } from './parens';
+import { initTie } from './tie';
 import { screens } from './screens';
 
 const BLOCK = 'h1, h2, h3, h4, p, dt, dd, li, figcaption, label';   // blocs de texte
@@ -14,7 +15,8 @@ const SKIP = '.vi, .door, svg, canvas, .sr, script, style, .p3d, img, video, ifr
 const POOL = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!@#%*+=/§¶<>';
 const D = 620, W = 10, STAGGER = 35; // durée d'un bloc, largeur de la vague (caractères), décalage entre blocs
 
-const clean = (s: string) => s.replace(/\s+/g, ' ');
+// espaces ordinaires et retours à la ligne ramenés à une espace ; les insécables (petits mots liés, tie.ts) restent
+const clean = (s: string) => s.replace(/[ \t\n\r\f]+/g, ' ');
 // blocs de texte : les plus intérieurs (un service = son titre + sa description, chacun à part ; un lien dans un paragraphe
 // appartient au paragraphe), plus les liens et boutons isolés
 const keep = (el: Element) => !el.closest(SKIP) && !!clean(el.textContent || '').trim();
@@ -98,7 +100,7 @@ function run(jobs: Job[], done: () => void) {
         for (let i = 0; i < len; i++) {
           const g = s.s0 + i, inNew = g < s.s1;
           if (g < lock) out += inNew ? target[g] : '';
-          else if (g < lock + W) out += (inNew ? target[g] : s.old[i] ?? '') === ' ' ? ' ' : POOL[(Math.random() * POOL.length) | 0];
+          else if (g < lock + W) { const c = inNew ? target[g] : s.old[i] ?? ''; out += /\s/.test(c) ? c : POOL[(Math.random() * POOL.length) | 0]; } // les espaces (insécables comprises) restent
           else out += s.old[i] ?? '';
         }
         if (s.node.nodeValue !== out) s.node.nodeValue = out;
@@ -143,6 +145,7 @@ document.addEventListener('click', (e) => {
     document.getAnimations().forEach((an) => { const t = (an.effect as KeyframeEffect | null)?.target as Element | null; if (t?.closest?.('.ch, .note, .parenthesis-reveal, .bp, .mono, [data-screens]')) try { an.finish(); } catch { /* animation sans fin */ } });
     const doc = new DOMParser().parseFromString(html, 'text/html');
     initParens(doc); // mêmes apartés isolés que sur la page affichée
+    initTie(doc.body); // mêmes petits mots liés : les lignes se coupent déjà comme sur la page d'arrivée (rien ne saute)
     // même écran (même rang parmi les écrans de la page) et même menu
     const here = document.querySelectorAll('[data-screens] > .scr'), there = doc.querySelectorAll('[data-screens] > .scr');
     const scr = s?.el(s.current()), idx = scr ? [...here].indexOf(scr) : -1;

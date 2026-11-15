@@ -12,6 +12,7 @@ export type Like = {
   shape: 'rect' | 'circle';
   w: number; h: number;
   hull: [number, number][];
+  scale?: number;  // correction de taille : un objet fait surtout de vide (le vélo) paraît petit à surface de contour égale
   link?: string;   // lien discret sur le sous-titre (ex. Letterboxd)
   embed?: string;  // lecteur intégré dans l'objet ouvert (ex. playlist Spotify, URL « embed »)
   fr: { title: string; sub: string; text: string };
@@ -43,10 +44,10 @@ export const likes: Like[] = [
     hull: [[0.0,0.672],[0.046,0.295],[0.085,0.131],[0.415,0.0],[0.946,0.41],[0.977,0.443],[1.0,0.623],[0.946,0.754],[0.8,0.934],[0.662,1.0],[0.431,1.0],[0.154,0.951],[0.046,0.885],[0.0,0.82]],
     fr: { title: 'Course à pied', sub: 'La chaussure', text: 'Je cours pour la même raison que d\'autres méditent. Une heure, une montre, un tracé, et le projet qui coinçait le matin se débloque quelque part vers le dixième kilomètre (rarement avant).' },
     en: { title: 'Running', sub: 'The shoe', text: 'I run for the same reason others meditate. An hour, a watch, a route, and the project I was stuck on that morning comes unstuck somewhere around the tenth kilometre (rarely before).' } },
-  { id: 'wheel', src: '/likes/wheel.webp', shape: 'circle', w: 520, h: 519,
-    hull: [[0.0,0.434],[0.062,0.248],[0.262,0.054],[0.431,0.0],[0.723,0.047],[0.938,0.248],[1.0,0.434],[0.946,0.736],[0.846,0.868],[0.685,0.969],[0.431,1.0],[0.154,0.868],[0.054,0.736],[0.0,0.566]],
-    fr: { title: 'Pignon fixe', sub: 'La roue', text: 'Pas de roue libre, pas de vitesses, souvent pas de frein. Le vélo réduit à ce qui compte : tant que les roues tournent, on pédale. Une contrainte qui oblige à lire chaque rue à l\'avance, et que j\'aime pour ça.' },
-    en: { title: 'Fixed gear', sub: 'The wheel', text: 'No freewheel, no gears, often no brakes. The bike reduced to what matters: as long as the wheels turn, you pedal. A constraint that makes you read every street ahead, which is exactly why I like it.' } },
+  { id: 'fixie', src: '/likes/fixie.webp', shape: 'rect', w: 1200, h: 755, scale: 1.3,
+    hull: [[0.0,0.638],[0.027,0.505],[0.231,0.011],[0.385,0.011],[0.796,0.112],[0.876,0.176],[0.987,0.548],[0.997,0.729],[0.95,0.883],[0.886,0.963],[0.793,1.0],[0.194,1.0],[0.114,0.963],[0.013,0.787]],
+    fr: { title: 'Pignon fixe', sub: 'Le vélo', text: 'Pas de roue libre, pas de vitesses, souvent pas de frein. Le vélo réduit à ce qui compte : tant que les roues tournent, on pédale. Une contrainte qui oblige à lire chaque rue à l\'avance, et que j\'aime pour ça.' },
+    en: { title: 'Fixed gear', sub: 'The bike', text: 'No freewheel, no gears, often no brakes. The bike reduced to what matters: as long as the wheels turn, you pedal. A constraint that makes you read every street ahead, which is exactly why I like it.' } },
   { id: 'controller', src: '/likes/controller.webp', shape: 'rect', w: 1058, h: 734,
     hull: [[0.001,0.766],[0.047,0.466],[0.135,0.139],[0.179,0.059],[0.289,0.001],[0.708,0.001],[0.776,0.022],[0.868,0.146],[0.95,0.455],[0.99,0.67],[0.996,0.847],[0.904,0.997],[0.099,0.999],[0.023,0.924]],
     fr: { title: 'Jeu vidéo', sub: 'La manette', text: 'Je joue depuis toujours, sur PC aujourd\'hui, et surtout aux Soulslikes : des jeux qui te tuent jusqu\'à ce que tu comprennes. Sekiro, je le speedrun. Je suis sûrement mort plus de fois face à Isshin que je n\'ai dit bonjour à mes voisins, mais maintenant je le bats les yeux fermés (presque).' },

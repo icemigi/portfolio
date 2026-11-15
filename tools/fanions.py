@@ -1,11 +1,14 @@
-# Fanions de la Stack (page À propos) : écrit /public/fanions/<id>.svg. Lancer : python3 tools/fanions.py
+# Fanions de la Stack (page À propos) : écrit /public/fanions/<id>.svg et leurs hauteurs dans src/data/fanions.json (la page
+# les donne aux images dès le HTML : mise en page juste avant leur chargement). Lancer : python3 tools/fanions.py
 # Dessins d'après les maquettes de /assets/fanions (76 de large) ; vocabulaire du blason : queue d'aronde, ogive, pointe,
 # franges, langues, pendants ; parti, bordure, besanté, écartelé, pal, fascé ondé, échiqueté.
 # Chaque fanion a sa longueur : 231 + D. Seul le corps s'allonge (les logos restent sur la même ligne, à 152 du haut) ;
-# la hauteur de chaque SVG est lue par Banners.astro.
+import json
 from pathlib import Path
 
-OUT = Path(__file__).resolve().parent.parent / 'public' / 'fanions'
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / 'public' / 'fanions'
+DATA = ROOT / 'src' / 'data' / 'fanions.json'
 
 
 def svg(L, body):
@@ -64,7 +67,9 @@ FANIONS = [(glyphs, 0), (touchdesigner, 40), (figma, 16), (photoshop, 52), (pyth
            (typescript, 32), (procreate, 22), (illustrator, 46), (p5js, 4), (blender, 28)]
 
 if __name__ == '__main__':
+    heights = {}
     for draw, D in FANIONS:
-        L = 231 + D
+        L = heights[draw.__name__] = 231 + D
         (OUT / f'{draw.__name__}.svg').write_text(svg(L, draw(D, L)))
         print(draw.__name__, L)
+    DATA.write_text(json.dumps(heights, indent=2) + '\n')

@@ -10,7 +10,7 @@ export function getStaticPaths() { return languages.map((lang) => ({ params: { l
 const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const fr = lang === 'fr';
-const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, hull: l.hull, link: l.link || '', embed: l.embed || '', ...l[lang] }));
+const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h: l.h, hull: l.hull, scale: l.scale ?? 1, link: l.link || '', embed: l.embed || '', ...l[lang] }));
 ---
 <Base lang={lang} title={fr ? 'Ce que j\'aime' : 'Things I love'} description={fr ? 'Ce que j\'aime, en vrac : Le Seigneur des anneaux, One Piece, films d\'horreur, rando, escalade, course, pignon fixe, jeu vidéo, musique et code. À attraper, lancer, ouvrir.' : 'Things I love, in no particular order: The Lord of the Rings, One Piece, horror films, hiking, climbing, running, fixed gear, video games, music and code. Grab, throw, open.'} path="about/likes/" active="about">
   {/* données des objets pour le script (views/likes.ts) */}
@@ -61,9 +61,11 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .it img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .16)); transition: filter .3s; }
   .it.sel img { filter: drop-shadow(0 30px 34px rgba(0, 0, 0, .22)); }
   .it:has(img) { background: none; padding: 0; }
-  /* écran de l'iPod : le lecteur Spotify y est posé (iframe 300 px réduite à la taille de l'écran) */
-  .emb { position: absolute; left: 10.8%; top: 4.9%; width: 78.4%; height: 51.7%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s .5s; pointer-events: none; }
-  .it.sel .emb { opacity: 1; pointer-events: auto; }
+  /* écran de l'iPod : le lecteur Spotify y est posé dès l'arrivée (iframe 300 px réduite à la taille de l'écran), visible une
+     fois chargé ; on ne s'en sert (clics) que l'objet ouvert, sinon on prend l'iPod */
+  .emb { position: absolute; left: 10.8%; top: 4.9%; width: 78.4%; height: 51.7%; overflow: hidden; border-radius: 2px; opacity: 0; transition: opacity .3s; pointer-events: none; }
+  .emb.ready { opacity: 1; }
+  .it.sel .emb { pointer-events: auto; }
   .emb :global(iframe) { width: 300px; height: 352px; max-width: none; border: 0; transform-origin: 0 0; }
   .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
   .card[hidden] { display: none; }

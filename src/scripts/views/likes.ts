@@ -14,7 +14,7 @@ const loadMatter = () => (matter ??= new Promise((ok, ko) => {
 
 onPage('[data-likes]', (ctx) => {
   // données des objets, posées par la page (bloc JSON)
-  const D = JSON.parse(document.getElementById('likes-data')!.textContent || '[]') as { id: string; shape: string; w: number; h: number; hull: [number, number][]; link: string; embed: string; title: string; sub: string; text: string }[];
+  const D = JSON.parse(document.getElementById('likes-data')!.textContent || '[]') as { id: string; shape: string; w: number; h: number; hull: [number, number][]; scale: number; link: string; embed: string; title: string; sub: string; text: string }[];
   const root = document.querySelector<HTMLElement>('[data-likes]')!;
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const card = root.querySelector<HTMLElement>('[data-card]')!;
@@ -43,9 +43,15 @@ onPage('[data-likes]', (ctx) => {
   };
   buildWalls();
 
-  // pas d'échelle réelle : chaque objet a la même surface (seules ses proportions changent), le tout couvre ~32 % de l'écran
-  const real = D.map((d) => { const r = Math.sqrt(d.w / d.h); return [r, 1 / r]; });
-  const K = Math.sqrt((0.32 * innerWidth * innerHeight) / D.length);
+  // pas d'échelle réelle : chaque objet a la même surface visible — celle de son contour (enveloppe convexe), pas de son cadre :
+  // un vélo ou un avion, pleins de vide, ne paraissent plus plus petits qu'un DVD — et le tout couvre ~30 % de l'écran
+  const hullArea = (d: (typeof D)[number]) => {
+    if (d.shape === 'circle') return Math.PI / 4;
+    let a = 0; d.hull.forEach(([x, y], i) => { const [x2, y2] = d.hull[(i + 1) % d.hull.length]; a += x * y2 - x2 * y; });
+    return Math.abs(a) / 2;
+  };
+  const real = D.map((d) => { const r = Math.sqrt(d.w / d.h), f = Math.sqrt(hullArea(d)) / d.scale; return [r / f, 1 / r / f]; });
+  const K = Math.sqrt((0.3 * innerWidth * innerHeight) / D.length);
   // le titre est une étagère : les objets tombent dessus, ceux qui débordent glissent jusqu'au sol
   // une étagère par mot. Téléphone : pas d'étagère, le titre reste un décor derrière les objets, qui tombent jusqu'au sol
   let shelves: any[] = [];
@@ -163,15 +169,7 @@ onPage('[data-likes]', (ctx) => {
     card.querySelector('[data-sub]')!.textContent = d.sub;
     const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
     lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
-    // lecteur intégré (iPod) : chargé une fois l'objet posé, pour ne pas alourdir son arrivée
-    const mount = () => {
-      it.el.style.willChange = 'auto'; // un calque will-change garde la résolution de sa petite taille : sans lui, l'objet agrandi est redessiné net
-      const emb = it.el.querySelector<HTMLElement>('[data-emb]');
-      if (emb && !emb.firstChild) emb.innerHTML = `<iframe src="${emb.dataset.emb}" title="Playlist" loading="lazy" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
-      // le lecteur prend tout l'écran de l'iPod : 300 px de large réduits à la largeur de l'écran, hauteur calée sur ses proportions
-      // (assez haut pour que Spotify affiche aussi la liste des morceaux)
-      if (emb?.firstElementChild) { const f = emb.firstElementChild as HTMLElement, k = emb.clientWidth / 300; f.style.width = '300px'; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; }
-    };
+    const mount = () => { it.el.style.willChange = 'auto'; }; // un calque will-change garde la résolution de sa petite taille : sans lui, l'objet agrandi est redessiné net
     card.querySelector('[data-title]')!.textContent = d.title;
     card.querySelector('[data-text]')!.textContent = d.text;
     card.hidden = false;
@@ -203,6 +201,18 @@ onPage('[data-likes]', (ctx) => {
   card.querySelector('[data-close]')!.addEventListener('click', close);
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && !card.hidden) close(); }, { signal: ctx.signal });
   // clavier : chaque objet est un bouton (Tab puis Entrée)
+  // lecteur intégré (iPod) : chargé dès l'arrivée, dans l'écran de l'objet — la playlist y est déjà quand on l'ouvre. Il prend
+  // tout l'écran : 300 px de large réduits à sa largeur, hauteur calée sur ses proportions (assez haut pour que Spotify affiche
+  // la liste des morceaux) ; visible une fois chargé (la photo de l'écran reste dessous jusque-là)
+  stage.querySelectorAll<HTMLElement>('[data-emb]').forEach((emb) => {
+    const f = document.createElement('iframe');
+    Object.assign(f, { src: emb.dataset.emb!, title: 'Playlist' });
+    f.allow = 'autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture';
+    const fit = () => { const k = emb.clientWidth / 300; f.style.height = `${Math.ceil(emb.clientHeight / k) + 1}px`; f.style.transform = `scale(${k})`; };
+    f.addEventListener('load', () => emb.classList.add('ready'), { signal: ctx.signal });
+    emb.append(f); fit();
+    ctx.observe(new ResizeObserver(fit)).observe(emb);
+  });
   items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true))); });
 
   addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); if (!big.hidden) buildShelf(); }, { signal: ctx.signal });

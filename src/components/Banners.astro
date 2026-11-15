@@ -5,16 +5,17 @@
 // le nom du logiciel et ce que j'en fais. La souris passe = le vent qu'elle fait pousse le tissu.
 // Sans WebGL, sur téléphone ou avec « Réduire les animations » : fanions fixes en HTML (même dessin, sans mouvement).
 import type { Lang } from '../data/ui';
+import heights from '../data/fanions.json'; // hauteur de chaque dessin (76 de large), écrite par tools/fanions.py
 interface Props { items: { id: string; name: string; mark: string; note: Record<Lang, string> }[]; lang: Lang; hint: string }
 const { items, lang, hint } = Astro.props;
 ---
-<div class="fanions" data-fanions role="group" aria-label="Stack">
+<div class="fanions" data-fanions role="group" aria-label="Stack" transition:persist="fanions">
   <canvas class="gl" aria-hidden="true"></canvas>
   <ul>
     {items.map((x, i) => (
       <li class="fn" style={`--n:${i}`} tabindex="0" aria-label={`${x.name}, ${x.note[lang]}`} data-name={x.name} data-note={`(${x.note[lang].toLowerCase()})`}>
         <span class="cloth">
-          <img class="dr" src={`/fanions/${x.id}.svg`} alt="" decoding="async" />
+          <img class="dr" src={`/fanions/${x.id}.svg`} width="76" height={heights[x.id as keyof typeof heights]} alt="" decoding="async" />
           <img class="mk" src={`/stack/${x.mark}`} alt="" decoding="async" />
         </span>
       </li>
@@ -30,8 +31,8 @@ const { items, lang, hint } = Astro.props;
   .gl { position: absolute; left: -60px; top: 0; height: calc(100% + 80px); width: calc(100% + 120px); max-width: none; /* la remise à zéro globale bornait le canvas à 100 % : le dernier fanion était coupé */ pointer-events: none; z-index: 2; }
   ul { --gap: clamp(10px, 1.2vw, 18px); display: flex; align-items: flex-start; gap: var(--gap); padding: 0 8px; }
   .fn { flex: 1; min-width: 0; outline: none; }
-  /* version fixe (aussi la mise en page de référence pour le tissu) : le dessin à pleine largeur, sa hauteur est celle du SVG
-     (chaque fanion a sa longueur) */
+  /* version fixe (aussi la mise en page de référence pour le tissu) : le dessin à pleine largeur, à ses proportions (largeur et
+     hauteur données dans le HTML : juste avant le chargement de l'image) ; chaque fanion a sa longueur */
   .cloth { position: relative; display: block; container-type: inline-size; }
   .dr { display: block; width: 100%; height: auto; }
   /* logo : boîte carrée de 60 % de la largeur, son bas à deux largeurs du haut (comme sur le tissu) : même ligne pour tous */

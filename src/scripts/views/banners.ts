@@ -1,14 +1,27 @@
 // Fanions de la Stack (Banners.astro, page À propos) : drapeaux en tissu (WebGL), qui se déroulent à l'arrivée de leur écran
-// et flottent au vent de la souris. Contexte WebGL rendu au départ de la page.
-import { onPage } from '../page';
+// et flottent au vent de la souris. Gardés d'une langue à l'autre (transition:persist), comme le portrait de l'accueil : au
+// changement de langue, le même tissu reste, sans reconstruction ni nouvelle apparition ; seuls ses textes prennent la langue
+// de la nouvelle page. Ils ont donc leur propre portée de nettoyage, libérée (contexte WebGL rendu) seulement quand ils quittent
+// vraiment le document.
+import { onPage, scope, type Ctx } from '../page';
 import { reduced, reveal, settle } from '../motion';
 
-onPage('[data-fanions]', (ctx) => {
+const live = new Map<HTMLElement, ReturnType<typeof scope>>();
+document.addEventListener('astro:after-swap', () => live.forEach((s, el) => { if (!el.isConnected) { s.dispose(); live.delete(el); } }));
+
+onPage('[data-fanions]', (page) => {
+  document.querySelectorAll<HTMLElement>('[data-fanions]').forEach((root) => {
+    if (live.has(root)) return; // déjà là (gardé d'une langue à l'autre)
+    const s = scope(page); live.set(root, s); init(root, s);
+  });
+});
+
+function init(root: HTMLElement, ctx: Ctx) {
   // légende sous les fanions : au survol (ou au toucher) d'un fanion, son numéro, son nom et ce à quoi il sert, écrits comme
   // les autres textes du site (libellés en fondu, nom lettre à lettre) ; elle se cache quand on le quitte
-  const fan = document.querySelector<HTMLElement>('[data-fanions]');
-  const cap = fan?.querySelector<HTMLElement>('.cap');
-  if (fan && cap) {
+  const fan = root;
+  const cap = fan.querySelector<HTMLElement>('.cap'), hint = fan.querySelector<HTMLElement>('.hint');
+  if (cap && hint) {
     const items = [...fan.querySelectorAll<HTMLElement>('li.fn')];
     let cur: HTMLElement | null = null;
     const show = (li: HTMLElement) => {
@@ -29,14 +42,25 @@ onPage('[data-fanions]', (ctx) => {
       li.addEventListener('pointerleave', (e) => { if ((e as PointerEvent).pointerType === 'mouse') hide(li); }, { signal: ctx.signal });
       li.addEventListener('blur', () => hide(li), { signal: ctx.signal });
     }
+    // changement de langue : les textes des fanions et l'invitation sont repris de la nouvelle page (le tissu reste)
+    document.addEventListener('astro:before-swap', (e) => {
+      const next = (e as Event & { newDocument: Document }).newDocument.querySelector<HTMLElement>('[data-fanions]');
+      if (!next) return;
+      const nl = next.querySelectorAll<HTMLElement>('li.fn');
+      items.forEach((li, k) => {
+        const n = nl[k]; if (!n) return;
+        li.setAttribute('aria-label', n.getAttribute('aria-label') ?? ''); li.dataset.name = n.dataset.name; li.dataset.note = n.dataset.note;
+      });
+      hint.textContent = next.querySelector('.hint')?.textContent ?? '';
+      cur = null; fan.classList.remove('on');
+    }, { signal: ctx.signal });
   }
   type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; sh: Float32Array };
   const C = 8, R = 22; // colonnes × rangées de points par fanion
-  const root = document.querySelector<HTMLElement>('[data-fanions]');
   const still = reduced() || matchMedia('(max-width: 760px)').matches;
-  const cv = root?.querySelector<HTMLCanvasElement>('canvas.gl');
+  const cv = root.querySelector<HTMLCanvasElement>('canvas.gl');
   const gl = !still && cv ? cv.getContext('webgl', { premultipliedAlpha: true, antialias: true, alpha: true }) : null;
-  if (root && cv && gl) {
+  if (cv && gl) {
     ctx.cleanup(() => gl.getExtension('WEBGL_lose_context')?.loseContext());
     root.classList.add('live'); // la version fixe ne s'affiche jamais : pas de double apparition
     const li = [...root.querySelectorAll<HTMLElement>('li.fn')];
@@ -201,8 +225,12 @@ onPage('[data-fanions]', (ctx) => {
     // la boucle ne tourne que quand la section est à l'écran
     // à chaque retour sur la section, les fanions se déroulent de nouveau (comme les lettres réapparaissent)
     document.fonts.ready.then(() => { if (!ctx.signal.aborted) build(); });
-    // la mise en page de la section peut bouger après coup (apparition, polices) : on reconstruit dès que la largeur change
-    let rz = 0, lastW = root.clientWidth;
-    ctx.observe(new ResizeObserver(() => { const w = root.clientWidth; if (Math.abs(w - lastW) < 2) return; lastW = w; clearTimeout(rz); rz = ctx.timeout(build, 150); })).observe(root);
+    // la mise en page de la section peut bouger après coup (apparition, polices) : on reconstruit dès que sa taille change
+    let rz = 0, lastW = root.clientWidth, lastH = root.clientHeight;
+    ctx.observe(new ResizeObserver(() => {
+      const w = root.clientWidth, h = root.clientHeight;
+      if (Math.abs(w - lastW) < 2 && Math.abs(h - lastH) < 2) return;
+      lastW = w; lastH = h; clearTimeout(rz); rz = ctx.timeout(build, 150);
+    })).observe(root);
   }
-});
+}

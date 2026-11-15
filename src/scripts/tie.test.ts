@@ -15,3 +15,6 @@ test('les mots longs gardent une espace normale', () => {
 test('en anglais : a, I, of, the', () => {
   assert.equal(tie('I draw a lot of the letters', 'en'), `I${N}draw a${N}lot of${N}the${N}letters`);
 });
+test("l'espace en fin de texte après un petit mot devient insécable (le mot suivant est dans l'élément d'après)", () => {
+  assert.equal(tie('Designer et directeur artistique à ', 'fr'), `Designer et${N}directeur artistique à${N}`);
+});
