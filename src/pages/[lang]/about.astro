@@ -3,7 +3,7 @@
 import Base from '../../layouts/Base.astro';
 import Affiche from '../../components/Affiche.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
-import { aboutIntro, aboutVigs, services, stack, stackVigs, stackBanners, path, pathVigs, aboutLabels } from '../../data/about';
+import { aboutIntro, aboutVigs, services, stack, stackBanners, path, pathVigs, aboutLabels } from '../../data/about';
 import Banners from '../../components/Banners.astro';
 import { projects } from '../../data/projects';
 
@@ -43,7 +43,7 @@ const P = (slug: string) => projects.find((x) => x.slug === slug);
     <section class="scr" aria-labelledby="ab-st">
       <div class="in g">
         <h2 class="lab mono mu par" id="ab-st">{L.stack}</h2>
-        <div class="bd"><Affiche text={stack[lang]} vigs={stackVigs} lang={lang} class="stk" /><Banners items={stackBanners} /></div>
+        <div class="bd"><Affiche text={stack[lang]} vigs={[]} lang={lang} /><Banners items={stackBanners} lang={lang} hint={L.hover} /></div>
       </div>
     </section>
 

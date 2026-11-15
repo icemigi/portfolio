@@ -51,9 +51,11 @@ public/
   fonts/            Geist et Geist Mono (OFL)
   vendor/           matter.js (MIT), physique de « Ce que j'aime »
   work/ archive/ likes/ logos/ stack/ og/   images (WebP, PNG) et images de partage
+  fanions/          dessins des fanions de la Stack (SVG, écrits par tools/fanions.py)
   lab/heraldry/     générateur d'Algorithmic Heraldry (servi dans le Lab)
 tools/
   og.mjs            fabrique les images de partage (public/og/)
+  fanions.py        dessine les fanions de la Stack (public/fanions/)
 .github/workflows/  mise en ligne automatique sur GitHub Pages
 ```
 

@@ -34,29 +34,25 @@ export const services = {
   ],
 };
 
-// Stack technique, en texte d'affiche : chaque logiciel est suivi de sa vignette-logo.
-// Téléphone : icônes dans le texte ; ordinateur : fanions sous le texte (les icônes y sont masquées).
-// Logos : /public/stack/<nom>.webp (icônes d'app, 160 px) ; tant qu'un fichier manque, la vignette affiche le nom.
+// Stack : dix fanions, chacun sa forme et son motif (/public/fanions/<id>.svg, dessins d'après les maquettes de
+// /assets/fanions), logo détouré dans le bas (/public/stack/mk-<id>.svg ; Procreate et TouchDesigner en PNG 512 px).
+// Chaque fanion a sa longueur (tools/fanions.py écrit les dessins). Au survol : nom du logiciel, et dessous, ce à quoi il me sert.
+// Ordre : suite de couleurs (vert, noirs, bleus et blanc, rouges) ; deux voisins n'ont jamais la même forme ni le même motif.
 export const stack = {
-  fr: "Je dessine mes lettres dans Glyphs {0}, je compose dans Illustrator {1}, Photoshop {2} et Figma {3}, je griffonne sur Procreate {4}, je code en TypeScript {5}, p5.js {6} et Python {7}, et je joue en direct avec TouchDesigner {8}.",
-  en: "I draw my letters in Glyphs {0}, lay out in Illustrator {1}, Photoshop {2} and Figma {3}, sketch in Procreate {4}, code in TypeScript {5}, p5.js {6} and Python {7}, and play live with TouchDesigner {8}.",
+  fr: 'Mes outils de tous les jours{m:et de quelques nuits}.',
+  en: 'My everyday tools{m:and a few nights}.',
 };
-const tool = (id: string, name: string): Vig => ({ src: `/stack/${id}.webp`, label: { fr: name, en: name }, logo: true });
-// fanions sous le texte : drap à la couleur du logiciel, logo vectoriel détouré (/public/stack/mk-<id>.svg ; Procreate et TouchDesigner en PNG 512 px), encre du nom et des coutures
 export const stackBanners = [
-  { id: 'glyphs', name: 'Glyphs', bg: '#4fae4f', ink: '#ffffff', mark: 'mk-glyphs.svg' },
-  { id: 'illustrator', name: 'Illustrator', bg: '#330000', ink: '#ff9a00', mark: 'mk-illustrator.svg' },
-  { id: 'photoshop', name: 'Photoshop', bg: '#001e36', ink: '#31a8ff', mark: 'mk-photoshop.svg' },
-  { id: 'figma', name: 'Figma', bg: '#1e1e1e', ink: '#f3f3f3', mark: 'mk-figma.svg' },
-  { id: 'procreate', name: 'Procreate', bg: '#121212', ink: '#d9a9ff', mark: 'mk-procreate.png' },
-  { id: 'typescript', name: 'TypeScript', bg: '#3178c6', ink: '#ffffff', mark: 'mk-typescript.svg' },
-  { id: 'p5js', name: 'p5.js', bg: '#ed225d', ink: '#ffffff', mark: 'mk-p5js.svg' },
-  { id: 'python', name: 'Python', bg: '#f7f7f5', ink: '#3776ab', mark: 'mk-python.svg' },
-  { id: 'touchdesigner', name: 'TouchDesigner', bg: '#161616', ink: '#8fbf6a', mark: 'mk-touchdesigner.png' },
-];
-export const stackVigs: Vig[] = [
-  tool('glyphs', 'Glyphs'), tool('illustrator', 'Illustrator'), tool('photoshop', 'Photoshop'), tool('figma', 'Figma'), tool('procreate', 'Procreate'),
-  tool('typescript', 'TypeScript'), tool('p5js', 'p5.js'), tool('python', 'Python'), tool('touchdesigner', 'TouchDesigner'),
+  { id: 'glyphs', name: 'Glyphs', mark: 'mk-glyphs.svg', note: { fr: 'je dessine mes caractères, du croquis au fichier de fonte', en: 'I draw my typefaces, from sketch to font file' } },
+  { id: 'touchdesigner', name: 'TouchDesigner', mark: 'mk-touchdesigner.png', note: { fr: 'des visuels génératifs joués en direct, pour la scène et les installations', en: 'generative visuals played live, for stage and installations' } },
+  { id: 'figma', name: 'Figma', mark: 'mk-figma.svg', note: { fr: "maquettes d'interfaces et systèmes de design, avant le code", en: 'interface mockups and design systems, before the code' } },
+  { id: 'photoshop', name: 'Photoshop', mark: 'mk-photoshop.svg', note: { fr: 'retouche, montages et textures pour mes images', en: 'retouching, compositing and textures for my images' } },
+  { id: 'python', name: 'Python', mark: 'mk-python.svg', note: { fr: 'des scripts qui font le travail répétitif à ma place', en: 'scripts that do the repetitive work for me' } },
+  { id: 'typescript', name: 'TypeScript', mark: 'mk-typescript.svg', note: { fr: 'des sites et des outils web, comme celui-ci', en: 'websites and web tools, like this one' } },
+  { id: 'procreate', name: 'Procreate', mark: 'mk-procreate.png', note: { fr: 'croquis et lettrages à main levée, sur tablette', en: 'freehand sketches and lettering, on a tablet' } },
+  { id: 'illustrator', name: 'Illustrator', mark: 'mk-illustrator.svg', note: { fr: 'le dessin vectoriel : logos, pictogrammes, mises en page', en: 'vector drawing: logos, pictograms, layouts' } },
+  { id: 'p5js', name: 'p5.js', mark: 'mk-p5js.svg', note: { fr: 'design génératif et petites expériences visuelles en code', en: 'generative design and small visual experiments in code' } },
+  { id: 'blender', name: 'Blender', mark: 'mk-blender.svg', note: { fr: 'modélisation et rendu 3D, pour les objets et les scènes', en: '3D modelling and rendering, for objects and scenes' } },
 ];
 
 // Parcours : {m:…} = note datée accrochée au mot ; {v:n} = vignette.
@@ -69,8 +65,8 @@ export const pathVigs: Vig[] = [
 ];
 
 export const aboutLabels = {
-  fr: { about: 'À propos', services: 'Services', stack: 'Stack', path: 'Parcours', contact: 'Contact' },
-  en: { about: 'About', services: 'Services', stack: 'Stack', path: 'Background', contact: 'Contact' },
+  fr: { about: 'À propos', services: 'Services', stack: 'Stack', path: 'Parcours', contact: 'Contact', hover: '(survole un fanion)' },
+  en: { about: 'About', services: 'Services', stack: 'Stack', path: 'Background', contact: 'Contact', hover: '(hover a banner)' },
 };
 
 // Coordonnées — À COMPLÉTER (adresse et CV provisoires)

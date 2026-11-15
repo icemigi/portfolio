@@ -1,9 +1,35 @@
 // Fanions de la Stack (Banners.astro, page À propos) : drapeaux en tissu (WebGL), qui se déroulent à l'arrivée de leur écran
 // et flottent au vent de la souris. Contexte WebGL rendu au départ de la page.
 import { onPage } from '../page';
-import { reduced } from '../motion';
+import { reduced, reveal, settle } from '../motion';
 
 onPage('[data-fanions]', (ctx) => {
+  // légende sous les fanions : au survol (ou au toucher) d'un fanion, son numéro, son nom et ce à quoi il sert, écrits comme
+  // les autres textes du site (libellés en fondu, nom lettre à lettre) ; elle se cache quand on le quitte
+  const fan = document.querySelector<HTMLElement>('[data-fanions]');
+  const cap = fan?.querySelector<HTMLElement>('.cap');
+  if (fan && cap) {
+    const items = [...fan.querySelectorAll<HTMLElement>('li.fn')];
+    let cur: HTMLElement | null = null;
+    const show = (li: HTMLElement) => {
+      if (li === cur) return;
+      cur = li; settle(cap);
+      const n = document.createElement('span'), t = document.createElement('span'), d = document.createElement('span');
+      n.className = 'mono mu n'; n.textContent = String(items.indexOf(li) + 1).padStart(2, '0');
+      t.className = 't56'; t.textContent = li.dataset.name!;
+      d.className = 'mono mu dl'; d.textContent = li.dataset.note!;
+      cap.replaceChildren(n, t, d);
+      fan.classList.add('on');
+      reveal(cap, 0);
+    };
+    const hide = (li: HTMLElement) => { if (li !== cur) return; cur = null; fan.classList.remove('on'); };
+    for (const li of items) {
+      li.addEventListener('pointerenter', () => show(li), { signal: ctx.signal });
+      li.addEventListener('focus', () => show(li), { signal: ctx.signal });
+      li.addEventListener('pointerleave', (e) => { if ((e as PointerEvent).pointerType === 'mouse') hide(li); }, { signal: ctx.signal });
+      li.addEventListener('blur', () => hide(li), { signal: ctx.signal });
+    }
+  }
   type B = { x0: number; y0: number; w: number; h: number; P: Float32Array; Q: Float32Array; tex: WebGLTexture | null; sh: Float32Array };
   const C = 8, R = 22; // colonnes × rangées de points par fanion
   const root = document.querySelector<HTMLElement>('[data-fanions]');
@@ -36,29 +62,26 @@ onPage('[data-fanions]', (ctx) => {
     gl.bindBuffer(gl.ARRAY_BUFFER, bL); gl.bufferData(gl.ARRAY_BUFFER, C * R * 4, gl.DYNAMIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bI); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(idx), gl.STATIC_DRAW);
 
-    // ---------- texture d'un fanion : drap, ourlet, couture, logo, nom, queue d'aronde ----------
-    const paint = (el: HTMLElement, w: number, h: number) => new Promise<HTMLCanvasElement>((res) => {
+    // ---------- texture d'un fanion : son dessin (forme, motif, bordure), trame du drap, ourlet, logo ----------
+    const load = (src: string) => new Promise<HTMLImageElement | null>((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+    const paint = async (el: HTMLElement, w: number, h: number) => {
       const k = 2, W = Math.round(w * k), H = Math.round(h * k), c = document.createElement('canvas'); c.width = W; c.height = H;
-      const x = c.getContext('2d')!, notch = 0.15;
-      const shape = (m: number) => { x.beginPath(); x.moveTo(m, m); x.lineTo(W - m, m); x.lineTo(W - m, H - m * 1.4); x.lineTo(W / 2, H * (1 - notch) - m * 0.4); x.lineTo(m, H - m * 1.4); x.closePath(); };
-      shape(0); x.fillStyle = el.dataset.bg!; x.fill();
-      // trame très légère (le drap n'est pas un aplat numérique)
-      x.save(); shape(0); x.clip(); x.globalAlpha = .045; x.fillStyle = '#000';
+      const x = c.getContext('2d')!;
+      const [cloth, mark] = await Promise.all([load(el.querySelector<HTMLImageElement>('.dr')!.src), load(el.querySelector<HTMLImageElement>('.mk')!.src)]);
+      if (cloth) x.drawImage(cloth, 0, 0, W, H);
+      // trame très légère (le drap n'est pas un aplat numérique) et ourlet, posés sur le dessin seul (source-atop)
+      x.globalCompositeOperation = 'source-atop'; x.globalAlpha = .045; x.fillStyle = '#000';
       for (let i = 0; i < H; i += 3) x.fillRect(0, i, W, 1);
-      x.globalAlpha = .07; x.fillRect(0, 0, W, H * 0.04); x.restore(); // ourlet
-      // couture piquée
-      x.save(); shape(k * 7); x.setLineDash([k * 4, k * 3]); x.lineWidth = k * 1; x.strokeStyle = el.dataset.ink!; x.globalAlpha = .45; x.stroke(); x.restore();
-      const img = new Image(); img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        // même boîte carrée pour tous les logos (même taille optique), posée dans le bas du fanion
-        const box = W * 0.6, sc = Math.min(box / img.width, box / img.height), dw = img.width * sc, dh = img.height * sc;
-        const cy = H * 0.66 - box / 2;
-        x.drawImage(img, (W - dw) / 2, cy - dh / 2, dw, dh);
-        res(c);
-      };
-      img.onerror = () => res(c);
-      img.src = el.dataset.mark!;
-    });
+      x.globalAlpha = .07; x.fillRect(0, 0, W, H * 0.04);
+      x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+      if (mark) {
+        // même boîte carrée pour tous les logos (même taille optique), son bas à deux largeurs du haut : même ligne, quelle que soit la longueur
+        const box = W * 0.6, sc = Math.min(box / mark.width, box / mark.height), dw = mark.width * sc, dh = mark.height * sc;
+        const cy = W * 2 - box / 2;
+        x.drawImage(mark, (W - dw) / 2, cy - dh / 2, dw, dh);
+      }
+      return c;
+    };
 
     let banners: B[] = [], CW = 0, CH = 0, dpr = 1;
     let gen = 0;

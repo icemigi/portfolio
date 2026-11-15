@@ -3,8 +3,8 @@ export const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matc
 export const EASE_SLIDE = 'cubic-bezier(.7,0,.2,1)';
 export const EASE_OUT = 'cubic-bezier(.2,.7,.2,1)';
 
-// Texte non animé : libellés Geist Mono, vignettes, menus, médias, champs.
-const SKIP = '.mono, .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
+// Texte non animé : libellés Geist Mono (sauf les apartés, écrits dans la cascade du texte), vignettes, menus, médias, champs.
+const SKIP = '.mono:not(.note), .bp, .vi, .door, .ph, header, nav, svg, canvas, iframe, input, textarea, [contenteditable], [data-still], .sr, script, style';
 
 function textNodes(root: Element, extraSkip?: string) {
   const skip = extraSkip ? `${SKIP}, ${extraSkip}` : SKIP;
@@ -17,7 +17,8 @@ function textNodes(root: Element, extraSkip?: string) {
 }
 
 // Lettre par lettre : chaque lettre reste un span en ligne (crénage exact), monte de .35em.
-// 28 ms d'écart (la cascade se voit), 420 ms par lettre ; sur un long texte, l'écart régulier se resserre pour finir en ~1,4 s.
+// 28 ms d'écart (la cascade se voit), 420 ms par lettre ; sur un long texte, l'écart régulier se resserre pour finir en ~1,8 s (15/11 : 1,4 → 1,8).
+// Les apartés (.note) s'écrivent en léger décalé : chacun un peu après son mot, dans l'ordre du texte, l'un après l'autre.
 // Renvoie la fin de l'animation (ms). À la fin, le texte est rassemblé en nœuds de texte.
 // Rassemblement différé : sur Safari (WebKit), un texte découpé en spans perd son crénage ; le recoller à la fin
 // de l'animation ferait sauter les lettres d'un coup. On garde donc les spans tant que le texte est à l'écran,
@@ -99,10 +100,10 @@ function scramble(chars: HTMLElement[], delay: number, R: typeof SCR = SCR): () 
     let m = marks.get(sp);
     if (!m) {
       m = document.createElement('span'); m.className = 'scx'; m.setAttribute('aria-hidden', 'true');
-      const cs = getComputedStyle(sp);
-      m.style.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize}/${cs.lineHeight} ${cs.fontFamily}`;
+      const cs = getComputedStyle(sp), r = sp.getBoundingClientRect(), b = box!.getBoundingClientRect();
+      // interligne = hauteur de la lettre : le signe tombe sur elle même quand son texte a un interligne nul (apartés)
+      m.style.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize}/${r.height}px ${cs.fontFamily}`;
       m.style.letterSpacing = cs.letterSpacing;
-      const r = sp.getBoundingClientRect(), b = box!.getBoundingClientRect();
       const sx = box === document.body ? scrollX : box!.scrollLeft, sy = box === document.body ? scrollY : box!.scrollTop;
       m.style.left = `${r.left + r.width / 2 - b.left + sx}px`; m.style.top = `${r.top - b.top + sy}px`;
       box!.appendChild(m); marks.set(sp, m);
@@ -138,17 +139,22 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   if (reduced()) return 0;
   settle(root);
   const nodes = textNodes(root, extraSkip);
-  const total = nodes.reduce((n, t) => n + t.nodeValue!.replace(/\s/g, '').length, 0);
-  if (!total) return 0;
+  const isNote = (t: Text) => !!t.parentElement?.closest('.note');
+  if (!nodes.length) return 0;
+  const total = Math.max(1, nodes.reduce((n, t) => n + (isNote(t) ? 0 : t.nodeValue!.replace(/\s/g, '').length), 0)); // apartés hors budget : ils viennent après
   // « à propos » (data-letters-slow) : un tiers plus lent, le texte d'affiche y est long (11/11) ; ailleurs, rythme d'origine
   const slow = !!root.closest('[data-letters-slow]');
-  const step = slow ? Math.min(38, 1900 / total) : Math.min(28, 1400 / total);
+  const step = slow ? Math.min(38, 2400 / total) : Math.min(28, 1800 / total);
   const groups: { text: string; first: ChildNode; last: ChildNode }[] = [];
-  const mixed: HTMLElement[] = [], named: HTMLElement[] = [];
+  const R = slow ? { step, mix: Math.max(85, step * 2.6), fast: 30, slow: 46, overlay: true } : { step, mix: Math.max(60, step * 2.5), fast: 22, slow: 34, overlay: true };
+  const mixed: HTMLElement[] = [], named: HTMLElement[] = [], noted: HTMLElement[] = [];
+  const notes: { at: number; chars: HTMLElement[] }[] = []; // apartés : instant où leur mot s'est fixé, et leurs lettres
   let k = 0;
   for (const n of nodes) {
     const text = n.nodeValue!;
     const isName = !!n.parentElement?.closest('.name, .mail');          // titre de l'accueil et grande adresse : rythme du titre
+    const note = isNote(n);                                             // aparté : mélangé à part (Geist Mono, autres largeurs), en décalé
+    if (note) notes.push({ at: delay + Math.max(0, k - 1) * step + R.mix, chars: [] });
     // lecteurs d'écran : le texte entier (span .sr, invisible, hors mise en page) ; les lettres animées leur sont masquées.
     // Sans lui, un lien ou un paragraphe découpé en lettres n'avait plus de nom lisible (« lien », sans plus).
     const f = document.createDocumentFragment(), sr = document.createElement('span'), hid = document.createElement('span');
@@ -163,8 +169,9 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
       if (!word) { word = document.createElement('span'); word.className = 'sw'; hid.appendChild(word); }
       word.appendChild(sp);
       if (isName) { named.push(sp); k++; continue; }
+      if (note) { notes[notes.length - 1].chars.push(sp); noted.push(sp); continue; } // instant fixé après la boucle
       // tout le texte s'écrit comme le titre : signes tirés au hasard, puis la bonne lettre, en cascade
-      sp.dataset.d = String(delay + k++ * step);               // instant d'apparition (l'aparté et la vignette qui suivent en partent)
+      sp.dataset.d = String(delay + k++ * step);               // instant d'apparition (la vignette qui suit en part)
       mixed.push(sp);
     }
     const first = f.firstChild!, last = f.lastChild!;
@@ -173,15 +180,24 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   }
   if (named.length) holdKerning(named);
   // front d'écriture étroit : chaque lettre ne se mélange que ~2,5 pas de cascade (deux ou trois lettres à la fois), 2-3 changements
-  const stopText = mixed.length ? scramble(mixed, delay, slow ? { step, mix: Math.max(85, step * 2.6), fast: 30, slow: 46, overlay: true } : { step, mix: Math.max(60, step * 2.5), fast: 22, slow: 34, overlay: true }) : null;
+  // apartés : chacun part 100 ms après que son mot s'est fixé, au pas du texte, jamais avant la fin du précédent
+  let notesEnd = 0;
+  for (const nt of notes) {
+    const at = Math.max(nt.at + 100, notesEnd);
+    nt.chars.forEach((sp, i) => (sp.dataset.d = String(at + i * step)));
+    notesEnd = at + nt.chars.length * step;
+  }
+  const stops = [mixed, noted].filter((c) => c.length).map((c) => scramble(c, delay, R));
+  const stopText = () => stops.forEach((f) => f());
   const stopScramble = named.length ? scramble(named, delay) : null;
+  const written = Math.max(notesEnd, delay + k * step); // dernière lettre posée, apartés compris
   // le cliquetis suit les lettres : il démarre avec la première et s'arrête avec la dernière
-  if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (k * step) / 1000 } }));
-  const textEnd = delay + k * step + 300;
+  if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: (delay + 40) / 1000, span: (written - delay) / 1000 } }));
+  const textEnd = written + 300;
   // les parenthèses du texte courant s'écrivent à leur place dans la cascade, comme le reste du texte
   const end = textEnd;
   pending.set(root, () => {
-    stopScramble?.(); stopText?.();
+    stopScramble?.(); stopText();
     own(root).forEach((a) => a.finish());
     for (const { text, first, last } of groups) {
       if (!first.parentNode) continue;
@@ -242,7 +258,7 @@ export function vignettes(frame: Element, delay = 300): number {
 // précède, sa parenthèse ouvrante), d'un petit rebond ; les icônes de la stack, de même.
 function cascadeVignettes(frame: Element, start: number) {
   if (reduced()) return;
-  const chars = [...frame.querySelectorAll<HTMLElement>('.ch[data-d]')];
+  const chars = [...frame.querySelectorAll<HTMLElement>('.ch[data-d]')].filter((c) => !c.closest('.note')); // apartés écrits plus tard
   frame.querySelectorAll<HTMLElement>('.vi, .door').forEach((v) => {
     const before = chars.filter((c) => c.compareDocumentPosition(v) & Node.DOCUMENT_POSITION_FOLLOWING).pop();
     v.animate([{ opacity: 0, transform: 'scale(.55)' }, { opacity: 1, transform: 'scale(1)' }],
@@ -284,42 +300,9 @@ export function revealScrub(frame: Element) {
   return { total, text: Math.min(total, last ? last + 60 : end), set, cancel: () => anims.forEach((a) => a.cancel()) };
 }
 
-// Une fois le texte écrit : les apartés entre parenthèses s'écrivent comme le titre de l'accueil — chaque caractère passe par
-// des signes au hasard avant de se fixer (Geist Mono, chasse fixe : rien ne bouge autour) ; les parenthèses, elles, sont posées
-// d'emblée. Puis le bouton « (…) + » : ses parenthèses d'abord, le mot s'écrit dedans, et son + fait un tour pour attirer l'œil.
-const TYPE = 34; // ms entre deux caractères (11/11 : 26 → 34)
-// overlay (14/11) : la lettre reste en place, le signe se pose par-dessus — un signe plus large que sa lettre faisait déborder
-// la ligne (aparté en Geist, pas en Mono) et le paragraphe passait un instant sur une ligne de plus
-const NOTE_SCR = { step: TYPE, mix: 240, fast: 35, slow: 80, overlay: true };
-const NOTE_STAGGER = 220; // écart entre les départs de deux apartés
-function type(el: HTMLElement, delay: number): number {
-  const text = (el.dataset.txt ??= el.textContent || '');
-  el.textContent = '';
-  const f = document.createDocumentFragment(), mixed: HTMLElement[] = [];
-  let k = 0, word: HTMLElement | null = null; // mots soudés (.sw), comme dans letters()
-  for (const c of text) {
-    if (c === ' ') { f.appendChild(document.createTextNode(' ')); word = null; continue; }
-    const sp = document.createElement('span'); sp.textContent = c;
-    if (c === '(' || c === ')') sp.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, delay: c === '(' ? delay : delay + k * TYPE, fill: 'backwards' });
-    else { sp.className = 'ch'; mixed.push(sp); k++; } // .ch : lettre masquée pendant que son signe passe (.ch.sx)
-    if (!word) { word = document.createElement('span'); word.className = 'sw'; f.appendChild(word); }
-    word.appendChild(sp);
-  }
-  el.appendChild(f);
-  if (mixed.length) scramble(mixed, delay + 40, NOTE_SCR);
-  if (!MUTE) dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'letters', at: delay / 1000, span: (k * TYPE) / 1000 } }));
-  return delay + k * TYPE + NOTE_SCR.mix;
-}
+// Une fois le texte écrit : le bouton « (…) + » apparaît, et son + fait un tour pour attirer l'œil.
 function afterText(frame: Element, end: number) {
   if (reduced()) return;
-  // les apartés entre parenthèses s'écrivent au fil du texte : chacun part quand la cascade atteint le mot qu'il commente
-  // (sa dernière lettre vient d'apparaître) ; à défaut, après le texte, en cascade comme avant
-  frame.querySelectorAll<HTMLElement>('.note').forEach((n, i) => {
-    // dernière lettre écrite avant l'aparté, dans tout son paragraphe (derrière une vignette, son groupe de mots n'en a pas)
-    const before = [...(n.closest('p, li, dd, h1, h2, h3') || frame).querySelectorAll<HTMLElement>('.ch[data-d]')]
-      .filter((c) => c.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING).pop();
-    type(n, before ? +before.dataset.d! + 90 : end - 200 + i * NOTE_STAGGER);
-  });
   frame.querySelectorAll<HTMLElement>('.more .bp, .bp.cta').forEach((b) => {
     b.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 260, delay: Math.max(0, end - 200), easing: EASE_OUT, fill: 'backwards' });
     b.querySelector('.sg')?.animate([{ rotate: '-90deg' }, { rotate: '0deg' }], { duration: 420, delay: Math.max(0, end - 100), easing: EASE_OUT, fill: 'backwards' });
