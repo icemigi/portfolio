@@ -166,7 +166,8 @@ onPage('[data-likes]', (ctx) => {
     const end = letters(card.querySelector('[data-text]')!, 250);
     card.querySelectorAll<HTMLElement>('.lkl, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: Math.max(400, end - 300) + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
   };
-  const open = (id: string, push: boolean) => {
+  // kb : ouvert au clavier (Entrée sur l'objet) ; au doigt ou à la souris, le bouton « fermer » prend le focus sans son cadre
+  const open = (id: string, push: boolean, kb = false) => {
     const d = D.find((x) => x.id === id); const it = items.find((x) => x.d.id === id); if (!d || !it) return;
     release();
     if (!big.hidden) hideTitle();
@@ -203,7 +204,7 @@ onPage('[data-likes]', (ctx) => {
     }
     reveal();
     if (push) history.replaceState(history.state, '', `#${id}`); // état du routeur conservé
-    card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true });
+    card.querySelector<HTMLElement>('[data-close]')!.focus({ preventScroll: true, focusVisible: kb });
   };
   const close = () => {
     card.hidden = true; history.replaceState(history.state, '', location.pathname);
@@ -226,7 +227,7 @@ onPage('[data-likes]', (ctx) => {
     emb.append(f); fit();
     ctx.observe(new ResizeObserver(fit)).observe(emb);
   });
-  items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true))); });
+  items.forEach((it) => { it.el.style.pointerEvents = 'none'; it.el.addEventListener('click', () => (sel === it ? close() : open(it.d.id, true, true))); });
 
   addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); if (!big.hidden) buildShelf(); }, { signal: ctx.signal });
 

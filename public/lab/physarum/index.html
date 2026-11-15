@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-intro="Tape un mot : il pousse comme une culture. Dessine pour la nourrir (Maj pour gommer), glisse une image pour en faire le moule.">
+<html lang="fr" data-intro="Tape un mot : il pousse comme une culture. Dessine pour la nourrir (Maj pour gommer), glisse une image pour en faire le moule." data-intro-touch="« Écrire », puis tape un mot : il pousse comme une culture. Dessine du doigt pour la nourrir (« gomme » pour effacer), « image » pour en faire le moule.">
 <head>
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, follow">
@@ -15,8 +15,9 @@
     <main id="stage" aria-label="Une lettre qui pousse comme une culture de cellules"></main>
     <div class="kk-bar">
         <p class="hint">tape un mot · dessine pour nourrir · maj : gommer · glisse une image</p>
-        <p class="act"><button id="render">rendu : trame</button><button id="pick">image</button><button id="invert">inverser</button><button id="save">enregistrer</button><button id="rec">vidéo 6 s</button></p>
+        <p class="act"><button class="touch" id="type">écrire</button><button class="touch" id="eraser" aria-pressed="false">gomme</button><button id="render">rendu : trame</button><button id="pick">image</button><button id="invert">inverser</button><button id="save">enregistrer</button><button id="rec">vidéo 6 s</button></p>
         <input type="file" id="file" accept="image/*" hidden>
+        <input class="ghost" id="ghost" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Écrire un mot">
     </div>
     <p class="drop" aria-hidden="true">dépose l'image</p>
     <script src="/lab/back.js"></script>

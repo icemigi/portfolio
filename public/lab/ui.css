@@ -11,8 +11,21 @@ html.in-frame .kk-bar { left: 20px; }
 .kk-bar button { padding: 0; background: none; border: 0; color: var(--k-fg); font: inherit; cursor: pointer; }
 .kk-bar button:hover, .kk-bar button[aria-pressed='true'], .kk-bar button[data-on] { color: var(--k-ac); }
 .kk-bar .sep { width: 1px; align-self: stretch; background: var(--k-mu); opacity: .4; }
-@media (max-width: 700px) { .kk-bar .hint { display: none; } .kk-bar { justify-content: flex-end; top: 56px; left: 16px; right: 16px; } html.in-frame .kk-bar { top: 14px; } .kk-bar .act { gap: 12px; flex-wrap: wrap; justify-content: flex-end; } }
+/* téléphone : les actions passent à la ligne dans la largeur de l'écran (rien ne sort à gauche) ; chaque mot se touche
+   sur 32 px de haut au moins, une rangée colle à l'autre (les zones de toucher se touchent, le texte garde son rythme) */
+@media (max-width: 700px) {
+  .kk-bar .hint { display: none; }
+  .kk-bar { justify-content: flex-end; top: 48px; left: 16px; right: 16px; } html.in-frame .kk-bar { top: 6px; }
+  .kk-bar .act { flex: 1 1 auto; min-width: 0; column-gap: 14px; row-gap: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .kk-bar .act { align-items: baseline; }
+  .kk-bar .act > :not(.sep) { padding: 10px 0; } /* boutons, liens (télécharger) et mentions : même hauteur de toucher */
+  .kk-bar .sep { margin: 8px 0; }
+}
+/* boutons réservés au doigt (pas de clavier ni de touche Maj sur un téléphone) */
+.kk-bar .touch { display: none; }
+@media (pointer: coarse) { .kk-bar .touch { display: inline; } }
 /* aide de premier lancement : une phrase en bas, qui s'efface au premier geste */
-.kk-intro { position: fixed; z-index: 60; left: 50%; bottom: 28px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); margin: 0; padding: 12px 16px; background: var(--k-bg); color: var(--k-fg); font: 13px/1.45 'Geist Mono', ui-monospace, monospace; text-align: center; box-shadow: 0 0 0 1px rgba(127, 127, 127, .25); transition: opacity .5s, transform .5s; pointer-events: none; }
-.kk-intro.out { opacity: 0; transform: translate(-50%, 8px); }
+/* centrée par ses marges (pas left: 50 %, qui la limitait à la moitié de l'écran) */
+.kk-intro { position: fixed; z-index: 60; left: 16px; right: 16px; bottom: 28px; width: fit-content; max-width: 560px; margin: 0 auto; padding: 12px 16px; background: var(--k-bg); color: var(--k-fg); font: 13px/1.45 'Geist Mono', ui-monospace, monospace; text-align: center; box-shadow: 0 0 0 1px rgba(127, 127, 127, .25); transition: opacity .5s, transform .5s; pointer-events: none; }
+.kk-intro.out { opacity: 0; transform: translateY(8px); }
 @media (prefers-reduced-motion: reduce) { .kk-intro { transition: none; } }

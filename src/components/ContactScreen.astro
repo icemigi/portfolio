@@ -40,6 +40,8 @@ const L = aboutLabels[lang];
     .links { flex-direction: column; gap: 8px; margin-top: min(32px, 3.5dvh); }
     .ct { padding-bottom: min(48px, 4dvh); }
     .lab4 { margin-bottom: min(24px, 2.5dvh); }
+    /* l'adresse et la disponibilité sont juste au-dessus, sur le même écran : le pied de page ne les répète pas */
+    .last :global(.ft .a) { display: none; }
   }
 </style>
 

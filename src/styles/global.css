@@ -84,7 +84,8 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
 @media (max-width: 760px) {
   /* téléphone : échelle d'affiche, limitée par la largeur comme par la hauteur */
   .t28 { font-size: min(6.4vw, 3.4dvh); line-height: 1.15; }
-  .t56 { font-size: min(9.6vw, 4.6dvh); line-height: 1.04; letter-spacing: -0.04em; }
+  /* 8vw : le plus long bout insécable (« des choses [porte] que j'aime », 11,2 em) tient sur la largeur de tout téléphone */
+  .t56 { font-size: min(8vw, 4.6dvh); line-height: 1.04; letter-spacing: -0.04em; }
 }
 .sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; user-select: none; }
 
@@ -116,10 +117,11 @@ input, textarea, [contenteditable] { cursor: text; }
 .site-header .home { grid-column: 1 / 4; justify-self: start; display: inline-flex; align-items: center; height: 44px; }
 .site-header .home img { width: 34px; height: auto; flex: none; transition: rotate .5s var(--out); }
 @media (hover: hover) { .site-header .home:hover img { rotate: -10deg; } }
-/* le logo fait un tour complet, dans le sens des aiguilles d'une montre (≈ 1,2 s, ease-in-out), toutes les 8 s ;
-   transform, qui s'ajoute à la rotation du survol (propriété rotate) sans l'écraser */
+/* le logo fait un tour complet, dans le sens des aiguilles d'une montre (≈ 1,2 s), toutes les 8 s, avec du rebond : il recule
+   un peu pour prendre son élan, dépasse le tour puis revient se poser ; transform, qui s'ajoute à la rotation du survol
+   (propriété rotate) sans l'écraser */
 @media (prefers-reduced-motion: no-preference) { .site-header .home img { animation: kk-spin 8s infinite; } }
-@keyframes kk-spin { 0%, 85% { transform: rotate(0deg); animation-timing-function: ease-in-out; } 100% { transform: rotate(360deg); } }
+@keyframes kk-spin { 0%, 85% { transform: rotate(0deg); animation-timing-function: cubic-bezier(.7, -0.25, .3, 1.3); } 100% { transform: rotate(360deg); } }
 .site-header .nn, .site-header .lang-m, .site-header .burger { display: none; }
 .site-header nav { grid-column: 7 / 10; }
 .site-header nav ul { display: flex; gap: 24px; white-space: nowrap; }
@@ -186,13 +188,16 @@ input, textarea, [contenteditable] { cursor: text; }
 .row .n::after { content: '→'; position: absolute; left: 0; top: 0; opacity: 0; transform: translateX(-8px); color: var(--ac); transition: opacity .2s, transform .35s var(--out); }
 .row .t { transition: transform .35s var(--out); }
 .row .y { text-align: right; }
+/* en travaux (projets, pièces du Lab) : un aplat rayé orange et jaune (bandes de chantier), puis la mention en mono */
+.wip { display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 11px; line-height: 1; letter-spacing: 0; text-transform: lowercase; white-space: nowrap; color: var(--mu); vertical-align: middle; }
+.wip::before { content: ''; width: 28px; height: 10px; background: repeating-linear-gradient(-45deg, var(--ac) 0 4px, #ffd23f 4px 8px); }
 @media (hover: hover) {
   .row:hover .n { color: transparent; }
   .row:hover .n::after { opacity: 1; transform: none; }
   .row:hover .t { transform: translateX(12px); }
 }
 @media (max-width: 760px) {
-  .row { grid-template-columns: 28px 1fr auto; column-gap: 10px; padding: 8px 0; } /* sans filet */
+  .row { grid-template-columns: 40px 1fr auto; column-gap: 10px; padding: 8px 0; } /* sans filet ; 40 px : « (01) » entier */
   .row .t { font-size: 8vw; line-height: 1.05; letter-spacing: -0.03em; }
   .row .d { display: none; }
 }

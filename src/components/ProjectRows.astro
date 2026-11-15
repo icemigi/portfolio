@@ -3,7 +3,7 @@
 // apparaît et suit le curseur (amorti), comme un aperçu ; rien sur écran tactile. Tous les aperçus tiennent dans la même boîte
 // de 180 × 180 : un objet haut (le livre) et un objet large (le vinyle) ont le même encombrement.
 import { projects } from '../data/projects';
-import { tags, pad, type Lang } from '../data/ui';
+import { tags, pad, ui, type Lang } from '../data/ui';
 import ObjectShape from './ObjectShape.astro';
 interface Props { lang: Lang }
 const { lang } = Astro.props;
@@ -15,7 +15,7 @@ const K: Record<string, number> = { book: 0.82, vinyl: 1.3 };
     <li>
       <a class="row" href={`/${lang}/work/${p.slug}/`}>
         <span class="n mono mu">{pad(i + 1)}</span>
-        <span class="t t28">{p[lang].title}</span>
+        <span class="t t28">{p[lang].title}{p.wip && <span class="wip">{ui[lang].wip}</span>}</span>
         <span class="d mono mu">{p.tags.map((t) => tags[lang][t]).join(', ')}</span>
         <span class="y mono mu">{p.yearLabel}</span>
       </a>
@@ -26,6 +26,7 @@ const K: Record<string, number> = { book: 0.82, vinyl: 1.3 };
 
 <style>
   .rows { position: relative; }
+  .t .wip { margin-left: 16px; }
   .pv { display: none; }
   @media (hover: hover) and (pointer: fine) {
     .pv { display: grid; place-items: center; position: absolute; left: 0; top: 0; z-index: 5; width: 180px; height: 180px; pointer-events: none; opacity: 0; scale: .8; transition: opacity .25s, scale .45s var(--out); will-change: transform; }

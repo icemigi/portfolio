@@ -18,6 +18,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   <div class="likes" data-likes data-own-wheel>
     <p class="ttl mono mu par">{fr ? 'ce que j\'aime' : 'things I love'}</p>
     <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
+    <p class="hint tap mono mu">{fr ? 'Attrapez, lancez, touchez.' : 'Grab, throw, tap.'}</p>
     <h1 class="big" data-big><span class="t56">{(fr ? 'Ce que j\'aime.' : 'Things I love.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w">{w}</span></Fragment>)}</span></h1>
     <div class="stage" data-stage>
       {data.map((d) => (
@@ -43,6 +44,9 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .likes { position: fixed; inset: 0; overflow: hidden; }
   .ttl { position: absolute; z-index: 5; left: var(--m); top: calc(var(--head) + 16px); }
   .hint { position: absolute; z-index: 1; right: var(--m); top: calc(var(--head) + 16px); text-align: right; pointer-events: none; transition: opacity .3s; }
+  /* au doigt, on touche (on ne clique pas) : la consigne suit l'appareil */
+  .hint.tap { display: none; }
+  @media (pointer: coarse) { .hint:not(.tap) { display: none; } .hint.tap { display: block; } }
   .big { position: absolute; inset: 0; z-index: 1; display: grid; place-items: center; pointer-events: none; padding: 0 var(--m); }
   .big > span { display: inline-block; text-align: center; }
   /* titre sur une seule ligne, partout ; sur téléphone il n'arrête pas les objets (décor derrière la pile) */

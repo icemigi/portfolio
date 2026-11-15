@@ -94,7 +94,7 @@ if (di >= 0) {
         ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={p.vig.src} alt="" loading="lazy" onerror="var v=this.parentElement,t=v.previousSibling;if(t&&t.nodeType===3)t.nodeValue=t.nodeValue.replace(/\s+$/,'');v.remove()" /></span>
         : <span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `--vi:url(${p.vig.src})${still(p.vig.src) ? `;--vi-still:url(${still(p.vig.src)})` : ''}` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>}{p.punct}</span>
     ) : p.kind === 'glue' ? (
-      <span class="glue">{p.word}<span class="note mono mu">({p.note})</span>{p.punct}</span>
+      <span class="glue gn">{p.word}{g.glue && <wbr />}<span class="note mono mu">{`(${p.note})`.split(' ').map((w, k) => <Fragment>{k > 0 && ' '}<span class="nw">{w}</span></Fragment>)}</span>{p.punct}</span>
     ) : (
       <Fragment>{p.text}</Fragment>
     ),
@@ -106,4 +106,8 @@ if (di >= 0) {
   /* logo client : grisé, à la hauteur d'une capitale, juste après le nom */
   .logo { display: inline-block; width: .8em; height: .8em; margin: 0 -.06em 0 .04em; vertical-align: -0.12em; opacity: .55; }
   .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
+  /* téléphone : un aparté trop long pour la fin de sa ligne se coupe entre ses mots (jamais au trait d'union : « vas-y »).
+     Dans le bout de phrase de la porte (insécable, trop long pour un écran étroit), l'aparté peut aussi passer à la ligne
+     juste avant sa parenthèse (<wbr>) : il ne sort jamais de l'écran */
+  @media (max-width: 760px) { .gn, .note { white-space: normal; } .note { display: inline; } .nw { white-space: nowrap; } }
 </style>

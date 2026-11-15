@@ -32,6 +32,7 @@ export const ui = {
     fileSoon: 'File to come',
     archiveCount: 'Archive',
     close: 'Close',
+    wip: '(work in progress)',
   },
   fr: {
     tagline: 'Type designer + créatif digital',
@@ -62,6 +63,7 @@ export const ui = {
     fileSoon: 'Fichier à venir',
     archiveCount: 'Archive',
     close: 'Fermer',
+    wip: '(en travaux)',
   },
 } as const;
 

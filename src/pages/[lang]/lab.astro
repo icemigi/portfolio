@@ -25,7 +25,7 @@ const DESC = fr ? 'Le Lab de kerningkastle : expériences typographiques et gén
               <a class="row" href={x.href} data-astro-reload data-id={x.id} data-live={x.live}>
                 <span class="n mono ac">({pad(i + 1)})</span>
                 <span class="t t28">{x.title}</span>
-                {x.wip && <span class="wip mono">{fr ? '(en travaux)' : '(work in progress)'}</span>}
+                {x.wip && <span class="wip">{t.wip}</span>}
                 <span class="c mono mu">{x.cat.toLowerCase()}</span>
               </a>
             </li>
@@ -45,9 +45,8 @@ const DESC = fr ? 'Le Lab de kerningkastle : expériences typographiques et gén
   .row { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); column-gap: var(--gut); align-items: baseline; padding: 10px 0; }
   .row .n { grid-column: 1 / 3; font-size: 11px; }
   .row .t { grid-column: 3 / 8; }
-  /* pièce en travaux : un aplat rayé orange et jaune (bandes de chantier), puis la mention en mono ; rien d'autre */
-  .row .wip { grid-column: 8 / 10; justify-self: start; display: inline-flex; align-items: center; gap: 10px; font-size: 11px; white-space: nowrap; }
-  .row .wip::before { content: ''; width: 28px; height: 10px; background: repeating-linear-gradient(-45deg, var(--ac) 0 4px, #ffd23f 4px 8px); }
+  /* pièce en travaux (style .wip global) : sa place dans la grille */
+  .row .wip { grid-column: 8 / 10; justify-self: start; }
   .row .c { grid-column: 10 / 13; justify-self: end; font-size: 11px; }
   .row :is(.t, .n, .c, .wip) { transition: opacity .3s var(--out), transform .35s var(--out); }
   @media (hover: hover) { .ll:hover .row:not(:hover) :is(.t, .n, .c, .wip) { opacity: .35; } }
@@ -64,6 +63,8 @@ const DESC = fr ? 'Le Lab de kerningkastle : expériences typographiques et gén
     .lpv :global(iframe.ready) { opacity: 1; }
   }
   @media (max-width: 760px) {
+    /* la liste commence sous le libellé « (lab 08) », jamais dessous */
+    .lb .in { padding-top: calc(var(--head) + 56px); }
     .row .n { grid-column: 1 / 2; }
     .row .t { grid-column: 2 / 5; }
     .row .wip { grid-column: 2 / 5; }

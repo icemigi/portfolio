@@ -11,9 +11,10 @@
   addEventListener('storage', (e) => { if (e.key === 'kk-theme' || e.key === null) apply(); });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
 
-  // aide de premier lancement : <html data-intro="…">, montrée une fois par pièce, effacée au premier geste
+  // aide de premier lancement : <html data-intro="…">, montrée une fois par pièce, effacée au premier geste ;
+  // au doigt, data-intro-touch si la pièce en a une (on touche, on ne clique pas, et il n'y a ni clavier ni touche Maj)
   // (pas dans un cadre : la pièce y est montrée sans qu'on puisse la toucher — écrans du Lab)
-  const intro = window.top === window && document.documentElement.dataset.intro, ik = 'kk-intro:' + location.pathname;
+  const ds = document.documentElement.dataset, intro = window.top === window && ((matchMedia('(pointer: coarse)').matches && ds.introTouch) || ds.intro), ik = 'kk-intro:' + location.pathname;
   let seen = false; try { seen = localStorage.getItem(ik) === '1'; } catch { /* */ }
   if (intro && !seen) {
     const box = document.createElement('p'); box.className = 'kk-intro'; box.textContent = intro;

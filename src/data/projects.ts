@@ -16,6 +16,7 @@ type Content = {
 export type Tag = 'I' | 'T' | 'G' | 'W' | 'E' | 'P';
 export type Project = {
   hidden?: boolean;   // masqué partout tant que le projet n'existe pas encore
+  wip?: boolean;      // en travaux : mention « (en travaux) » dans la liste et sur la scène
   slug: string;
   draft: boolean;
   years: number[];    // [début] ou [début, fin] — vide si inconnu
@@ -32,6 +33,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- algorithmic-heraldry
   {
     slug: 'algorithmic-heraldry',
+    wip: true,
     years: [2025],
     tags: ['G', 'E'],
     yearLabel: '2025',
@@ -78,6 +80,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- chateau-studio
   {
     slug: 'chateau-studio',
+    wip: true,
     years: [2026],
     tags: ['I'],
     yearLabel: '2026',
@@ -123,6 +126,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- music-identities
   {
     slug: 'music-identities',
+    wip: true,
     years: [2022, 2026],
     tags: ['I', 'T'],
     yearLabel: '2022–26',
@@ -168,6 +172,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- asaphr
   {
     slug: 'asaphr',
+    wip: true,
     years: [2026],
     tags: ['T', 'E'],
     yearLabel: '2026',
@@ -205,6 +210,7 @@ const all: Project[] = [
   // Ne jamais citer ni montrer l'employeur. Chiffres à compléter avec les statistiques natives datées.
   {
     slug: 'kern-outdoor',
+    wip: true,
     years: [2023],
     tags: ['I', 'E'],
     yearLabel: '2023 —',
@@ -240,6 +246,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- bms-esport
   {
     slug: 'bms-esport',
+    wip: true,
     years: [2023],
     tags: ['W', 'I'],
     yearLabel: '2023',
@@ -275,6 +282,7 @@ const all: Project[] = [
   // ---------------------------------------------------------------- SA
   {
     slug: 'sports-aventure',
+    wip: true,
     years: [2024],
     tags: ['I', 'W'],
     yearLabel: '2024',

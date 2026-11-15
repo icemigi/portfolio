@@ -95,7 +95,8 @@ function draw() {
   }
 }
 
-function mousePressed(e) {
+// au clic (pression puis relâche, sans glisser) : au doigt, glisser déplace le vortex sans relancer le tirage
+function mouseClicked(e) {
   if (e && e.target && e.target.tagName !== 'CANVAS') return;
   roll(false);
 }

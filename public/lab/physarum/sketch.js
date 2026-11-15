@@ -376,13 +376,15 @@ function updateDynamicMask() {
 // GESTION DES ENTRÉES CLAVIER
 // ==========================================
 let typedWord = false;
-function keyTyped() {
-    if (isMorphBatching || isImageBatching || key.length !== 1 || (key === ' ' && !typedWord)) return;
-    const next = ((typedWord ? currentText : '') + key).slice(-8);
+// une lettre tapée (clavier, ou clavier du téléphone via le champ invisible #ghost)
+function typeChar(ch) {
+    if (isMorphBatching || isImageBatching || ch.length !== 1 || (ch === ' ' && !typedWord)) return;
+    const next = ((typedWord ? currentText : '') + ch).slice(-8);
     typedWord = true; currentText = next;
     if (customImage !== null) { customImage = null; updateMaskSource(); return; }
     startMorph(next);
 }
+function keyTyped(e) { if (!(e && e.target && e.target.id === 'ghost')) typeChar(key); } // le champ invisible passe par son événement input
 
 function keyPressed() {
     if (isMorphBatching || isImageBatching) return; 
@@ -731,7 +733,8 @@ function erase(mx, my) {
     for (let y = Math.max(0, Math.floor(cy - r)); y < Math.min(rows, cy + r); y++)
         for (let x = Math.max(0, Math.floor(cx - r)); x < Math.min(cols, cx + r); x++) if (Math.hypot(x - cx, y - cy) < r) { const i = x + y * cols; grid[i] = 0; food[i] = 0; dynamicContourMask[i] = 0; }
 }
-const erasing = () => keyIsDown(SHIFT) || mouseButton === RIGHT;
+let eraser = false; // bouton « gomme » (au doigt : ni Maj ni clic droit)
+const erasing = () => eraser || keyIsDown(SHIFT) || mouseButton === RIGHT;
 function mouseDragged() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) (erasing() ? erase : feed)(mouseX, mouseY); }
 function mousePressed() { if (mouseX >= 0 && mouseY >= 0 && mouseX < width && mouseY < height) (erasing() ? erase : feed)(mouseX, mouseY); }
 function touchMoved() { mouseDragged(); return false; }
@@ -741,6 +744,11 @@ function touchMoved() { mouseDragged(); return false; }
     if (window.top !== window) document.body.classList.add('in-room'); // dans une salle du Lab : la barre passe sous le menu du site
     const useImage = (file) => { if (!file || !/^image\//.test(file.type)) return; const url = URL.createObjectURL(file); loadImage(url, (img) => { customImage = img; updateMaskSource(); }); };
     $('#pick').onclick = () => $('#file').click();
+    // au doigt : « écrire » ouvre le clavier du téléphone, « gomme » fait gommer le dessin
+    const ghost = $('#ghost');
+    $('#type').onclick = () => ghost.focus({ preventScroll: true });
+    ghost.addEventListener('input', () => { for (const ch of ghost.value) typeChar(ch); ghost.value = ''; });
+    $('#eraser').onclick = () => { eraser = !eraser; $('#eraser').setAttribute('aria-pressed', String(eraser)); };
     $('#file').onchange = (e) => useImage(e.target.files[0]);
     addEventListener('dragover', (e) => { e.preventDefault(); document.body.classList.add('over'); });
     addEventListener('dragleave', () => document.body.classList.remove('over'));

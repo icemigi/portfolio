@@ -11,8 +11,10 @@ const t = ui[lang];
 const room = rooms[index];
 const r = room[lang];
 const fr = lang === 'fr';
-const intro = room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Type your text: it sets in HIMARE. Switch between solid and outline, then download the typeface.')
+const intro = room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Type your text: it sets in HIMARE. Switch between solid and outline, then download the typeface.')
   : r.note;
+// au doigt : on touche le texte pour l'écrire (back.js lit data-intro-touch)
+const introTouch = room.kind === 'font' ? (fr ? 'Touche le texte et écris : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Tap the text and type: it sets in HIMARE. Switch between solid and outline, then download the typeface.') : '';
 ---
 <Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
   {room.kind === 'embed' && <script is:inline define:vars={{ to: `${room.src}?lang=${lang}` }}>location.replace(to);</script>}
@@ -32,7 +34,7 @@ const intro = room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIM
       {room.kind === 'font' && (room.file ? <a href={room.file} download>{t.download.toLowerCase()}</a> : <span>{t.fileSoon.toLowerCase()}</span>)}
     </p>
   </div>
-  <script is:inline define:vars={{ intro }}>document.documentElement.dataset.intro = intro;</script>
+  <script is:inline define:vars={{ intro, introTouch }}>document.documentElement.dataset.intro = intro; if (introTouch) document.documentElement.dataset.introTouch = introTouch;</script>
   <script is:inline src="/lab/back.js"></script>
 </Base>
 

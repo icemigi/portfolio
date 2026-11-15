@@ -4,7 +4,7 @@
 // Téléphone : la liste classique des projets à la place. Les objets tombent un à un quand la scène apparaît à l'écran.
 import Scene from './Scene.astro';
 import ProjectRows from './ProjectRows.astro';
-import { pad, type Lang } from '../data/ui';
+import { pad, ui, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
 interface Props { lang: Lang; title: string; id?: string; heading?: 'h1' | 'h2' }
 const { lang, title, id = 'pj-t', heading = 'h1' } = Astro.props;
@@ -14,7 +14,7 @@ const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
 ---
 <div class="page">
   <H class="ttl mono mu par" id={id}>{`${title} ${pad(projects.length)}`}</H>
-  <Scene items={projects.map((p) => ({ href: `/${lang}/work/${p.slug}/`, title: p[lang].title, object: p.object }))} pos={POS} />
+  <Scene items={projects.map((p) => ({ href: `/${lang}/work/${p.slug}/`, title: p[lang].title, object: p.object, wip: p.wip ? ui[lang].wip : undefined }))} pos={POS} />
   <div class="mindex g"><div class="mlist"><ProjectRows lang={lang} /></div></div>
 </div>
 
@@ -26,13 +26,14 @@ const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
   .mindex { display: none; }
 
   @media (max-width: 760px) {
-    .page { justify-content: flex-end; }
+    /* la liste se cale en bas, mais jamais sous le libellé (place réservée en haut) ; plus longue que l'écran, elle défile */
+    .page { justify-content: flex-end; height: auto; padding-top: calc(var(--head) + 48px); }
     .ttl { position: absolute; }
     .mindex { display: grid; padding-bottom: 72px; }
     .mlist { grid-column: 1 / -1; }
     /* numéros comme sur ordinateur : « (01) » en orange */
     .mlist :global(.row .n) { color: var(--ac); }
-    .mlist :global(.row .n)::before { content: '('; } .mlist :global(.row .n)::after { content: ')'; }
+    .mlist :global(.row .n)::before { content: '('; } .mlist :global(.row .n)::after { content: ')'; position: static; opacity: 1; transform: none; color: inherit; } /* la flèche de survol (global.css) devient la parenthèse fermante */
   }
 </style>
 

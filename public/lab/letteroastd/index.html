@@ -116,6 +116,8 @@
         .action-buttons-row { display: flex; gap: 28px; margin-top: 28px; }
         .icon-placeholder { display: none; }
         @media (max-width: 760px) {
+            /* « LETTERO » entier sur l'écran (4,15 em), la même marge à droite qu'à gauche */
+            .home-title { font-size: 22vw; }
             .home-low { grid-template-columns: 1fr; align-items: start; }
             .billing { text-align: left; }
             .poster-card { width: 42vw; } .poster-img, .poster-fallback { height: 63vw; }
@@ -465,20 +467,24 @@
         const q = new URLSearchParams(location.search);
         let lang = q.get('lang') || (/^fr/i.test(navigator.language) ? 'fr' : 'en');
         const T = {
-            fr: { sub: "Balance ton export Letterboxd, je lis tout et je te dis quel cinéphile t'es.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
+            fr: { sub: "Balance ton export Letterboxd, je lis tout et je te dis quel cinéphile t'es.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', dropTouch: 'Touche ici<br>pour choisir ton .zip <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
                 howS: ['Connecte-toi sur <strong>letterboxd.com</strong>.', 'Profil, puis <strong>Settings</strong>.', 'Onglet <strong>Data</strong>, tout à droite.', '<strong>Export your data</strong>, puis glisse le .zip ici.'],
                 demo: 'Pas de compte ? Teste avec un profil exemple', bill: "Un site <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur", quit: '← Recommencer',
-                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', ok: 'Valider', read: 'Je lis ton export…', step: 'question',
-                duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
+                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', nextTouch: 'Touche pour continuer', ok: 'Valider', read: 'Je lis ton export…', step: 'question',
+                duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoDropTouch: 'Touche ici pour choisir les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
                 notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour une vraie analyse (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
-            en: { sub: "Throw me your Letterboxd export, I'll read it all and tell you what kind of film buff you are.", exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
+            en: { sub: "Throw me your Letterboxd export, I'll read it all and tell you what kind of film buff you are.", exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', dropTouch: 'Tap here<br>to choose your .zip <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
                 howS: ['Sign in on <strong>letterboxd.com</strong>.', 'Profile, then <strong>Settings</strong>.', 'The <strong>Data</strong> tab, far right.', '<strong>Export your data</strong>, then drop the .zip here.'],
                 demo: 'No account? Try a sample profile', bill: 'A website by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser', quit: '← Start over',
-                dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
-                duo: 'Two of you? Compare two profiles', duoOff: 'Solo after all', duoDrop: 'Drop both .zip files,<br>yours then theirs <span class="ar">→</span>', duoOne: 'One profile loaded. Now the second one.', duoDemo: 'Try a sample duo',
+                dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', nextTouch: 'Tap to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
+                duo: 'Two of you? Compare two profiles', duoOff: 'Solo after all', duoDrop: 'Drop both .zip files,<br>yours then theirs <span class="ar">→</span>', duoDropTouch: 'Tap here to choose both .zip files,<br>yours then theirs <span class="ar">→</span>', duoOne: 'One profile loaded. Now the second one.', duoDemo: 'Try a sample duo',
                 notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a real analysis (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
         };
-        const t = (k) => T[lang][k];
+        // au doigt, la variante « Touch » d'un texte s'il y en a une (on touche, il n'y a ni clic ni touche Entrée) ;
+        // en français, espace insécable avant « ? ! : ; » (la ponctuation ne commence jamais une ligne, comme sur le site)
+        const touch = matchMedia('(pointer: coarse)').matches;
+        const fr = (v) => (Array.isArray(v) ? v.map(fr) : typeof v === 'string' ? v.replace(/ (?=[?!:;»])/g, '\u00a0') : v);
+        const t = (k) => { const v = (touch && T[lang][k + 'Touch']) || T[lang][k]; return lang === 'fr' ? fr(v) : v; };
         const $ = (s) => document.querySelector(s);
         const paint = () => {
             document.documentElement.lang = lang;
