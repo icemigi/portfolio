@@ -8,6 +8,9 @@ export const homeServices = {
   fr: 'Je dessine des lettres{m:beaucoup}, des identités et des images, à\u00a0la\u00a0main ou en code{m:selon l\'humeur}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
   en: 'I draw letters{m:a lot}, identities and images, by\u00a0hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
 };
+// Anneau d'images autour du texte des services (accueil) : fichiers de /public/ring/, en 16/10. null = emplacement à remplir
+// (gris, numéroté). Autant d'emplacements que d'entrées.
+export const homeRing: (string | null)[] = Array(12).fill(null);
 
 // À propos — 4 écrans
 export const aboutIntro = {
@@ -39,8 +42,8 @@ export const services = {
 // Chaque fanion a sa longueur (tools/fanions.py écrit les dessins). Au survol : nom du logiciel, et dessous, ce à quoi il me sert.
 // Ordre : suite de couleurs (vert, noirs, bleus et blanc, rouges) ; deux voisins n'ont jamais la même forme ni le même motif.
 export const stack = {
-  fr: 'Mes outils de tous les jours{m:et de quelques nuits}.',
-  en: 'My everyday tools{m:and a few nights}.',
+  fr: 'Les armes que je dégaine le plus{m:de quoi tenir un siège, ou une deadline}.',
+  en: 'The weapons I draw the most{m:enough to hold a siege, or a deadline}.',
 };
 export const stackBanners = [
   { id: 'glyphs', name: 'Glyphs', mark: 'mk-glyphs.svg', note: { fr: 'je dessine mes caractères, du croquis au fichier de fonte', en: 'I draw my typefaces, from sketch to font file' } },

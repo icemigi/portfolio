@@ -14,6 +14,7 @@ onDemand('.room', () => import('./labroom'));
 onDemand('canvas.type-canvas', () => import('./typecanvas'));
 onDemand('[data-track]', () => import('./archive'));
 onDemand('[data-fanions]', () => import('./banners'));
+onDemand('[data-ring]', () => import('./ring'));
 onDemand('[data-likes]', () => import('./likes'));
 onDemand('[data-term]', () => import('./cv'));
 onDemand('.screens-host.case', () => import('./case'));

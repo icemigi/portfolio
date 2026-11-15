@@ -5,8 +5,9 @@ import ContactScreen from '../../components/ContactScreen.astro';
 import Affiche from '../../components/Affiche.astro';
 import ProjectStage from '../../components/ProjectStage.astro';
 import Portrait3D from '../../components/Portrait3D.astro';
+import Ring from '../../components/Ring.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
-import { homeServices } from '../../data/about';
+import { homeServices, homeRing } from '../../data/about';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
@@ -24,6 +25,7 @@ const t = ui[lang];
     </section>
 
     <section class="scr" id="services" aria-labelledby="sv-l">
+      <Ring items={homeRing} />
       <div class="in g">
         <div class="big">
           <h2 class="mono mu lab par" id="sv-l">{t.services}</h2>
@@ -60,6 +62,9 @@ const t = ui[lang];
   .lab { grid-column: 1 / 4; margin-bottom: 24px; align-self: start; }
   .bt, .more { grid-column: 4 / 12; }
   .more { margin-top: 32px; }
+  /* anneau d'images : le texte au niveau 1, entre les images du fond (0) et celles de devant (2 à 42) ; le lien toujours au-dessus */
+  .lab, .bt { position: relative; z-index: 1; }
+  .more { position: relative; z-index: 100; }
 
 
   /* portrait : en haut à droite, à cheval sur « kast » (position et taille calculées par le script, d'après le nom) */

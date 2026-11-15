@@ -1,0 +1,28 @@
+---
+// Anneau d'images (accueil, écran des services) : un cercle incliné en perspective, centré sur le texte, qui tourne lentement
+// (un tour en 30 s). Les images restent face à nous ; celles du fond passent derrière les lettres, celles de devant par-dessus.
+// Il penche vers le curseur et se lance à la main (glisser), puis reprend son allure. Décoratif : aucun lien, caché aux
+// lecteurs d'écran. Mouvement : scripts/views/ring.ts. Sans animation (« Réduire les animations ») : pas d'anneau.
+interface Props { items: (string | null)[] }
+const { items } = Astro.props;
+---
+<div class="ring" data-ring aria-hidden="true">
+  {items.map((src, i) => (
+    <span class:list={['rc', !src && 'ph']}>
+      {src ? <img src={`/ring/${src}`} alt="" draggable="false" decoding="async" /> : <i>{String(i + 1).padStart(2, '0')}</i>}
+    </span>
+  ))}
+</div>
+
+<style>
+  /* calque de l'écran entier ; sans z-index propre : les images se rangent devant ou derrière le texte (z-index 0 ou 2) */
+  .ring { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  /* --rw : largeur d'une image, réglée par le script d'après le rayon ; placée et mise à l'échelle par transform */
+  .rc { position: absolute; left: 0; top: 0; width: var(--rw, 120px); aspect-ratio: 16 / 10; opacity: 0; transform-origin: 50% 50%;
+    will-change: transform, opacity; pointer-events: auto; cursor: grab; user-select: none; touch-action: none; }
+  .rc img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ring.grab .rc { cursor: grabbing; }
+  @media (prefers-reduced-motion: reduce) { .ring { display: none; } }
+  /* téléphone : pas encore traité (passage téléphone à venir) */
+  @media (max-width: 760px) { .ring { display: none; } }
+</style>
