@@ -3,8 +3,9 @@
 // profondeur, et passe devant le texte quand elle est du côté du spectateur (z-index 2 à 42, rangées par profondeur : la plus
 // proche dessus), derrière sinon (z-index 0 ; un z-index négatif la ferait passer sous le fond de l'écran).
 // La souris incline l'anneau vers elle ; on le saisit pour le lancer, puis il revient à son allure (un tour en 30 s).
-// À chaque arrivée sur l'écran, l'anneau entre presque de profil, se redresse en tournant vite puis ralentit, et se déploie
-// jusqu'à son rayon (léger dépassement) ; chaque image se découvre de bas en haut sous un masque, son contenu se resserrant.
+// À chaque arrivée sur l'écran, l'anneau entre presque de profil et se redresse en tournant vite, puis freine ; les images
+// partent du centre l'une après l'autre et, portées par la rotation, rejoignent leur place en spirale (léger dépassement),
+// en se redressant d'une petite rotation et en se découvrant de bas en haut sous un masque, leur contenu se resserrant.
 // La boucle ne tourne que quand l'écran est à l'écran.
 import { onPage } from '../page';
 import { reduced } from '../motion';
@@ -12,10 +13,11 @@ import { reduced } from '../motion';
 const TURN = (2 * Math.PI) / 30000;   // allure de croisière (rad/ms)
 const YAW = -0.62, PITCH = 0.2;       // inclinaison de repos (rad)
 const TILT_X = 0.22, TILT_Y = 0.14;   // amplitude de l'inclinaison vers le curseur (rad)
-const INTRO = 1800;                   // entrée de l'anneau (ms)
+const INTRO = 2000;                   // entrée de l'anneau (ms)
 const SPIN = 1.6 * Math.PI;           // tour d'élan de l'entrée (rad), freiné jusqu'à l'arrêt
 const EDGE_YAW = -1.45, EDGE_PITCH = 0.75; // presque de profil au départ (rad)
-const MASK = 900, STAGGER = 70, LAG = 250; // masque des images : durée, écart, départ après l'anneau (ms)
+const DEAL = 1100, STAGGER = 60, LAG = 150; // spirale de chaque image : durée, écart, départ après l'anneau (ms)
+const TWIST = -0.5;                   // rotation de départ d'une image (rad), redressée en chemin
 const clamp = (e: number) => Math.max(0, Math.min(1, e));
 const expo = (e: number) => (e >= 1 ? 1 : 1 - 2 ** (-10 * e));
 const back = (e: number) => 1 + 2.2 * (e - 1) ** 3 + 1.2 * (e - 1) ** 2; // sortie avec léger dépassement
@@ -85,19 +87,20 @@ onPage('[data-ring]', (ctx) => {
       yaw += (yawT - yaw) * k; pitch += (pitchT - pitch) * k;
       // entrée : élan de rotation freiné, redressement depuis le profil, rayon qui se déploie
       const g = clamp((now - t0) / INTRO), G = expo(g);
-      const spin = -(1 - G) * SPIN, r = R * (0.15 + 0.85 * back(g));
+      const spin = -(1 - G) * SPIN;
       const yw = EDGE_YAW + (yaw - EDGE_YAW) * G, pt = EDGE_PITCH + (pitch - EDGE_PITCH) * G;
       const sy = Math.sin(yw), cyw = Math.cos(yw), sp = Math.sin(pt), cp = Math.cos(pt);
       for (let i = 0; i < N; i++) {
+        // spirale : l'image part du centre et gagne son rayon pendant que l'anneau tourne
+        const e = clamp((now - t0 - LAG - i * STAGGER) / DEAL), f = quart(e), r = R * (0.04 + 0.96 * back(e));
         const th = phi + spin + (2 * Math.PI * i) / N, x0 = r * Math.cos(th), y0 = r * Math.sin(th);
         const y1 = y0 * cp, z1 = y0 * sp;                       // tangage (axe horizontal)
         const x2 = x0 * cyw + z1 * sy, z2 = -x0 * sy + z1 * cyw; // lacet (axe vertical) ; z > 0 : vers le spectateur
         const s = P / (P - z2);
-        // masque : l'image se découvre de bas en haut, grandit un peu, son contenu se resserre
-        const e = clamp((now - t0 - LAG - i * STAGGER) / MASK), f = quart(e);
+        // en chemin : elle grandit, se redresse, se découvre de bas en haut, son contenu se resserre
         const el = cards[i];
-        el.style.transform = `translate3d(${(cx + x2 * s - w / 2).toFixed(1)}px, ${(cy + y1 * s - w / 3.2).toFixed(1)}px, 0) scale(${(s * (0.8 + 0.2 * f)).toFixed(3)})`;
-        el.style.opacity = String(clamp(e * 4));
+        el.style.transform = `translate3d(${(cx + x2 * s - w / 2).toFixed(1)}px, ${(cy + y1 * s - w / 3.2).toFixed(1)}px, 0) rotate(${((1 - f) * TWIST).toFixed(3)}rad) scale(${(s * (0.4 + 0.6 * f)).toFixed(3)})`;
+        el.style.opacity = String(clamp(e * 5));
         el.style.clipPath = e < 1 ? `inset(${((1 - f) * 100).toFixed(2)}% 0 0 0)` : '';
         const pic = pics[i];
         if (pic) pic.style.scale = e < 1 ? (1.2 - 0.2 * f).toFixed(3) : '';
