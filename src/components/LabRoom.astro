@@ -3,7 +3,6 @@
 // « ← lab » et une aide en haut à gauche, les actions en haut à droite, rien d'autre (ni menu du site, ni numéros, ni flèches).
 // Une pièce autonome (kind 'embed') s'ouvre directement : cette adresse ne fait que l'y renvoyer.
 import Base from '../layouts/Base.astro';
-import TypeCanvas from './TypeCanvas.astro';
 import { ui, type Lang } from '../data/ui';
 import { rooms } from '../data/lab';
 interface Props { lang: Lang; index: number }
@@ -12,9 +11,7 @@ const t = ui[lang];
 const room = rooms[index];
 const r = room[lang];
 const fr = lang === 'fr';
-const intro = room.kind === 'type'
-  ? (fr ? 'Tape un mot : il se compose en modules (Entrée pour une nouvelle ligne). Approche le curseur, clique pour changer de famille, molette pour la portée.' : 'Type a word: it is built from modules (Enter for a new line). Move the cursor close, click to change the family, wheel for the reach.')
-  : room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Type your text: it sets in HIMARE. Switch between solid and outline, then download the typeface.')
+const intro = room.kind === 'font' ? (fr ? 'Tape ton texte : il s\'écrit en HIMARE. Bascule entre le plein et le contour, puis télécharge la fonte.' : 'Type your text: it sets in HIMARE. Switch between solid and outline, then download the typeface.')
   : r.note;
 ---
 <Base lang={lang} title={`${r.title} — Lab`} description={r.note} path={`lab/${room.id}/`} active="lab">
@@ -23,16 +20,14 @@ const intro = room.kind === 'type'
   <h1 class="sr">{r.title}</h1>
   <div class="lab" data-room={room.kind}>
     <div class:list={['room', room.kind]}>
-      {room.kind === 'type' && <TypeCanvas class="tc" label={r.note} edit />}
       {room.kind === 'slot' && <p class="mono mu">({r.note})</p>}
       {room.kind === 'font' && <p class="tester" contenteditable="plaintext-only" spellcheck="false" data-own-keys data-tester>himare</p>}
       {room.kind === 'embed' && <p class="mono mu"><a href={`${room.src}?lang=${lang}`}>{r.title}</a></p>}
     </div>
   </div>
   <div class="kk-bar">
-    <p class="hint">{room.kind === 'type' ? (fr ? 'tape · entrée : ligne · clic : modules · molette : portée' : 'type · enter: new line · click: modules · wheel: reach') : room.kind === 'font' ? t.typeHere : ''} <span data-fam></span></p>
+    <p class="hint">{room.kind === 'font' ? t.typeHere : ''}</p>
     <p class="act">
-      {room.kind === 'type' && <Fragment><button type="button" data-twave>{fr ? 'onde' : 'wave'}</button><button type="button" data-tsave>{fr ? 'enregistrer' : 'save'}</button><button type="button" data-tsvg>svg</button></Fragment>}
       {room.kind === 'font' && <button type="button" data-fstyle aria-pressed="false">{fr ? 'contour' : 'outline'}</button>}
       {room.kind === 'font' && (room.file ? <a href={room.file} download>{t.download.toLowerCase()}</a> : <span>{t.fileSoon.toLowerCase()}</span>)}
     </p>
@@ -48,7 +43,6 @@ const intro = room.kind === 'type'
   .room { position: absolute; inset: 0; display: grid; place-items: center; padding: 0 var(--m); }
   .room.slot { background: repeating-linear-gradient(45deg, #e6e6e6 0 10px, #dedede 10px 20px); }
   .room.slot p { max-width: 520px; text-align: center; }
-  .room :global(.tc) { width: 100%; height: 100%; }
   /* fonte (HIMARE) : le testeur s'écrit dans la fonte, plein ou contour */
   @font-face { font-family: 'HIMARE'; src: url('/fonts/himare/HIMARE.woff2') format('woff2'); font-display: block; }
   @font-face { font-family: 'HIMARE Outline'; src: url('/fonts/himare/HIMARE-Outline.woff2') format('woff2'); font-display: block; }

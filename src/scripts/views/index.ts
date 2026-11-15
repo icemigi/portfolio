@@ -11,7 +11,6 @@ onDemand('[data-scene]', () => import('./stage'));
 onDemand('.last .mail', () => import('./contact'));
 onDemand('[data-lablist]', () => import('./lab'));
 onDemand('.room', () => import('./labroom'));
-onDemand('canvas.type-canvas', () => import('./typecanvas'));
 onDemand('[data-track]', () => import('./archive'));
 onDemand('[data-fanions]', () => import('./banners'));
 onDemand('[data-ring]', () => import('./ring'));

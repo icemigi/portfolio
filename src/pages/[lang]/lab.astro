@@ -12,7 +12,7 @@ const lang = getLangFromParam(Astro.params.lang);
 const t = ui[lang];
 const fr = lang === 'fr';
 const items = labItems(lang);
-const DESC = fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent, type modulaire), générateur héraldique, quiz et Letteroastd.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters, modular type), heraldry generator, quiz and Letteroastd.';
+const DESC = fr ? 'Le Lab de kerningkastle : expériences typographiques et génératives (lettres qui tombent, qui poussent), générateur héraldique, quiz et Letteroastd.' : 'The kerningkastle Lab: type and generative experiments (falling letters, growing letters), heraldry generator, quiz and Letteroastd.';
 ---
 <Base lang={lang} title={t.nav.lab} description={DESC} path="lab/" active="lab">
   <div class="screens-host" data-screens>

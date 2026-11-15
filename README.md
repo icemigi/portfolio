@@ -39,7 +39,7 @@ src/
     lab.ts          pièces du Lab
   components/       Header, Footer, Affiche (texte d'affiche à vignettes), Door, ProjectRows, ProjectStage,
                     Scene (objets en lévitation), ObjectShape, Portrait3D, Banners, ContactScreen,
-                    LabRoom, TypeCanvas, DevMode
+                    LabRoom, DevMode
   layouts/Base.astro
   pages/[lang]/     index · work/ · work/[slug] · lab (liste) · lab/[room] · archive · about · about/likes · legal
   scripts/          site (point d'entrée), page (cycle de vie des pages), screens (défilement forcé),

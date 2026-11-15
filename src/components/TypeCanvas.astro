@@ -1,9 +1,0 @@
----
-// Canvas de type modulaire : les lettres sont faites de modules (cellules 5×7)
-// qui changent de forme à l'approche du curseur. Sans curseur, un point fantôme
-// se promène. Respecte prefers-reduced-motion (rendu statique).
-interface Props { text?: string; label: string; class?: string; cols?: number; align?: 'left' | 'center' | 'right'; edit?: boolean }
-const { text = 'KERNINGKASTLE', label, class: cls = '', cols = 0, align = 'center', edit = false } = Astro.props;
----
-<canvas class:list={['type-canvas', cls]} data-text={text} data-cols={cols} data-align={align} data-edit={edit || undefined} role="img" aria-label={label}></canvas>
-

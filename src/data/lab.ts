@@ -1,11 +1,10 @@
 // Lab : une salle plein écran par pièce, chacune à sa propre adresse (/xx/lab/<id>/).
-// kind 'type'  : le canvas de type modulaire
 // kind 'font'  : fonte libre — texte modifiable au clavier + Télécharger
 // kind 'slot'  : pièce à intégrer (emplacement)
 export type Room = {
   id: string;
   year: string;
-  kind: 'type' | 'font' | 'slot' | 'embed';
+  kind: 'font' | 'slot' | 'embed';
   src?: string; // embed : page autonome (dans /public/lab/)
   file?: string; // fonte : fichier à télécharger
   wip?: boolean;  // en travaux : mention « (en travaux) » dans la liste du Lab
@@ -23,11 +22,6 @@ const all: Room[] = [
     id: 'ascii', year: '2026', kind: 'embed', src: '/lab/ascii/index.html',
     fr: { title: 'Matrice systémique', cat: 'Expérience', note: 'Une trame de caractères mono qui tourne en vortex autour du curseur ; certains caractères s\'allument en aplats de couleur. p5.js.' },
     en: { title: 'Systemic Matrix', cat: 'Experiment', note: 'A grid of mono characters spinning in a vortex around the cursor; some characters light up as flat colour blocks. p5.js.' },
-  },
-  {
-    id: 'modular-type', year: '2026', wip: true, kind: 'type',
-    fr: { title: 'Type modulaire', cat: 'Expérience type', note: 'Des lettres construites en modules qui changent de forme sous le curseur. Canvas 2D.' },
-    en: { title: 'Modular type', cat: 'Type experiment', note: 'Letters built from modules that change shape under the cursor. Canvas 2D.' },
   },
   {
     id: 'gravity', year: '2026', wip: true, kind: 'embed', src: '/lab/gravity/index.html',
