@@ -8,6 +8,7 @@ export type Room = {
   kind: 'type' | 'font' | 'slot' | 'embed';
   src?: string; // embed : page autonome (dans /public/lab/)
   file?: string; // fonte : fichier à télécharger
+  wip?: boolean;  // en travaux : mention « (en travaux) » dans la liste du Lab
   en: { title: string; cat: string; note: string };
   fr: { title: string; cat: string; note: string };
 };
@@ -24,22 +25,22 @@ const all: Room[] = [
     en: { title: 'Systemic Matrix', cat: 'Experiment', note: 'A grid of mono characters spinning in a vortex around the cursor; some characters light up as flat colour blocks. p5.js.' },
   },
   {
-    id: 'modular-type', year: '2026', kind: 'type',
+    id: 'modular-type', year: '2026', wip: true, kind: 'type',
     fr: { title: 'Type modulaire', cat: 'Expérience type', note: 'Des lettres construites en modules qui changent de forme sous le curseur. Canvas 2D.' },
     en: { title: 'Modular type', cat: 'Type experiment', note: 'Letters built from modules that change shape under the cursor. Canvas 2D.' },
   },
   {
-    id: 'gravity', year: '2026', kind: 'embed', src: '/lab/gravity/index.html',
+    id: 'gravity', year: '2026', wip: true, kind: 'embed', src: '/lab/gravity/index.html',
     fr: { title: 'Lettres qui tombent', cat: 'Affiche générative', note: 'Une affiche qui se compose toute seule : chaque clic lâche une lettre, qui tombe et s\'empile dans la grille. Les lettres ont un vrai corps physique, taillé sur leur dessin. p5.js, Matter.js.' },
     en: { title: 'Falling letters', cat: 'Generative poster', note: 'A poster that composes itself: every click drops a letter, which falls and piles up in the grid. Each letter has a real physical body, cut to its shape. p5.js, Matter.js.' },
   },
   {
-    id: 'physarum', year: '2026', kind: 'embed', src: '/lab/physarum/index.html',
+    id: 'physarum', year: '2026', wip: true, kind: 'embed', src: '/lab/physarum/index.html',
     fr: { title: 'Lettres qui poussent', cat: 'Automate cellulaire', note: 'Des lettres qui se forment comme une culture : un automate cellulaire pousse dans le contour du glyphe, puis glisse vers la lettre suivante. On peut y déposer sa propre image. p5.js.' },
     en: { title: 'Growing letters', cat: 'Cellular automaton', note: 'Letters that grow like a culture: a cellular automaton spreads inside the glyph outline, then morphs into the next letter. You can drop in your own image. p5.js.' },
   },
   {
-    id: 'free-font', year: '2026', kind: 'font', file: '/fonts/himare/himare.zip',
+    id: 'free-font', year: '2026', wip: true, kind: 'font', file: '/fonts/himare/himare.zip',
     fr: { title: 'HIMARE', cat: 'Fonte', note: 'Une capitale de titrage horizontale, dessinée sur une grille de modules arrondis, en deux styles : plein et contour. OTF et WOFF2, à télécharger.' },
     en: { title: 'HIMARE', cat: 'Typeface', note: 'A horizontal display typeface drawn on a grid of rounded modules, in two styles: solid and outline. OTF and WOFF2, to download.' },
   },
@@ -55,23 +56,24 @@ export type LabApp = {
   src: string;
   w: number; // taille de la fenêtre sur le bureau
   h: number;
+  wip?: boolean;  // en travaux : mention « (en travaux) » dans la liste du Lab
   en: { title: string; cat: string };
   fr: { title: string; cat: string };
 };
 
 export const labApps: LabApp[] = [
   {
-    id: 'heraldry', year: '2025', src: '/lab/heraldry/index.html', w: 980, h: 640,
+    id: 'heraldry', year: '2025', wip: true, src: '/lab/heraldry/index.html', w: 980, h: 640,
     fr: { title: 'Algorithmic Heraldry', cat: 'Générateur' },
     en: { title: 'Algorithmic Heraldry', cat: 'Generator' },
   },
   {
-    id: 'quiz', year: '2026', src: '/lab/quiz/index.html', w: 1040, h: 700,
+    id: 'quiz', year: '2026', wip: true, src: '/lab/quiz/index.html', w: 1040, h: 700,
     fr: { title: 'Quiz-O-Matic', cat: 'Jeu' },
     en: { title: 'Quiz-O-Matic', cat: 'Game' },
   },
   {
-    id: 'letteroastd', year: '2026', src: '/lab/letteroastd/index.html', w: 1000, h: 700,
+    id: 'letteroastd', year: '2026', wip: true, src: '/lab/letteroastd/index.html', w: 1000, h: 700,
     fr: { title: 'Letteroastd', cat: 'Test de cinéphilie' },
     en: { title: 'Letteroastd', cat: 'Film-buff test' },
   },
@@ -82,13 +84,13 @@ export const labCount = rooms.length + labApps.length;
 
 // Pièces du Lab telles que la page les montre (dans l'ordre) : salles puis applications. href : la pièce ouverte ;
 // live : la même, jouée en direct dans son écran du Lab (pages autonomes telles quelles ; salles en mode intégré, ?embed).
-export type LabItem = { id: string; title: string; cat: string; href: string; live: string };
+export type LabItem = { id: string; title: string; cat: string; href: string; live: string; wip: boolean };
 export function labItems(lang: 'fr' | 'en'): LabItem[] {
   return [
     ...rooms.map((r) => {
       const page = r.kind === 'embed' && r.src ? `${r.src}?lang=${lang}` : '';
-      return { id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, href: page || `/${lang}/lab/${r.id}/`, live: page || `/${lang}/lab/${r.id}/?embed` };
+      return { id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, href: page || `/${lang}/lab/${r.id}/`, live: page || `/${lang}/lab/${r.id}/?embed`, wip: !!r.wip };
     }),
-    ...labApps.map((a) => ({ id: a.id, title: a[lang].title, cat: a[lang].cat, href: `${a.src}?lang=${lang}`, live: `${a.src}?lang=${lang}` })),
+    ...labApps.map((a) => ({ id: a.id, title: a[lang].title, cat: a[lang].cat, href: `${a.src}?lang=${lang}`, live: `${a.src}?lang=${lang}`, wip: !!a.wip })),
   ];
 }

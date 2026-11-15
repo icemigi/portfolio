@@ -121,50 +121,50 @@
     const n = (v) => v.toLocaleString(lang === 'en' ? 'en-GB' : 'fr-FR');
     const date = (d) => new Date(d).toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
     const S = [];
-    S.push({ kind: 'say', text: L(`${n(F.total)} films. On a tout lu. Installe-toi.`, `${n(F.total)} films. We read everything. Get comfortable.`) });
+    S.push({ kind: 'say', text: L(`${n(F.total)} films. J'ai tout épluché, installe-toi.`, `${n(F.total)} films. I went through all of them. Sit down.`) });
 
-    S.push({ kind: 'choice', id: 'vo', text: L('Tu lances un film étranger. Tu le regardes…', 'You start a foreign film. You watch it…'),
-      options: [{ v: 'vo', label: L('En VO, évidemment', 'In the original language, obviously') }, { v: 'vf', label: L('En VF, je suis pas venu lire', 'Dubbed. I came to watch, not to read') }, { v: 'mix', label: L('Ça dépend de qui est sur le canapé', 'Depends who is on the couch') }],
-      reply: (v) => ({ vo: L('Respect. Les sous-titres te remercient.', 'Respect. The subtitles thank you.'), vf: L('Noté. On ne jugera pas. Enfin, un peu.', 'Noted. No judgement. Well, a little.'), mix: L('Le diplomate du salon.', 'The living-room diplomat.') })[v] });
+    S.push({ kind: 'choice', id: 'vo', text: L('Un film étranger, tu le mates comment ?', 'A foreign film, how do you watch it?'),
+      options: [{ v: 'vo', label: L('En VO', 'With subtitles') }, { v: 'vf', label: L('En VF', 'Dubbed') }, { v: 'mix', label: L('Ça dépend avec qui', 'Depends who I\'m with') }],
+      reply: (v) => ({ vo: L('Classe.', 'Classy.'), vf: L('Je juge pas. Bon, un peu.', 'Not judging. Okay, a little.'), mix: L('Toujours à arranger tout le monde.', 'Always keeping everyone happy.') })[v] });
 
     if (F.rated >= 10) {
       const t = F.five, opts = shuffle([...new Set([t, Math.max(0, Math.round(t * 0.4)), Math.round(t * 2.2) + 3])]);
-      S.push({ kind: 'choice', id: 'g_five', guess: t, grade: (v) => Math.max(0, 1 - Math.abs(v - t) / Math.max(t, 1)), text: L('À ton avis, combien de films as-tu notés 5 étoiles ?', 'How many films do you think you rated 5 stars?'),
+      S.push({ kind: 'choice', id: 'g_five', guess: t, grade: (v) => Math.max(0, 1 - Math.abs(v - t) / Math.max(t, 1)), text: L('T\'as mis 5 étoiles à combien de films, à ton avis ?', 'How many films have you given 5 stars, you reckon?'),
         options: opts.map((x) => ({ v: x, label: n(x) })),
-        reply: (v) => (v === t ? L(`Exact : ${n(t)}. Au moins, tu te connais.`, `Correct: ${n(t)}. At least you know yourself.`)
-          : L(`Raté, c'est ${n(t)}. ${t > v ? 'Tu es plus généreux que tu ne le crois.' : 'Tu es plus dur que tu ne le crois.'}`, `Wrong, it's ${n(t)}. ${t > v ? "You're more generous than you think." : "You're harsher than you think."}`)) });
+        reply: (v) => (v === t ? L(`Pile poil, ${n(t)}. Tu te connais.`, `Bang on, ${n(t)}. You know yourself.`)
+          : L(`Nan, ${n(t)}. ${t > v ? 'T\'es plus généreux que tu crois.' : 'T\'es plus dur que tu crois.'}`, `Nope, ${n(t)}. ${t > v ? "You're softer than you think." : "You're harsher than you think."}`)) });
     }
     if (F.duels[0]) S.push(duel(F.duels[0], L));
 
-    S.push({ kind: 'choice', id: 'place', text: L('Ton habitat naturel de cinéphile ?', 'Your natural film-watching habitat?'),
-      options: [{ v: 'salle', label: L('La salle, rang du milieu', 'The cinema, middle row') }, { v: 'canape', label: L('Le canapé, plaid compris', 'The couch, blanket included') }, { v: 'tel', label: L('Le téléphone, dans le métro', 'My phone, on the train') }],
-      reply: (v) => ({ salle: L('Un puriste. Le pop-corn à 9 € ne te fait pas peur.', 'A purist. Overpriced popcorn does not scare you.'), canape: L('Le cinéma, mais avec pause pipi.', 'Cinema, but with bathroom breaks.'), tel: L('Lawrence d\'Arabie sur 6 pouces. Courageux.', 'Lawrence of Arabia on six inches. Brave.') })[v] });
+    S.push({ kind: 'choice', id: 'place', text: L('Tu mates tes films où, surtout ?', 'Where do you mostly watch your films?'),
+      options: [{ v: 'salle', label: L('Au ciné', 'At the cinema') }, { v: 'canape', label: L('Sur le canapé', 'On the couch') }, { v: 'tel', label: L('Sur mon tel', 'On my phone') }],
+      reply: (v) => ({ salle: L('Le grand écran, y\'a que ça de vrai.', 'Big screen, nothing beats it.'), canape: L('Avec la pause pipi, normal.', 'With a pee break, fair.'), tel: L('Lawrence d\'Arabie sur ton tel ? Sérieux ?', 'Lawrence of Arabia on your phone? Seriously?') })[v] });
 
     if (F.decs.length >= 2) {
       const [d, c] = F.decs[0], opts = shuffle([d, ...shuffle(F.decs.slice(1).map((x) => x[0])).slice(0, 2)]), pct = Math.round((c / F.decs.reduce((a, x) => a + x[1], 0)) * 100);
-      S.push({ kind: 'choice', id: 'g_dec', guess: d, grade: (v) => (v === d ? 1 : Math.abs(+v - +d) === 10 ? 0.5 : 0), text: L('La décennie que tu regardes le plus ?', 'The decade you watch the most?'),
+      S.push({ kind: 'choice', id: 'g_dec', guess: d, grade: (v) => (v === d ? 1 : Math.abs(+v - +d) === 10 ? 0.5 : 0), text: L('Ta décennie préférée, d\'après tes films ?', 'Your go-to decade, judging by your films?'),
         options: opts.map((x) => ({ v: x, label: L(`Les années ${x.slice(2)}`, `The ${x}s`) })),
-        reply: (v) => (v === d ? L(`Oui : ${pct} % de tes films. `, `Yes: ${pct}% of your films. `) : L(`Non, les années ${d.slice(2)} : ${pct} % de tes films. `, `No, the ${d}s: ${pct}% of your films. `))
-          + (F.oldest ? L(`Ton plus vieux film : ${F.oldest.title} (${F.oldest.year}).`, `Your oldest film: ${F.oldest.title} (${F.oldest.year}).`) : '') });
+        reply: (v) => (v === d ? L(`Ouais, ${pct} % de tes films. `, `Yep, ${pct}% of your films. `) : L(`Nan, les années ${d.slice(2)}, ${pct} % de tes films. `, `Nope, the ${d}s, ${pct}% of your films. `))
+          + (F.oldest ? L(`Et ton plus vieux : ${F.oldest.title} (${F.oldest.year}).`, `And your oldest: ${F.oldest.title} (${F.oldest.year}).`) : '') });
     }
-    if (F.binge) S.push({ kind: 'say', text: L(`Le ${date(F.binge.date)}, tu as enchaîné ${F.binge.films.length} films. On espère qu'il y avait des chips.`, `On ${date(F.binge.date)} you watched ${F.binge.films.length} films in a row. We hope there were snacks.`) });
+    if (F.binge) S.push({ kind: 'say', text: L(`Le ${date(F.binge.date)}, t'as enchaîné ${F.binge.films.length} films. T'avais rien d'autre à faire ?`, `On ${date(F.binge.date)} you binged ${F.binge.films.length} films. Nothing else going on?`) });
 
     if (F.heresy && F.topLoved.length >= 2) {
       const h = F.heresy, others = shuffle([...F.topLoved]).slice(0, 2), opts = shuffle([h, ...others]);
-      S.push({ kind: 'choice', id: 'g_heresy', guess: h.title, text: L('Un classique du panthéon a pris ta pire note. Lequel ?', 'One all-time classic got your worst rating. Which one?'),
+      S.push({ kind: 'choice', id: 'g_heresy', guess: h.title, text: L('Y\'a un grand classique que t\'as massacré. Lequel ?', 'There\'s one big classic you trashed. Which one?'),
         options: opts.map((f) => ({ v: f.title, label: f.title })),
-        reply: (v) => (v === h.title ? L(`Oui. ${stars(h.rating)} à ${h.title}. Tu assumes, c'est déjà ça.`, `Yes. ${stars(h.rating)} for ${h.title}. At least you own it.`) : L(`Non : tu as mis ${stars(h.rating)} à ${h.title}. Internet t'attend dehors.`, `No: you gave ${h.title} ${stars(h.rating)}. The internet is waiting outside.`)) });
+        reply: (v) => (v === h.title ? L(`Ouais, ${stars(h.rating)} à ${h.title}. T'assumes, au moins.`, `Yep, ${stars(h.rating)} for ${h.title}. At least you own it.`) : L(`Nan, c'est ${h.title}, ${stars(h.rating)}. Je dirai rien.`, `Nope, it's ${h.title}, ${stars(h.rating)}. My lips are sealed.`)) });
     }
-    S.push({ kind: 'slider', id: 'foreign', text: L('Sur 10 films, combien ne sont ni américains ni français ?', 'Out of 10 films, how many are neither American nor British?'),
-      reply: (v) => (v >= 6 ? L('Un passeport bien tamponné.', 'A well-stamped passport.') : v >= 3 ? L('Quelques escales. Bien.', 'A few stopovers. Good.') : L('Hollywood te dit merci.', 'Hollywood thanks you.')) });
+    S.push({ kind: 'slider', id: 'foreign', text: L('Sur 10 films, t\'en mates combien qui sont ni américains ni français ?', 'Out of 10 films, how many are neither American nor British?'),
+      reply: (v) => (v >= 6 ? L('Tu voyages, c\'est cool.', 'You get around, nice.') : v >= 3 ? L('Quelques escales, c\'est déjà ça.', 'A few stopovers, that\'s something.') : L('Hollywood, quoi.', 'Hollywood all the way.')) });
 
-    if (F.rewatch && F.rewatch.n >= 2) S.push({ kind: 'say', text: L(`Tu as revu ${F.rewatch.f.title} ${F.rewatch.n} fois. Ça va, à la maison ?`, `You rewatched ${F.rewatch.f.title} ${F.rewatch.n} times. Everything OK at home?`) });
+    if (F.rewatch && F.rewatch.n >= 2) S.push({ kind: 'say', text: L(`T'as revu ${F.rewatch.f.title} ${F.rewatch.n} fois. T'es sûr que ça va ?`, `You've rewatched ${F.rewatch.f.title} ${F.rewatch.n} times. You sure you're okay?`) });
 
     if (F.watchlist) {
       const months = F.perMonth > 0 ? Math.ceil(F.watchlist / F.perMonth) : null;
-      S.push({ kind: 'choice', id: 'wl', text: L(`Ta watchlist compte ${n(F.watchlist)} films. C'est…`, `Your watchlist holds ${n(F.watchlist)} films. It's…`),
+      S.push({ kind: 'choice', id: 'wl', text: L(`Ta watchlist, ${n(F.watchlist)} films. Pour toi c'est…`, `Your watchlist: ${n(F.watchlist)} films. To you, it's…`),
         options: [{ v: 'plan', label: L('Un programme', 'A plan') }, { v: 'grave', label: L('Un cimetière', 'A graveyard') }],
-        reply: (v) => (months ? L(`À ton rythme actuel, il te faut ${months} mois pour la finir. `, `At your current pace, it takes ${months} months to finish. `) : '') + (v === 'plan' ? L('Sans en rajouter un seul. Bonne chance.', 'Without adding a single one. Good luck.') : L('Repose en paix, la liste.', 'Rest in peace, list.')) });
+        reply: (v) => (months ? L(`À ton rythme, faut ${months} mois pour la vider. `, `At your pace, that's ${months} months to clear it. `) : '') + (v === 'plan' ? L('Si t\'en rajoutes aucun, évidemment.', 'If you don\'t add any, obviously.') : L('RIP.', 'RIP.')) });
     }
     if (F.duels[1]) S.push(duel(F.duels[1], L));
     const stars2 = (r) => stars(r) || L('½ étoile', '½ star');
@@ -172,27 +172,27 @@
     // --- devinettes tirées du journal ---
     if (F.years.length >= 3) {
       const [y, c] = F.years[0], opts = shuffle([y, ...shuffle(F.years.slice(1).map((x) => x[0])).slice(0, 2)]);
-      S.push({ kind: 'choice', id: 'g_year', guess: y, grade: (v) => (v === y ? 1 : Math.abs(+v - +y) === 1 ? 0.5 : 0), text: L('Ton année la plus chargée en films ?', 'Your busiest year for films?'),
-        options: opts.map((x) => ({ v: x, label: x })), reply: (v) => (v === y ? L(`Oui, ${y} : ${n(c)} films dans ton journal.`, `Yes, ${y}: ${n(c)} films in your diary.`) : L(`Non, c'est ${y}, avec ${n(c)} films. Une année difficile ?`, `No, it's ${y}, with ${n(c)} films. A rough year?`)) });
+      S.push({ kind: 'choice', id: 'g_year', guess: y, grade: (v) => (v === y ? 1 : Math.abs(+v - +y) === 1 ? 0.5 : 0), text: L('Ton année la plus chargée ?', 'Your busiest year?'),
+        options: opts.map((x) => ({ v: x, label: x })), reply: (v) => (v === y ? L(`Ouais, ${y}, ${n(c)} films.`, `Yep, ${y}, ${n(c)} films.`) : L(`Nan, ${y}, ${n(c)} films. Grosse année.`, `Nope, ${y}, ${n(c)} films. Big year.`)) });
     }
     if (F.dated.length >= 20) {
       const days = L(['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'], ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
       const top = F.weekdays.indexOf(Math.max(...F.weekdays)), opts = shuffle([top, ...shuffle([0, 1, 2, 3, 4, 5, 6].filter((d) => d !== top)).slice(0, 2)]);
-      S.push({ kind: 'choice', id: 'g_day', guess: top, text: L('Le jour où tu regardes le plus de films ?', 'The day you watch the most films?'),
+      S.push({ kind: 'choice', id: 'g_day', guess: top, text: L('Le jour où tu mates le plus de films ?', 'The day you watch the most?'),
         options: opts.map((d) => ({ v: d, label: L(days[d][0].toUpperCase() + days[d].slice(1), days[d]) })),
-        reply: (v) => L(`${v === top ? 'Bien vu' : 'Raté'} : ${pct(F.weekdays[top], F.dated.length)} % de tes films tombent un ${days[top]}.`, `${v === top ? 'Right' : 'Wrong'}: ${pct(F.weekdays[top], F.dated.length)}% of your films land on a ${days[top]}.`) });
+        reply: (v) => L(`${v === top ? 'Bien vu' : 'Nan'}, ${pct(F.weekdays[top], F.dated.length)} % de tes films, c'est un ${days[top]}.`, `${v === top ? 'Nailed it' : 'Nope'}, ${pct(F.weekdays[top], F.dated.length)}% of your films are on a ${days[top]}.`) });
     }
     if (F.modeR.length >= 3) {
       const [m, c] = F.modeR[0], opts = shuffle([m, ...shuffle(F.modeR.slice(1, 6).map((x) => x[0])).slice(0, 2)]);
-      S.push({ kind: 'choice', id: 'g_mode', guess: m, grade: (v) => (v === m ? 1 : Math.abs(v - m) === 0.5 ? 0.5 : 0), text: L('La note que tu donnes le plus souvent ?', 'The rating you give most often?'),
-        options: opts.map((r) => ({ v: r, label: stars2(r) })), reply: (v) => L(`${v === m ? 'Exact' : 'Non'} : ${stars2(m)}, ${n(c)} fois. ${m >= 4 ? 'Généreux.' : m <= 2.5 ? 'Sévère.' : 'Prudent.'}`, `${v === m ? 'Correct' : 'No'}: ${stars2(m)}, ${n(c)} times. ${m >= 4 ? 'Generous.' : m <= 2.5 ? 'Harsh.' : 'Careful.'}`) });
+      S.push({ kind: 'choice', id: 'g_mode', guess: m, grade: (v) => (v === m ? 1 : Math.abs(v - m) === 0.5 ? 0.5 : 0), text: L('La note que tu mets le plus ?', 'The rating you give the most?'),
+        options: opts.map((r) => ({ v: r, label: stars2(r) })), reply: (v) => L(`${v === m ? 'Ouais' : 'Nan'}, ${stars2(m)}, ${n(c)} fois. ${m >= 4 ? 'T\'es gentil.' : m <= 2.5 ? 'T\'es dur.' : 'Tu prends pas de risques.'}`, `${v === m ? 'Yep' : 'Nope'}, ${stars2(m)}, ${n(c)} times. ${m >= 4 ? 'You\'re nice.' : m <= 2.5 ? 'You\'re tough.' : 'You play it safe.'}`) });
     }
     if (F.dated.length >= 10) {
       const d = shuffle([...F.dated]); let a = null, b = null;
       for (let i = 0; i < d.length && !a; i++) for (let j = i + 1; j < d.length; j++) if (d[i].title !== d[j].title && Math.abs(new Date(d[i].date) - new Date(d[j].date)) > 60 * 864e5) { a = d[i]; b = d[j]; break; }
       if (a) { const first = new Date(a.date) < new Date(b.date) ? a : b;
-        S.push({ kind: 'choice', id: 'g_first', guess: first.title, text: L('Lequel as-tu vu en premier ?', 'Which one did you watch first?'),
-          options: shuffle([a, b]).map((f) => ({ v: f.title, label: f.title })), reply: (v) => L(`${v === first.title ? 'Bonne mémoire' : 'Mémoire de poisson'}. ${a.title} : ${date(a.date)}. ${b.title} : ${date(b.date)}.`, `${v === first.title ? 'Good memory' : 'Goldfish memory'}. ${a.title}: ${date(a.date)}. ${b.title}: ${date(b.date)}.`) }); }
+        S.push({ kind: 'choice', id: 'g_first', guess: first.title, text: L('T\'as vu lequel en premier ?', 'Which one did you see first?'),
+          options: shuffle([a, b]).map((f) => ({ v: f.title, label: f.title })), reply: (v) => L(`${v === first.title ? 'Bonne mémoire' : 'Raté'}. ${a.title}, le ${date(a.date)}. ${b.title}, le ${date(b.date)}.`, `${v === first.title ? 'Good memory' : 'Nope'}. ${a.title}, ${date(a.date)}. ${b.title}, ${date(b.date)}.`) }); }
     }
     {
       const pool = shuffle(F.shelf.filter((f) => yearOk(f.year))), trio = [];
@@ -203,17 +203,17 @@
     }
     // --- personnalisation : ne note rien, colore les répliques et la fiche ---
     S.push({ kind: 'choice', id: 'popcorn', text: L('Pop-corn ?', 'Popcorn?'),
-      options: [{ v: 'sale', label: L('Salé, évidemment', 'Salted, obviously') }, { v: 'sucre', label: L('Sucré, et je l\'assume', 'Sweet, and proud of it') }, { v: 'rien', label: L('Rien. On ne mange pas devant un film', 'Nothing. You don\'t eat during a film') }],
-      reply: (v) => ({ sale: L('Le choix de la raison.', 'The sensible choice.'), sucre: L('Un dessert de deux heures.', 'A two-hour dessert.'), rien: L('Un moine du septième art.', 'A monk of cinema.') })[v] });
+      options: [{ v: 'sale', label: L('Salé', 'Salted') }, { v: 'sucre', label: L('Sucré', 'Sweet') }, { v: 'rien', label: L('Rien', 'None') }],
+      reply: (v) => ({ sale: L('Bon choix.', 'Good call.'), sucre: L('Chacun son truc.', 'Each to their own.'), rien: L('T\'es là pour le film, ok.', 'Here for the film, okay.') })[v] });
     S.push({ kind: 'choice', id: 'credits', text: L('Le générique de fin, tu…', 'The end credits, you…'),
-      options: [{ v: 'tout', label: L('Restes jusqu\'au bout', 'Stay until the very end') }, { v: 'scene', label: L('Attends la scène cachée', 'Wait for the hidden scene') }, { v: 'coupe', label: L('Coupes dès le noir', 'Cut at the first black frame') }],
-      reply: (v) => ({ tout: L('Respect pour le troisième assistant décorateur.', 'Respect for the third assistant set dresser.'), scene: L('Marvel t\'a bien dressé.', 'Marvel trained you well.'), coupe: L('Le chef opérateur pleure quelque part.', 'A cinematographer is crying somewhere.') })[v] });
-    S.push({ kind: 'choice', id: 'long', text: L('Un film de 3 h 20, ce soir ?', 'A 3 h 20 film, tonight?'),
-      options: [{ v: 'oui', label: L('Carrément', 'Absolutely') }, { v: 'deux', label: L('En deux soirs', 'Over two nights') }, { v: 'non', label: L('Pas sans entracte', 'Not without an intermission') }],
-      reply: (v) => ({ oui: L('Tu as dû aimer The Irishman.', 'You must have loved The Irishman.'), deux: L('Le film en kit. Les cinéastes adorent.', 'The flat-pack film. Directors love it.'), non: L('Une vessie honnête.', 'An honest bladder.') })[v] });
-    S.push({ kind: 'choice', id: 'spoil', text: L('Avant de lancer un film, tu lis le résumé ?', 'Before starting a film, do you read the plot?'),
-      options: [{ v: 'jamais', label: L('Jamais, même pas la bande-annonce', 'Never, not even the trailer') }, { v: 'tout', label: L('Tout, je déteste les surprises', 'All of it, I hate surprises') }],
-      reply: (v) => (v === 'jamais' ? L('Le spectateur idéal. Ou un menteur.', 'The ideal viewer. Or a liar.') : L('Le suspense, très peu pour toi.', 'Suspense is not your thing.')) });
+      options: [{ v: 'tout', label: L('Restes jusqu\'au bout', 'Stay till the end') }, { v: 'scene', label: L('Attends la scène cachée', 'Wait for the post-credits scene') }, { v: 'coupe', label: L('Coupes direct', 'Turn it off straight away') }],
+      reply: (v) => ({ tout: L('Tu lis vraiment tous les noms ?', 'You really read all the names?'), scene: L('Marvel t\'a bien eu.', 'Marvel got you good.'), coupe: L('Le générique aussi c\'est du ciné, hein.', 'Credits are cinema too, you know.') })[v] });
+    S.push({ kind: 'choice', id: 'long', text: L('Un film de 3 h 20 ce soir, chaud ?', 'A 3 h 20 film tonight, up for it?'),
+      options: [{ v: 'oui', label: L('Grave', 'Hell yes') }, { v: 'deux', label: L('En deux fois', 'In two goes') }, { v: 'non', label: L('Avec un entracte alors', 'Only with an intermission') }],
+      reply: (v) => ({ oui: L('The Irishman te fait pas peur.', 'The Irishman doesn\'t scare you.'), deux: L('Un film en deux épisodes, pourquoi pas.', 'A film in two episodes, why not.'), non: L('Ta vessie te dit merci.', 'Your bladder thanks you.') })[v] });
+    S.push({ kind: 'choice', id: 'spoil', text: L('Avant un film, tu lis le résumé ?', 'Before a film, do you read the plot?'),
+      options: [{ v: 'jamais', label: L('Jamais, même pas la bande-annonce', 'Never, not even the trailer') }, { v: 'tout', label: L('Tout, j\'aime pas les surprises', 'All of it, I hate surprises') }],
+      reply: (v) => (v === 'jamais' ? L('Le spectateur parfait. Si c\'est vrai.', 'The perfect viewer. If that\'s true.') : L('Les surprises, c\'est pas ton truc.', 'Surprises aren\'t your thing.')) });
 
     // --- ordre : l'ouverture en premier, puis un tirage différent à chaque partie (une dizaine de questions, quelques constats),
     // jamais deux étapes du même genre à la suite ; la conclusion à la fin ---
@@ -226,11 +226,11 @@
     for (let i = 1; i < seq.length; i++) if (kind(seq[i]) === kind(seq[i - 1])) { const j = seq.findIndex((x, k) => k > i && kind(x) !== kind(seq[i - 1])); if (j > 0) [seq[i], seq[j]] = [seq[j], seq[i]]; }
     const says = all.filter((x) => x.kind === 'say').slice(0, 3);
     says.forEach((x, k) => seq.splice(Math.min(seq.length, Math.round(((k + 1) * (seq.length + k)) / (says.length + 1))), 0, x));
-    return [intro, ...seq, { kind: 'say', text: L('On a assez de preuves. Voici ta fiche.', 'We have enough evidence. Here is your card.') }];
+    return [intro, ...seq, { kind: 'say', text: L('Ok, j\'en sais assez. Voilà ta fiche.', 'Okay, I\'ve seen enough. Here\'s your card.') }];
   }
   function duel([a, b], L) {
-    return { kind: 'duel', id: `duel_${a.title}`, films: [a, b], text: L(`Même note, ${stars(a.rating)}. Tu ne peux en garder qu'un.`, `Same rating, ${stars(a.rating)}. You can only keep one.`),
-      reply: (v) => { const lost = v === a.title ? b : a; return L(`Adieu, ${lost.title}. Tu ne t'en souviendras pas.`, `Farewell, ${lost.title}. You won't remember it.`); } };
+    return { kind: 'duel', id: `duel_${a.title}`, films: [a, b], text: L(`Les deux ont ${stars(a.rating)}. T'en gardes qu'un.`, `Both got ${stars(a.rating)}. You keep one.`),
+      reply: (v) => { const lost = v === a.title ? b : a; return L(`Ciao ${lost.title}.`, `Bye bye, ${lost.title}.`); } };
   }
 
   // ---------- score : six axes sur 100, chacun avec la mesure qui le fonde ----------
@@ -248,25 +248,25 @@
     const ax = [
       { k: 'vol', w: 0.2, name: L('Volume', 'Volume'), v: F.total < 100 ? (F.total / 100) ** 0.7 * 50 : 50 + 15 * Math.log(F.total / 100 + 1),
         stat: L(`${n(F.total)} films vus`, `${n(F.total)} films seen`),
-        lines: [L('Tu découvres encore.', 'Still discovering.'), L('Un vrai rythme de croisière.', 'A steady cruising pace.'), L('Tu vis dans le noir.', 'You live in the dark.')] },
+        lines: [L('Tu commences à peine.', 'Just getting started.'), L('Tu tiens un bon rythme.', 'Good pace.'), L('Tu vis dans le noir.', 'You live in the dark.')] },
       { k: 'exi', w: 0.15, name: L('Exigence', 'Standards'), v: F.avg == null ? 50 : 50 + (3.5 - F.avg) * 38 + (F.low - F.high) * 55,
         stat: F.avg == null ? L('aucune note', 'no ratings') : L(`moyenne ${n(F.avg, 1)} ★ · ${pc(F.low)} à 2 ★ ou moins`, `average ${n(F.avg, 1)} ★ · ${pc(F.low)} at 2 ★ or less`),
-        lines: [L('Tout le monde a 4 étoiles chez toi.', 'Everyone gets 4 stars from you.'), L('Juste, la plupart du temps.', 'Fair, most of the time.'), L('Les réalisateurs te craignent.', 'Directors fear you.')] },
+        lines: [L('Tout le monde a 4 étoiles avec toi.', 'Everyone gets 4 stars from you.'), L('Plutôt juste.', 'Pretty fair.'), L('Les réals ont peur de toi.', 'Directors are scared of you.')] },
       { k: 'ecr', w: 0.1, name: L('Plume', 'Pen'), v: ease(share(F.reviews, F.total), 8) * (0.55 + 0.45 * Math.min(1, F.revLen / 320)),
         stat: F.reviews ? L(`${n(F.reviews)} critiques · ${n(Math.round(F.revLen))} signes en moyenne`, `${n(F.reviews)} reviews · ${n(Math.round(F.revLen))} characters on average`) : L('aucune critique', 'no reviews'),
-        lines: [L('Tu notes, tu n\'écris pas.', 'You rate, you don\'t write.'), L('Une critique de temps en temps.', 'A review now and then.'), L('Un critique qui s\'ignore.', 'A critic in disguise.')] },
+        lines: [L('Tu notes, t\'écris pas.', 'You rate, you don\'t write.'), L('Une critique de temps en temps.', 'A review now and then.'), L('Presque un critique.', 'Almost a critic.')] },
       { k: 'fid', w: 0.1, name: L('Fidélité', 'Loyalty'), v: ease(share(F.rewatches, F.diary), 9),
         stat: F.diary ? L(`${pc(share(F.rewatches, F.diary))} de revisionnages`, `${pc(share(F.rewatches, F.diary))} rewatches`) : L('pas de journal', 'no diary'),
-        lines: [L('Jamais deux fois le même.', 'Never the same film twice.'), L('Quelques vieux amis.', 'A few old friends.'), L('Tu revois plus que tu ne vois.', 'You rewatch more than you watch.')] },
+        lines: [L('Jamais deux fois le même.', 'Never the same film twice.'), L('Quelques vieux potes.', 'A few old pals.'), L('Tu revois plus que tu vois.', 'You rewatch more than you watch.')] },
       { k: 'cur', w: 0.25, name: L('Curiosité', 'Curiosity'), v: F.entropy * 62 + Math.min(1, F.old * 4) * 18 + (A.foreign?.v ?? 3) / 10 * 12 + ({ vo: 8, mix: 4, vf: 0 }[A.vo?.v] ?? 4),
         stat: L(`${F.decs.length} décennies · ${pc(F.old)} d'avant 1970`, `${F.decs.length} decades · ${pc(F.old)} pre-1970`),
-        lines: [L('Tu restes en terrain connu.', 'You stay on familiar ground.'), L('Tu sors un peu des sentiers.', 'You stray off the path a bit.'), L('Un explorateur du catalogue.', 'An explorer of the catalogue.')] },
+        lines: [L('Tu restes dans ta zone.', 'You stay in your lane.'), L('Tu sors un peu des clous.', 'You wander a bit.'), L('Tu fouilles partout.', 'You dig everywhere.')] },
       { k: 'luc', w: 0.2, name: L('Lucidité', 'Self-awareness'), v: g.length ? (ok / g.length) * 100 : 50,
         stat: g.length ? L(`${n(ok, ok % 1 ? 1 : 0)} sur ${g.length} au jeu des devinettes`, `${n(ok, ok % 1 ? 1 : 0)} out of ${g.length} at guessing`) : L('pas de devinette', 'no guesses'),
-        lines: [L('Tu ne te connais pas du tout.', 'You don\'t know yourself at all.'), L('Tu te connais à moitié.', 'You half know yourself.'), L('Aucune illusion sur toi-même.', 'No illusions about yourself.')] },
+        lines: [L('Tu te connais pas du tout.', 'You don\'t know yourself at all.'), L('Tu te connais à moitié.', 'You half know yourself.'), L('Tu te connais par cœur.', 'You know yourself by heart.')] },
     ].map((a) => { const v = Math.round(clamp(a.v)); return { ...a, v, line: a.lines[v < 40 ? 0 : v < 70 ? 1 : 2] }; });
     const total = Math.round(ax.reduce((s, a) => s + a.v * a.w, 0));
-    const ranks = [[85, L('Cinémathèque ambulante', 'Walking film archive')], [70, L('Cinéphile assumé', 'Card-carrying cinephile')], [55, L('Habitué de la séance de 22 h', 'Late-show regular')], [40, L('Spectateur du dimanche', 'Sunday-night viewer')], [25, L('Abonné aux bandes-annonces', 'Trailer enthusiast')], [0, L('Touriste du multiplexe', 'Multiplex tourist')]];
+    const ranks = [[85, L('Cinémathèque sur pattes', 'Walking film archive')], [70, L('Vrai cinéphile', 'Proper cinephile')], [55, L('Habitué de la séance de 22 h', 'Late-show regular')], [40, L('Cinéphile du dimanche', 'Sunday cinephile')], [25, L('Fan de bandes-annonces', 'Trailer fan')], [0, L('Touriste du multiplexe', 'Multiplex tourist')]];
     return { total, axes: ax, rank: ranks.find(([m]) => total >= m)[1] };
   }
 
@@ -274,15 +274,15 @@
   function verdict(F, A, lang) {
     const L = (fr, en) => (lang === 'en' ? en : fr);
     const out = [];
-    const place = { salle: L('la salle', 'the cinema'), canape: L('le canapé', 'the couch'), tel: L('le téléphone', 'the phone') }[A.place?.v];
-    if (place) out.push(L(`Habitat naturel : ${place}${A.vo?.v === 'vf' ? ', en VF' : A.vo?.v === 'vo' ? ', en VO' : ''}.`, `Natural habitat: ${place}${A.vo?.v === 'vf' ? ', dubbed' : A.vo?.v === 'vo' ? ', subtitled' : ''}.`));
-    if (F.heresy) out.push(L(`Coupable d'avoir mis ${stars(F.heresy.rating)} à ${F.heresy.title}.`, `Guilty of giving ${F.heresy.title} ${stars(F.heresy.rating)}.`));
-    else if (F.unseenTop.length) out.push(L(`Toujours pas vu : ${pretty(pick(F.unseenTop))}.`, `Still hasn't seen: ${pretty(pick(F.unseenTop))}.`));
+    const place = { salle: L('au ciné', 'at the cinema'), canape: L('sur le canapé', 'on the couch'), tel: L('sur son tel', 'on their phone') }[A.place?.v];
+    if (place) out.push(L(`Mate ses films ${place}${A.vo?.v === 'vf' ? ', en VF' : A.vo?.v === 'vo' ? ', en VO' : ''}.`, `Watches films ${place}${A.vo?.v === 'vf' ? ', dubbed' : A.vo?.v === 'vo' ? ', subtitled' : ''}.`));
+    if (F.heresy) out.push(L(`A osé mettre ${stars(F.heresy.rating)} à ${F.heresy.title}.`, `Dared to give ${F.heresy.title} ${stars(F.heresy.rating)}.`));
+    else if (F.unseenTop.length) out.push(L(`A toujours pas vu ${pretty(pick(F.unseenTop))}.`, `Still hasn't seen ${pretty(pick(F.unseenTop))}.`));
     const kept = Object.values(A).filter((x) => x.kept);
-    if (kept[0]) out.push(L(`A sauvé ${kept[0].kept} et sacrifié ${kept[0].lost}.`, `Saved ${kept[0].kept}, sacrificed ${kept[0].lost}.`));
-    else if (A.wl) out.push(A.wl.v === 'plan' ? L(`Croit encore finir sa watchlist de ${F.watchlist} films.`, `Still believes they will finish a ${F.watchlist}-film watchlist.`) : L(`A enterré ${F.watchlist} films dans sa watchlist.`, `Buried ${F.watchlist} films in their watchlist.`));
+    if (kept[0]) out.push(L(`A gardé ${kept[0].kept} et lâché ${kept[0].lost}.`, `Kept ${kept[0].kept}, ditched ${kept[0].lost}.`));
+    else if (A.wl) out.push(A.wl.v === 'plan' ? L(`Pense encore finir sa watchlist de ${F.watchlist} films.`, `Still thinks they'll finish a ${F.watchlist}-film watchlist.`) : L(`A enterré ${F.watchlist} films dans sa watchlist.`, `Buried ${F.watchlist} films in their watchlist.`));
     if (out.length < 3 && A.credits?.v === 'coupe') out.push(L('Coupe avant le générique.', 'Leaves before the credits.'));
-    if (out.length < 3 && A.popcorn) out.push(({ sale: L('Pop-corn salé.', 'Salted popcorn.'), sucre: L('Pop-corn sucré, assumé.', 'Sweet popcorn, unashamed.'), rien: L('Ne mange rien devant un film.', 'Eats nothing during a film.') })[A.popcorn.v]);
+    if (out.length < 3 && A.popcorn) out.push(({ sale: L('Team pop-corn salé.', 'Team salted popcorn.'), sucre: L('Team pop-corn sucré.', 'Team sweet popcorn.'), rien: L('Mange rien devant un film.', 'Eats nothing during a film.') })[A.popcorn.v]);
     return out.slice(0, 3);
   }
 
@@ -343,7 +343,7 @@
     const avg = (m) => { const v = [...m.values()].map((f) => f.rating); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
     const FA = facts(A), FB = facts(B);
     const na = A.username || L('toi', 'you'), nb = B.username || L('l\'autre', 'the other');
-    const verdict = comp >= 75 ? L('Même canapé, même plaid.', 'Same couch, same blanket.') : comp >= 55 ? L('Compatibles, avec quelques disputes au générique.', 'Compatible, with a few fights at the credits.') : comp >= 35 ? L('Une séance sur deux ensemble.', 'Every other screening together.') : L('Séances séparées conseillées.', 'Separate screenings recommended.');
+    const verdict = comp >= 75 ? L('Même canapé, même plaid.', 'Same couch, same blanket.') : comp >= 55 ? L('Compatibles, à quelques engueulades près.', 'Compatible, give or take a few arguments.') : comp >= 35 ? L('Une séance sur deux ensemble.', 'Every other screening together.') : L('Mieux vaut des séances séparées.', 'Better off watching separately.');
     return {
       na, nb, comp, verdict, common: common.length, both: both.length, agree: Math.round(agree * 100),
       harsher: avg(ra) != null && avg(rb) != null ? (avg(ra) < avg(rb) ? na : nb) : null, avgA: avg(ra), avgB: avg(rb),

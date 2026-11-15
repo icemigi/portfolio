@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, follow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Letteroastd</title>
-    <meta name="description" content="Letteroastd, par kerningkastle : importe ton export Letterboxd et découvre ce que ta cinéphilie dit de toi. Tout se passe dans ton navigateur, rien n'est envoyé." />
+    <meta name="description" content="Letteroastd, par kerningkastle : importe ton export Letterboxd et découvre ton niveau de cinéphilie. Tout se passe dans ton navigateur, rien n'est envoyé." />
     <link rel="canonical" href="https://kerningkastle.com/lab/letteroastd/" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,9 @@
         @font-face { font-family: Geist; src: url('/fonts/Geist-Bold.woff2') format('woff2'); font-weight: 700; font-display: swap; }
         :root { --bg: #14181c; --bg2: #1c2228; --tx: #9ab; --hi: #fff; --ln: #456; --or: #ff8000; --gr: #00e054; --bl: #40bcf4; --m: clamp(20px, 3vw, 48px); }
         * { box-sizing: border-box; }
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--tx); font: 400 15px/1.45 Geist, system-ui, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+        /* la page elle-même défile (pas body : une body de hauteur fixe qui défile seule ne reçoit pas toujours la molette) */
+        html { overflow-x: hidden; background: var(--bg); }
+        body { margin: 0; padding: 0; width: 100%; min-height: 100vh; background: var(--bg); color: var(--tx); font: 400 15px/1.45 Geist, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
         button { font: inherit; color: inherit; }
         /* les trois bandes */
         .bands { display: flex; flex-direction: column; justify-content: space-between; }
@@ -463,19 +465,18 @@
         const q = new URLSearchParams(location.search);
         let lang = q.get('lang') || (/^fr/i.test(navigator.language) ? 'fr' : 'en');
         const T = {
-            fr: { sub: "L'évaluation de cinéphilie sans filtre. Donne ton export, on lit tout, on ne pardonne rien.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
+            fr: { sub: "Balance ton export Letterboxd, je lis tout et je te dis quel cinéphile t'es.", exp: 'Ton export Letterboxd', drop: 'Glisse ton .zip ici,<br>ou clique pour le choisir <span class="ar">→</span>', how: "comment l'obtenir ?", howT: 'Exporter en 15 secondes',
                 howS: ['Connecte-toi sur <strong>letterboxd.com</strong>.', 'Profil, puis <strong>Settings</strong>.', 'Onglet <strong>Data</strong>, tout à droite.', '<strong>Export your data</strong>, puis glisse le .zip ici.'],
-                demo: 'Pas de compte ? Essayer avec un profil exemple', bill: "Un roast de <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur<br>seuls des titres de films partent<br>chez Wikipédia, pour les affiches", quit: '← Recommencer',
-                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', ok: 'Valider', read: 'Lecture de ton export…', step: 'question',
+                demo: 'Pas de compte ? Teste avec un profil exemple', bill: "Un site <b>kerningkastle</b><br>d'après ton export Letterboxd<br>tout se passe dans ton navigateur", quit: '← Recommencer',
+                dl: 'Télécharger la fiche', story: 'Format story', again: 'Recommencer', next: 'Entrée ou clic pour continuer', ok: 'Valider', read: 'Je lis ton export…', step: 'question',
                 duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
-                notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour un vrai roast (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
-            en: { sub: 'The no-filter film-buff assessment. Hand over your export, we read everything, we forgive nothing.', exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
+                notzip: "Ce fichier n'est pas un .zip. Il faut l'export complet, téléchargé depuis Settings → Data.", bad: "Ce .zip ne ressemble pas à un export Letterboxd : aucun film trouvé dedans.", few: 'Pas assez de films dans cet export pour une vraie analyse (au moins 10).', card: 'Membre :', club: 'Carte de membre', demoName: 'profil exemple', other: 'English' },
+            en: { sub: "Throw me your Letterboxd export, I'll read it all and tell you what kind of film buff you are.", exp: 'Your Letterboxd export', drop: 'Drop your .zip here,<br>or click to choose it <span class="ar">→</span>', how: 'how do I get it?', howT: 'Export in 15 seconds',
                 howS: ['Sign in on <strong>letterboxd.com</strong>.', 'Profile, then <strong>Settings</strong>.', 'The <strong>Data</strong> tab, far right.', '<strong>Export your data</strong>, then drop the .zip here.'],
-                demo: 'No account? Try a sample profile', bill: 'A roast by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser<br>only film titles go to Wikipedia,<br>to fetch the posters', quit: '← Start over',
+                demo: 'No account? Try a sample profile', bill: 'A website by <b>kerningkastle</b><br>based on your Letterboxd export<br>everything runs in your browser', quit: '← Start over',
                 dl: 'Download the card', story: 'Story format', again: 'Start over', next: 'Enter or click to continue', ok: 'Confirm', read: 'Reading your export…', step: 'question',
-                duo: 'À deux ? Comparer deux profils', duoOff: 'Seul finalement', duoDrop: 'Glisse les deux .zip,<br>le tien puis celui de l\'autre <span class="ar">→</span>', duoOne: 'Un profil chargé. Au tour du second.', duoDemo: 'Essayer avec un duo exemple',
                 duo: 'Two of you? Compare two profiles', duoOff: 'Solo after all', duoDrop: 'Drop both .zip files,<br>yours then theirs <span class="ar">→</span>', duoOne: 'One profile loaded. Now the second one.', duoDemo: 'Try a sample duo',
-                notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a proper roast (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
+                notzip: "That file isn't a .zip. You need the full export, downloaded from Settings → Data.", bad: "This .zip doesn't look like a Letterboxd export: no films found inside.", few: 'Not enough films in this export for a real analysis (at least 10).', card: 'Member:', club: 'Membership card', demoName: 'sample profile', other: 'Français' },
         };
         const t = (k) => T[lang][k];
         const $ = (s) => document.querySelector(s);
