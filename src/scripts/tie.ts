@@ -3,14 +3,17 @@
 // En anglais, même règle (a, I, to, of, the…). Passe une fois au chargement, avant toute découpe du texte en lettres.
 // Regard en arrière : on ne remplace que l'espace, sans consommer le mot ni sa limite (« à la lettre » : les deux liés en une passe).
 // L'espace en fin de nœud compte aussi : le mot suivant est souvent dans l'élément d'après (« à » puis « Paris » collé à son aparté).
+// En français, l'espace avant « : ; ! ? » et après « « » est aussi insécable : la ponctuation ne commence jamais une ligne.
 const SHORT: Record<string, RegExp> = {
   fr: /(?<=(?:^|[\s(«“"'’])(?:\p{L}{1,2}|les|des|une|aux|ses|mes|tes|son|ton|mon|nos|vos|sur|par|pas|qui|que))[ \t]+(?=\S|$)/giu,
   en: /(?<=(?:^|[\s(“"'’])(?:\p{L}{1,2}|the|and|for|its|our|his|her))[ \t]+(?=\S|$)/giu,
 };
 const SKIP = 'script, style, code, pre, textarea, input, [contenteditable], svg';
 
+const PUNCT_FR = /[ \t]+(?=[:;!?»])|(?<=«)[ \t]+/g;
 export function tie(text: string, lang: string) {
-  return text.replace(SHORT[lang] || SHORT.fr, '\u00a0');
+  const t = text.replace(SHORT[lang] || SHORT.fr, '\u00a0');
+  return lang === 'en' ? t : t.replace(PUNCT_FR, '\u00a0');
 }
 
 export function initTie(root: ParentNode = document.body) {

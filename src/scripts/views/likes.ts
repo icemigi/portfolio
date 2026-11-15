@@ -3,6 +3,7 @@
 // pièce « gravity » du Lab, mis en cache une fois).
 import { onPage } from '../page';
 import { fadeLabel, letters, reduced } from '../motion';
+import { tie } from '../tie';
 
 // matter.js : script partagé, chargé une seule fois
 let matter: Promise<any> | null = null;
@@ -14,10 +15,10 @@ const loadMatter = () => (matter ??= new Promise((ok, ko) => {
 
 onPage('[data-likes]', (ctx) => {
   // données des objets, posées par la page (bloc JSON)
-  const D = JSON.parse(document.getElementById('likes-data')!.textContent || '[]') as { id: string; shape: string; w: number; h: number; hull: [number, number][]; scale: number; link: string; embed: string; title: string; sub: string; text: string }[];
+  const D = JSON.parse(document.getElementById('likes-data')!.textContent || '[]') as { id: string; shape: string; w: number; h: number; hull: [number, number][]; scale: number; link: string; embed: string; title: string; text: string }[];
   const root = document.querySelector<HTMLElement>('[data-likes]')!;
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
-  const card = root.querySelector<HTMLElement>('[data-card]')!;
+  const card = root.querySelector<HTMLElement>('[data-like-card]')!; // pas [data-card] : réservé aux visuels qui s'inclinent (card.ts)
   const big = root.querySelector<HTMLElement>('[data-big]')!;
   // libellé « (ce que j'aime) » : caché dès l'arrivée, il apparaît avec le titre, comme les libellés des autres pages
   const label = ctx.info.lang ? null : fadeLabel(root.querySelector('.ttl'), 60, true);
@@ -82,7 +83,7 @@ onPage('[data-likes]', (ctx) => {
       body = Bodies.fromVertices(x, y, [verts], opt);
     }
     body.kk = d.id;
-    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, tf: '', home: null as null | { x: number; y: number; a: number } };
+    return { d, el, body, w, h, ox, oy, s: 1, tw: 0, tf: '', fx: 0, fy: 0, home: null as null | { x: number; y: number; a: number } };
   });
   // le titre s'écrit au centre, puis les objets pleuvent dessus ; il s'efface quand un objet est ouvert, mais l'étagère reste (rien ne tombe)
   const showTitle = (delay: number) => {
@@ -121,7 +122,9 @@ onPage('[data-likes]', (ctx) => {
     else if (sel) close(); // toucher le vide referme
   });
   let hovered: string | null = null;
+  const cur = { x: 0, y: 0 }; // position du curseur, de −1 à 1 (parallaxe de l'objet ouvert)
   stage.addEventListener('pointermove', (e) => {
+    cur.x = (e.clientX / W) * 2 - 1; cur.y = (e.clientY / H) * 2 - 1;
     const hit = Query.point(items.map((it) => it.body), { x: e.clientX, y: e.clientY })[0];
     const id = hit ? hit.kk : null;
     if (id && id !== hovered) dispatchEvent(new CustomEvent('kk:sound', { detail: 'hover' }));
@@ -154,24 +157,34 @@ onPage('[data-likes]', (ctx) => {
     tween(it, h.x, h.y, 1, h.a, land);
     ctx.timeout(land, still ? 0 : 760); // filet de sécurité si l'animation est suspendue (onglet en arrière-plan)
   };
-  // le titre s'écrit lettre à lettre ; le texte apparaît d'un bloc (découper un paragraphe en lettres le fait sauter de ligne)
+  // comme les écrans du site : le libellé en fondu, le texte lettre à lettre (ses apartés en léger décalé), puis lien et bouton
   const reveal = () => {
     if (still) return;
     // téléphone : une seule animation, une fois l'objet presque posé (lettres et blocs par-dessus sa fin le faisaient saccader)
     if (small) { card.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 620, easing: 'ease-out', fill: 'backwards' }); return; }
-    letters(card.querySelector('[data-title]')!, 200);
-    card.querySelectorAll<HTMLElement>('.sub, .txt, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: 260 + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
+    fadeLabel(card.querySelector('[data-title]'), 150);
+    const end = letters(card.querySelector('[data-text]')!, 250);
+    card.querySelectorAll<HTMLElement>('.lkl, .x').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 500, delay: Math.max(400, end - 300) + i * 60, easing: 'cubic-bezier(.2,.7,.2,1)', fill: 'backwards' }));
   };
   const open = (id: string, push: boolean) => {
     const d = D.find((x) => x.id === id); const it = items.find((x) => x.d.id === id); if (!d || !it) return;
     release();
     if (!big.hidden) hideTitle();
-    card.querySelector('[data-sub]')!.textContent = d.sub;
+    // lien de l'objet (Letterboxd, kern.outdoor, Lab), sous le texte : sa destination en clair
     const lk = card.querySelector<HTMLAnchorElement>('[data-link]')!;
-    lk.hidden = !d.link; if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? ' →' : ' ↗'; lk.classList.add('ac'); lk.setAttribute('aria-label', inner ? 'Lab' : new URL(d.link).hostname.replace('www.', '')); }
+    card.querySelector<HTMLElement>('[data-linkline]')!.hidden = !d.link;
+    if (d.link) { const inner = d.link.startsWith('/'); lk.href = inner ? `/${document.documentElement.lang}${d.link}` : d.link; lk.target = inner ? '' : '_blank'; lk.textContent = inner ? 'lab →' : `${new URL(d.link).hostname.replace('www.', '')} ↗`; }
     const mount = () => { it.el.style.willChange = 'auto'; }; // un calque will-change garde la résolution de sa petite taille : sans lui, l'objet agrandi est redessiné net
-    card.querySelector('[data-title]')!.textContent = d.title;
-    card.querySelector('[data-text]')!.textContent = d.text;
+    card.querySelector('[data-title]')!.textContent = `(${d.title.toLowerCase()})`;
+    // texte d'affiche, comme sur le site : petits mots et ponctuation liés (tie), et ce qui est entre parenthèses devient un aparté
+    // (mono gris, en exposant), accolé au mot qu'il commente — sans espace entre eux, ils ne se séparent pas en fin de ligne ;
+    // l'aparté, en ligne, se coupe entre ses mots comme le reste du texte (un bloc insécable laissait des lignes trop courtes)
+    const lang = document.documentElement.lang.slice(0, 2);
+    card.querySelector('[data-text]')!.replaceChildren(...tie(d.text, lang).replace(/\s+\(/g, '(').split(/(\([^)]*\))/).filter(Boolean).map((part) => {
+      if (!part.startsWith('(')) return document.createTextNode(part);
+      // un aparté court reste d'un seul tenant ; un long (plus de 30 signes) se coupe entre ses mots, comme une phrase
+      const n = document.createElement('span'); n.className = `note mono mu${part.length > 30 ? ' long' : ''}`; n.textContent = part; return n;
+    }));
     card.hidden = false;
     card.scrollTop = 0;
     const r = (small ? card : card.querySelector('.in')!).getBoundingClientRect();
@@ -217,10 +230,15 @@ onPage('[data-likes]', (ctx) => {
 
   addEventListener('resize', () => { W = innerWidth; H = innerHeight; buildWalls(); if (!big.hidden) buildShelf(); }, { signal: ctx.signal });
 
+  // objet ouvert : il flotte comme les objets de la scène Projets (oscillation lente, et parallaxe vers le curseur) ;
+  // le décalage entre et sort en douceur à l'ouverture et à la fermeture
   const draw = () => items.forEach((it) => {
     const { el, body, w, h, ox, oy } = it; const sc = it.s;
+    const on = it === sel && !still, t = performance.now() / 1000;
+    it.fx += ((on ? -cur.x * 18 : 0) - it.fx) * 0.08;
+    it.fy += ((on ? -cur.y * 12 + Math.sin(t * 1.1) * 7 : 0) - it.fy) * 0.08;
     const ca = Math.cos(body.angle), sa = Math.sin(body.angle);
-    const cx = body.position.x + ox * ca - oy * sa, cy = body.position.y + ox * sa + oy * ca;
+    const cx = body.position.x + ox * ca - oy * sa + it.fx, cy = body.position.y + ox * sa + oy * ca + it.fy;
     const tf = `translate(${(cx - w / 2).toFixed(1)}px, ${(cy - h / 2).toFixed(1)}px) rotate(${body.angle.toFixed(4)}rad) scale(${sc.toFixed(3)})`;
     if (tf !== it.tf) { it.tf = tf; el.style.transform = tf; }
   });

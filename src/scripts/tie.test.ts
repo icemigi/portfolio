@@ -18,3 +18,6 @@ test('en anglais : a, I, of, the', () => {
 test("l'espace en fin de texte après un petit mot devient insécable (le mot suivant est dans l'élément d'après)", () => {
   assert.equal(tie('Designer et directeur artistique à ', 'fr'), `Designer et${N}directeur artistique à${N}`);
 });
+test('en français, « : ; ! ? » ne commencent jamais une ligne', () => {
+  assert.equal(tie('trois éléments : une base', 'fr'), `trois éléments${N}: une${N}base`);
+});

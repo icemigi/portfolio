@@ -22,16 +22,16 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     <div class="stage" data-stage>
       {data.map((d) => (
         <button class:list={['it', d.shape]} type="button" data-id={d.id} style={`width:${d.w / 4}px;height:${d.h / 4}px`} aria-label={d.title}>
-          {d.src ? <img src={d.src} alt="" draggable="false" decoding="async" /> : <span class="mono">{d.sub}</span>}
+          {d.src ? <img src={d.src} alt="" draggable="false" decoding="async" /> : <span class="mono">{d.title}</span>}
           {d.embed && <span class="emb" data-emb={d.embed} aria-hidden="true"></span>}
         </button>
       ))}
     </div>
-    <div class="card g" data-card hidden role="dialog" aria-modal="false" aria-labelledby="like-t">
+    <div class="card g" data-like-card hidden role="dialog" aria-modal="false" aria-labelledby="like-t">
       <div class="in">
-        <p class="sub mono mu"><span data-sub></span><a class="lk" data-link target="_blank" rel="noopener" hidden></a></p>
-        <h2 class="t28 tt" id="like-t" data-title></h2>
-        <p class="txt" data-text></p>
+        <h2 class="tt mono ac" id="like-t" data-title></h2>
+        <p class="txt t28" data-text></p>
+        <p class="lkl mono" data-linkline hidden><a class="lk ac" data-link target="_blank" rel="noopener"></a></p>
         <button class="x bp bx hit" type="button" data-close>{t.close.toLowerCase()}</button>
       </div>
     </div>
@@ -69,16 +69,24 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   .emb :global(iframe) { width: 300px; height: 352px; max-width: none; border: 0; transform-origin: 0 0; }
   .card { position: absolute; inset: 0; z-index: 4; display: grid; align-content: center; pointer-events: none; }
   .card[hidden] { display: none; }
-  .card .in { grid-column: 7 / 11; pointer-events: auto; }
-  .card .tt { margin-top: 8px; font-weight: 500; }
-  .card .txt { margin-top: 16px; max-width: 46ch; }
+  .card .in { grid-column: 7 / 12; pointer-events: auto; }
+  /* comme les écrans du site : libellé en mono orange, texte d'affiche, apartés en mono gris en exposant */
+  .card .tt { font-size: 12px; font-weight: 400; }
+  .card .txt { margin-top: 20px; }
+  /* aparté insécable, accolé à son mot ; le paragraphe équilibre ses lignes (balance) : ni ligne courte avant un long aparté,
+     ni point final seul sur sa ligne */
+  .card .txt { text-wrap: balance; }
+  .card :global(.note) { font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; white-space: nowrap; }
+  .card :global(.note.long) { white-space: normal; }
+  .card .lkl { margin-top: 12px; font-size: 12px; }
   .card .x { margin-top: 24px; }
   .it.sel { z-index: 3; }
   .veil { position: fixed; inset: 0; z-index: 50; background: radial-gradient(circle at 50% 60%, #fff, #f3f3f3 70%); pointer-events: none; }
-  .it { transition: opacity .35s; }
+  .it { transition: opacity .35s, filter .35s; }
   /* objet ouvert : le monde se fige et s'efface derrière l'objet choisi */
   .likes.open .hint { opacity: 0; }
-  .likes.open .it:not(.sel) { opacity: .08; }
+  /* les autres objets passent au flou, comme les vignettes du fond de la roue de l'accueil */
+  .likes.open .it:not(.sel) { opacity: .35; filter: blur(10px); }
   /* téléphone : le texte s'ouvre en feuille au bas de l'écran */
   @media (max-width: 760px) {
     /* une ombre floue recalculée sur une image qui grossit fait saccader un téléphone */
