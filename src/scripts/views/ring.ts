@@ -1,11 +1,11 @@
 // Anneau d'images de l'accueil (Ring.astro). Un cercle de rayon R, centré sur le texte des services, tourne sur lui-même ;
 // son plan est incliné (lacet YAW, tangage PITCH) et vu en perspective : chaque image reste face à nous, à l'échelle de sa
 // profondeur, et passe devant le texte quand elle est du côté du spectateur (z-index 2 à 42, rangées par profondeur : la plus
-// proche dessus), derrière sinon (z-index 0 ; un z-index négatif la ferait passer sous le fond de l'écran).
+// proche dessus), derrière sinon (z-index 0 ; un z-index négatif la ferait passer sous le fond de l'écran). Au fond, elle
+// se floute et pâlit avec la profondeur, comme hors de la mise au point : le texte reste lisible devant une image sombre.
 // La souris incline l'anneau vers elle ; on le saisit pour le lancer, puis il revient à son allure (un tour en 30 s).
-// À chaque arrivée sur l'écran, l'anneau entre presque de profil et se redresse en tournant vite, puis freine ; les images
-// partent du centre l'une après l'autre et, portées par la rotation, rejoignent leur place en spirale (léger dépassement),
-// en se redressant d'une petite rotation et en se découvrant de bas en haut sous un masque, leur contenu se resserrant.
+// À chaque arrivée sur l'écran, le cercle se dessine : la roue tourne déjà à son allure, et ses images apparaissent une à
+// une à leur place, dans l'ordre du cercle, chacune se découvrant de bas en haut sous un masque (contenu qui se resserre).
 // La boucle ne tourne que quand l'écran est à l'écran.
 import { onPage } from '../page';
 import { reduced } from '../motion';
@@ -13,14 +13,12 @@ import { reduced } from '../motion';
 const TURN = (2 * Math.PI) / 30000;   // allure de croisière (rad/ms)
 const YAW = -0.62, PITCH = 0.2;       // inclinaison de repos (rad)
 const TILT_X = 0.22, TILT_Y = 0.14;   // amplitude de l'inclinaison vers le curseur (rad)
-const INTRO = 2000;                   // entrée de l'anneau (ms)
-const SPIN = 1.6 * Math.PI;           // tour d'élan de l'entrée (rad), freiné jusqu'à l'arrêt
-const EDGE_YAW = -1.45, EDGE_PITCH = 0.75; // presque de profil au départ (rad)
-const DEAL = 1100, STAGGER = 60, LAG = 150; // spirale de chaque image : durée, écart, départ après l'anneau (ms)
-const TWIST = -0.5;                   // rotation de départ d'une image (rad), redressée en chemin
+const BLUR = 10, PALE = 0.8;          // au fond : flou (px) et transparence ajoutée
+// le flou part à NEAR × R derrière le plan du texte (en haut et en bas de l'anneau, à peine derrière, l'image reste nette)
+// et atteint son maximum DEEP × R plus loin
+const NEAR = 0.3, DEEP = 0.5;
+const MASK = 650, STAGGER = 85, LAG = 200; // apparition d'une image : durée du masque, écart entre deux, départ (ms)
 const clamp = (e: number) => Math.max(0, Math.min(1, e));
-const expo = (e: number) => (e >= 1 ? 1 : 1 - 2 ** (-10 * e));
-const back = (e: number) => 1 + 2.2 * (e - 1) ** 3 + 1.2 * (e - 1) ** 2; // sortie avec léger dépassement
 const quart = (e: number) => 1 - (1 - e) ** 4;
 
 onPage('[data-ring]', (ctx) => {
@@ -85,22 +83,19 @@ onPage('[data-ring]', (ctx) => {
       if (!drag) { vel += (TURN - vel) * (1 - Math.exp(-dt / 900)); phi += vel * dt; }
       const k = 1 - Math.exp(-dt / 250);
       yaw += (yawT - yaw) * k; pitch += (pitchT - pitch) * k;
-      // entrée : élan de rotation freiné, redressement depuis le profil, rayon qui se déploie
-      const g = clamp((now - t0) / INTRO), G = expo(g);
-      const spin = -(1 - G) * SPIN;
-      const yw = EDGE_YAW + (yaw - EDGE_YAW) * G, pt = EDGE_PITCH + (pitch - EDGE_PITCH) * G;
-      const sy = Math.sin(yw), cyw = Math.cos(yw), sp = Math.sin(pt), cp = Math.cos(pt);
+      const sy = Math.sin(yaw), cyw = Math.cos(yaw), sp = Math.sin(pitch), cp = Math.cos(pitch);
       for (let i = 0; i < N; i++) {
-        // spirale : l'image part du centre et gagne son rayon pendant que l'anneau tourne
-        const e = clamp((now - t0 - LAG - i * STAGGER) / DEAL), f = quart(e), r = R * (0.04 + 0.96 * back(e));
-        const th = phi + spin + (2 * Math.PI * i) / N, x0 = r * Math.cos(th), y0 = r * Math.sin(th);
+        const e = clamp((now - t0 - LAG - i * STAGGER) / MASK), f = quart(e); // apparition, dans l'ordre du cercle
+        const th = phi + (2 * Math.PI * i) / N, x0 = R * Math.cos(th), y0 = R * Math.sin(th);
         const y1 = y0 * cp, z1 = y0 * sp;                       // tangage (axe horizontal)
         const x2 = x0 * cyw + z1 * sy, z2 = -x0 * sy + z1 * cyw; // lacet (axe vertical) ; z > 0 : vers le spectateur
         const s = P / (P - z2);
-        // en chemin : elle grandit, se redresse, se découvre de bas en haut, son contenu se resserre
+        // à sa place : elle se découvre de bas en haut en grandissant un peu, son contenu se resserre
         const el = cards[i];
-        el.style.transform = `translate3d(${(cx + x2 * s - w / 2).toFixed(1)}px, ${(cy + y1 * s - w / 3.2).toFixed(1)}px, 0) rotate(${((1 - f) * TWIST).toFixed(3)}rad) scale(${(s * (0.4 + 0.6 * f)).toFixed(3)})`;
-        el.style.opacity = String(clamp(e * 5));
+        el.style.transform = `translate3d(${(cx + x2 * s - w / 2).toFixed(1)}px, ${(cy + y1 * s - (w * 9) / 32).toFixed(1)}px, 0) scale(${(s * (0.92 + 0.08 * f)).toFixed(3)})`;
+        const d = clamp((-z2 / R - NEAR) / DEEP);               // profondeur derrière le plan du texte (0 → 1)
+        el.style.opacity = String(clamp(e * 4) * (1 - PALE * d));
+        el.style.filter = d > 0.02 ? `blur(${(BLUR * d).toFixed(1)}px)` : '';
         el.style.clipPath = e < 1 ? `inset(${((1 - f) * 100).toFixed(2)}% 0 0 0)` : '';
         const pic = pics[i];
         if (pic) pic.style.scale = e < 1 ? (1.2 - 0.2 * f).toFixed(3) : '';

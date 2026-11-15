@@ -8,9 +8,9 @@ export const homeServices = {
   fr: 'Je dessine des lettres{m:beaucoup}, des identités et des images, à\u00a0la\u00a0main ou en code{m:selon l\'humeur}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
   en: 'I draw letters{m:a lot}, identities and images, by\u00a0hand or in code{m:depending on the mood}, for artists, brands and studios{m:and myself, on Sundays}.',
 };
-// Anneau d'images autour du texte des services (accueil) : fichiers de /public/ring/, en 16/10. null = emplacement à remplir
-// (gris, numéroté). Autant d'emplacements que d'entrées.
-export const homeRing: (string | null)[] = Array(12).fill(null);
+// Anneau d'images autour du texte des services (accueil) : fichiers de /public/ring/ (16/9, écrits par tools/ring.mjs
+// depuis assets/roue). null = emplacement à remplir (gris, numéroté). Autant d'emplacements que d'entrées.
+export const homeRing: (string | null)[] = ['anim-simple.webp', null, 'bms.webp', null, null, 'music.webp', null, 'sa.webp', null, null, 'bms2.webp', null];
 
 // À propos — 4 écrans
 export const aboutIntro = {
