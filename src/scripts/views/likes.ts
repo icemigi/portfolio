@@ -2,7 +2,7 @@
 // un clic ouvre le texte au milieu de l'écran. matter.js (MIT) est chargé à la demande, depuis /vendor/ (même fichier que la
 // pièce « gravity » du Lab, mis en cache une fois).
 import { onPage } from '../page';
-import { letters, reduced } from '../motion';
+import { fadeLabel, letters, reduced } from '../motion';
 
 // matter.js : script partagé, chargé une seule fois
 let matter: Promise<any> | null = null;
@@ -19,6 +19,8 @@ onPage('[data-likes]', (ctx) => {
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const card = root.querySelector<HTMLElement>('[data-card]')!;
   const big = root.querySelector<HTMLElement>('[data-big]')!;
+  // libellé « (ce que j'aime) » : caché dès l'arrivée, il apparaît avec le titre, comme les libellés des autres pages
+  const label = ctx.info.lang ? null : fadeLabel(root.querySelector('.ttl'), 60, true);
   const still = reduced();
   const small = matchMedia('(max-width: 760px)').matches;
   loadMatter().then((M) => {
@@ -84,7 +86,7 @@ onPage('[data-likes]', (ctx) => {
   const hideTitle = () => {
     big.hidden = true;
   };
-  showTitle(150);
+  showTitle(150); label?.play();
   items.forEach((it, i) => ctx.timeout(() => Composite.add(engine.world, it.body), still ? 0 : 900 + i * 220));
   // le plafond se ferme quand tous les objets sont entrés : ensuite, rien ne sort de la boîte
   Events.on(engine, 'afterUpdate', () => {

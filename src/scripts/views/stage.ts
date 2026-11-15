@@ -1,14 +1,14 @@
 // Scène Projets (ProjectStage.astro, page Projets et accueil) : les objets flottent, se prennent à la main, tombent à leur
 // apparition ; un clic ouvre l'étude, l'objet voyageant jusqu'à sa page de garde.
 import { onPage } from '../page';
-import { reduced } from '../motion';
+import { fadeLabel, reduced } from '../motion';
 import { navigate } from 'astro:transitions/client';
 
-onPage('[data-projects]', (ctx) => {
+onPage('[data-scene]', (ctx) => {
   // M1 Flottement : chaque objet monte et descend à son rythme ; la souris les décale selon leur profondeur ;
   // survol = l'objet se soulève de 14 px. Les objets se prennent à la main (glisser-déposer) et restent où on les pose.
   // Un clic sans déplacement ouvre l'étude.
-  const stage = document.querySelector<HTMLElement>('[data-projects]');
+  const stage = document.querySelector<HTMLElement>('[data-scene]');
   // téléphone : la scène est masquée (liste à la place), on ne lance rien
   if (stage && stage.offsetParent !== null) {
     const still = reduced();
@@ -59,7 +59,10 @@ onPage('[data-projects]', (ctx) => {
     // retour arrière (page gardée en cache) : la scène revient entière
     addEventListener('pageshow', (e) => { if (e.persisted) { stage.classList.remove('leaving'); O.forEach((o) => o.el.classList.remove('chosen')); } }, { signal: ctx.signal });
     // apparition : après le chargement, les objets tombent un à un en se redressant, puis leurs libellés
+    // libellé de la scène (« (projets 07) ») : il apparaît avec les objets, comme les libellés des autres pages
+    const label = ctx.info.lang ? null : fadeLabel(stage.closest('.page')?.querySelector('.ttl') ?? null, 120, true);
     const go = () => {
+      label?.play();
       const t0 = performance.now() + 120;
       O.forEach((o, i) => { o.t0 = still ? -Infinity : t0 + i * 110; o.el.style.setProperty('--ld', still ? '0s' : `${(i * 110 + 520) / 1000}s`); });
       ctx.raf(() => stage.classList.add('in'));

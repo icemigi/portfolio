@@ -79,3 +79,16 @@ export const labApps: LabApp[] = [
 
 // nombre de pièces visibles dans le Lab (salles + apps)
 export const labCount = rooms.length + labApps.length;
+
+// Pièces du Lab telles que la page les montre (dans l'ordre) : salles puis applications. href : la pièce ouverte ;
+// live : la même, jouée en direct dans son écran du Lab (pages autonomes telles quelles ; salles en mode intégré, ?embed).
+export type LabItem = { id: string; title: string; cat: string; href: string; live: string };
+export function labItems(lang: 'fr' | 'en'): LabItem[] {
+  return [
+    ...rooms.map((r) => {
+      const page = r.kind === 'embed' && r.src ? `${r.src}?lang=${lang}` : '';
+      return { id: r.id, title: r[lang].title.replace(/^\[|\]$/g, '').replace(/ — .*$/, ''), cat: r[lang].cat, href: page || `/${lang}/lab/${r.id}/`, live: page || `/${lang}/lab/${r.id}/?embed` };
+    }),
+    ...labApps.map((a) => ({ id: a.id, title: a[lang].title, cat: a[lang].cat, href: `${a.src}?lang=${lang}`, live: `${a.src}?lang=${lang}` })),
+  ];
+}

@@ -244,7 +244,7 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   :global(.reg a[aria-current])::before, :global(.reg a[aria-current])::after { color: var(--ac); }
   @media (hover: hover) { :global(.reg a:hover) { color: var(--fg); } }
   @media (max-width: 760px) { :global(.reg) { display: none; } }
-  /* fil d'Ariane (14/11) : liens du libellé, soulignés au survol */
+  /* lien du libellé (projet précédent), souligné au survol */
   :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
   @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
   .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }

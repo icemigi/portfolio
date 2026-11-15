@@ -16,7 +16,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   {/* données des objets pour le script (views/likes.ts) */}
   <script type="application/json" id="likes-data" set:html={JSON.stringify(data)} />
   <div class="likes" data-likes data-own-wheel>
-    <p class="ttl"><a class="bp hit" href={`/${lang}/about/`}>{fr ? 'retour' : 'back'}</a></p>
+    <p class="ttl mono mu par">{fr ? 'ce que j\'aime' : 'things I love'}</p>
     <p class="hint mono mu">{fr ? 'Attrapez, lancez, cliquez.' : 'Grab, throw, click.'}</p>
     <h1 class="big" data-big><span class="t56">{(fr ? 'Ce que j\'aime.' : 'Things I love.').split(' ').map((w, i) => <Fragment>{i > 0 && ' '}<span class="w">{w}</span></Fragment>)}</span></h1>
     <div class="stage" data-stage>
@@ -48,11 +48,14 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
   /* titre sur une seule ligne, partout ; sur téléphone il n'arrête pas les objets (décor derrière la pile) */
   .big > span { white-space: nowrap; }
   .big[hidden] { display: none; }
-  .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; }
+  /* découpée sous la bande du menu : les objets qui tombent en sortent, le menu reste net */
+  .stage { position: absolute; inset: 0; touch-action: none; cursor: grab; clip-path: inset(var(--head) 0 0 0); }
   .stage:active { cursor: grabbing; }
   .it { position: absolute; left: 0; top: 0; display: grid; place-items: center; padding: 8px; background: #c9c9c9; color: #fff; text-align: center; will-change: transform; pointer-events: none; }
   /* hors de l'écran tant que la physique ne les a pas placés (views/likes.ts) : ils tombent du ciel */
   :global(html.js) .likes:not(.live) .it { visibility: hidden; }
+  /* le titre aussi, jusqu'au départ de son écriture (le moteur physique se charge à la demande) */
+  :global(html.js) .likes:not(.live) .big { visibility: hidden; }
   .it.circle { border-radius: 50%; }
   /* une ombre qui suit la forme de l'objet (pas de rectangle) ; l'objet soulevé ou ouvert s'élève */
   .it img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, .16)); transition: filter .3s; }

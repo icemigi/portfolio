@@ -7,9 +7,9 @@ import './rows';
 
 onDemand('#name', () => import('./home'));
 onDemand('[data-p3d]', () => import('./portrait'));
-onDemand('[data-projects]', () => import('./stage'));
+onDemand('[data-scene]', () => import('./stage'));
 onDemand('.last .mail', () => import('./contact'));
-onDemand('[data-cf]', () => import('./lab'));
+onDemand('[data-lablist]', () => import('./lab'));
 onDemand('.room', () => import('./labroom'));
 onDemand('canvas.type-canvas', () => import('./typecanvas'));
 onDemand('[data-track]', () => import('./archive'));

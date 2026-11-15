@@ -12,7 +12,8 @@
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', apply);
 
   // aide de premier lancement : <html data-intro="…">, montrée une fois par pièce, effacée au premier geste
-  const intro = document.documentElement.dataset.intro, ik = 'kk-intro:' + location.pathname;
+  // (pas dans un cadre : la pièce y est montrée sans qu'on puisse la toucher — écrans du Lab)
+  const intro = window.top === window && document.documentElement.dataset.intro, ik = 'kk-intro:' + location.pathname;
   let seen = false; try { seen = localStorage.getItem(ik) === '1'; } catch { /* */ }
   if (intro && !seen) {
     const box = document.createElement('p'); box.className = 'kk-intro'; box.textContent = intro;

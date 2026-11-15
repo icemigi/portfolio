@@ -238,11 +238,11 @@ html.js.rv-pre [data-screens] > .scr:not([data-still]) { visibility: hidden; }
 .ft .c { grid-column: 9 / 13; display: flex; gap: 24px; align-items: baseline; justify-content: space-between; align-self: end; }
 .ft p + p, .ft p + a, .ft a + a { margin-top: 4px; }
 .ft .c p + a { margin-top: 0; }
-.ft .b a, .ft .n a { display: table; }
+.ft .b a, .ft .n a { display: table; text-transform: lowercase; } /* rubriques et liens en minuscules, comme le menu */
+.ft .av { text-transform: lowercase; } /* disponibilité : même écriture que sous l'adresse de l'écran Contact */
 @media (max-width: 760px) {
   .ft > * { grid-column: 1 / -1 !important; }
   .ft .b { grid-column: 1 / 3 !important; } .ft .n { grid-column: 3 / 5 !important; }
-  .ft.line .a { display: none; } /* écran Contact : l'adresse est déjà en grand juste au-dessus */
   .ft .col { font-size: 13px; line-height: 1.45; }
   .ft .c, .ft .c * { white-space: nowrap; } .ft .c { gap: 4px 16px; flex-wrap: wrap; }
   .ft .c { grid-column: 1 / 4 !important; justify-content: flex-start; } .ft .top { grid-column: 4 / 5 !important; grid-row: auto; align-self: end; }
@@ -305,28 +305,21 @@ a[href^='mailto:'], input, textarea, [contenteditable] { -webkit-user-select: te
 .ld-fill { position: absolute; inset: 0; clip-path: inset(100% 0 0 0); background: url(/logo-icon-128.webp) center / contain no-repeat; /* la pièce se révèle de bas en haut */ }
 .ld-n { font-variant-numeric: tabular-nums; text-align: center; }
 /* ---------- d'une page à l'autre (navigation sans rechargement, transitions de vue du navigateur) ----------
-   Le menu ne bouge pas. Le contenu quitté s'efface vite ; la page d'arrivée est déjà là dessous, dans l'état de départ de son
-   apparition (texte à écrire, objets à faire tomber), qui commence aussitôt. Changement de langue (data-nav="lang") : aucun
-   fondu, la page réécrite sur place est remplacée par la même, dans l'autre langue. Voyages nommés : views/case.ts. */
+   Coupe franche : la page d'arrivée remplace la page quittée d'une image à l'autre, déjà dans l'état de départ de son
+   apparition (texte à écrire, objets à faire tomber), qui commence aussitôt. Le menu (site-header) et le portrait de l'accueil
+   (portrait, gardé d'une langue à l'autre) ont leur calque : seule leur nouvelle image est montrée — l'ancienne et la nouvelle
+   superposées s'additionneraient (mix-blend-mode plus-lighter du navigateur : un menu clair sur fond clair blanchissait), et
+   l'ancienne image du portrait resterait un instant sur la page suivante. Voyages nommés (objet, titre) : views/case.ts. */
 .site-header { view-transition-name: site-header; }
-/* le menu ne bouge pas : seule sa nouvelle image est montrée (l'ancienne et la nouvelle superposées s'additionnent —
-   mix-blend-mode plus-lighter du navigateur — et un menu clair sur fond clair blanchissait jusqu'à disparaître) */
-::view-transition-group(site-header), ::view-transition-new(site-header) { animation: none; }
-::view-transition-old(site-header) { animation: none; opacity: 0; }
-::view-transition-old(root) { animation: kk-vt-out .22s var(--out) both; }
-::view-transition-new(root) { animation: none; }
-html[data-nav='lang']::view-transition-old(root) { animation: none; opacity: 0; }
+::view-transition-old(root), ::view-transition-old(site-header), ::view-transition-old(portrait) { animation: none; opacity: 0; }
+::view-transition-new(root), ::view-transition-group(site-header), ::view-transition-new(site-header),
+::view-transition-group(portrait), ::view-transition-new(portrait) { animation: none; }
 ::view-transition { background: var(--bg); }
-@keyframes kk-vt-out { to { opacity: 0; } }
 /* ---------- indication de défilement ---------- */
 .more-arrow { position: fixed; right: var(--m); bottom: 26px; z-index: 40; width: 44px; height: 44px; display: grid; place-items: center end; color: var(--fg); transition: opacity .3s; }
-.scr-pos { position: fixed; right: calc(var(--m) + 52px); bottom: 40px; z-index: 40; font-size: 11px; line-height: 1; font-variant-numeric: tabular-nums; pointer-events: none; transition: opacity .3s; }
-.scr-pos[hidden] { display: none; }
-.more-arrow[hidden] ~ .scr-pos { opacity: 0; } /* dernier écran : le pied de page occupe le coin (mentions légales) */
 /* adresse e-mail copiée au clic (site.ts) : « (copié) » s'affiche une seconde et demie à côté */
 a[data-copied] { position: relative; }
 a[data-copied]::after { content: attr(data-copied); position: absolute; left: 100%; top: 0; margin-left: .5em; font: 11px/1 var(--mono); color: var(--ac); white-space: nowrap; pointer-events: none; }
-.menu-open .scr-pos, .embed .scr-pos { opacity: 0; }
 .more-arrow[hidden] { display: grid; opacity: 0; pointer-events: none; }
 .more-arrow span { display: block; font-size: 16px; animation: kk-bob 1.6s ease-in-out infinite; }
 @keyframes kk-bob { 0%, 100% { transform: translateY(-3px); } 50% { transform: translateY(5px); } }

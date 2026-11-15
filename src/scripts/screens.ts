@@ -57,10 +57,6 @@ export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
     arrow.addEventListener('click', () => go(cur + 1));
     document.body.appendChild(arrow);
   }
-  // repère de position (« 02 / 05 ») à gauche de la flèche : des écrans aimantés ne laissent pas deviner la longueur de la page
-  const pos = S.length > 1 ? ctx.own(document.createElement('span')) : null;
-  const p2 = (n: number) => String(n).padStart(2, '0');
-  if (pos) { pos.className = 'scr-pos mono mu'; pos.setAttribute('aria-hidden', 'true'); document.body.appendChild(pos); }
   const save = () => { try { sessionStorage.setItem(key(path), String(cur)); } catch { /* stockage indisponible */ } };
   const emit = (name: string, detail: object) => host.dispatchEvent(new CustomEvent(name, { detail }));
   const sound = (name: string, v?: number) => dispatchEvent(new CustomEvent('kk:sound', { detail: { name, v } }));
@@ -79,7 +75,6 @@ export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
     header?.classList.toggle('solid', S[cur].scrollTop > 8);
     document.documentElement.dataset.screen = String(cur);
     if (arrow) arrow.hidden = cur >= S.length - 1 || host.hasAttribute('data-no-arrow');
-    if (pos) { pos.innerHTML = `<span class="ac">${p2(cur + 1)}</span> / ${p2(S.length)}`; pos.hidden = host.hasAttribute('data-no-arrow'); }
     // les images des écrans voisins se chargent d'avance : rien n'apparaît en retard à l'arrivée
     [cur - 1, cur + 1, cur + 2].forEach((i) => S[i]?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((im) => (im.loading = 'eager')));
   };

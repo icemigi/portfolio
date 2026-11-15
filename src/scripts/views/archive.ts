@@ -1,7 +1,7 @@
 // Page Archive ([lang]/archive.astro) : la pile d'affiches (ordinateur : toile, jetées et reprises à la molette ;
 // téléphone : une affiche par écran), la barre de progression, la pièce ouverte en grand.
 import { onPage } from '../page';
-import { reduced } from '../motion';
+import { fadeLabel, letters, reduced } from '../motion';
 
 onPage('[data-track]', (ctx) => {
   // indice « → » : il s'efface au premier geste
@@ -16,6 +16,13 @@ onPage('[data-track]', (ctx) => {
   const items = [...track.querySelectorAll<HTMLElement>('.pc')];
   const phone = () => matchMedia('(max-width: 760px)').matches;
   const desktop = () => !phone(); // téléphone : une pièce par écran, en défilement verrouillé (voir plus bas)
+  // « Tout le reste. » s'écrit lettre à lettre à l'arrivée, comme « Ce que j'aime. » (après le chargement d'entrée au premier
+  // affichage ; tel quel au changement de langue)
+  const intro = root.querySelector<HTMLElement>('.intro');
+  const label = ctx.info.lang ? null : fadeLabel(root.querySelector('.ttl'), 60, true); // « (archive 152) », comme les autres libellés
+  const say = () => { root.classList.add('said'); label?.play(); if (intro && !ctx.info.lang) letters(intro, 150); };
+  if (ctx.first) (window.kkReady ?? Promise.resolve()).then(() => document.fonts.ready).then(() => { if (!ctx.signal.aborted) say(); });
+  else say();
   const P = (n: number) => String(n).padStart(2, '0');
   let x = 0, target = 0, raf = 0;
 
@@ -156,7 +163,13 @@ onPage('[data-track]', (ctx) => {
     if (lastN === null) lastN = n;
     else if (n !== lastN) { lastN = n; dispatchEvent(new CustomEvent('kk:sound', { detail: { name: 'tick', v: .55 } })); }
     const k = index() + 1;
-    if (k !== lastK) { lastK = k; count.textContent = k ? `${P(k)} / ${P(items.length)} — ${K.caps[k - 1]}` : `00 / ${P(items.length)}`; prog.setAttribute('aria-valuenow', String(Math.max(1, k))); pile(); }
+    if (k !== lastK) {
+      lastK = k;
+      // compteur au style du site : le numéro en orange, le total en gris (comme les écrans et le lab)
+      const n = document.createElement('span'); n.className = 'ac'; n.textContent = k ? P(k) : '00';
+      count.replaceChildren(n, ` / ${P(items.length)}${k ? ` — ${K.caps[k - 1]}` : ''}`);
+      prog.setAttribute('aria-valuenow', String(Math.max(1, k))); pile();
+    }
   };
   const loop = () => {
     const ease = reduced() ? 1 : 0.14;

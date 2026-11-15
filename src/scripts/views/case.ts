@@ -1,4 +1,4 @@
-// Étude de cas ([lang]/work/[slug].astro) : registre des rubriques, fil d'Ariane, ajustement du texte, anneau « projet
+// Étude de cas ([lang]/work/[slug].astro) : registre des rubriques, ajustement du texte, anneau « projet
 // suivant », profondeur des images, légendes au survol, visionneuse. Les arrivées par un objet de la scène Projets et par
 // « projet suivant » sont des transitions nommées (case-object, case-title) : le navigateur fait voyager l'objet ou le titre
 // de sa place sur la page quittée jusqu'à sa place sur la page de garde.
@@ -23,7 +23,7 @@ document.addEventListener('astro:before-swap', (e) => {
   if (ev.info?.object) { const o = ev.newDocument.querySelector<HTMLElement>(`[data-cobj][data-slug="${ev.info.object.slug}"] .shape`); if (o) o.style.viewTransitionName = 'case-object'; }
   // retour vers la scène : l'objet du projet quitté, sur la scène d'arrivée
   if (CASE.test(ev.from.pathname) && STAGE.test(ev.to.pathname)) {
-    const o = ev.newDocument.querySelector<HTMLElement>(`[data-projects] .obj a[href="${ev.from.pathname}"]`)?.closest('.obj')?.querySelector<HTMLElement>('.shape');
+    const o = ev.newDocument.querySelector<HTMLElement>(`[data-scene] .obj a[href="${ev.from.pathname}"]`)?.closest('.obj')?.querySelector<HTMLElement>('.shape');
     if (o) o.style.viewTransitionName = 'case-object';
   }
 });
@@ -41,7 +41,7 @@ onPage('.screens-host.case', (ctx) => {
   {
     const api = screens()!, host = api.host;
     const scr = [...host.querySelectorAll<HTMLElement>(':scope > .scr')];
-    const name = (sc: HTMLElement) => { const l = sc.querySelector('.lab.par .lt, .lab.par'); return (l?.textContent || '').split(' — ')[0].trim().toLowerCase(); };
+    const name = (sc: HTMLElement) => { const l = sc.querySelector('.lab.par'); return (l?.textContent || '').split(' — ')[0].trim().toLowerCase(); };
     const rubs: { k: string; i: number }[] = [], of: number[] = [];
     scr.forEach((sc, i) => {
       if (sc.classList.contains('s1') || sc.classList.contains('nx')) { of.push(-1); return; }
@@ -66,25 +66,6 @@ onPage('.screens-host.case', (ctx) => {
     }
   }
 
-  // ---------- fil d'Ariane (14/11) ----------
-  // Chaque libellé orange d'un écran devient « (projets / nom du projet / libellé) » : « projets » ramène à la page Projets,
-  // le nom du projet à la page de garde. Page de garde : « (projets / 04/07) ». L'écran « projet suivant » garde son libellé.
-  {
-    const host = document.querySelector<HTMLElement>('.screens-host.case');
-    const lang = document.documentElement.lang === 'fr' ? 'fr' : 'en';
-    const name = (document.querySelector('.case-h1 .vt')?.textContent || '').trim().toLowerCase();
-    host?.querySelectorAll<HTMLElement>(':scope > .scr .lab.par').forEach((lab) => {
-      if (lab.closest('.nx')) return;
-      const cover = !!lab.closest('.s1');
-      const lt = document.createElement('span'); lt.className = 'lt';
-      while (lab.firstChild) lt.appendChild(lab.firstChild);
-      const a = document.createElement('a'); a.className = 'cr'; a.href = `/${lang}/work/`; a.textContent = lang === 'fr' ? 'projets' : 'work';
-      lab.append(a, ' / ');
-      if (!cover) { const b = document.createElement('a'); b.className = 'cr'; b.href = '#'; b.dataset.go = '0'; b.textContent = name; lab.append(b, ' / '); }
-      else { const vl = lt.querySelector('.vl'); if (vl) vl.textContent = (vl.textContent || '').replace(/^\S+\s+/, ''); }
-      lab.append(lt);
-    });
-  }
   {
     const api = screens()!;
     const host = document.querySelector<HTMLElement>('[data-screens]')!;
@@ -201,8 +182,7 @@ onPage('.screens-host.case', (ctx) => {
 
     // ---------- légende au survol : elle remplace le libellé de l'écran ----------
     document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {
-      const lab0 = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
-      const lab = lab0?.querySelector<HTMLElement>('.lt') || lab0; // le fil d'Ariane reste en place, seul le libellé change
+      const lab = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
       if (!lab) return;
       const base = lab.textContent || '';
       im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });

@@ -127,10 +127,9 @@ document.addEventListener('click', (e) => {
   try { localStorage.setItem('kk-lang', a.dataset.lang!); } catch { /* stockage indisponible */ } // langue mémorisée (racine du site)
   const url = new URL(a.href);
   const s = screens();
-  // la page cible s'ouvre au même écran, telle quelle (page.ts → info.lang), sans animation de transition (data-nav, global.css)
+  // la page cible s'ouvre au même écran, telle quelle (page.ts → info.lang)
   const go = (html?: string) => {
     if (html) ready = { href: url.href, html };
-    document.documentElement.dataset.nav = 'lang';
     navigate(url.href, { info: { lang: { screen: s?.current() ?? 0 } } });
   };
   if (reduced()) { go(); return; }

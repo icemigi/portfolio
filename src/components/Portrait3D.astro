@@ -15,7 +15,11 @@ const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé
 
 <style>
   /* légèrement incliné, comme sur la maquette (sens horaire) */
-  .p3d { position: absolute; margin: 0; aspect-ratio: 1709 / 2334; pointer-events: none; rotate: var(--p3d-rot, 8deg); }
+  /* calque à part pendant les transitions entre pages (view-transition-name) : toujours peint devant le titre */
+  .p3d { position: absolute; margin: 0; aspect-ratio: 1709 / 2334; pointer-events: none; rotate: var(--p3d-rot, 8deg); view-transition-name: portrait; }
+  /* l'image et la toile débordent volontairement du cadre (108 %, 150 %) : sans le plafond global max-width: 100 %, qui les
+     tronquait en les laissant décalées (portrait dessiné 88 px à gauche de sa place, image de secours déformée) */
+  .p3d img, .p3d canvas { max-width: none; }
   /* image fixe (avant le rendu 3D, ou sans) : même marge transparente de 4 % que le cadre 3D — le dragon n'est jamais coupé */
   .p3d img { position: absolute; left: -4%; top: -4%; width: 108%; height: 108%; display: block; }
   /* le canvas déborde de 25 % : rotation, saut et dépassement de la volte-face restent dedans ; au repos le portrait couvre exactement l'image */

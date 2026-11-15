@@ -2,7 +2,7 @@
 // Scène des projets (14/11 : commune à la page Projets et à l'accueil). Ordinateur : les objets des projets en lévitation
 // (composition libre, dérive lente, réaction à la souris, glisser-déposer ; un clic sans déplacement ouvre l'étude).
 // Téléphone : la liste classique des projets à la place. Les objets tombent un à un quand la scène apparaît à l'écran.
-import ObjectShape from './ObjectShape.astro';
+import Scene from './Scene.astro';
 import ProjectRows from './ProjectRows.astro';
 import { pad, type Lang } from '../data/ui';
 import { projects } from '../data/projects';
@@ -14,49 +14,18 @@ const POS = [[17, 40, 12, -6, 0.6], [38, 25, 18, 5, 1], [59, 33, 20, -3, 0.5], [
 ---
 <div class="page">
   <H class="ttl mono mu par" id={id}>{`${title} ${pad(projects.length)}`}</H>
-        <div class="stage" data-projects>
-          <ol class="objs">
-            {projects.map((p, i) => {
-              const [x, y, w, r, z] = POS[i];
-              return (
-                <li class="obj" style={`--x:${x}%;--y:${y}%;--w:${w}vw;--r:${r}deg;--d:${7 + i * 1.3}s`} data-depth={z}>
-                  <a href={`/${lang}/work/${p.slug}/`}>
-                    <span class="float"><ObjectShape kind={p.object} /></span>
-                    <span class="lb"><span class="ac mono">({pad(i + 1)})</span> {p[lang].title}</span>
-                  </a>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
+  <Scene items={projects.map((p) => ({ href: `/${lang}/work/${p.slug}/`, title: p[lang].title, object: p.object }))} pos={POS} />
   <div class="mindex g"><div class="mlist"><ProjectRows lang={lang} /></div></div>
 </div>
 
 <style>
   .page { position: relative; min-height: 100%; height: 100%; display: flex; flex-direction: column; }
-  .stage { position: relative; flex: 1; min-height: 560px; }
   .ttl { position: absolute; z-index: 2; left: var(--m); top: calc(var(--head) + 16px); }
-  .obj { position: absolute; left: var(--x); top: var(--y); width: var(--w); transform: translate(-50%, -50%); touch-action: none; }
-  .obj a { display: flex; flex-direction: column; align-items: center; gap: 14px; cursor: grab; -webkit-user-drag: none; user-select: none; }
-  .obj.drag a { cursor: grabbing; }
-  .obj .float { display: block; width: 100%; will-change: transform; }
-  .obj :global(.shape) { width: 100%; height: auto; transform: rotate(var(--r)); filter: drop-shadow(0 var(--sh, 26px) 22px rgba(0, 0, 0, .22)); pointer-events: none; }
-  .obj .lb { white-space: nowrap; transition: transform .35s var(--out), opacity .6s var(--out); transition-delay: var(--ld, 0s); }
-  @media (hover: hover) { .obj a:hover .lb { transform: translateX(6px); } }
-  /* apparition : les libellés arrivent après leur objet ; survol : les autres objets s'effacent */
-  :global(html.js) .stage:not(.in) .obj .lb { opacity: 0; transform: translateY(10px); }
-  /* avant leur chute (stage.ts) : objets cachés dès le premier affichage */
-  :global(html.js) .stage:not(.in) .obj .float { opacity: 0; }
-  .obj .float { transition: opacity .45s var(--out); }
-  .stage.focus .obj:not(.hov) .float { opacity: .65; }
-  .stage.focus .obj:not(.hov) .lb { opacity: .65; }
-  /* voyage vers l'étude : tout s'efface sauf l'objet choisi */
-  .stage.leaving .obj:not(.chosen), .stage.leaving .obj .lb { opacity: 0 !important; transition: opacity .28s var(--out); }
+  /* voyage vers l'étude : le libellé et le menu s'effacent avec les autres objets (Scene.astro) */
   :global(html:has(.stage.leaving)) .ttl, :global(html:has(.stage.leaving)) .site-header { opacity: 0; transition: opacity .28s var(--out); }
   .mindex { display: none; }
 
   @media (max-width: 760px) {
-    .stage { display: none; }
     .page { justify-content: flex-end; }
     .ttl { position: absolute; }
     .mindex { display: grid; padding-bottom: 72px; }

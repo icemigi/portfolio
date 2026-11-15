@@ -25,18 +25,17 @@ const root = document.documentElement;
 // ---------- services globaux ----------
 
 // Échange de page : le <html> reprend les attributs de la nouvelle page (Astro) ; l'état propre à la visite est reporté
-// (JavaScript actif, chargement d'entrée déjà vu, page intégrée au Lab, thème, mode dev, type de navigation).
+// (JavaScript actif, chargement d'entrée déjà vu, page intégrée au Lab, thème, mode dev).
 // Le chargement d'entrée n'appartient qu'au premier affichage du document : il est retiré des pages suivantes.
 document.addEventListener('astro:before-swap', (e) => {
   const next = (e as Event & { newDocument: Document }).newDocument, nr = next.documentElement;
   ['js', 'ld-skip', 'embed'].forEach((c) => root.classList.contains(c) && nr.classList.add(c));
-  for (const k of ['theme', 'dev', 'nav'] as const) if (root.dataset[k] !== undefined) nr.dataset[k] = root.dataset[k];
+  for (const k of ['theme', 'dev'] as const) if (root.dataset[k] !== undefined) nr.dataset[k] = root.dataset[k];
   next.querySelector('[data-ld]')?.remove();
 });
-// fin de navigation : le type de navigation (langue…) ne sert qu'à la transition ; page vue comptée (GoatCounter, sans cookie)
+// fin de navigation : page vue comptée (GoatCounter, sans cookie)
 let firstLoad = true;
 document.addEventListener('astro:page-load', () => {
-  delete root.dataset.nav;
   if (firstLoad) { firstLoad = false; return; }
   (window as unknown as { goatcounter?: { count?: (o: object) => void } }).goatcounter?.count?.({ path: location.pathname + location.search, title: document.title });
 });

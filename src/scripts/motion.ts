@@ -205,6 +205,15 @@ export function fadeMono(root: Element, delay = 300): number {
   return delay + 120;
 }
 
+// Libellé seul (pages dont l'entrée n'est pas une apparition d'écran : Projets, Archive, Ce que j'aime) : le même fondu que
+// les libellés de fadeMono. paused : posé caché dès maintenant, joué plus tard (play()) — jamais visible avant son entrée.
+export function fadeLabel(el: Element | null, delay = 150, paused = false): Animation | null {
+  if (!el || reduced()) return null;
+  const a = el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 280, delay, easing: EASE_OUT, fill: 'backwards' });
+  if (paused) a.pause();
+  return a;
+}
+
 // Vignettes-images : empilées et agrandies au centre de l'écran, elles rejoignent leur place l'une après l'autre
 // (900 ms, 80 ms d'écart). `frame` = l'écran qui glisse (ses coordonnées servent de repère).
 // Icônes (.vi.lg, logos de la Stack) : simple éclosion rapide (380 ms, 35 ms d'écart), en même temps que les lettres.
