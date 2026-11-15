@@ -7,7 +7,7 @@
 interface Props { items: { id: string; name: string; bg: string; ink: string; mark: string }[] }
 const { items } = Astro.props;
 ---
-<div class="fanions" data-fanions aria-label="Stack">
+<div class="fanions" data-fanions role="group" aria-label="Stack">
   <canvas class="gl" aria-hidden="true"></canvas>
   <ul>
     {items.map((x, i) => (

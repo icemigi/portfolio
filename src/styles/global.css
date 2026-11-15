@@ -86,7 +86,7 @@ html.screens, html.screens body { height: 100%; overflow: hidden; overscroll-beh
   .t28 { font-size: min(6.4vw, 3.4dvh); line-height: 1.15; }
   .t56 { font-size: min(9.6vw, 4.6dvh); line-height: 1.04; letter-spacing: -0.04em; }
 }
-.sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; user-select: none; }
 
 /* ---------- grille ---------- */
 .g { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); column-gap: var(--gut); padding-inline: var(--m); }
@@ -342,9 +342,10 @@ a[data-copied]::after { content: attr(data-copied); position: absolute; left: 10
 .scx { position: absolute; z-index: 1; translate: -50% 0; color: var(--mu); white-space: pre; pointer-events: none; user-select: none; }
 
 /* ---------- vie du site (13/11) : de petites animations partout, le texte, lui, ne bouge pas ---------- */
-/* le cavalier : un tour sur lui-même, comme une pièce qu'on fait tourner, toutes les 9 s */
-@keyframes kk-coin { 0%, 84% { transform: perspective(240px) rotateY(0deg); } 100% { transform: perspective(240px) rotateY(360deg); } }
-.site-header .home img { animation: kk-coin 9s cubic-bezier(.65, 0, .35, 1) 2.5s infinite; }
+/* le cavalier : immobile ; au survol (ou au clavier), la pièce pivote un peu, puis revient (15/11 : plus de tour en boucle) */
+.site-header .home img { transition: rotate .5s var(--out); }
+.site-header .home:hover img, .site-header .home:focus-visible img { rotate: -10deg; }
+@media (prefers-reduced-motion: reduce) { .site-header .home img { transition: none; } }
 /* boutons du menu (son, mode nuit) et autres icônes : une petite réaction au survol */
 .site-header .hit svg { transition: scale .3s var(--out), rotate .45s var(--out); }
 @media (hover: hover) {

@@ -6,7 +6,7 @@ import Affiche from '../../components/Affiche.astro';
 import ProjectStage from '../../components/ProjectStage.astro';
 import Portrait3D from '../../components/Portrait3D.astro';
 import { ui, languages, getLangFromParam } from '../../data/ui';
-import { homeServices, homeVigs } from '../../data/about';
+import { homeServices } from '../../data/about';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
@@ -27,7 +27,7 @@ const t = ui[lang];
       <div class="in g">
         <div class="big">
           <h2 class="mono mu lab par" id="sv-l">{t.services}</h2>
-          <div class="bt"><Affiche text={homeServices[lang]} vigs={homeVigs} lang={lang} /></div>
+          <div class="bt"><Affiche text={homeServices[lang]} vigs={[]} lang={lang} /></div>
           <p class="more"><a class="bp hit" href={`/${lang}/about/`}>{t.more.toLowerCase()}</a></p>
         </div>
       </div>

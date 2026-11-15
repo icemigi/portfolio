@@ -149,15 +149,18 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   for (const n of nodes) {
     const text = n.nodeValue!;
     const isName = !!n.parentElement?.closest('.name, .mail');          // titre de l'accueil et grande adresse : rythme du titre
-    const f = document.createDocumentFragment();
-    // les lettres d'un mot restent soudées (span .sw insécable) : le signe posé par-dessus une lettre en cours de mélange
-    // (::after en position absolue) ouvre sinon une coupure au milieu du mot, la ligne se recoupe un instant et le bloc saute
+    // lecteurs d'écran : le texte entier (span .sr, invisible, hors mise en page) ; les lettres animées leur sont masquées.
+    // Sans lui, un lien ou un paragraphe découpé en lettres n'avait plus de nom lisible (« lien », sans plus).
+    const f = document.createDocumentFragment(), sr = document.createElement('span'), hid = document.createElement('span');
+    sr.className = 'sr'; sr.textContent = text; hid.setAttribute('aria-hidden', 'true');
+    f.append(sr, hid);
+    // les lettres d'un mot restent soudées (span .sw insécable) : un mot découpé en lettres ne se coupe jamais en fin de ligne
     let word: HTMLElement | null = null;
     for (const c of text) {
-      if (/\s/.test(c)) { f.appendChild(document.createTextNode(c)); word = null; continue; }
+      if (/\s/.test(c)) { hid.appendChild(document.createTextNode(c)); word = null; continue; }
       const sp = document.createElement('span');
-      sp.className = 'ch'; sp.textContent = c; sp.setAttribute('aria-hidden', 'true');
-      if (!word) { word = document.createElement('span'); word.className = 'sw'; f.appendChild(word); }
+      sp.className = 'ch'; sp.textContent = c;
+      if (!word) { word = document.createElement('span'); word.className = 'sw'; hid.appendChild(word); }
       word.appendChild(sp);
       if (isName) { named.push(sp); k++; continue; }
       // tout le texte s'écrit comme le titre : signes tirés au hasard, puis la bonne lettre, en cascade
