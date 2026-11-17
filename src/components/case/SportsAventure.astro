@@ -1,0 +1,62 @@
+---
+// Sports Aventure : le milieu de l'étude (après la page de garde et l'accroche communes), cadré pour un commerce qui veut
+// refaire son site ou une agence qui recrute en UX/UI : un constat, un positionnement, une structure, un parcours, une présentation.
+//   ouverture        : l'écran d'accueil de la refonte.
+//   le constat       : puis l'ancien site, annoté.
+//   le positionnement: puis la palette et les typos avec le logo, les déclinaisons, le logo aux petites tailles.
+//   la structure     : puis le menu Activités.
+//   le parcours      : puis la page d'accueil qui défile (capture pleine page, views/case.ts), les pages catégorie et produit,
+//                      le téléphone, et l'ancien site face à la refonte.
+//   la présentation  : écran de texte.
+// Textes : projects.ts (r : libellé, h : gros texte, p : note). Médias à venir : emplacements gris (SlotScreen).
+import type { Img } from '../../data/media';
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+import MediaScreen from './MediaScreen.astro';
+import Compare from './Compare.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
+const { lang, c, M, pic, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+const im = (n: string) => [M.cover, ...(M.gal ?? []).flat()].find((x) => x.src.endsWith(`/${n}.webp`))!;
+// place : colonnes sur mesure (MediaScreen) pour un visuel haut qui dépasserait de l'écran à la place par défaut
+const img = (n: string, alt: string, sizes = '(max-width: 760px) 100vw, 40vw', place?: { at?: string; atTall?: string; row?: string }) => ({ ...pic(im(n), sizes), alt: `Sports Aventure — ${alt}`, ...place });
+const A = {
+  cover: img('cover', fr ? "l'écran d'accueil de la refonte" : 'the redesign hero', '(max-width: 760px) 100vw, 70vw'),
+  hero2: img('03', fr ? "l'écran d'accueil, variante randonnée" : 'hero variant, hiking'),
+  hero3: img('05', fr ? "l'écran d'accueil, variante surf" : 'hero variant, surf'),
+  palette: img('02', fr ? 'la palette et les typos' : 'palette and typefaces'),
+  logo: img('01', fr ? 'le logo, ses déclinaisons et l\'enseigne' : 'the logo, its variants and the shop sign'),
+  mockups: img('06', fr ? 'les déclinaisons : sacs, affichage, signalétique' : 'roll-outs: bags, billboard, signage', '(max-width: 760px) 100vw, 30vw', { at: '6 / 8', atTall: '5 / 8' }), // planche haute (2:1)
+  home: img('04', fr ? 'la page d\'accueil, en entier' : 'the full homepage', '(max-width: 760px) 100vw, 70vw'),
+};
+const todo = fr ? 'à fournir' : 'to come', mine = fr ? 'en préparation' : 'in progress';
+---
+<MediaScreen label={fr ? "l'écran d'accueil" : 'the hero'} layout="big" items={[A.cover, A.hero2, A.hero3]} />
+
+<TextScreen {...T[0]} />
+<SlotScreen label={mine} slots={[fr ? "l'ancien site, annoté" : 'the old website, annotated']} />
+
+<TextScreen {...T[1]} />
+<MediaScreen label={fr ? "l'identité" : 'identity'} items={[A.palette, A.logo]} />
+<MediaScreen label={fr ? 'les déclinaisons' : 'roll-outs'} items={[A.mockups]} />
+<SlotScreen label={todo} slots={[fr ? 'le logo aux petites tailles (favicon, étiquette, tampon)' : 'the logo at small sizes (favicon, tag, stamp)']} />
+
+<TextScreen {...T[2]} />
+<SlotScreen label={todo} slots={[fr ? 'le menu Activités, déroulé' : 'the Activities menu, open']} />
+
+<TextScreen {...T[3]} />
+<section class="scr mds" data-media>
+  <div class="in g med sqg c1">
+    <p class="lab mono mu par">{fr ? "la page d'accueil" : 'the homepage'}</p>
+    <figure class="mi m0"><div class="shot mf" data-shot><img src={A.home.src} srcset={A.home.srcset} sizes={A.home.sizes} width={A.home.w} height={A.home.h} alt={A.home.alt} loading="lazy" decoding="async" /></div></figure>
+  </div>
+</section>
+<SlotScreen label={todo} slots={[fr ? 'la page catégorie' : 'the category page', fr ? 'la fiche produit' : 'the product page', fr ? 'la page d\'accueil sur téléphone' : 'the homepage on phone']} />
+<Compare label={fr ? "l'ancien site et la refonte" : 'the old website and the redesign'} labels={fr ? ['avant', 'après'] : ['before', 'after']}
+  range={fr ? "Faire glisser le volet entre l'ancien site et la refonte" : 'Slide between the old website and the redesign'}
+  before={{ ...pic({ src: '/work/sports-aventure/old-hero.webp', w: 1728, h: 1117 }, '(max-width: 760px) 100vw, 70vw'), alt: fr ? "Sports Aventure — l'ancien site, page d'accueil (archive du 4 novembre 2024)" : 'Sports Aventure — the old website, homepage (archived 4 November 2024)' }}
+  after={{ ...A.cover, alt: fr ? "Sports Aventure — la page d'accueil de la refonte, même cadre" : 'Sports Aventure — the redesigned homepage, same frame' }} />
+
+<TextScreen {...T[4]} />

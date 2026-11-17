@@ -1,0 +1,45 @@
+---
+// BMS E-Sport : le milieu de l'étude (après la page de garde et l'accroche communes), pour les agences web et les recruteurs
+// UX/UI et DA : l'ambition, l'identité, les fiches joueurs, le système, la boutique, le ton, le résultat.
+// Écran des partenaires écarté (marques réelles en remplissage) ; fiche claire en lorem ipsum écartée. Médias à venir :
+// emplacements gris (SlotScreen), liste dans Notion. Textes : projects.ts (sections dans l'ordre des écrans).
+import type { Img } from '../../data/media';
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+import MediaScreen from './MediaScreen.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
+const { lang, c, M, pic, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+const im = (n: string) => [M.cover, ...(M.gal ?? []).flat()].find((x) => x.src.endsWith(`/${n}.webp`))!;
+const img = (n: string, alt: string, sizes = '(max-width: 760px) 100vw, 40vw') => ({ ...pic(im(n), sizes), alt: `${c.title} — ${alt}` });
+const todo = fr ? 'à fournir' : 'to come', mine = fr ? 'en recherche' : 'being traced';
+---
+<TextScreen {...T[0]} />
+<SlotScreen label={mine} slots={[fr ? "l'ancien site du club (archive)" : "the club's old website (archive)"]} />
+
+<TextScreen {...T[1]} />
+<MediaScreen label={fr ? "l'accueil, sombre et clair" : 'the homepage, dark and light'} items={[
+  img('cover', fr ? "l'écran d'accueil en mode sombre : « The Black Mafia » et le blason en relief" : 'the homepage in dark mode: “The Black Mafia” and the embossed crest'),
+  img('04', fr ? "l'écran d'accueil en mode clair" : 'the homepage in light mode'),
+]} />
+
+<TextScreen {...T[2]} />
+<MediaScreen label={fr ? 'la fiche joueur' : 'player profile'} items={[
+  img('02', fr ? 'fiche joueur : pseudo en grand, personnages joués et radar de compétences' : 'player profile: gamertag, characters played and skill radar', '(max-width: 760px) 100vw, 70vw'),
+]} />
+
+<TextScreen {...T[3]} />
+<MediaScreen label={fr ? 'le roster et les actualités' : 'roster and news'} items={[
+  img('06', fr ? 'le roster : les cartes des joueurs' : 'the roster: player cards'),
+  img('01', fr ? 'les actualités' : 'the news page'),
+]} />
+
+<TextScreen {...T[4]} />
+<SlotScreen label={todo} slots={[fr ? 'la boutique : le catalogue' : 'the store: catalogue', fr ? 'la fiche produit' : 'the product page', fr ? 'accueil et fiche joueur sur téléphone' : 'homepage and player profile on phone']} />
+
+<TextScreen {...T[5]} />
+<SlotScreen label={todo} slots={[fr ? 'un article ouvert' : 'an open article']} />
+
+<TextScreen {...T[6]} />

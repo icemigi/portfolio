@@ -1,0 +1,27 @@
+---
+// ChâteauStudio : le milieu de l'étude (après la page de garde et l'accroche communes), pour les clients d'abord : le rôle de la
+// structure, le cadre, le nom, l'offre, l'état. Identité à dessiner : tous les médias sont des emplacements gris (SlotScreen),
+// liste et priorités dans Notion › Études de cas › ChâteauStudio. Textes : projects.ts (sections dans l'ordre des écrans).
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M?: any; pic?: any; rich: (t: string, cls?: string) => string }
+const { lang, c, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+const todo = fr ? 'à fournir' : 'to come';
+---
+<TextScreen {...T[0]} />
+<SlotScreen label={todo} slots={[fr ? 'le logo' : 'the logo', fr ? 'sa construction sur la grille' : 'its construction on the grid']} />
+
+<TextScreen {...T[1]} />
+<SlotScreen label={todo} slots={[fr ? 'le modèle de devis' : 'the quote template', fr ? 'le deck de présentation' : 'the presentation deck']} />
+
+<TextScreen {...T[2]} />
+<SlotScreen label={todo} slots={[fr ? 'le logo animé' : 'the animated logo']} />
+
+<TextScreen {...T[3]} />
+<SlotScreen label={todo} slots={[fr ? "le site du studio, page d'accueil" : "the studio's website, homepage", fr ? 'le site sur téléphone' : 'the website on phone']} />
+
+<TextScreen {...T[4]} />
+<SlotScreen label={todo} slots={[fr ? 'cartes de visite' : 'business cards', fr ? 'papier à en-tête et enveloppe' : 'letterhead and envelope', fr ? 'avatar et gabarits réseaux' : 'avatar and social templates']} />

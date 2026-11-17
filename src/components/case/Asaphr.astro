@@ -1,0 +1,48 @@
+---
+// ASAPHR : le milieu de l'étude (après la page de garde et l'accroche communes), pour les agences de branding, les studios de
+// typographie et les recruteurs DA : le pari, le support, la langue, la grille, la syntaxe, le sceau, la démarche, l'état.
+// Glyphes : visuels provisoires (seront redessinés). Médias à venir : emplacements gris (SlotScreen), liste dans Notion.
+// Textes : projects.ts (sections dans l'ordre des écrans).
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+import MediaScreen from './MediaScreen.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M: any; pic: (im: { src: string; w: number; h: number }, sizes: string) => any; rich: (t: string, cls?: string) => string }
+const { lang, c, pic, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+// glyphe sur sa grille : numéro de fichier, ce qu'il montre (texte alternatif)
+const G = (n: string, alt: string, sizes = '(max-width: 760px) 50vw, 22vw') =>
+  ({ ...pic({ src: `/work/asaphr/${n}.webp`, w: 1600, h: 1600 }, sizes), alt: `${c.title} — ${alt}` });
+const onGrid = fr ? 'glyphe sur sa grille de 3 × 5' : 'glyph on its 3 × 5 grid';
+const todo = fr ? 'à venir' : 'to come';
+---
+<TextScreen {...T[0]} />
+<MediaScreen label={fr ? 'les premiers signes' : 'the first signs'} items={[
+  { ...pic({ src: '/work/asaphr/cover.webp', w: 2200, h: 1238 }, '(max-width: 760px) 100vw, 70vw'), alt: `${c.title} — ${fr ? 'les huit premiers glyphes, côte à côte' : 'the first eight glyphs, side by side'}` },
+]} />
+
+<TextScreen {...T[1]} />
+<SlotScreen label={todo} slots={[fr ? 'le disque qui tourne au défilement, la branche à midi' : 'the disc turning on scroll, the branch at twelve']} />
+
+<TextScreen {...T[2]} />
+<SlotScreen label={todo} slots={[fr ? 'les quatre familles de syllabes autour du disque' : 'the four syllable families around the disc']} />
+
+<TextScreen {...T[3]} />
+<MediaScreen label={fr ? 'la grille' : 'the grid'} items={[
+  G('01', `${onGrid}, boucle et axes droits`), G('04', `${onGrid}, angles droits et courbe`), G('05', `${onGrid}, tracé courbe`),
+]} />
+
+<TextScreen {...T[4]} />
+<SlotScreen label={todo} slots={[fr ? 'une branche annotée : agent, lien, objet, sceau' : 'an annotated branch: agent, link, object, seal']} />
+
+<TextScreen {...T[5]} />
+<SlotScreen label={todo} slots={[fr ? 'les neuf sceaux : trois formes, trois contours' : 'the nine seals: three shapes, three outlines']} />
+
+<TextScreen {...T[6]} />
+<SlotScreen label={todo} slots={[fr ? 'pages du carnet de croquis' : 'sketchbook pages', fr ? 'du croquis au glyphe' : 'from sketch to glyph']} />
+
+<TextScreen {...T[7]} />
+<MediaScreen label={fr ? 'en cours de dessin' : 'being drawn'} items={[
+  G('02', onGrid), G('03', onGrid), G('06', onGrid), G('07', onGrid),
+]} />

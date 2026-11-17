@@ -44,8 +44,10 @@ html.theme-fade, html.theme-fade body, html.theme-fade .scr, html.theme-fade .si
 html[data-theme='nuit'] .logo-ic, html[data-theme='nuit'] .ld-fill { filter: invert(.92) sepia(.15); }
 /* le sceau de cire, la nuit : pris dans la pénombre (plus sombre, moins saturé, ombre plus profonde) */
 html[data-theme='nuit'] .seal { filter: brightness(.62) saturate(.82) sepia(.1) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
-.thm path { fill: transparent; transition: fill .35s var(--out), fill-opacity .35s var(--out); }
-html[data-theme='nuit'] .thm path { fill: currentColor; } /* la lune se remplit quand la nuit est active */
+/* la lune, en héraldique : le jour, un croissant couché (la lune qu'on reconnaît) ; la nuit, il pivote d'un quart de tour et se
+   dresse en croissant « montant » des blasons (cornes en haut), plein */
+.thm .mn { transform-box: fill-box; transform-origin: 50% 50%; fill: transparent; rotate: -90deg; transition: fill .35s var(--out), fill-opacity .35s var(--out), rotate .6s var(--out); }
+html[data-theme='nuit'] .thm .mn { fill: currentColor; rotate: 0deg; }
 /* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
 .fire { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
 .torch-glow { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: opacity .3s; --k: 1;
@@ -362,8 +364,8 @@ a[data-copied]::after { content: attr(data-copied); position: absolute; left: 10
   .site-header .snd:hover svg { scale: 1.15; }
   /* la lune : au survol, elle se remplit à moitié (un avant-goût de la nuit) et s'incline ; la nuit, elle se vide à moitié */
   .site-header .thm:hover svg { rotate: -14deg; }
-  .site-header .thm:hover path { fill: currentColor; fill-opacity: .4; }
-  html[data-theme='nuit'] .site-header .thm:hover path { fill-opacity: .45; }
+  .site-header .thm:hover .mn { fill: currentColor; fill-opacity: .4; }
+  html[data-theme='nuit'] .site-header .thm:hover .mn { fill-opacity: .45; }
 }
 /* liens du texte (sans style propre) : passent en orange au survol */
 a:not([class]) { transition: color .2s; }

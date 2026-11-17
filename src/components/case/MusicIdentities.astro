@@ -1,7 +1,7 @@
 ---
 // Identités musicales : le milieu de l'étude (après la page de garde et l'accroche communes), cadré pour un recruteur ou un
 // artiste : le rôle, le lettrage, puis une identité par écran (texte : l'idée et la fabrication, puis ses visuels), le temps
-// réel et la fidélité des artistes. Aucun nom d'artiste dans les textes ni les textes alternatifs.
+// réel et les résultats (fidélité, presse, classement, tirés des recherches du 17/11). Aucun nom d'artiste dans les textes ni les textes alternatifs.
 // Textes : projects.ts (sections dans l'ordre des écrans). Médias à venir : emplacements gris (SlotScreen).
 import type { Img } from '../../data/media';
 import TextScreen from './TextScreen.astro';
@@ -58,7 +58,7 @@ const todo = fr ? 'à fournir' : 'to come';
 ], '(max-width: 760px) 100vw, 40vw')} />
 
 <TextScreen {...T[6]} />
-<MediaScreen label={fr ? 'le relief' : 'relief'} items={imgs([
+<MediaScreen label="la bête" items={imgs([
   ['01', fr ? 'le titre en relief' : 'the embossed title'],
   ['02', fr ? 'relief et constellation' : 'relief and constellation'],
   ['03', fr ? 'la constellation en rouge' : 'the constellation in red'],

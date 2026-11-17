@@ -1,0 +1,66 @@
+---
+// Algorithmic Heraldry : le milieu de l'étude (après la page de garde et l'accroche communes), pour les studios de création :
+// le point de départ, la grammaire, le contraste, la grille, la clé (avec le générateur jouable), le livre, les erreurs.
+// Écus et meubles tirés du vrai moteur (tools/heraldry-shots.mjs) ; pages et maquette du livre : visuels existants.
+// Textes : projects.ts (sections dans l'ordre des écrans). Médias à venir : emplacements gris (SlotScreen).
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+import MediaScreen from './MediaScreen.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M: any; pic: (im: { src: string; w: number; h: number }, sizes: string) => any; rich: (t: string, cls?: string) => string }
+const { lang, c, pic, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+// visuel : nom de fichier, dimensions, ce qu'il montre (texte alternatif)
+const I = (n: string, w: number, h: number, alt: string, sizes = '(max-width: 760px) 50vw, 30vw') =>
+  ({ ...pic({ src: `/work/algorithmic-heraldry/${n}.webp`, w, h }, sizes), alt: `${c.title} — ${alt}` });
+const key = (k: string, sizes?: string) => I(`key-${k}`, 1440, 1440, fr ? `écu de la clé ${k.toUpperCase()}` : `shield for key ${k.toUpperCase()}`, sizes);
+const mine = fr ? 'en préparation' : 'in progress';
+---
+<TextScreen {...T[0]} />
+<MediaScreen label={fr ? 'la planche d\'essai' : 'the test plate'} layout="big" items={[
+  I('planche', 1216, 1387, fr ? 'planche d\'essai : 72 écus tirés au hasard' : 'test plate: 72 randomly drawn shields', '(max-width: 760px) 100vw, 45vw'),
+  key('azspw6usj4'), key('56fkro9q54'),
+]} />
+
+<TextScreen {...T[1]} />
+<MediaScreen label={fr ? 'les meubles' : 'the charges'} items={[
+  I('meuble-castle', 1440, 1440, fr ? 'meuble : le château' : 'charge: the castle'),
+  I('meuble-dragon', 1440, 1440, fr ? 'meuble : le dragon' : 'charge: the dragon'),
+  I('meuble-key', 1440, 1440, fr ? 'meuble : la clef' : 'charge: the key'),
+  I('meuble-leopard', 1440, 1440, fr ? 'meuble : le léopard' : 'charge: the leopard'),
+]} />
+
+<TextScreen {...T[2]} />
+<MediaScreen label={fr ? 'noir et blanc' : 'black and white'} items={[key('nya8gqwh6p', '(max-width: 760px) 50vw, 40vw'), key('4waohuuag1', '(max-width: 760px) 50vw, 40vw')]} />
+
+<TextScreen {...T[3]} />
+<SlotScreen label={mine} slots={[fr ? 'les quatre ancrages, en schéma' : 'the four anchors, as a diagram']} />
+
+<TextScreen {...T[4]} />
+<MediaScreen label="heraldique → heraldiquf" items={[key('heraldique', '(max-width: 760px) 50vw, 40vw'), key('heraldiquf', '(max-width: 760px) 50vw, 40vw')]} />
+<section class="scr mds" data-media>
+  <div class="in g med sqg c1">
+    <p class="lab mono mu par">{fr ? 'à toi : tape une clé' : 'your turn: type a key'}</p>
+    <figure class="mi m0"><span class="mf gen"><iframe src={`${c.generator ?? '/lab/heraldry/index.html'}?lang=${lang}`} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe></span></figure>
+  </div>
+</section>
+
+<TextScreen {...T[5]} />
+<MediaScreen label={fr ? 'le livre' : 'the book'} layout="big-r" items={[
+  // couverture haute (1,3) : 4 colonnes aussi sur écran haut, les pages collées à une gouttière
+  { ...I('object', 1000, 1315, fr ? 'la couverture du livre' : 'the book cover', '(max-width: 760px) 100vw, 35vw'), at: '7 / 11', atTall: '8 / 12', row: '1 / 3' },
+  { ...I('08', 1223, 1400, fr ? "l'index des clés" : 'the index of keys'), at: '5 / 7', atTall: '6 / 8', row: '1' },
+  { ...I('03', 1223, 1400, fr ? "une page d'écus" : 'a page of shields'), at: '5 / 7', atTall: '6 / 8', row: '2' },
+]} />
+<MediaScreen label={fr ? 'les pages' : 'the pages'} items={[
+  I('01', 1223, 1400, fr ? 'une page de texte' : 'a text page', '(max-width: 760px) 50vw, 40vw'),
+  I('cover', 2200, 1259, fr ? "une double page d'écus" : 'a spread of shields', '(max-width: 760px) 50vw, 40vw'),
+]} />
+
+<TextScreen {...T[6]} />
+
+<style>
+  .gen { aspect-ratio: 1; }
+  .gen iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+</style>

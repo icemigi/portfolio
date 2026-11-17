@@ -1,16 +1,21 @@
 ---
-// Étude de cas, mise en page magazine : chaque écran est une double page composée (texte et visuels ensemble,
-// contrastes d'échelle), la disposition change d'un écran à l'autre. Titre · accroche · doubles pages · planche contact
-// · projet suivant. Un seul libellé entre parenthèses par écran. Le défilement reste celui du site (un geste = un écran).
-// Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (le titre glisse et grandit jusqu'au titre de la page suivante).
+// Étude de cas : page de garde · accroche (en bref) · milieu propre à chaque étude (src/components/case/<Étude>.astro :
+// écrans de texte et de médias sur la grille) · projet suivant. Un seul libellé entre parenthèses par écran. Le défilement
+// reste celui du site (un geste = un écran). Fin : l'anneau se remplit en 3,5 s puis ouvre le projet suivant (le titre glisse
+// et grandit jusqu'au titre de la page suivante).
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media, type Img } from '../../../data/media';
-import { captions } from '../../../data/captions';
-import { rich, first, esc } from '../../../data/text';
+import TextScreen from '../../../components/case/TextScreen.astro';
+import { rich } from '../../../data/text';
 import KernOutdoor from '../../../components/case/KernOutdoor.astro';
+import SportsAventure from '../../../components/case/SportsAventure.astro';
 import MusicIdentities from '../../../components/case/MusicIdentities.astro';
+import AlgorithmicHeraldry from '../../../components/case/AlgorithmicHeraldry.astro';
+import Asaphr from '../../../components/case/Asaphr.astro';
+import BmsEsport from '../../../components/case/BmsEsport.astro';
+import ChateauStudio from '../../../components/case/ChateauStudio.astro';
 import ObjectShape from '../../../components/ObjectShape.astro';
 
 export function getStaticPaths() {
@@ -27,69 +32,12 @@ const prev = projects[(index - 1 + projects.length) % projects.length];
 const nc = next[lang];
 const N = pad(projects.length);
 
-type Para = { t?: string; p: string };
-// Un écran de texte (au milieu de la grille, ferré à gauche : gros texte puis petit texte), puis un écran de médias en grand,
-// en alternance. Les médias gardent toujours leurs proportions (jamais rognés).
-type Block =
-  | { kind: 'txt'; k: string; big: string; small: string[] }
-  | { kind: 'media'; imgs: Img[] }
-  | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'gen'; src: string };
 const M = media[project.slug];
-// grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
+// grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones ; chaque étude écrit ses textes alternatifs
 const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(/\.webp$/, '-800.webp')} 800w, ${im.src} ${im.w}w` : undefined);
-const vid = (src: string) => /\.(mp4|webm)$/i.test(src);
-const len = (ps: Para[]) => ps.reduce((n, x) => n + (x.t?.length ?? 0) + x.p.length, 0);
-
-// rubriques : le canevas habituel (7 rubriques) se lit en 4 temps ; deux rubriques courtes partagent un écran
-const S = c.sections;
-type Group = { k: string; paras: Para[]; list?: boolean };
-const groups: Group[] = [];
-if (c.text) groups.push({ k: fr ? 'le projet' : 'the project', paras: c.text.map((p) => ({ p })) });
-if (S.length === 7) {
-  const names = fr ? ['contexte', 'démarche', 'choix clés', 'résultat'] : ['context', 'process', 'key decisions', 'outcome'];
-  [[0, 1], [2, 3], [4], [5, 6]].forEach((g, gi) => {
-    const ps = g.flatMap((i) => S[i].paras);
-    if (g.length === 1 || len(ps) <= 720) groups.push({ k: names[gi], paras: ps });
-    else g.forEach((i) => groups.push({ k: S[i].h.toLowerCase(), paras: S[i].paras }));
-  });
-} else S.forEach((s) => groups.push({ k: s.r ? `${s.r} — ${s.h.toLowerCase()}` : s.h.toLowerCase(), paras: s.paras })); // rubrique fixe (r) + titre propre au projet (h)
-groups.forEach((g) => { if (g.paras.length > 1 && g.paras.every((x) => x.t)) g.list = true; });
-
-// gros texte / petit texte : la première phrase (ou l'intertitre) en grand, la suite en note mono
-const split = (ps: Para[]) => {
-  const [p0, ...more] = ps;
-  const [big, rest] = p0.t ? [p0.t.replace(/[\s.:]+$/, '') + '.', p0.p] : first(p0.p);
-  return { big: rich(big), small: [...(rest ? [rich(rest, 'note')] : []), ...more.map((x) => (x.t ? `<b>${esc(x.t)}</b> ` : '') + rich(x.p, 'note'))] };
-};
-
-// visuels : la couverture d'abord, puis la galerie, répartis également entre les écrans de médias (un après chaque texte, 4 visuels au plus)
-const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src && !vid(im.src))] : [];
-const blocks: Block[] = [{ kind: 'txt', k: fr ? 'en bref' : 'in short', big: rich(c.lead), small: c.note ? [rich(c.note, 'note')] : [] }];
-groups.forEach((g, i) => {
-  if (g.list) blocks.push({ kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) });
-  else blocks.push({ kind: 'txt', k: g.k, ...split(g.paras) });
-  if (project.generator && i === groups.length - 2) blocks.push({ kind: 'gen', src: project.generator });
-});
-if (c.blocks?.length) blocks.push({ kind: 'list', k: fr ? 'en bref' : 'in short', items: c.blocks });
-let slots = blocks.filter((b) => b.kind === 'txt').length;
-for (let i = 0; i < blocks.length && pool.length; i++) {
-  if (blocks[i].kind !== 'txt') continue;
-  blocks.splice(i + 1, 0, { kind: 'media', imgs: pool.splice(0, Math.min(4, Math.ceil(pool.length / slots--))) });
-  i++;
-}
-while (pool.length) blocks.push({ kind: 'media', imgs: pool.splice(0, 4) });
-// projets à architecture propre (src/components/case/) : leur milieu remplace les rubriques (l'accroche reste commune)
-const Own = ({ 'kern-outdoor': KernOutdoor, 'music-identities': MusicIdentities } as Record<string, typeof KernOutdoor | undefined>)[project.slug];
-const shown: Block[] = Own ? [blocks[0]] : blocks;
-
-// textes alternatifs et légendes : celle de captions.ts, sinon « visuel 03/19 »
-const allImgs: Img[] = shown.flatMap((b) => (b.kind === 'media' ? b.imgs : []));
-const imgTotal = allImgs.length;
-const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
-const capOf = (im: Img) => captions[im.src]?.[lang] || `${fr ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
-const pic = (im: Img, cls: string, sizes: string) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}` });
-type Pic = ReturnType<typeof pic>;
+const pic = (im: Img, sizes: string) => ({ src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: c.title });
+// milieu de chaque étude (src/components/case/)
+const Own = ({ 'kern-outdoor': KernOutdoor, 'sports-aventure': SportsAventure, 'music-identities': MusicIdentities, 'algorithmic-heraldry': AlgorithmicHeraldry, asaphr: Asaphr, 'bms-esport': BmsEsport, 'chateau-studio': ChateauStudio } as Record<string, typeof KernOutdoor | undefined>)[project.slug];
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
 const workLd = {
@@ -106,11 +54,6 @@ const workLd = {
     <script type="application/ld+json" set:html={JSON.stringify(workLd)} />
   </Fragment>
 
-  <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={fr ? 'Visuel agrandi' : 'Enlarged visual'}>
-    <img alt="" decoding="async" />
-    <p class="lbc mono"><span data-lbc></span><span class="mu" data-lbn></span></p>
-  </div>
-
   <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
@@ -126,66 +69,15 @@ const workLd = {
       </div>
     </section>
 
-    {shown.map((b, bi) =>
-      b.kind === 'txt' ? (
-        <section class="scr txs">
-          <div class="in g cen">
-            <div class="pin">
-              <h2 class="lab mono mu par">{b.k}</h2>
-              <div class="tx">
-                <p class="phr t56" data-hola data-fit set:html={b.big} />
-                {b.small.length > 0 && <div class="nts mono mu note">{b.small.map((h) => <p set:html={h} />)}</div>}
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : b.kind === 'media' ? (
-        <section class="scr mds" data-media>
-          <div class:list={['in g med', `n${b.imgs.length}`, { flip: bi % 4 === 3 }]}>
-            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
-            {b.imgs.map((im, i) => ((p: Pic) => (
-              <figure class:list={['mi', `m${i}`]} data-par={[70, 150, 110, 190][i]}>
-                {/* capture très haute (page web entière) : elle défile dans un cadre d'écran (views/case.ts) */}
-                {p.h / p.w > 2.5
-                  ? <div class="shot" data-shot><img src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} loading="lazy" decoding="async" /></div>
-                  : <img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} loading="lazy" decoding="async" />}
-              </figure>
-            ))(pic(im, '', b.imgs.length === 1 ? '(max-width: 760px) 100vw, 70vw' : '(max-width: 760px) 100vw, 40vw')))}
-          </div>
-        </section>
-      ) : b.kind === 'list' ? (
-        <section class="scr">
-          <div class="in g">
-            <h2 class="lab mono mu par">{b.k}</h2>
-            <ul class="bd idx" data-hola data-fit>
-              {b.items.map((it, i) => (
-                <li><span class="mono mu n">{pad(i + 1)}</span><h3 class="t28">{it.k}</h3><p class="mono mu dl">{it.v}</p></li>
-              ))}
-            </ul>
-          </div>
-        </section>
-      ) : (
-        <section class="scr">
-          <div class="in g">
-            <p class="lab mono mu par">{fr ? 'générateur' : 'generator'}</p>
-            <div class="bd gen">
-              <p class="mono mu">{fr ? 'entrez une clé, obtenez son blason' : 'enter a key, get its coat of arms'}</p>
-              <iframe src={b.src} title={fr ? 'Générateur héraldique' : 'Heraldry generator'} loading="lazy"></iframe>
-            </div>
-          </div>
-        </section>
-      ),
-    )}
+    <TextScreen k={fr ? 'en bref' : 'in short'} big={rich(c.lead)} note={c.note ? rich(c.note, 'note') : undefined} />
 
-    {Own && M && <Own lang={lang} c={c} M={M} pic={(im: Img, sizes: string) => pic(im, '', sizes)} rich={rich} />}
+    {Own && <Own lang={lang} c={c} M={M} pic={pic} rich={rich} />}
 
-    <section class="scr nx" aria-labelledby="next-l">
-      <div class="in g">
-        <p class="lab mono mu par" id="next-l" data-cl><span class="vl">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</span></p>
-        <div class="bd tt">
-          <h2 class="next-title t56"><span class="vt">{nc.title}</span></h2>
-          <p class="mono mu">{nc.short} — {next.yearLabel}</p>
-        </div>
+    <section class="scr nx" data-peek aria-labelledby="next-l">
+      <div class="nxb g">
+        <p class="lab mono par" id="next-l" data-cl><span class="vl">{t.next} {pad(((index + 1) % projects.length) + 1)}/{N}</span></p>
+        <h2 class="next-title"><span class="vt">{nc.title}</span></h2>
+        <p class="nfoot mono">{nc.short} — {next.yearLabel}</p>
         <a class="ring" href={`/${lang}/work/${next.slug}/`} data-next aria-label={`${t.next} : ${nc.title}`}>
           <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="track0" /><circle cx="60" cy="60" r="54" class="arc" data-arc /></svg>
           <span class="mono" aria-hidden="true">{t.nextShort}</span>
@@ -202,6 +94,13 @@ const workLd = {
   ::view-transition-group(case-title), ::view-transition-group(case-object) { animation-duration: .9s; animation-timing-function: cubic-bezier(.7, 0, .2, 1); }
   ::view-transition-old(case-title), ::view-transition-old(case-object) { animation: none; opacity: 0; }
   ::view-transition-new(case-title), ::view-transition-new(case-object) { animation: none; }
+  /* ouverture du projet suivant, sans fondu : le bandeau orange descend et sort par le bas, le dernier écran monte et sort par
+     le haut ; la page d'arrivée apparaît entre les deux, pendant que le titre voyage (même durée, même courbe) */
+  ::view-transition-group(case-band), ::view-transition-group(case-out) { animation: none; }
+  ::view-transition-old(case-band) { animation: kk-band-out .9s cubic-bezier(.7, 0, .2, 1) both; }
+  ::view-transition-old(case-out) { animation: kk-out-up .9s cubic-bezier(.7, 0, .2, 1) both; }
+  @keyframes kk-band-out { to { transform: translateY(100%); } }
+  @keyframes kk-out-up { to { transform: translateY(-100%); } }
   /* page de garde : le numéro et la fiche n'apparaissent qu'une fois le titre posé (en CSS : aucun affichage avant le script) */
   html.js .s1-late { animation: kk-late .45s cubic-bezier(.2,.7,.2,1) 1s both; }
   html.js.case-next .s1-late { animation-delay: 1.15s; }
@@ -220,22 +119,13 @@ const workLd = {
   .case .pin .nts { margin-top: 24px; font-size: 12px; line-height: 1.55; text-transform: none; max-width: 52ch; }
   .case .pin .nts b { font-weight: 500; }
   .case .pin .nts p + p { margin-top: .6em; }
-  /* médias : jamais rognés (largeur et hauteur plafonnées, proportions d'origine), posés sur les colonnes */
+  /* médias : jamais rognés (proportions d'origine), posés sur les colonnes */
   .case .mi { margin: 0; display: flex; justify-content: center; min-width: 0; }
-  .case .mi > img { display: block; width: auto; height: auto; max-width: 100%; max-height: var(--mh, 70dvh); }
   .case .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; width: min(100%, var(--mh, 70dvh) * 1.6); background: color-mix(in srgb, var(--fg) 6%, var(--bg)); }
   .case .shot > img { display: block; width: 100%; height: auto; will-change: transform; }
   .case .med { height: 100%; grid-template-rows: minmax(0, 1fr); align-items: center; padding-top: calc(var(--head) + 48px); padding-bottom: 96px; }
   .case .med > .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; }
 
-  /* médias en grand ; un seul sur les colonnes 3 à 10, sinon la grille partagée en parts égales, légèrement décalés en hauteur */
-  .case .med .mi { grid-row: 1; }
-  .case .med.n1 .mi { grid-column: 3 / 11; --mh: 72dvh; }
-  .case .med.n2 .m0 { grid-column: 1 / 7; } .case .med.n2 .m1 { grid-column: 7 / -1; } .case .med.n2 { --mh: 62dvh; }
-  .case .med.n3 .m0 { grid-column: 1 / 5; } .case .med.n3 .m1 { grid-column: 5 / 9; } .case .med.n3 .m2 { grid-column: 9 / -1; } .case .med.n3 { --mh: 52dvh; }
-  .case .med.n4 .m0 { grid-column: 1 / 4; } .case .med.n4 .m1 { grid-column: 4 / 7; } .case .med.n4 .m2 { grid-column: 7 / 10; } .case .med.n4 .m3 { grid-column: 10 / -1; } .case .med.n4 { --mh: 44dvh; }
-  .case .med:not(.n1) .m0, .case .med:not(.n1) .m2 { align-self: start; margin-top: 4dvh; }
-  .case .med:not(.n1) .m1, .case .med:not(.n1) .m3 { align-self: end; margin-bottom: 4dvh; }
   /* grille stricte des études à mise en page propre (.sqg, 17/11) : chaque visuel garde ses proportions et couvre un nombre
      entier de colonnes (ses bords sur les lignes de la grille), dans les colonnes 2 à 11 au plus ; entre deux visuels, toujours la
      gouttière. cN : N visuels ; c4 : 2 × 2 ; big / big-r : un grand sur 2k colonnes et deux petits sur k colonnes empilés.
@@ -270,10 +160,9 @@ const workLd = {
     .case .pin .nts { margin-top: 12px; font-size: 11px; }
     .case .med { display: flex; flex-direction: column; justify-content: center; gap: 16px; padding-top: calc(var(--head) + 52px); }
     .case .med .mi { margin: 0 !important; align-self: center !important; }
-    .case .med.n1 .mi { --mh: 64dvh; }
     .case .med.sqg { flex-direction: row; flex-wrap: wrap; align-content: center; justify-content: center; gap: var(--gut); }
     .case .med.sqg .mi { width: calc((100% - var(--gut)) / 2); }
-    .case .med.sqg.c1 .mi, .case .med.sqg.big .m0, .case .med.sqg.big-r .m0 { width: min(100%, 52dvh); } .case .med.n2 { --mh: 34dvh; } .case .med.n3 { --mh: 22dvh; } .case .med.n4 { --mh: 16dvh; }
+    .case .med.sqg.c1 .mi, .case .med.sqg.big .m0, .case .med.sqg.big-r .m0 { width: min(100%, 52dvh); }
   }
 </style>
 
@@ -296,7 +185,6 @@ const workLd = {
   :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
   @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
   .lab { grid-column: 1 / 4; align-self: first baseline; }
-  .bd { grid-column: 4 / 11; align-self: first baseline; }
 
   /* page de garde : très grand titre en bas, fiche dessous */
   .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 24px; padding-top: calc(var(--head) + 24px); padding-bottom: 32px; }
@@ -312,44 +200,30 @@ const workLd = {
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
 
-  .idx { display: grid; grid-template-columns: subgrid; row-gap: 20px; }
-  .idx > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
-  .idx .n { font-size: 12px; grid-column: 1; grid-row: 1; }
-  .idx h3 { grid-column: 2 / -1; font-weight: 500; }
-  .idx .dl { grid-column: 2 / -1; font-size: 12px; text-transform: none; }
-
-  .gen { display: grid; row-gap: 16px; grid-column: 4 / -1; }
-  .gen iframe { width: 100%; aspect-ratio: 16 / 9; max-height: calc(100dvh - var(--head) - 180px); border: 1px solid var(--ln); background: #fff; }
-
-  /* zoom */
-  .lb { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: calc(var(--head) + 8px) var(--m) 56px; background: color-mix(in srgb, var(--bg) 96%, transparent); }
-  .lb[hidden] { display: none; }
-  .lb img { max-width: 100%; max-height: calc(100dvh - var(--head) - 64px); width: auto; height: auto; object-fit: contain; }
-  .lbc { position: absolute; left: var(--m); bottom: 20px; right: var(--m); display: flex; justify-content: space-between; font-size: 12px; text-transform: none; }
-
-  /* projet suivant */
-  .nx .in { position: relative; align-content: start; }
-  .nx .tt > .mono { margin-top: 12px; }
-  .ring { position: absolute; right: var(--m); bottom: 40px; width: 160px; height: 160px; display: grid; place-items: center; }
+  /* projet suivant : un bandeau orange en bas de l'écran (il dépasse sous le dernier écran, comme le pied de page), titre et
+     anneau en blanc ; l'anneau se remplit puis ouvre le projet suivant */
+  .nx { background: var(--ac); color: #fff; }
+  .nxb { min-height: 34dvh; grid-template-rows: auto 1fr auto; row-gap: 8px; padding-top: 24px; padding-bottom: 28px; }
+  .nx .lab { grid-row: 1; grid-column: 1 / -1; color: inherit; opacity: .85; }
+  .next-title { grid-row: 2; grid-column: 1 / 10; align-self: end; font-weight: 500; font-size: min(7vw, 12dvh); line-height: .9; letter-spacing: -0.04em; }
+  .nfoot { grid-row: 3; grid-column: 1 / 10; opacity: .85; }
+  .ring { grid-row: 1 / -1; grid-column: 10 / -1; align-self: center; justify-self: end; position: relative; width: 140px; height: 140px; display: grid; place-items: center; color: #fff; }
   .ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
   .ring circle { fill: none; stroke-width: 1.5; }
-  .ring .track0 { stroke: var(--ln); }
-  .ring .arc { stroke: var(--fg); stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
+  .ring .track0 { stroke: rgb(255 255 255 / .4); }
+  .ring .arc { stroke: currentColor; stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 60px 60px; }
   .vl { display: inline-block; white-space: nowrap; }
 
   @media (max-width: 760px) {
-    .lab, .bd, .gen { grid-column: 1 / -1; }
+    .lab { grid-column: 1 / -1; }
     .s1 .head { grid-template-rows: auto 1fr auto auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(32px, 4dvh); }
     .case-h1 { font-size: min(15vw, 12dvh); }
+    .next-title { font-size: min(11vw, 8dvh); grid-column: 1 / -1; }
+    .nfoot { grid-column: 1 / -1; }
     .cobj { grid-column: 1 / -1; grid-row: 2; width: min(52vw, 30dvh); }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
     .fiche > div { grid-column: auto; }
-    .idx { grid-template-columns: 1fr auto; row-gap: min(20px, 2.4dvh); }
-    .idx h3 { grid-column: 1; grid-row: 1; }
-    .idx .n { grid-column: 2; grid-row: 1; justify-self: end; }
-    .idx .dl { grid-column: 1 / -1; grid-row: 2; }
-    .nx .in { align-content: start; padding-top: calc(var(--head) + 56px); }
-    .nx .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
-    .ring { width: 112px; height: 112px; bottom: min(72px, 9dvh); left: var(--m); right: auto; }
+    .nxb { min-height: 30dvh; }
+    .ring { grid-row: 1; grid-column: 1 / -1; align-self: start; width: 72px; height: 72px; }
   }
 </style>

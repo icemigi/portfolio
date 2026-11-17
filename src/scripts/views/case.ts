@@ -15,11 +15,20 @@ document.addEventListener('astro:before-preparation', (e) => {
   if (reduced() || !CASE.test(location.pathname) || !STAGE.test(ev.to.pathname)) return;
   const o = document.querySelector<HTMLElement>('[data-cobj] .shape'); if (o) o.style.viewTransitionName = 'case-object';
 });
-// noms de transition posés sur la page d'arrivée, le temps de l'échange (un seul élément par nom dans chaque page)
+// noms de transition posés sur la page d'arrivée, le temps de l'échange (un seul élément par nom dans chaque page) ; retirés
+// une fois la transition finie (la page suivante pourra les reprendre). Pas au chargement de la page (astro:page-load) : Astro
+// l'envoie juste après l'échange, AVANT que le navigateur capture la page d'arrivée — le titre n'avait alors plus de nom et
+// apparaissait d'un coup au lieu de voyager.
+const clearNames = () => document.querySelectorAll<HTMLElement>('.case-h1 .vt, [data-cobj] .shape, .obj .shape').forEach((el) => (el.style.viewTransitionName = ''));
 document.addEventListener('astro:before-swap', (e) => {
-  const ev = e as Event & { from: URL; to: URL; info?: { next?: boolean; object?: { slug: string } }; newDocument: Document };
+  const ev = e as Event & { from: URL; to: URL; info?: { next?: boolean; object?: { slug: string } }; newDocument: Document; viewTransition?: { finished: Promise<unknown> } };
   if (reduced()) return;
-  if (ev.info?.next) { const v = ev.newDocument.querySelector<HTMLElement>('.case-h1 .vt'); if (v) v.style.viewTransitionName = 'case-title'; }
+  ev.viewTransition?.finished.finally(clearNames);
+  if (ev.info?.next) {
+    // le titre arrive tout écrit (il a voyagé) : aucune apparition ne le touche, ni celle des écrans ni celle de la page de garde
+    ev.newDocument.querySelector('.case-h1')?.setAttribute('data-still', '');
+    const v = ev.newDocument.querySelector<HTMLElement>('.case-h1 .vt'); if (v) v.style.viewTransitionName = 'case-title';
+  }
   if (ev.info?.object) { const o = ev.newDocument.querySelector<HTMLElement>(`[data-cobj][data-slug="${ev.info.object.slug}"] .shape`); if (o) o.style.viewTransitionName = 'case-object'; }
   // retour vers la scène : l'objet du projet quitté, sur la scène d'arrivée
   if (CASE.test(ev.from.pathname) && STAGE.test(ev.to.pathname)) {
@@ -27,8 +36,6 @@ document.addEventListener('astro:before-swap', (e) => {
     if (o) o.style.viewTransitionName = 'case-object';
   }
 });
-// transition finie : les noms sont retirés (la page suivante pourra les reprendre)
-document.addEventListener('astro:page-load', () => document.querySelectorAll<HTMLElement>('.case-h1 .vt, [data-cobj] .shape, .obj .shape').forEach((el) => (el.style.viewTransitionName = '')));
 
 onPage('.screens-host.case', (ctx) => {
   // arrivée par « projet suivant » : la page de garde garde ses délais d'arrivée (le numéro et la fiche attendent le titre)
@@ -78,7 +85,7 @@ onPage('.screens-host.case', (ctx) => {
 
     // arrivée par « Projet suivant » : le titre a voyagé jusqu'à sa place (transition nommée) ; le reste de la page de garde
     // s'écrit derrière lui
-    if (arriving) letters(api.el(0), 650, '.case-h1');
+    if (arriving) letters(api.el(0), 650);
 
     // arrivée par la molette depuis le projet précédent : l'élan du geste qui a ouvert la page ne doit pas faire sauter
     // la page de garde. La molette est ignorée tant que ce geste dure (au moins 0,9 s, puis jusqu'à 0,25 s de calme).
@@ -107,13 +114,14 @@ onPage('.screens-host.case', (ctx) => {
       let f = parseFloat(getComputedStyle(big[0]).fontSize);
       while (over() && f > min) { f -= 1; big.forEach((b) => { b.style.fontSize = f + 'px'; }); }
     });
-    const fitTitle = () => {
-      const h = document.querySelector<HTMLElement>('.case-h1'), v = h?.querySelector<HTMLElement>('.vt');
-      if (!h || !v) return;
+    // titres de la page de garde et du projet suivant : réduits s'ils dépassent la largeur (même règle, même taille d'une page à l'autre)
+    const fitTitle = () => document.querySelectorAll<HTMLElement>('.case-h1, .next-title').forEach((h) => {
+      const v = h.querySelector<HTMLElement>('.vt');
+      if (!v) return;
       h.style.fontSize = '';
       const room = h.clientWidth, w = v.getBoundingClientRect().width;
       if (w > room) h.style.fontSize = parseFloat(getComputedStyle(h).fontSize) * room / w * 0.98 + 'px';
-    };
+    });
     let ft = 0;
     const refit = () => { fitTitle(); fit(); };
     if (!arriving) refit(); else fit();
@@ -121,13 +129,18 @@ onPage('.screens-host.case', (ctx) => {
     addEventListener('resize', () => { clearTimeout(ft); ft = ctx.timeout(refit, 150); }, { signal: ctx.signal });
 
     // ouverture du projet suivant : le titre « projet suivant » devient le titre de la page d'arrivée (transition nommée,
-    // voir plus bas) ; tout le reste s'efface autour de lui
+    // voir plus haut) ; le bandeau et le dernier écran s'écartent comme un rideau ([slug].astro)
     let leaving = false;
     const open = () => {
       if (leaving) return;
       leaving = true;
-      const v = document.querySelector<HTMLElement>('.next-title .vt');
-      if (v && !reduced()) v.style.viewTransitionName = 'case-title';
+      const v = document.querySelector<HTMLElement>('.next-title .vt'), band = document.querySelector<HTMLElement>('.nx');
+      const above = band?.previousElementSibling as HTMLElement | null;
+      if (!reduced()) {
+        if (v) v.style.viewTransitionName = 'case-title';
+        if (band) band.style.viewTransitionName = 'case-band'; // sort par le bas ([slug].astro)
+        if (above) above.style.viewTransitionName = 'case-out'; // sort par le haut
+      }
       navigate(ring.href, { info: { next: true } });
     };
     const stop = () => { if (fill) { fill.onfinish = null; fill.cancel(); fill = null; } };
@@ -145,9 +158,9 @@ onPage('.screens-host.case', (ctx) => {
     // projet précédent : geste vers le haut tout en haut de la page de garde, ou la flèche du libellé
     const prev = document.querySelector<HTMLAnchorElement>('[data-prev]');
     host.addEventListener('screens:above', () => { if (prev && !leaving) { leaving = true; navigate(prev.href); } });
-    // Échap : retour à la page Projets (l'objet repart à sa place sur la scène) — sauf visionneuse ou menu ouverts
+    // Échap : retour à la page Projets (l'objet repart à sa place sur la scène) — sauf menu ouvert
     addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape' || e.defaultPrevented || !document.querySelector('[data-lb]')?.hasAttribute('hidden') || document.documentElement.classList.contains('menu-open')) return;
+      if (e.key !== 'Escape' || e.defaultPrevented || document.documentElement.classList.contains('menu-open')) return;
       navigate(`/${document.documentElement.lang === 'fr' ? 'fr' : 'en'}/work/`);
     }, { signal: ctx.signal });
     ring.addEventListener('click', (e) => { e.preventDefault(); open(); });
@@ -219,55 +232,10 @@ onPage('.screens-host.case', (ctx) => {
       ctx.cleanup(() => { run = false; });
     });
 
-    // ---------- légende au survol : elle remplace le libellé de l'écran ----------
-    document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {
-      const lab = im.closest('.in')?.querySelector<HTMLElement>('[data-caplab]');
-      if (!lab) return;
-      const base = lab.textContent || '';
-      im.addEventListener('pointerenter', () => { const n = im.dataset.n || '', cap = im.dataset.cap || ''; lab.textContent = cap.endsWith(n) ? cap : `${cap} — ${n}`; });
-      im.addEventListener('pointerleave', () => { lab.textContent = base; });
+    // ---------- avant / après à volet (components/case/Compare.astro) : le curseur déplace le volet ----------
+    document.querySelectorAll<HTMLElement>('[data-cmp]').forEach((box) => {
+      const input = box.querySelector('input')!;
+      input.addEventListener('input', () => box.style.setProperty('--x', `${input.value}%`), { signal: ctx.signal });
     });
-
-    // ---------- zoom ----------
-    const lb = document.querySelector<HTMLElement>('[data-lb]')!, lbImg = lb.querySelector('img')!;
-    const lbc = lb.querySelector<HTMLElement>('[data-lbc]')!, lbn = lb.querySelector<HTMLElement>('[data-lbn]')!;
-    const all = [...document.querySelectorAll<HTMLImageElement>('img[data-cap]')];
-    let at = -1;
-    const show = (i: number) => {
-      at = (i + all.length) % all.length;
-      const m = all[at];
-      lbImg.src = m.getAttribute('data-real') || m.getAttribute('src') || ''; lbImg.width = m.width; lbImg.height = m.height;
-      const cap = m.dataset.cap || '', n = m.dataset.n || '';
-      lbc.textContent = cap; lbn.textContent = cap.endsWith(n) ? '' : n;
-    };
-    const block = (e: Event) => {
-      e.stopPropagation();
-      if (e.type === 'wheel') { close(); return; }
-      if (e.type !== 'keydown') return;
-      const k = (e as KeyboardEvent).key;
-      if (k === 'Escape') close();
-      else if (k === 'ArrowRight' || k === 'ArrowDown') show(at + 1);
-      else if (k === 'ArrowLeft' || k === 'ArrowUp') show(at - 1);
-      e.preventDefault();
-    };
-    const EVS = ['wheel', 'keydown', 'touchstart'] as const;
-    const openLb = (m: HTMLImageElement) => {
-      show(all.indexOf(m));
-      lb.hidden = false;
-      EVS.forEach((t) => addEventListener(t, block, { capture: true, passive: false, signal: ctx.signal }));
-      if (reduced()) return;
-      const a = m.getBoundingClientRect(), b = lbImg.getBoundingClientRect();
-      if (b.width) lbImg.animate([{ transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width})`, opacity: 0.6 }, { transformOrigin: '0 0', transform: 'none', opacity: 1 }], { duration: 560, easing: 'cubic-bezier(.7, 0, .2, 1)' });
-      lb.animate([{ backgroundColor: 'transparent' }, {}], { duration: 360, easing: 'ease-out' });
-      lb.querySelector('.lbc')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 380, fill: 'backwards' });
-    };
-    function close() {
-      if (lb.hidden) return;
-      EVS.forEach((t) => removeEventListener(t, block, { capture: true }));
-      if (reduced()) { lb.hidden = true; return; }
-      lb.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, easing: 'ease-in' }).finished.then(() => { lb.hidden = true; });
-    }
-    all.forEach((m) => m.addEventListener('click', () => openLb(m)));
-    lb.addEventListener('click', close);
   }
 });
