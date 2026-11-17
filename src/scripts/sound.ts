@@ -57,17 +57,18 @@ export const play = (name: string, o: Opt = {}) => {
 };
 
 // bouton du menu (recréé à chaque page : libellé posé à chaque montage, clic écouté sur le document)
-// haut-parleur : avec ondes quand le son est actif, barré quand il est coupé ; le libellé reste lisible par les lecteurs d'écran
-const ICON = (o: boolean) => `<svg viewBox="0 0 20 16" width="20" height="16" aria-hidden="true"><path d="M2 5.5h3.2L9.5 2v12L5.2 10.5H2Z" fill="currentColor"/>${o
-  ? '<path d="M12.3 5.2a3.6 3.6 0 0 1 0 5.6M14.6 3a6.8 6.8 0 0 1 0 10" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'
-  : '<path d="m12.5 5.5 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>'}</svg>`;
+// trompette héraldique à fanion (Header.astro) : l'état ne change que aria-pressed, le dessin reste, si bien que le passage
+// d'un état à l'autre s'anime (global.css : traits de son, fanion) ; le libellé reste lisible par les lecteurs d'écran
 export const soundLabel = () => document.querySelectorAll<HTMLButtonElement>('[data-sound]').forEach((btn) => {
-  btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', on ? btn.dataset.on! : btn.dataset.off!); btn.title = btn.getAttribute('aria-label')!; btn.innerHTML = ICON(on);
+  btn.setAttribute('aria-pressed', String(on)); btn.setAttribute('aria-label', on ? btn.dataset.on! : btn.dataset.off!); btn.title = btn.getAttribute('aria-label')!;
 });
 document.addEventListener('click', (e) => {
   if (!(e.target as Element).closest?.('[data-sound]')) return;
   on = !on; try { localStorage.setItem('kk-sound', on ? 'on' : 'off'); } catch { /* stockage indisponible */ }
   soundLabel(); if (on) { init(); ctx!.resume().then(() => play('click')).catch(() => {}); } // le clic sur le bouton est lui-même le geste qui réveille
+  // la sonnerie : le fanion claque (seulement au clic, pas au chargement d'une page où le son est déjà actif)
+  const btn = (e.target as Element).closest<HTMLElement>('[data-sound]')!;
+  if (on) { btn.classList.remove('blow'); void btn.offsetWidth; btn.classList.add('blow'); } else btn.classList.remove('blow');
 });
 // le contexte audio est créé à l'avance, dans un temps mort (le créer pendant le premier geste figeait ce geste ~200 ms sur téléphone) ;
 // il naît suspendu, et le navigateur exige un geste pour le réveiller : le premier geste ne fait plus que ce réveil, instantané

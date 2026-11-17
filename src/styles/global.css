@@ -44,10 +44,14 @@ html.theme-fade, html.theme-fade body, html.theme-fade .scr, html.theme-fade .si
 html[data-theme='nuit'] .logo-ic, html[data-theme='nuit'] .ld-fill { filter: invert(.92) sepia(.15); }
 /* le sceau de cire, la nuit : pris dans la pénombre (plus sombre, moins saturé, ombre plus profonde) */
 html[data-theme='nuit'] .seal { filter: brightness(.62) saturate(.82) sepia(.1) drop-shadow(0 8px 16px rgba(0, 0, 0, .55)); }
-/* la lune, en héraldique : le jour, un croissant couché (la lune qu'on reconnaît) ; la nuit, il pivote d'un quart de tour et se
-   dresse en croissant « montant » des blasons (cornes en haut), plein */
-.thm .mn { transform-box: fill-box; transform-origin: 50% 50%; fill: transparent; rotate: -90deg; transition: fill .35s var(--out), fill-opacity .35s var(--out), rotate .6s var(--out); }
-html[data-theme='nuit'] .thm .mn { fill: currentColor; rotate: 0deg; }
+/* le jour et la nuit, dans le style de la trompette du son (formes simples en aplat, traits à bouts ronds de même épaisseur) :
+   le jour, un soleil (disque et huit rayons) ; la nuit, un croissant. Au passage, l'astre du jour tourne en se couchant (il
+   rapetisse) pendant que l'autre se lève en pivotant */
+.thm .sun, .thm .mn { transform-box: fill-box; transform-origin: 50% 50%; transition: rotate .6s var(--out), scale .6s var(--out); }
+.thm .mn { fill: currentColor; }
+.thm .mn { rotate: -90deg; scale: 0; }
+html[data-theme='nuit'] .thm .sun { rotate: 90deg; scale: 0; }
+html[data-theme='nuit'] .thm .mn { rotate: 0deg; scale: 1; }
 /* mode nuit (souris) : le bout du doigt du gantelet s'enflamme ; le curseur système passe devant, la flamme monte au-dessus du doigt */
 .fire { position: fixed; inset: 0; z-index: 9999; pointer-events: none; }
 .torch-glow { position: fixed; inset: 0; z-index: 9998; pointer-events: none; transition: opacity .3s; --k: 1;
@@ -147,8 +151,16 @@ input, textarea, [contenteditable] { cursor: text; }
   .site-header .r { grid-column: 10 / 13; }
 }
 .snd { font: inherit; text-transform: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
-.snd svg { display: block; }
+.snd svg { display: block; overflow: visible; }
 .snd[aria-pressed='true'] { color: var(--fg); }
+/* trompette héraldique (Header.astro, sound.ts), en aplat, toujours à sa place (rien ne bascule dans le menu) : coupée, grise et
+   muette ; active, trois traits de son sortent du pavillon l'un après l'autre ; à l'allumage (clic), le fanion claque deux fois */
+.snd .bn { transform-box: fill-box; transform-origin: 50% 0; }
+.snd.blow .bn { animation: kk-flag .9s var(--out); }
+@keyframes kk-flag { 0% { transform: skewX(0); } 20% { transform: skewX(-16deg) scaleY(.92); } 45% { transform: skewX(11deg); } 70% { transform: skewX(-5deg); } 100% { transform: skewX(0); } }
+.snd .wv { stroke-dasharray: 4; stroke-dashoffset: 4; opacity: 0; transition: stroke-dashoffset .25s var(--out), opacity .2s; }
+.snd[aria-pressed='true'] .wv { stroke-dashoffset: 0; opacity: 1; transition: stroke-dashoffset .35s var(--out) .05s, opacity .1s .05s; }
+@media (prefers-reduced-motion: reduce) { .snd .wv { transition: none; } .snd.blow .bn { animation: none; } }
 .lang { display: flex; gap: 4px; }
 .lang a { color: var(--fg); transition: color .2s; } .lang a:hover { color: var(--ac); } /* un seul bouton : l'autre langue */
 /* cibles de 44 px autour des libellés de 12 px */
@@ -362,10 +374,9 @@ a[data-copied]::after { content: attr(data-copied); position: absolute; left: 10
 .site-header .hit svg { transition: scale .3s var(--out), rotate .45s var(--out); }
 @media (hover: hover) {
   .site-header .snd:hover svg { scale: 1.15; }
-  /* la lune : au survol, elle se remplit à moitié (un avant-goût de la nuit) et s'incline ; la nuit, elle se vide à moitié */
-  .site-header .thm:hover svg { rotate: -14deg; }
-  .site-header .thm:hover .mn { fill: currentColor; fill-opacity: .4; }
-  html[data-theme='nuit'] .site-header .thm:hover .mn { fill-opacity: .45; }
+  /* au survol : le soleil tourne d'un rayon, la lune s'incline */
+  .site-header .thm:hover .sun { rotate: 45deg; }
+  html[data-theme='nuit'] .site-header .thm:hover svg { rotate: -14deg; }
 }
 /* liens du texte (sans style propre) : passent en orange au survol */
 a:not([class]) { transition: color .2s; }
