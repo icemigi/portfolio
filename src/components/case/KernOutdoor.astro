@@ -20,7 +20,8 @@ const fr = lang === 'fr';
 const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
 const { PAL, CAR, FIG, SLOT, todo } = kernData(fr);
 // médias à fournir, par écran (emplacements gris) : après les chiffres, puis après la pièce de chaque écran de texte
-const TODO = { top: ['grid'], after: [[], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
+// (la grille du profil qui défile : c'est l'écran du fil avant / après, FeedPair ; plus d'emplacement à part)
+const TODO = { top: [] as string[], after: [[], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
 // le fil avant / après la DA de février 2026 : deux écrans, en-tête fixe, grilles qui défilent ensemble (exports Figma pour un
 // écran de 392 px, déclinés en plusieurs largeurs : fil-<nom>-<largeur>.webp ; l'avant reste en 392 en attendant son export complet)
 const feed = (n: string, ws: number[], h: number, alt: string) => {
@@ -46,7 +47,7 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
   </div>
 </section>
 
-<SlotScreen label={todo} slots={slots(TODO.top)} />
+{TODO.top.length > 0 && <SlotScreen label={todo} slots={slots(TODO.top)} />}
 
 {T.map((t, i) => (
   <>

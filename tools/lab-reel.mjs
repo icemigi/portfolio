@@ -3,7 +3,9 @@
 // les cellules poussent) et ses changements (palette, rendu) passent en un fondu bref ; la fin se fond dans le début (boucle sans
 // couture). Chaque pièce p5 est pilotée image par image (noLoop + redraw, hasard à graine fixe : même résultat à chaque
 // lancement), puis encodée en H.264 (une vidéo ne code que ce qui change : bien plus léger qu'un WebP animé).
-// Lancer, site servi sur :4329 (npx astro preview --port 4329) : node tools/lab-reel.mjs   (Playwright + Chromium requis)
+// Lancer, site servi sur :4329 (npx astro preview --port 4329) : node tools/lab-reel.mjs [nom…]   (Playwright + Chromium requis ;
+// avec des noms, seulement ces vignettes, ex. lab-matrice). night : la pièce en mode nuit (fond noir), pour que la vignette
+// se détache du fond clair du site.
 import { createRequire } from 'node:module';
 const { chromium } = createRequire(import.meta.url)('playwright');
 import sharp from 'sharp';
@@ -19,9 +21,13 @@ const mix = (a, b, k) => { const o = Buffer.allocUnsafe(a.length); for (let i = 
 const b = await chromium.launch();
 
 // reel : secs de film, cadre fixe (zoom z autour de fx, fy, marges inner), états successifs (un tous les secs / états.length)
-async function reel(name, path, { secs, z, fx = 0.5, fy = 0.5, inner = 0, states }, setup, page$) {
+const only = process.argv.slice(2);
+// cut : changements d'état en coupe franche et boucle sans fondu (pièces en signes, où un fondu brouille la trame)
+async function reel(name, path, { secs, z, fx = 0.5, fy = 0.5, inner = 0, states, night = false, cut = false }, setup, page$) {
+  if (only.length && !only.includes(name)) return;
   const page = await b.newPage({ viewport: { width: 1400, height: 1700 }, deviceScaleFactor: 2 });
-  await page.addInitScript(() => { let s = 7; Math.random = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646; window.kkNight = false; });
+  // thème de la pièce : back.js le lit dans localStorage (kk-theme), comme sur le site
+  await page.addInitScript((n) => { let s = 7; Math.random = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646; window.kkNight = n; localStorage.setItem('kk-theme', n ? 'nuit' : 'jour'); }, night);
   await page.goto(`${BASE}${path}`, { waitUntil: 'load' });
   await page.waitForFunction(() => document.querySelector('#stage canvas'));
   await page.evaluate(setup);
@@ -36,20 +42,21 @@ async function reel(name, path, { secs, z, fx = 0.5, fy = 0.5, inner = 0, states
   };
   const L = secs * FPS, per = L / states.length, frames = [];
   await page.evaluate((s) => window.reel.apply(s), states[0]);
-  for (let f = 0; f < L + LOOP; f++) {
+  const fade = cut ? 0 : FADE, loop = cut ? 0 : LOOP;
+  for (let f = 0; f < L + loop; f++) {
     await page.evaluate(() => window.reel.tick());
     const i = Math.floor(f / per), k = f - i * per, from = states[i % states.length], to = states[(i + 1) % states.length];
-    if (k >= per - FADE) {                          // fondu vers l'état suivant : la même image dans les deux états, mêlées
+    if (fade && k >= per - fade) {                          // fondu vers l'état suivant : la même image dans les deux états, mêlées
       const a = await grab();
       await page.evaluate((s) => { window.reel.apply(s); window.reel.again(); }, to);
-      frames.push(mix(a, await grab(), (k - (per - FADE) + 1) / (FADE + 1)));
+      frames.push(mix(a, await grab(), (k - (per - fade) + 1) / (fade + 1)));
       await page.evaluate((s) => window.reel.apply(s), from);
     } else {
       if (k === 0 && f > 0) await page.evaluate((s) => window.reel.apply(s), from);
       frames.push(await grab());
     }
   }
-  const out = frames.slice(0, L).map((fr, i) => (i < LOOP ? mix(frames[L + i], fr, (i + 1) / (LOOP + 1)) : fr));
+  const out = frames.slice(0, L).map((fr, i) => (i < loop ? mix(frames[L + i], fr, (i + 1) / (loop + 1)) : fr));
   const file = `${OUT}${name}.mp4`;
   await new Promise((ok, ko) => {
     const p = spawn(ffmpeg, ['-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${W}x${H}`, '-framerate', String(FPS), '-i', '-',
@@ -63,8 +70,9 @@ async function reel(name, path, { secs, z, fx = 0.5, fy = 0.5, inner = 0, states
   await page.close();
 }
 
-// Matrice : un tirage, le vortex au centre qui tourne ; les quatre palettes se succèdent (une toutes les 2 s)
-await reel('lab-matrice', '/lab/ascii/index.html?lang=fr', { secs: 8, z: 1.8, inner: 0.083, states: [0, 1, 3, 2] }, () => { noLoop(); roll(false); }, () => {
+// Matrice : un tirage, le vortex au centre qui tourne ; les quatre palettes se succèdent (une toutes les 2 s) ; en mode nuit (fond
+// noir, signes blancs) : en mode jour, son fond crème se confondait avec celui du site ; palettes en coupe franche, sans fondu
+await reel('lab-matrice', '/lab/ascii/index.html?lang=fr', { secs: 8, z: 1.8, inner: 0.083, states: [0, 1, 3, 2], night: true, cut: true }, () => { noLoop(); roll(false); }, () => {
   window.mouseX = width / 2; window.mouseY = height / 2;
   window.reel = {
     tick: () => redraw(),
