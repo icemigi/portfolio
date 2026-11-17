@@ -7,6 +7,9 @@
 import Base from '../../layouts/Base.astro';
 import { ui, languages, getLangFromParam, pad } from '../../data/ui';
 import { pieces } from '../../data/archive';
+import { av } from '../../data/avif';
+// vignette légère de chaque pièce (public/archive/s/, en JPG), pour la pile de cartes
+const thumb = (src: string) => src.replace('/archive/', '/archive/s/').replace(/\.webp$/, '.jpg');
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
@@ -42,7 +45,7 @@ const tilt = (i: number) => ((i === 0 ? -2 : (rnd(i + 7) - 0.5) * 18) * 0.4).toF
   </div>
 
   {/* données des pièces pour le script (catégories, proportions, images) */}
-  <script type="application/json" id="archive-data" set:html={JSON.stringify({ caps: pieces.map((p) => p.cat[lang] + (p.year ? ` (${p.year})` : '')), ratios: pieces.map((p) => p.w / p.h), srcs: pieces.map((p) => p.src) })} />
+  <script type="application/json" id="archive-data" set:html={JSON.stringify({ caps: pieces.map((p) => p.cat[lang] + (p.year ? ` (${p.year})` : '')), ratios: pieces.map((p) => p.w / p.h), srcs: pieces.map((p) => av(p.src)), thumbs: pieces.map((p) => p.src && av(thumb(p.src))) })} />
   <div class="lb" data-lb hidden role="dialog" aria-modal="true" aria-label={t.archiveCount}>
     <button class="x bp bx hit" type="button" data-close>{t.close.toLowerCase()}</button>
     <figure><span class="ph big" data-big></span><figcaption class="mono mu" data-cap></figcaption></figure>

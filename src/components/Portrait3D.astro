@@ -4,12 +4,16 @@
 // Assets (public/portrait3d/) issus de assets/portrait3D/web/ ; geo et nrm en WebP sans perte avec exact (pixels identiques au PNG, alpha compris).
 //   knight.webp : chevalier détouré, non découpé (le pochoir du cadre le découpe au rendu, dans le plan du cadre)
 //   frame.webp  : cadre ; geo.webp : R,G = profondeur 16 bits, B = pochoir ; nrm.webp : R,G = pente (racine signée), B = visage
+import { av } from '../data/avif';
 interface Props { lang: 'fr' | 'en'; class?: string; id?: string }
 const { lang, class: cls = '', id } = Astro.props;
+// images couleur (en AVIF quand il existe, src/data/avif.ts) : lues par views/portrait.ts dans data-img
+const P = (n: string) => av(`/portrait3d/${n}.webp`);
+const imgs = { fallback: [P('portrait-fallback-m'), P('portrait-fallback2-m')], frame: P('frame-m'), knight: P('knight'), knight2: P('knight2') };
 const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame';
 ---
-<figure class:list={['p3d', cls]} id={id} data-p3d transition:persist="portrait">
-  <img src="/portrait3d/portrait-fallback-m.webp" alt={alt} width="972" height="1327" decoding="async" fetchpriority="high" data-no-ascii />
+<figure class:list={['p3d', cls]} id={id} data-p3d data-img={JSON.stringify(imgs)} transition:persist="portrait">
+  <img src={imgs.fallback[0]} alt={alt} width="972" height="1327" decoding="async" fetchpriority="high" data-no-ascii />
   <canvas aria-hidden="true"></canvas>
 </figure>
 

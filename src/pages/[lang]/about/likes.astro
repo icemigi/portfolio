@@ -5,6 +5,7 @@
 import Base from '../../../layouts/Base.astro';
 import { ui, languages, getLangFromParam } from '../../../data/ui';
 import { likes } from '../../../data/likes';
+import { av } from '../../../data/avif';
 
 export function getStaticPaths() { return languages.map((lang) => ({ params: { lang } })); }
 const lang = getLangFromParam(Astro.params.lang);
@@ -23,7 +24,7 @@ const data = likes.map((l) => ({ id: l.id, src: l.src, shape: l.shape, w: l.w, h
     <div class="stage" data-stage>
       {data.map((d) => (
         <button class:list={['it', d.shape]} type="button" data-id={d.id} style={`width:${d.w / 4}px;height:${d.h / 4}px`} aria-label={d.title}>
-          {d.src ? <img src={d.src} alt="" draggable="false" decoding="async" /> : <span class="mono">{d.title}</span>}
+          {d.src ? <img src={av(d.src)} alt="" draggable="false" decoding="async" /> : <span class="mono">{d.title}</span>}
           {d.embed && <span class="emb" data-emb={d.embed} aria-hidden="true"></span>}
         </button>
       ))}

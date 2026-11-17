@@ -13,6 +13,7 @@ import { kernData } from './kern/data';
 import TextScreen from './TextScreen.astro';
 import SlotScreen from './SlotScreen.astro';
 import FeedPair from './FeedPair.astro';
+import { av, avSet } from '../../data/avif';
 interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
 const { lang, c, rich } = Astro.props;
 const fr = lang === 'fr';
@@ -24,7 +25,7 @@ const TODO = { top: ['grid'], after: [[], ['formats', 'anatomy'], ['reel', 'over
 // écran de 392 px, déclinés en plusieurs largeurs : fil-<nom>-<largeur>.webp ; l'avant reste en 392 en attendant son export complet)
 const feed = (n: string, ws: number[], h: number, alt: string) => {
   const one = ws.length === 1, file = (w: number) => `/work/kern-outdoor/fil-${n}${one ? '' : `-${w}`}.webp`;
-  return { src: file(ws[0]), srcset: one ? undefined : ws.map((w) => `${file(w)} ${w}w`).join(', '), sizes: '(max-width: 760px) 50vw, 35vw',
+  return { src: av(file(ws[0])), srcset: avSet(one ? undefined : ws.map((w) => `${file(w)} ${w}w`).join(', ')), sizes: '(max-width: 760px) 50vw, 35vw',
     w: ws[0], h: Math.round((h * ws[0]) / 392), alt: `kern.outdoor — ${alt}` };
 };
 const FEED = {
@@ -58,8 +59,8 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
           {PAL.map(([col, nm], k) => (
             <figure class:list={['mi', `m${k}`]}>
               <span class:list={['mf sw', { lt: k > 1 }]} style={`--c:${col}`}>
-                {k === 2 && <span class="fonts"><img src="/work/kern-outdoor/font-instrument.webp" width="1302" height="176" alt="Instrument Serif" /></span>}
-                {k === 3 && <span class="fonts"><img src="/work/kern-outdoor/font-helvetica.webp" width="1545" height="169" alt="Helvetica Neue" /></span>}
+                {k === 2 && <span class="fonts"><img src={av('/work/kern-outdoor/font-instrument.webp')} width="1302" height="176" alt="Instrument Serif" /></span>}
+                {k === 3 && <span class="fonts"><img src={av('/work/kern-outdoor/font-helvetica.webp')} width="1545" height="169" alt="Helvetica Neue" /></span>}
                 <i class="mono">{nm} <span>{col}</span></i>
               </span>
             </figure>
@@ -75,7 +76,7 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
           {CAR.map((car, k) => (
             <figure class:list={['mi kp car', `m${k}`]} data-car>
               <button type="button" class="vp mf" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
-                <span class="track">{Array.from({ length: car.n }, (_, j) => <img src={`/work/kern-outdoor/car/p${k + 1}-${j + 1}.webp`} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${j + 1}/${car.n}`} loading={j ? 'lazy' : 'eager'} decoding="async" />)}</span>
+                <span class="track">{Array.from({ length: car.n }, (_, j) => <img src={av(`/work/kern-outdoor/car/p${k + 1}-${j + 1}.webp`)} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${j + 1}/${car.n}`} loading={j ? 'lazy' : 'eager'} decoding="async" />)}</span>
               </button>
               <figcaption class="mono mu">{car.t}</figcaption>
             </figure>

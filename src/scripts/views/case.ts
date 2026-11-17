@@ -186,6 +186,9 @@ onPage('.screens-host.case', (ctx) => {
     // d'où des accélérations et freinages sans à-coup. Près du bas, à la fin d'un ralenti : la page descend jusqu'à son bas, s'y
     // tient un instant, puis un grand défilement rapide la ramène en haut (accélère puis freine), et le plan reprend. Seulement tant que l'écran est à l'écran ; immobile si « Réduire les animations ».
     // data-shot="groupe" : les captures d'un même groupe partagent un seul mouvement (la première le mène, les autres la suivent)
+    // data-motion="swipe" (un fil de téléphone) : des gestes de doigt, chacun un déplacement réglé (une poussée : départ vif, long
+    // freinage d'élan ; parfois un petit retour vers le haut ; en bas, le retour en haut en ease-in-out), posés sur un très lent
+    // glissement vers le bas qui ne s'arrête jamais : entre deux gestes, le fil ralentit sans jamais s'immobiliser.
     const shotGroups = new Map<string, HTMLElement[]>();
     if (!reduced()) document.querySelectorAll<HTMLElement>('[data-shot]').forEach((vp) => {
       const key = vp.dataset.shot;
@@ -195,11 +198,23 @@ onPage('.screens-host.case', (ctx) => {
       const rnd = (a: number, b: number) => a + Math.random() * (b - a);
       const TAU = 0.22; // temps de réponse de la vitesse (s)
       const io = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // ease-in-out (cubique)
+      const flick = (p: number) => io(p ** 0.7); // ease-in-out avancé : la vitesse culmine tôt, l'élan freine longtemps
+      const swipe = vp.dataset.motion === 'swipe';
       type Mode = 'slow' | 'fast' | 'back';
       let y = 0, v = 0, aim = 0, mode: Mode = 'fast', until = 0, last = 0, raf = 0, run = false, vt = 0;
       const pace = parseFloat(vp.dataset.pace || '') || 1;
       // déplacement réglé (descente jusqu'au bas, retour en haut) : de from à to, puis une attente (hold) avant la suite
-      let tw: { from: number; to: number; t0: number; dur: number; hold: number } | null = null;
+      type Tween = { from: number; to: number; t0: number; dur: number; hold: number; ease: (p: number) => number };
+      let tw: Tween | null = null;
+      const DRIFT = 0.05; // glissement de fond du swipe, en hauteurs d'écran par seconde
+      // prochain geste du doigt (swipe), depuis y ; le glissement s'ajoute pendant le geste et la pause qui le suit (hold)
+      const gesture = (max: number, H: number): Tween => {
+        const room = max - y, hold = rnd(700, 1300), slide = (DRIFT * H * hold) / 1000;
+        if (room < slide + 0.15 * H) { const dur = rnd(1300, 1600); return { from: y, to: -(DRIFT * H * dur) / 1000, t0: vt, dur, hold, ease: io }; } // retour en haut
+        if (y > H && Math.random() < 0.18) return { from: y, to: y - rnd(0.25, 0.5) * H, t0: vt, dur: rnd(600, 800), hold, ease: flick };
+        const d = Math.min(room - slide - 0.1 * H, rnd(0.6, 1.4) * H), dur = 750 + (Math.max(0, d) / H) * 350;
+        return { from: y, to: y + d - (DRIFT * H * dur) / 1000, t0: vt, dur, hold, ease: flick };
+      };
       const frame = (now: number) => {
         raf = 0;
         if (!run) return;
@@ -207,18 +222,21 @@ onPage('.screens-host.case', (ctx) => {
         const dt = real * pace; vt += dt * 1000; // horloge du plan : data-pace="0.5" le joue deux fois plus lentement
         const H = vp.clientHeight, max = Math.max(0, img.offsetHeight - H);
         if (max) {
+          if (swipe && !tw) tw = gesture(max, H);
           if (tw) {
             const p = Math.min(1, (vt - tw.t0) / tw.dur);
-            y = tw.from + (Math.min(tw.to, max) - tw.from) * io(p);
+            y = tw.from + (Math.min(tw.to, max) - tw.from) * tw.ease(p);
+            if (swipe) y = Math.min(max, Math.max(0, y + (DRIFT * H * (vt - tw.t0)) / 1000));
             if (vt >= tw.t0 + tw.dur + tw.hold) {
-              if (tw.to > 0) tw = { from: y, to: 0, t0: vt, dur: Math.min(1700, 700 + y * 0.12), hold: 0 }; // le grand retour en haut
+              if (swipe) tw = gesture(max, H);
+              else if (tw.to > 0) tw = { from: y, to: 0, t0: vt, dur: Math.min(1700, 700 + y * 0.12), hold: 0, ease: io }; // le grand retour en haut
               else { tw = null; v = aim = 0.1 * H; mode = 'slow'; until = vt + rnd(900, 1300); }
             }
           } else {
             if (vt >= until) {
               const room = max - y;
               if (mode !== 'slow') { mode = 'slow'; aim = rnd(0.06, 0.13) * H; until = vt + rnd(1100, 1800); }
-              else if (room <= 1.6 * H) { tw = { from: y, to: max, t0: vt, dur: 500 + room * 0.35, hold: rnd(700, 1000) }; v = 0; } // jusqu'au bas de la page
+              else if (room <= 1.6 * H) { tw = { from: y, to: max, t0: vt, dur: 500 + room * 0.35, hold: rnd(700, 1000), ease: io }; v = 0; } // jusqu'au bas de la page
               else if (y > H && Math.random() < 0.22) { mode = 'back'; aim = -rnd(0.5, 0.9) * H; until = vt + rnd(320, 460); } // petit retour en arrière
               else { mode = 'fast'; aim = rnd(2.4, 3.4) * H; until = vt + rnd(380, 560); }
             }

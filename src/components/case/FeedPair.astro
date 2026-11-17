@@ -1,8 +1,9 @@
 ---
 // Avant / après d'un fil : deux iPhone, deux cartes très discrètes (data-card="0.2" : grandes, elles bougeraient trop et
-// couvriraient les légendes). Chaque téléphone est rogné en haut (crop, part de sa hauteur) pour s'afficher plus grand : on garde le bas de l'écran et un morceau de l'en-tête du profil, qui reste fixe ; dessous,
-// la grille est parcourue comme un plan de showreel (data-shot, views/case.ts), les deux grilles dans un seul mouvement (même
-// groupe). Légende en gris au-dessus de chaque téléphone. Immobile si « Réduire les animations ».
+// couvriraient les légendes). Chaque téléphone est rogné en haut (crop, part de sa hauteur) pour s'afficher plus grand : on
+// garde le bas de l'écran et un morceau de l'en-tête du profil, qui reste fixe ; dessous, la grille défile en gestes de doigt
+// (data-shot, data-motion="swipe", views/case.ts), les deux grilles dans un seul mouvement (même groupe). Légende en gris
+// au-dessus de chaque téléphone. Immobile si « Réduire les animations ».
 interface Item { src: string; srcset?: string; sizes: string; w: number; h: number; alt: string }
 interface Props { label: string; frame: { w: number; h: number }; head: Item; items: { img: Item; tag: string }[]; crop?: number; at?: [string, string]; atTall?: [string, string] }
 const { label, frame, head, items, crop = 0.28, at = ['3 / 7', '7 / 11'], atTall = ['2 / 7', '7 / 12'] } = Astro.props;
@@ -26,7 +27,7 @@ const vars = [
         <div class="crop mf" data-card="0.2">
           <div class="body">
             <div class="screen">
-              <div class="feed" data-shot="fil" data-pace="0.5"><img src={it.img.src} srcset={it.img.srcset} sizes={it.img.sizes} width={it.img.w} height={it.img.h} alt={it.img.alt} loading="lazy" decoding="async" /></div>
+              <div class="feed" data-shot="fil" data-motion="swipe"><img src={it.img.src} srcset={it.img.srcset} sizes={it.img.sizes} width={it.img.w} height={it.img.h} alt={it.img.alt} loading="lazy" decoding="async" /></div>
               <img class="fx" src={head.src} srcset={head.srcset} sizes={head.sizes} width={head.w} height={head.h} alt={k ? '' : head.alt} loading="lazy" decoding="async" />
             </div>
           </div>

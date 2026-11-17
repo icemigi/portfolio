@@ -100,10 +100,12 @@ onPage('[data-p3d]', (page) => {
 
   function init(fig: HTMLElement, ctx: Ctx) {
     const canvas = fig.querySelector('canvas')!, img = fig.querySelector('img')!;
+    // images couleur, en AVIF quand il existe (Portrait3D.astro) ; geo et nrm restent en WebP sans perte
+    const IMG = JSON.parse(fig.dataset.img!) as { fallback: string[]; frame: string; knight: string; knight2: string };
     // face affichée (0 : avec casque, 1 : sans) — le site s'ouvre toujours avec le casque
     let face = 0;
     try { localStorage.removeItem('kk-face'); } catch { /* */ }
-    const FALLBACK = ['/portrait3d/portrait-fallback-m.webp', '/portrait3d/portrait-fallback2-m.webp'];
+    const FALLBACK = IMG.fallback;
     if (face === 1) img.src = FALLBACK[1];
     // sans rendu 3D (ou « Réduire les animations ») : le clic échange simplement les deux images
     const flipImg = (e: MouseEvent) => {
@@ -323,7 +325,7 @@ onPage('[data-p3d]', (page) => {
 
     // seconde face : chargée une seule fois, après la première (ou d'abord, si c'est elle qu'on avait laissée)
     let face2: Promise<unknown> | null = null;
-    const loadFace2 = () => (face2 ??= Promise.all([tex('/portrait3d/knight2.webp', 4, false), tex('/portrait3d/geo2.webp', 5, true, true), tex('/portrait3d/nrm2.webp', 6, true)]));
+    const loadFace2 = () => (face2 ??= Promise.all([tex(IMG.knight2, 4, false), tex('/portrait3d/geo2.webp', 5, true, true), tex('/portrait3d/nrm2.webp', 6, true)]));
     const toggle = () => {
       if (!ready || flip) return;
       const to = 1 - face;
@@ -338,7 +340,7 @@ onPage('[data-p3d]', (page) => {
       if (e.clientX > r.left + r.width * .1 && e.clientX < r.right - r.width * .1 && e.clientY > r.top + r.height * .06 && e.clientY < r.bottom - r.height * .08) toggle();
     }, { signal: ctx.signal });
     const loaded = Promise.all([
-      tex('/portrait3d/frame-m.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
+      tex(IMG.frame, 0, false), tex(IMG.knight, 1, false),
       tex('/portrait3d/geo.webp', 2, true, true), tex('/portrait3d/nrm.webp', 3, true),
       ...(face === 1 ? [loadFace2()] : []),
     ]).then(() => {

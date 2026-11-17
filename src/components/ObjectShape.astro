@@ -3,6 +3,7 @@
 // book : Algorithmic Heraldry (le livre de 500 pages) · rook : (ChâteauStudio)™ · vinyl : Identités musicales
 // rock : ASAPHR (écriture gravée) · backpack : kern.outdoor · stick : BMS E-Sport (jeux de combat) · compass : Sports Aventure
 // (controller, bottle et feather : anciens objets, gardés pour compatibilité)
+import { av } from '../data/avif';
 export type ObjectKind = 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack';
 interface Props { kind: ObjectKind }
 const { kind } = Astro.props;
@@ -12,7 +13,7 @@ const f = (n: string) => `url(#${u(n)})`;
 const photo = ({ book: ['/work/algorithmic-heraldry/object.webp', 1000, 1315], rock: ['/work/asaphr/object.webp', 800, 992], vinyl: ['/work/music-identities/object.webp', 1200, 809], backpack: ['/work/kern-outdoor/object.webp', 1200, 907] } as Partial<Record<ObjectKind, [string, number, number]>>)[kind];
 ---
 {photo ? (
-  <img class="shape" src={photo[0]} width={photo[1]} height={photo[2]} alt="" decoding="async" data-no-ascii />
+  <img class="shape" src={av(photo[0] as string)} width={photo[1]} height={photo[2]} alt="" decoding="async" data-no-ascii />
 ) : (
 <svg class="shape" viewBox="0 0 200 200" aria-hidden="true">
   {kind === 'book' && (

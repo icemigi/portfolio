@@ -17,6 +17,7 @@ import Asaphr from '../../../components/case/Asaphr.astro';
 import BmsEsport from '../../../components/case/BmsEsport.astro';
 import ChateauStudio from '../../../components/case/ChateauStudio.astro';
 import ObjectShape from '../../../components/ObjectShape.astro';
+import { av, avSet } from '../../../data/avif';
 
 export function getStaticPaths() {
   return languages.flatMap((lang) => projects.map((p) => ({ params: { lang, slug: p.slug } })));
@@ -35,7 +36,7 @@ const N = pad(projects.length);
 const M = media[project.slug];
 // grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones ; chaque étude écrit ses textes alternatifs
 const ss = (im: { src: string; w: number }) => (im.w > 1000 ? `${im.src.replace(/\.webp$/, '-800.webp')} 800w, ${im.src} ${im.w}w` : undefined);
-const pic = (im: Img, sizes: string) => ({ src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: c.title });
+const pic = (im: Img, sizes: string) => ({ src: av(im.src), srcset: avSet(ss(im)), sizes, w: im.w, h: im.h, alt: c.title });
 // milieu de chaque étude (src/components/case/)
 const Own = ({ 'kern-outdoor': KernOutdoor, 'sports-aventure': SportsAventure, 'music-identities': MusicIdentities, 'algorithmic-heraldry': AlgorithmicHeraldry, asaphr: Asaphr, 'bms-esport': BmsEsport, 'chateau-studio': ChateauStudio } as Record<string, typeof KernOutdoor | undefined>)[project.slug];
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)

@@ -7,6 +7,7 @@
 // juste sous le premier écran, dans la marge de chargement des navigateurs : ses images arrivent dès l'ouverture de la page.
 // Vignette .mp4 (boucle muette, tools/lab-reel.mjs) : rien n'est chargé tant que ring.ts ne la prépare pas (ordinateur seulement),
 // sa première image (.webp du même nom) s'affiche en attendant ; elle ne joue que quand l'anneau est à l'écran.
+import { av } from '../data/avif';
 interface Props { items: (string | null)[] }
 const { items } = Astro.props;
 ---
@@ -14,8 +15,8 @@ const { items } = Astro.props;
   {items.map((src, i) => (
     <span class:list={['rc', !src && 'ph']}>
       {!src ? <i>{String(i + 1).padStart(2, '0')}</i>
-        : src.endsWith('.mp4') ? <video src={`/ring/${src}`} data-poster={`/ring/${src.replace(/\.mp4$/, '.webp')}`} muted loop playsinline preload="none" disablepictureinpicture />
-        : <img src={`/ring/${src}`} alt="" draggable="false" decoding="async" loading="lazy" />}
+        : src.endsWith('.mp4') ? <video src={`/ring/${src}`} data-poster={av(`/ring/${src.replace(/\.mp4$/, '.webp')}`)} muted loop playsinline preload="none" disablepictureinpicture />
+        : <img src={av(`/ring/${src}`)} alt="" draggable="false" decoding="async" loading="lazy" />}
     </span>
   ))}
 </div>

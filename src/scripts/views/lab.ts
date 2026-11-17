@@ -42,7 +42,7 @@ onPage('[data-lablist]', (ctx) => {
   };
   const show = (row: HTMLAnchorElement) => {
     clearTimeout(idle); clearTimeout(dwell);
-    img.src = `/lab/covers/${row.dataset.id}.webp`;
+    img.src = row.dataset.cover!;
     if (liveSrc !== (row.dataset.live || '')) { frame?.classList.remove('ready'); dwell = ctx.timeout(() => live(row.dataset.live || ''), DWELL); }
     pv.classList.add('on');
   };

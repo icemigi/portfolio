@@ -10,6 +10,7 @@ const { text, vigs, lang, tag = 'p', class: cls = '' } = Astro.props;
 const Tag = tag as any;
 // vignette animée : sa version fixe (même nom + .still.webp, déposée à côté) sert quand « Réduire les animations » est actif
 import { existsSync } from 'node:fs';
+import { av } from '../data/avif';
 const still = (src: string) => { const f = src.replace(/\.webp$/, '.still.webp'); return f !== src && existsSync(`public${f}`) ? f : ''; };
 type Part = { kind: 'logo'; name: string; word?: string; punct?: string } | { kind: 'door' } | { kind: 'vig'; vig: Vig; punct?: string; word?: string } | { kind: 'text'; text: string } | { kind: 'glue'; word: string; note: string; punct: string };
 const raw: Part[] = text.split(/(\{(?:v:|m:|l:)?[^}]+\})/).filter(Boolean).map((p): Part => {
@@ -84,14 +85,14 @@ if (di >= 0) {
 <Tag class:list={['t56 affiche', cls]} data-hola>
   {G.map((g) => { const inner = g.parts.map((p) =>
     p.kind === 'logo' ? (
-      <span class="glue">{p.word}<img class="logo" src={`/logos/${p.name}.webp`} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
+      <span class="glue">{p.word}<img class="logo" src={av(`/logos/${p.name}.webp`)} alt="" aria-hidden="true" loading="lazy" decoding="async" onerror="this.remove()" />{p.punct}</span>
     ) : p.kind === 'door' ? (
       <Door lang={lang} />
     ) : p.kind === 'vig' && !p.vig.src && !p.vig.logo ? (
       <span class="glue">{(p.word || '').trimEnd()}{p.punct}</span>
     ) : p.kind === 'vig' ? (
       <span class="glue">{p.word}{p.vig.logo
-        ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={p.vig.src} alt="" loading="lazy" onerror="var v=this.parentElement,t=v.previousSibling;if(t&&t.nodeType===3)t.nodeValue=t.nodeValue.replace(/\s+$/,'');v.remove()" /></span>
+        ? <span class="vi lg" role="img" aria-label={p.vig.label[lang]}><i aria-hidden="true">{p.vig.label[lang]}</i><img src={av(p.vig.src)} alt="" loading="lazy" onerror="var v=this.parentElement,t=v.previousSibling;if(t&&t.nodeType===3)t.nodeValue=t.nodeValue.replace(/\s+$/,'');v.remove()" /></span>
         : <span class="vi" role="img" aria-label={p.vig.label[lang]} style={p.vig.src ? `--vi:url(${p.vig.src})${still(p.vig.src) ? `;--vi-still:url(${still(p.vig.src)})` : ''}` : undefined}>{!p.vig.src && <i aria-hidden="true">{p.vig.label[lang]}</i>}</span>}{p.punct}</span>
     ) : p.kind === 'glue' ? (
       <span class="glue gn">{p.word}{g.glue && <wbr />}<span class="note mono mu">{`(${p.note})`.split(' ').map((w, k) => <Fragment>{k > 0 && ' '}<span class="nw">{w}</span></Fragment>)}</span>{p.punct}</span>

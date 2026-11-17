@@ -38,7 +38,7 @@ onPage('[data-track]', (ctx) => {
   const index = () => Math.max(-OFF(), Math.min(items.length - 1, Math.floor(target / STEP + 0.001) - OFF()));
   const rnd = (n: number) => { const v = Math.sin(n * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
   // données des pièces, posées par la page (bloc JSON, lu au montage)
-  const K = JSON.parse(document.getElementById('archive-data')!.textContent || '{}') as { caps: string[]; ratios: number[]; srcs: string[] };
+  const K = JSON.parse(document.getElementById('archive-data')!.textContent || '{}') as { caps: string[]; ratios: number[]; srcs: string[]; thumbs: string[] };
   const stage = root.querySelector<HTMLElement>('[data-stage]')!;
   const base = stage.querySelector<HTMLCanvasElement>('.cv-base')!, fly = stage.querySelector<HTMLCanvasElement>('.cv-fly')!;
   const bx = base.getContext('2d')!, fx = fly.getContext('2d')!;
@@ -53,10 +53,9 @@ onPage('[data-track]', (ctx) => {
   });
   // vignettes chargées au fil de la pile ; la toile décode chaque image sur le fil principal à son premier dessin :
   // les vignettes sont donc en JPEG (2 à 3 fois plus rapide à décoder que le WebP), aplaties sur le gris de la carte (#d4d4d4)
-  const thumb = (src: string) => src.replace('/archive/', '/archive/s/').replace(/\.webp$/, '.jpg');
   const want = (i: number) => {
     const c = cards[i]; if (!c || c.img.src || !K.srcs[i]) return;
-    c.img.src = thumb(K.srcs[i]);
+    c.img.src = K.thumbs[i];
     c.img.decode().then(() => { c.ok = true; if (order.indexOf(i) >= order.length - DEPTH) { dirty = true; go(); } }).catch(() => {});
   };
   const size = (i: number) => { const r = K.ratios[i], w = Math.min(Math.min(400, innerHeight * (phone() ? .42 : .52)) * r, innerWidth * (phone() ? .62 : .34)); return [w, w / r]; };
@@ -223,7 +222,7 @@ onPage('[data-track]', (ctx) => {
     cur = (i + K.caps.length) % K.caps.length;
     big.style.aspectRatio = String(K.ratios[cur]);
     // l'image réduite (déjà chargée) s'affiche tout de suite, la grande prend le relais
-    const small = K.srcs[cur] ? thumb(K.srcs[cur]) : '';
+    const small = K.thumbs[cur] || '';
     big.style.background = '#d4d4d4';
     big.innerHTML = '';
     if (K.srcs[cur]) {

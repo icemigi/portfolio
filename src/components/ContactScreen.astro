@@ -4,6 +4,7 @@
 import Footer from './Footer.astro';
 import { ui, type Lang } from '../data/ui';
 import { aboutLabels, contact } from '../data/about';
+import { av, avSet } from '../data/avif';
 // top : lien « haut » du pied de page (inutile quand l'écran est seul sur sa page)
 interface Props { lang: Lang; id: string; top?: boolean }
 const { lang, id, top = true } = Astro.props;
@@ -18,7 +19,7 @@ const L = aboutLabels[lang];
       <a class="lk hit" href={contact.instagram} rel="me noopener" target="_blank">Instagram <span class="ac">↗</span></a>
       <span class="mu">{t.available}</span>
     </div>
-    <div class="seal-w"><img class="seal" src="/seal-wax-280.webp" srcset="/seal-wax-168.webp 168w, /seal-wax-280.webp 280w, /seal-wax.webp 420w" sizes="(max-width: 760px) 100px, 15vw" alt="" width="160" height="152" /></div>
+    <div class="seal-w"><img class="seal" src={av('/seal-wax-280.webp')} srcset={avSet('/seal-wax-168.webp 168w, /seal-wax-280.webp 280w, /seal-wax.webp 420w')} sizes="(max-width: 760px) 100px, 15vw" alt="" width="160" height="152" /></div>
   </div>
   <Footer lang={lang} top={top} />
 </section>
