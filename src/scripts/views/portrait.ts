@@ -323,7 +323,7 @@ onPage('[data-p3d]', (page) => {
 
     // seconde face : chargée une seule fois, après la première (ou d'abord, si c'est elle qu'on avait laissée)
     let face2: Promise<unknown> | null = null;
-    const loadFace2 = () => (face2 ??= Promise.all([tex('/portrait3d/knight2.webp', 4, false), tex('/portrait3d/geo2.png', 5, true, true), tex('/portrait3d/nrm2.png', 6, true)]));
+    const loadFace2 = () => (face2 ??= Promise.all([tex('/portrait3d/knight2.webp', 4, false), tex('/portrait3d/geo2.webp', 5, true, true), tex('/portrait3d/nrm2.webp', 6, true)]));
     const toggle = () => {
       if (!ready || flip) return;
       const to = 1 - face;
@@ -339,7 +339,7 @@ onPage('[data-p3d]', (page) => {
     }, { signal: ctx.signal });
     const loaded = Promise.all([
       tex('/portrait3d/frame-m.webp', 0, false), tex('/portrait3d/knight.webp', 1, false),
-      tex('/portrait3d/geo.png', 2, true, true), tex('/portrait3d/nrm.png', 3, true),
+      tex('/portrait3d/geo.webp', 2, true, true), tex('/portrait3d/nrm.webp', 3, true),
       ...(face === 1 ? [loadFace2()] : []),
     ]).then(() => {
       if (ctx.signal.aborted) return;

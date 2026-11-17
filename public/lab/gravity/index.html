@@ -13,7 +13,7 @@
     @font-face { font-family: Geist; src: url('/fonts/Geist-Bold.woff2') format('woff2'); font-weight: 700; font-display: block; }
     @font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-weight: 400; font-display: swap; }
     .kb-key { font-family: system-ui, sans-serif; }
-    :root { --bg: #f3f3f3; --fg: #111; --mu: #777; }
+    :root { --bg: #f3f3f3; --fg: #111; --mu: #666; }
     html[data-theme='nuit'] { --bg: #12110f; --fg: #ece5d8; --mu: #8b8476; }
     html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
     body { display: grid; place-items: center; font: 12px/1.3 'Geist Mono', ui-monospace, monospace; color: var(--fg); }
@@ -39,12 +39,12 @@
 </head>
 <body>
   <div class="kk-bar"><p class="hint">tape un mot · glisse pour lancer · maj : aimant · ⌫ efface</p><p class="act"><button class="tilt" id="tilt">inclinaison</button><button id="font">police : geist</button><button id="compose" aria-pressed="false">composer</button><button id="clear">vider</button><button id="link">lien</button><button id="save">enregistrer</button></p></div>
-  <div class="poster" id="poster">
+  <main class="poster" id="poster">
     <canvas id="c" aria-label="Affiche : des lettres qui tombent et s'empilent dans une grille"></canvas>
     <p class="m tr mu" id="count">0 lettre</p>
     <p class="m tl mu">Lettres qui tombent</p>
     <input class="ghost" id="ghost" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Écrire des lettres">
-  </div>
+  </main>
 
 <script>
 (() => {

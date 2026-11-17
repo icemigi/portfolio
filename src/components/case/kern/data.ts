@@ -43,5 +43,22 @@ export function kernData(fr: boolean) {
   const ticks = [...BOX].sort((a, b) => colOrder(a[0]) - colOrder(b[0]) || a[1] - b[1]);
   const LH = 1557 / 1100 * 100; // hauteur de l'image en unités de largeur (viewBox 0 0 100 LH)
   const tick = ([x, y, w]: [number, number, number]) => { const Y = (y / 100) * LH; return `M${(x + w * 0.18).toFixed(2)} ${(Y + w * 0.52).toFixed(2)}L${(x + w * 0.42).toFixed(2)} ${(Y + w * 0.8).toFixed(2)}L${(x + w * 0.9).toFixed(2)} ${(Y + w * 0.12).toFixed(2)}`; };
-  return { D, PAL, CAR, ticks, tick, LH };
+  // chiffres (TikTok Studio, relevés le 17/11/2026) : en ouverture, puis en fin d'étude
+  const FIG = {
+    top: [['19\u00a0K', fr ? 'abonnés' : 'followers'], ['1\u00a0M', fr ? "de j'aime" : 'likes'], [fr ? '2,9\u00a0M' : '2.9\u00a0M', fr ? 'de vues sur une vidéo' : 'views on one video']],
+    end: [['915\u00a0K', fr ? 'vues sur douze mois' : 'views over twelve months'], [fr ? '87\u00a0%' : '87%', fr ? "de l'audience a 18 à 34 ans" : 'of the audience is aged 18 to 34'], [fr ? '60\u00a0%' : '60%', fr ? 'des vues viennent de la recherche' : 'of views come from search']],
+    src: fr ? 'TikTok, novembre 2026' : 'TikTok, November 2026',
+  };
+  // médias à fournir : emplacements gris à leur place dans l'étude (libellé, proportions largeur / hauteur), retirés à la livraison
+  const SLOT = {
+    grid: [fr ? 'la grille du profil TikTok qui défile' : 'the scrolling TikTok profile grid', 9 / 16],
+    before: [fr ? 'le fil avant février 2026' : 'the feed before February 2026', 9 / 16],
+    after: [fr ? 'le fil après' : 'the feed after', 9 / 16],
+    formats: [fr ? 'les 5 formats côte à côte' : 'the 5 formats side by side', 16 / 9],
+    anatomy: [fr ? "l'anatomie d'un carrousel" : 'anatomy of a carousel', 4 / 5],
+    reel: [fr ? 'le showreel vidéo, 15 à 20 s' : 'the video reel, 15 to 20 s', 9 / 16],
+    overlay: [fr ? "le kit d'habillage animé" : 'the animated overlay kit', 9 / 16],
+  } as Record<string, [string, number]>;
+  const todo = fr ? 'à fournir' : 'to come';
+  return { D, PAL, CAR, ticks, tick, LH, FIG, SLOT, todo };
 }

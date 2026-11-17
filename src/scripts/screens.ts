@@ -75,8 +75,8 @@ export function initScreens(host: HTMLElement, ctx: Ctx): Screens {
     header?.classList.toggle('solid', S[cur].scrollTop > 8);
     document.documentElement.dataset.screen = String(cur);
     if (arrow) arrow.hidden = cur >= S.length - 1 || host.hasAttribute('data-no-arrow');
-    // les images des écrans voisins se chargent d'avance : rien n'apparaît en retard à l'arrivée
-    [cur - 1, cur + 1, cur + 2].forEach((i) => S[i]?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((im) => (im.loading = 'eager')));
+    // les images des écrans voisins se chargent d'avance : rien n'apparaît en retard à l'arrivée (sauf les masquées : l'anneau au téléphone)
+    [cur - 1, cur + 1, cur + 2].forEach((i) => S[i]?.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((im) => { if (im.checkVisibility()) im.loading = 'eager'; }));
   };
   S.forEach((s) => s.addEventListener('scroll', () => header?.classList.toggle('solid', s.scrollTop > 8), { passive: true }));
 

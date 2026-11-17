@@ -17,4 +17,4 @@ onDemand('[data-ring]', () => import('./ring'));
 onDemand('[data-likes]', () => import('./likes'));
 onDemand('[data-term]', () => import('./cv'));
 onDemand('.screens-host.case', () => import('./case'));
-onDemand('[data-reel]', () => import('./kern'));
+onDemand('[data-car]', () => import('./kern'));

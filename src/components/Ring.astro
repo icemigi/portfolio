@@ -3,13 +3,19 @@
 // (un tour en 30 s). Les images restent face à nous ; celles du fond passent derrière les lettres, celles de devant par-dessus.
 // Il penche vers le curseur et se lance à la main (glisser), puis reprend son allure. Décoratif : aucun lien, caché aux
 // lecteurs d'écran. Mouvement : scripts/views/ring.ts. Sans animation (« Réduire les animations ») : pas d'anneau.
+// Images en chargement différé : l'anneau masqué (téléphone, animations réduites) ne télécharge rien ; à l'ordinateur, il est
+// juste sous le premier écran, dans la marge de chargement des navigateurs : ses images arrivent dès l'ouverture de la page.
+// Vignette .mp4 (boucle muette, tools/lab-reel.mjs) : rien n'est chargé tant que ring.ts ne la prépare pas (ordinateur seulement),
+// sa première image (.webp du même nom) s'affiche en attendant ; elle ne joue que quand l'anneau est à l'écran.
 interface Props { items: (string | null)[] }
 const { items } = Astro.props;
 ---
 <div class="ring" data-ring aria-hidden="true">
   {items.map((src, i) => (
     <span class:list={['rc', !src && 'ph']}>
-      {src ? <img src={`/ring/${src}`} alt="" draggable="false" decoding="async" /> : <i>{String(i + 1).padStart(2, '0')}</i>}
+      {!src ? <i>{String(i + 1).padStart(2, '0')}</i>
+        : src.endsWith('.mp4') ? <video src={`/ring/${src}`} data-poster={`/ring/${src.replace(/\.mp4$/, '.webp')}`} muted loop playsinline preload="none" disablepictureinpicture />
+        : <img src={`/ring/${src}`} alt="" draggable="false" decoding="async" loading="lazy" />}
     </span>
   ))}
 </div>
@@ -20,7 +26,7 @@ const { items } = Astro.props;
   /* --rw : largeur d'une image, réglée par le script d'après le rayon ; placée et mise à l'échelle par transform */
   .rc { position: absolute; left: 0; top: 0; width: var(--rw, 120px); aspect-ratio: 16 / 9; opacity: 0; transform-origin: 50% 50%;
     will-change: transform, opacity; pointer-events: auto; cursor: grab; user-select: none; touch-action: none; }
-  .rc img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .rc img, .rc video { display: block; width: 100%; height: 100%; object-fit: cover; }
   .ring.grab .rc { cursor: grabbing; }
   @media (prefers-reduced-motion: reduce) { .ring { display: none; } }
   /* téléphone : pas encore traité (passage téléphone à venir) */

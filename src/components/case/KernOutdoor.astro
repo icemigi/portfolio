@@ -1,167 +1,120 @@
 ---
-// kern.outdoor : le milieu de l'étude de cas, construit avec les fichiers du compte (après la page de garde et l'accroche communes).
-//   terrain     : une grande phrase seule (contexte), l'enjeu en note.
-//   Le texte alterne : à gauche, à droite (classe r), à gauche… ; la série est centrée.
-//   le nom      : la phrase (même écriture que tout le site) ; à côté, un showreel des logos (SVG du dossier motion) : un seul plan où
-//                 chaque logo devient le suivant (GSAP + MorphSVG), registre graphique : masques, courbes expo, coupes franches.
-//   la charte   : les quatre couleurs montent l'une après l'autre, avec leur code ; puis les deux typos.
-//   la série    : les trois carrousels côte à côte, qui défilent seuls, décalés (jamais deux à la fois) ; un clic fait avancer.
-//   la suite    : la check-list offerte aux abonnés se coche case par case.
-// Textes : les rubriques du projet (projects.ts), une grande phrase par écran, la suite en note mono.
+// kern.outdoor : le milieu de l'étude de cas (après la page de garde et l'accroche communes), cadré pour la personne qui
+// regarde : une identité qui se reconnaît, un système, la vidéo, une ligne éditoriale, et des résultats.
+//   chiffres            : en ouverture, ce que le compte a fait.
+//   l'identité          : puis la charte (les quatre couleurs montent l'une après l'autre, puis les deux typos).
+//   le système          : puis les carrousels, qui défilent seuls, décalés (jamais deux à la fois) ; un clic fait avancer.
+//   la vidéo, la ligne éditoriale : écrans de texte.
+//   chiffres            : en fin d'étude, le détail (datés).
+// Textes : projects.ts (r : libellé, h : gros texte, p : note) ; chiffres, charte, carrousels : kern/data.ts.
+// Les écrans des pièces portent data-k : views/kern.ts n'anime une pièce que tant que son écran est à l'écran.
 import type { Img } from '../../data/media';
 import { kernData } from './kern/data';
-import { first } from '../../data/text';
-import KernReel from './kern/KernReel.astro';
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
 interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
 const { lang, c, rich } = Astro.props;
 const fr = lang === 'fr';
-const S = c.sections as { r?: string; h: string; paras: { t?: string; p: string }[] }[];
-const lab = (i: number) => `${S[i].r} — ${S[i].h.toLowerCase()}`;
-const P = S.map((s) => first(s.paras[0].p));
-const { PAL, CAR, ticks, tick, LH } = kernData(fr);
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const { PAL, CAR, FIG, SLOT, todo } = kernData(fr);
+// médias à fournir, par écran (emplacements gris) : après les chiffres, puis après la pièce de chaque écran de texte
+const TODO = { top: ['grid'], after: [['before', 'after'], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
+const slots = (keys: string[]) => keys.map((key) => SLOT[key]);
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
 ---
-<section class="scr kx terr r">
-  <div class="in g ch">
-    <h2 class="lab mono mu par">{lab(0)}</h2>
-    <div class="tx">
-      <p class="phr t56" data-hola data-fit set:html={rich(P[0][0])} />
-      <div class="nts mono mu">{P[0][1] && <p set:html={rich(P[0][1], 'note')} />}<p><b>{S[1].h}.</b> <Fragment set:html={rich(S[1].paras[0].p, 'note')} /></p></div>
+<section class="scr txs" data-k="chiffres">
+  <div class="in g cen">
+    <div class="pin">
+      <h2 class="lab mono mu par">{fr ? 'en chiffres' : 'in figures'}</h2>
+      <ul class="fig">{FIG.top.map(([v, k]) => <li><b class="phr t56">{v}</b><span class="mono mu note">{k}</span></li>)}</ul>
+      <p class="mono mu note src">{FIG.src}</p>
     </div>
   </div>
 </section>
 
-<section class="scr kx nom" data-k="nom">
-  <div class="in g ch">
-    <h2 class="lab mono mu par">{lab(2)}</h2>
-    <div class="tx">
-      <p class="phr t56" data-hola data-fit set:html={rich(P[2][0])} />
-      {P[2][1] && <div class="nts mono mu"><p set:html={rich(P[2][1], 'note')} /></div>}
-    </div>
-    <KernReel class="logo" lang={lang} />
-  </div>
-</section>
+<SlotScreen label={todo} slots={slots(TODO.top)} />
 
-<section class="scr kx charte r" data-k="charte">
-  <div class="in g ch">
-    <h2 class="lab mono mu par">{lab(3)}</h2>
-    <div class="tx">
-      <p class="phr t56" data-hola data-fit set:html={rich(P[3][0])} />
-      {P[3][1] && <div class="nts mono mu"><p set:html={rich(P[3][1], 'note')} /></div>}
-    </div>
-    <div class="ch-v">
-      <ul class="pal">{PAL.map(([col, n]) => <li style={`--c:${col}`}><span class="sw"></span><span class="mono">{n}</span><span class="mono mu">{col}</span></li>)}</ul>
-      <div class="fonts">
-        <img src="/work/kern-outdoor/font-instrument.webp" alt="Instrument Serif" />
-        <img src="/work/kern-outdoor/font-helvetica.webp" alt="Helvetica Neue" />
-      </div>
-    </div>
-  </div>
-</section>
+{T.map((t, i) => (
+  <>
+    <TextScreen {...t} />
 
-<section class="scr kx serie" data-k="serie">
-  <div class="in g">
-    <h2 class="lab mono mu par">{fr ? 'la série — trois carrousels' : 'the series — three carousels'}</h2>
-    <div class="cars">
-      {CAR.map((car, k) => (
-        <figure class="car" data-car style={`--i:${k}`}>
-          <button type="button" class="vp" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
-            <span class="track">{Array.from({ length: car.n }, (_, i) => <img src={`/work/kern-outdoor/car/p${k + 1}-${i + 1}.webp`} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${i + 1}/${car.n}`} loading={i ? 'lazy' : 'eager'} decoding="async" />)}</span>
-          </button>
-          <figcaption class="mono mu">{car.t}</figcaption>
-        </figure>
-      ))}
-    </div>
-  </div>
-</section>
+    {i === 0 && (
+      <section class="scr mds" data-media data-k="charte">
+        <div class="in g med n1">
+          <p class="lab mono mu par">{fr ? 'la palette et les typos' : 'palette and typefaces'}</p>
+          <figure class="mi m0 kp ch-v" data-par="70">
+            <ul class="pal">{PAL.map(([col, nm]) => <li style={`--c:${col}`}><span class="sw"></span><span class="mono">{nm}</span><span class="mono mu">{col}</span></li>)}</ul>
+            <div class="fonts">
+              <img src="/work/kern-outdoor/font-instrument.webp" width="1302" height="176" alt="Instrument Serif" />
+              <img src="/work/kern-outdoor/font-helvetica.webp" width="1545" height="169" alt="Helvetica Neue" />
+            </div>
+          </figure>
+        </div>
+      </section>
+    )}
 
-<section class="scr kx suite" data-k="suite">
-  <div class="in g ch">
-    <h2 class="lab mono mu par">{lab(4)}</h2>
-    <div class="tx">
-      <p class="phr t56" data-hola data-fit set:html={rich(P[4][0])} />
-      {P[4][1] && <div class="nts mono mu"><p set:html={rich(P[4][1], 'note')} /></div>}
-    </div>
-    <div class="list" data-card>
-      <img src="/work/kern-outdoor/liste.webp" width="1100" height="1557" alt={fr ? 'Check-list du bivouac offerte aux abonnés' : 'Bivouac checklist offered to followers'} loading="lazy" decoding="async" />
-      <svg viewBox={`0 0 100 ${LH.toFixed(2)}`} aria-hidden="true" data-ticks>{ticks.map((b) => <path d={tick(b)} pathLength="1" />)}</svg>
+    {i === 1 && (
+      <section class="scr mds" data-media data-k="serie">
+        <div class="in g med n3 flip">
+          <p class="lab mono mu par">{fr ? 'les formats — trois des cinq' : 'the formats — three of five'}</p>
+          {CAR.map((car, k) => (
+            <figure class:list={['mi kp car', `m${k}`]} data-car data-par={[70, 150, 110][k]}>
+              <button type="button" class="vp" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
+                <span class="track">{Array.from({ length: car.n }, (_, j) => <img src={`/work/kern-outdoor/car/p${k + 1}-${j + 1}.webp`} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${j + 1}/${car.n}`} loading={j ? 'lazy' : 'eager'} decoding="async" />)}</span>
+              </button>
+              <figcaption class="mono mu">{car.t}</figcaption>
+            </figure>
+          ))}
+        </div>
+      </section>
+    )}
+
+    {TODO.after[i].length > 0 && <SlotScreen label={todo} slots={slots(TODO.after[i])} />}
+  </>
+))}
+
+<section class="scr txs" data-k="fin">
+  <div class="in g cen">
+    <div class="pin">
+      <h2 class="lab mono mu par">{fr ? 'les résultats' : 'results'}</h2>
+      <ul class="fig">{FIG.end.map(([v, k]) => <li><b class="phr t56">{v}</b><span class="mono mu note">{k}</span></li>)}</ul>
+      <p class="mono mu note src">{FIG.src}</p>
     </div>
   </div>
 </section>
 
 <style>
-  /* gabarit commun : libellé, phrase et notes à gauche (colonnes 1 à 6), la pièce à droite */
-  .kx .in { position: relative; }
-  :global(.case.free) .kx .in { min-height: 86svh; } /* défilement libre : chaque pièce garde de l'air */
-  .kx .lab { grid-column: 1 / -1; grid-row: 1; align-self: end; }
-  .kx .tx { grid-column: 1 / 7; grid-row: 2; }
-  .kx .phr { margin-top: 18px; font-size: clamp(28px, 6.2dvh, 52px); }
-  .kx .nts { margin-top: 22px; font-size: 12px; line-height: 1.55; text-transform: none; max-width: 52ch; }
-  .kx .nts b { font-weight: 500; }
-  .kx .nts p + p { margin-top: .6em; }
-  .terr .tx { grid-column: 1 / 10; }
-  /* alternance : un écran sur deux, le texte passe à droite et la pièce à gauche */
-  .kx.r .lab { grid-column: 7 / -1; }
-  .kx.r .tx { grid-column: 7 / -1; }
-  .terr.r .lab, .terr.r .tx { grid-column: 4 / -1; }
-  .charte.r .ch-v { grid-column: 1 / 6; }
+  /* chiffres : trois valeurs côte à côte, la source datée dessous */
+  .fig { display: grid; grid-template-columns: repeat(3, auto); column-gap: clamp(32px, 6vw, 96px); row-gap: 20px; }
+  .fig li { display: grid; row-gap: 10px; align-content: start; }
+  .fig b { white-space: nowrap; }
 
-  /* le nom : quatre couleurs empilées, une seule visible */
-  .nom :global(.logo) { grid-column: 8 / -1; grid-row: 1 / 4; justify-self: center; position: relative; width: min(100%, 52dvh); aspect-ratio: 1; overflow: hidden; }
-  /* showreel : une seule scène SVG (fond de la charte + logos qui se transforment) */
 
-  /* la charte : nuancier vertical, puis les typos */
-  .ch-v { grid-column: 8 / -1; grid-row: 1 / 4; display: grid; row-gap: 36px; align-self: center; }
+  .fig .mono, .src { font-size: 11px; text-transform: none; }
+
+  /* la charte : quatre couleurs en colonnes, puis les typos */
+  .ch-v { display: grid !important; row-gap: 28px; width: min(100%, calc(var(--mh, 70dvh) * 1.3)); }
   .pal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
   .pal li { display: grid; row-gap: 6px; }
-  .pal .sw { height: min(34dvh, 300px); background: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent); }
+  .pal .sw { height: calc(var(--mh, 70dvh) * .55); background: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent); }
   .pal .mono { font-size: 11px; text-transform: none; }
-  .fonts { display: grid; row-gap: 14px; }
+  .fonts { display: grid; row-gap: 12px; }
   .fonts img { display: block; height: min(4.4dvh, 38px); width: auto; max-width: 100%; }
   :global(html[data-theme="nuit"]) .fonts img { filter: invert(1); }
 
-  /* la série : trois carrousels côte à côte (maquette du 13/11) */
-  .serie .in { align-content: center; row-gap: 28px; height: 100%; padding-top: calc(var(--head) + 24px); padding-bottom: 48px; }
-  .serie .lab { align-self: start; }
-  .cars { grid-column: 1 / -1; display: flex; justify-content: center; gap: clamp(24px, 5.5vw, 84px); }
-  .car { width: calc(min(52dvh, 470px) * .75); flex: none; }
-  .vp { display: block; width: 100%; aspect-ratio: 3 / 4; overflow: hidden; padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
+  /* les formats : trois carrousels (3:4) */
+  .car { flex-direction: column; }
+  .car .vp { display: block; width: min(100%, var(--mh, 52dvh) * .75); aspect-ratio: 3 / 4; overflow: hidden; padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
   .track { display: flex; height: 100%; will-change: transform; transition: none; }
   .track img { flex: none; width: 100%; height: 100%; object-fit: contain; display: block; }
   .car figcaption { margin-top: 12px; font-size: 11px; text-transform: none; }
 
-  /* la suite : la check-list, cochée par-dessus l'image */
-  .list { grid-column: 8 / -1; grid-row: 1 / 4; justify-self: center; position: relative; height: min(76dvh, 760px); aspect-ratio: 1100 / 1557; }
-  .list img, .list svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-  .list path { fill: none; stroke: #ff7e01; stroke-width: .62; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
-
-  /* composition (ordinateur), comme les autres études : libellé en haut, pièce et bloc de texte centrés dans la hauteur */
-  @media (min-width: 761px) {
-    .kx .in.ch { align-content: center; align-items: center; padding-top: calc(var(--head) + 48px); }
-    .kx .lab, .kx.r .lab, .terr.r .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; grid-area: auto; }
-    .kx.r .lab { left: calc(var(--m) + (100% - 2 * var(--m) + var(--gut)) / 2); }
-    .terr.r .lab { left: calc(var(--m) + (100% - 2 * var(--m) + var(--gut)) / 4); }
-    .kx .tx { grid-row: 1; }
-    .kx .phr { margin-top: 0; }
-    .nom :global(.logo), .ch-v, .list { grid-row: 1 / 3; align-self: center; }
-    .list { height: min(calc(100dvh - var(--head) - 160px), 760px); }
-    .serie .in { align-content: center; padding-top: calc(var(--head) + 48px); }
-  }
   @media (max-width: 760px) {
-    .kx .tx { grid-column: 1 / -1 !important; grid-row: auto; }
-    .kx .lab, .kx.r .lab, .terr.r .lab { grid-area: auto; } /* libellé en haut de l'écran (position absolue : hors de la grille) */
-    .charte.r .ch-v { grid-column: 1 / -1; }
-    .kx .phr { margin-top: 0; font-size: min(8.6vw, 4.2dvh); }
-    .kx .nts { margin-top: 12px; font-size: 11px; }
-    .nom :global(.logo), .ch-v, .list { grid-column: 1 / -1; grid-row: auto; order: -1; }
-    .nom :global(.logo) { width: min(100%, 34dvh); }
-    .ch-v { row-gap: 12px; margin-bottom: 14px; }
-    .pal .sw { height: 11dvh; }
-    .fonts { row-gap: 8px; }
+    .fig { grid-template-columns: 1fr; row-gap: 14px; }
+    .ch-v { width: 100%; row-gap: 12px; }
+    .pal .sw { height: 14dvh; }
     .fonts img { height: 3dvh; }
-    .list { height: 46dvh; }
-    .cars { gap: 8px; }
-    .car { width: calc((100vw - 2 * var(--m) - 16px) / 3); }
+    .car .vp { width: 15dvh; }
     .car figcaption { display: none; }
   }
 </style>
-

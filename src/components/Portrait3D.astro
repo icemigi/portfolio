@@ -1,9 +1,9 @@
 ---
 // Portrait en relief (WebGL2) : chevalier en maillage déplacé par sa profondeur, cadre enluminé devant,
 // caméra en perspective qui suit la souris. Sans WebGL2 ou avec « Réduire les animations » : image fixe.
-// Assets (public/portrait3d/) régénérés par le script export_web.py ; sources PNG dans assets/portrait3D/web/.
+// Assets (public/portrait3d/) issus de assets/portrait3D/web/ ; geo et nrm en WebP sans perte avec exact (pixels identiques au PNG, alpha compris).
 //   knight.webp : chevalier détouré, non découpé (le pochoir du cadre le découpe au rendu, dans le plan du cadre)
-//   frame.webp  : cadre ; geo.png : R,G = profondeur 16 bits, B = pochoir ; nrm.png : R,G = pente (racine signée), B = visage
+//   frame.webp  : cadre ; geo.webp : R,G = profondeur 16 bits, B = pochoir ; nrm.webp : R,G = pente (racine signée), B = visage
 interface Props { lang: 'fr' | 'en'; class?: string; id?: string }
 const { lang, class: cls = '', id } = Astro.props;
 const alt = lang === 'fr' ? 'Portrait de Kern en armure, dans un cadre enluminé' : 'Portrait of Kern in armour, in an illuminated frame';

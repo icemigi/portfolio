@@ -180,12 +180,13 @@ export function letters(root: Element, delay = 300, extraSkip?: string): number 
   }
   if (named.length) holdKerning(named);
   // front d'écriture étroit : chaque lettre ne se mélange que ~2,5 pas de cascade (deux ou trois lettres à la fois), 2-3 changements
-  // apartés : chacun part 100 ms après que son mot s'est fixé, au pas du texte, jamais avant la fin du précédent
+  // apartés : chacun part 100 ms après que son mot s'est fixé, au pas du texte, jamais avant la fin du précédent ;
+  // une note longue (petit texte gris des études) s'écrit en 0,8 s au plus : au pas du texte, elle durait jusqu'à 7 s
   let notesEnd = 0;
   for (const nt of notes) {
-    const at = Math.max(nt.at + 100, notesEnd);
-    nt.chars.forEach((sp, i) => (sp.dataset.d = String(at + i * step)));
-    notesEnd = at + nt.chars.length * step;
+    const at = Math.max(nt.at + 100, notesEnd), ns = Math.min(step, 800 / nt.chars.length);
+    nt.chars.forEach((sp, i) => (sp.dataset.d = String(at + i * ns)));
+    notesEnd = at + nt.chars.length * ns;
   }
   const stops = [mixed, noted].filter((c) => c.length).map((c) => scramble(c, delay, R));
   const stopText = () => stops.forEach((f) => f());

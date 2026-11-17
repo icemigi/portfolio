@@ -27,7 +27,9 @@ onPage('[data-ring]', (ctx) => {
   const scr = ring.closest<HTMLElement>('.scr')!, text = scr.querySelector<HTMLElement>('.bt')!;
   const cards = [...ring.querySelectorAll<HTMLElement>('.rc')], N = cards.length;
   const layer = new Int8Array(N).fill(-1); // z-index posé (évite de réécrire le style à chaque image)
-  const pics = cards.map((c) => c.querySelector('img'));
+  const pics = cards.map((c) => c.querySelector<HTMLElement>('img, video'));
+  const vids = [...ring.querySelectorAll('video')];
+  vids.forEach((v) => { v.poster = v.dataset.poster!; v.preload = 'auto'; });
 
   // géométrie : centre et rayon d'après le texte, largeur des images d'après le rayon, recul de la caméra
   let cx = 0, cy = 0, R = 0, w = 0, P = 0;
@@ -78,6 +80,7 @@ onPage('[data-ring]', (ctx) => {
     const dt = Math.min(50, now - last); last = now;
     const v = shown();
     if (v && !on) t0 = now; // arrivée sur l'écran : nouvelle entrée
+    if (v !== on) vids.forEach((m) => (v ? m.play().catch(() => {}) : m.pause())); // les vidéos ne jouent qu'à l'écran
     on = v;
     if (v) {
       if (!drag) { vel += (TURN - vel) * (1 - Math.exp(-dt / 900)); phi += vel * dt; }

@@ -1,7 +1,7 @@
 /* Barre commune des pièces du Lab : aide à gauche (après la flèche retour), actions à droite ; mêmes mots, même typo,
    couleurs du mode jour / nuit du site. Dans une salle du Lab (cadre), la barre se recale à gauche. Aide de premier lancement. */
 @font-face { font-family: 'Geist Mono'; src: url('/fonts/GeistMono-Regular.woff2') format('woff2'); font-display: swap; }
-:root { --k-fg: #111; --k-mu: #777; --k-bg: rgba(243, 243, 243, .92); --k-ac: #FF8716; }
+:root { --k-fg: #111; --k-mu: #666; --k-bg: rgba(243, 243, 243, .92); --k-ac: #FF8716; }
 html[data-theme='nuit'] { --k-fg: #ece5d8; --k-mu: #8b8476; --k-bg: rgba(18, 17, 15, .92); }
 .kk-bar { position: fixed; z-index: 50; top: 18px; left: 96px; right: 20px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; pointer-events: none; font: 12px/1 'Geist Mono', ui-monospace, monospace; }
 html.in-frame .kk-bar { left: 20px; }

@@ -11,6 +11,7 @@ type Content = {
   short: string; // sous-titre des cartes
   meta: { year: string; context: string; role: string; tools: string };
   lead: string;
+  note?: string;     // petite note sous l'accroche (écran « en bref »)
   sections: Section[];
 };
 export type Tag = 'I' | 'T' | 'G' | 'W' | 'E' | 'P';
@@ -206,8 +207,9 @@ const all: Project[] = [
     },
   },
   // ---------------------------------------------------------------- kern-outdoor
-  // Brouillon du 08/11, rédigé d'après la « Note de cadrage — étude de cas kern.outdoor » (v1.0, à valider).
-  // Ne jamais citer ni montrer l'employeur. Chiffres à compléter avec les statistiques natives datées.
+  // Textes du 17/11 : registre pro, centré sur le projet (ni anecdote personnelle ni aparté) ; chiffres TikTok relevés le
+  // 17/11/2026 (kern/data.ts). Ne jamais citer l'employeur, ni les marques qui ont demandé un partenariat.
+  // Mise en page propre : components/case/KernOutdoor.astro (r : libellé de l'écran, h : gros texte, p : la note).
   {
     slug: 'kern-outdoor',
     wip: true,
@@ -219,27 +221,27 @@ const all: Project[] = [
     fr: {
       title: 'kern.outdoor',
       short: "Direction artistique d'un média outdoor",
-      meta: { year: '2023 —', context: 'Projet personnel, autoproduit, non commercial', role: 'Direction artistique, identité, écriture, tournage, montage', tools: '—' },
-      lead: "Pour une fois, le client, c'était moi{m:le plus pénible de tous}.",
+      meta: { year: '2023 —', context: 'Projet personnel, autoproduit, indépendant', role: 'Direction artistique, ligne éditoriale, tournage, montage', tools: 'Figma, Photoshop, CapCut' },
+      lead: "Direction artistique et ligne éditoriale d'un média outdoor indépendant.",
+      note: "Sur TikTok et Instagram, il transmet la randonnée et le bivouac, des premiers pas aux sorties engagées.",
       sections: [
-        { r: "contexte", h: "Partager un terrain", paras: [{ p: "La montagne depuis l'enfance, le Pays basque, la préparation du diplôme d'accompagnateur : kern.outdoor partage ce terrain depuis 2023." }] },
-        { r: "enjeu", h: "Sortir du flux", paras: [{ p: "Des paysages interchangeables et des tests qui ressemblent à des publicités : il fallait un compte reconnaissable au premier coup d'œil, sans budget, tenu seul." }] },
-        { r: "démarche", h: "Un nom à double sens", paras: [{ p: "Kern, pour le kerning des typographes et pour le cairn qui balise un sentier. En février 2026, je bâtis la DA autour de ce qui marchait déjà : le conseil." }] },
-        { r: "réponse", h: "Le titre et la palette", paras: [{ p: "Un grand titrage et une palette fixes ; carrousels, vidéos face caméra et vidéos en randonnée s'y accrochent comme une même série." }] },
-        { r: "suite", h: "Tout fait seul", paras: [{ p: "Écriture, tournage, montage, graphisme : un système qui produit vite sans perdre la cohérence. Pour une fois, j'appliquais à moi-même ce que je fais pour les autres." }] },
+        { r: "l'identité", h: "Des couleurs franches, loin du vert sapin", paras: [{ p: "Noir, olive, crème, citron : un contraste pensé pour lire un carrousel sur téléphone, et une palette qui tranche avec les tons forestiers des comptes outdoor. De petits signes graphiques habillent vidéos et slides : le compte se reconnaît avant qu'on lise son nom." }] },
+        { r: "le système", h: "Cinq formats, cinq directions artistiques, une même famille", paras: [{ p: "Guides complets, matériel par thème, films et documentaires, applications, conseils de débutant : chaque format a sa couverture et ses règles. Un gabarit par format permet de publier deux à trois fois par semaine en saison, sans perdre la cohérence." }] },
+        { r: "la vidéo", h: "Tourner, monter, habiller", paras: [{ p: "Plans contemplatifs, face caméra, tendances : un montage rythmé, où l'humour et les références glissées servent le conseil sans le remplacer. Le même habillage relie des formats très différents." }] },
+        { r: "la ligne éditoriale", h: "Aucun partenariat rémunéré", paras: [{ p: "Le matériel recommandé est choisi, jamais payé. Les demandes d'équipementiers et de grandes enseignes du sport, plus nombreuses à mesure que le compte grandit, sont toutes déclinées. Un format qui révélait des spots précis a été arrêté, pour ne pas contribuer à leur surfréquentation." }] },
       ],
     },
     en: {
       title: 'kern.outdoor',
-      short: 'Art direction for an outdoor media',
-      meta: { year: '2023 —', context: 'Personal project, self-produced, non-commercial', role: 'Art direction, identity, writing, filming, editing', tools: '—' },
-      lead: "For once, the client was me{m:the most demanding of all}.",
+      short: 'Art direction for an outdoor media brand',
+      meta: { year: '2023 —', context: 'Personal project, self-produced, independent', role: 'Art direction, editorial line, filming, editing', tools: 'Figma, Photoshop, CapCut' },
+      lead: "Art direction and editorial line for an independent outdoor media brand.",
+      note: "On TikTok and Instagram, it teaches hiking and bivouacking, from first steps to committed trips.",
       sections: [
-        { r: "context", h: "Sharing my ground", paras: [{ p: "Mountains since childhood, the Basque Country, training for the mountain-leader diploma: kern.outdoor has shared this terrain since 2023." }] },
-        { r: "challenge", h: "Getting out of the feed", paras: [{ p: "Interchangeable landscapes and reviews that look like ads: the account had to be recognisable at a glance, with no budget, run alone." }] },
-        { r: "process", h: "A name with two meanings", paras: [{ p: "Kern, for the typographer's kerning and for the cairn that marks a trail. In February 2026, I built the art direction around what already worked: advice." }] },
-        { r: "response", h: "The title and the palette", paras: [{ p: "Bold, fixed titling and a set palette; carousels, face-camera videos and trail videos hang on them like one series." }] },
-        { r: "what's next", h: "All done alone", paras: [{ p: "Writing, filming, editing, design: a system that produces fast without losing consistency. For once, I applied to myself what I do for others." }] },
+        { r: "identity", h: "Bold colours, far from forest green", paras: [{ p: "Black, olive, cream, lime: contrast built for reading a carousel on a phone, and a palette that stands out from the forest tones of outdoor accounts. Small graphic signs dress the videos and slides: the account is recognised before its name is read." }] },
+        { r: "system", h: "Five formats, five art directions, one family", paras: [{ p: "Complete guides, gear by theme, films and documentaries, apps, beginner tips: each format has its own cover and rules. One template per format makes two to three posts a week possible in season, without losing consistency." }] },
+        { r: "video", h: "Shoot, edit, dress", paras: [{ p: "Contemplative shots, face-camera, trends: a fast-paced edit where humour and subtle references serve the advice without replacing it. The same graphic dressing ties very different formats together." }] },
+        { r: "editorial line", h: "No paid partnerships", paras: [{ p: "Recommended gear is chosen, never paid for. Requests from gear makers and major sports retailers grew with the account; every one was declined. A format revealing precise locations was dropped, to avoid adding to the overcrowding of natural sites." }] },
       ],
     },
   },

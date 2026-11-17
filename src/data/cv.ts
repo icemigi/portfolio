@@ -1,6 +1,5 @@
 // CV en ligne (page « terminal » cachée, accessible depuis le pied de page). Source : CV PDF FR / EN.
 // Règles du site : pas de nom d'employeur actuel, pas de noms d'artistes ni de labels, pas de téléphone.
-// TODO : années et lien de téléchargement de Farquaad et Himarë.
 import type { Lang } from './ui';
 import { contact } from './about';
 import { esc } from './text';
@@ -55,9 +54,6 @@ export const cv: Record<Lang, Cv> = {
         { when: '2025', what: 'Algorithmic Heraldry', where: 'Direction artistique, édition & génératif', items: [
           'Ouvrage théorique inédit de 500 pages : direction artistique intégrale, mise en page générée en Python.',
           'Générateur p5.js : visuels uniques indexés par clé de hash parmi des milliards de combinaisons.',
-        ] },
-        { what: 'Farquaad & Himarë', where: 'Fontes libres', items: [
-          'Deux caractères dessinés de A à Z, diffusés gratuitement.',
         ] },
         { when: '2023 — auj.', what: 'kern.outdoor', where: 'Média outdoor · direction de création & production', items: [
           'Charte visuelle, production, captation, scripting et montage vidéo court format.',
@@ -144,9 +140,6 @@ export const cv: Record<Lang, Cv> = {
         { when: '2025', what: 'Algorithmic Heraldry', where: 'Art direction, publishing & generative', items: [
           'Unpublished 500-page theoretical book: full art direction, layout generated in Python.',
           'p5.js generator: unique visuals indexed by hash key among billions of combinations.',
-        ] },
-        { what: 'Farquaad & Himarë', where: 'Free fonts', items: [
-          'Two typefaces drawn from A to Z, released for free.',
         ] },
         { when: '2023 — now', what: 'kern.outdoor', where: 'Outdoor media · creative direction & production', items: [
           'Visual identity, production, filming, scripting and short-form editing.',

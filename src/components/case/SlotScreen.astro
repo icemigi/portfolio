@@ -1,0 +1,16 @@
+---
+// Médias à fournir : un écran d'emplacements gris, chacun aux proportions du média attendu (largeur / hauteur) et à son nom.
+// Retiré à la livraison du média, remplacé par le média lui-même.
+interface Props { label: string; slots: [string, number][] }
+const { label, slots } = Astro.props;
+---
+<section class="scr mds" data-media>
+  <div class:list={['in g med', `n${slots.length}`]}>
+    <p class="lab mono mu par">{label}</p>
+    {slots.map(([name, a], k) => <figure class:list={['mi', `m${k}`]}><span class="ph slot" style={`--a:${a}`}><i>{name}</i></span></figure>)}
+  </div>
+</section>
+
+<style>
+  .slot { display: block; aspect-ratio: var(--a); width: min(100%, calc(var(--mh, 60dvh) * var(--a))); }
+</style>

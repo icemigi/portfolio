@@ -45,8 +45,8 @@ onPage('.screens-host.case', (ctx) => {
     const rubs: { k: string; i: number }[] = [], of: number[] = [];
     scr.forEach((sc, i) => {
       if (sc.classList.contains('s1') || sc.classList.contains('nx')) { of.push(-1); return; }
-      // les écrans d'images (visuels, planche) illustrent la rubrique qui les précède : ils s'y rattachent
-      const k = name(sc); if (!k || /^(visuels|visuals|planche|contact sheet)$/.test(k)) { of.push(Math.max(0, rubs.length - 1)); return; }
+      // les écrans de médias illustrent la rubrique qui les précède : ils s'y rattachent
+      const k = name(sc); if (!k || sc.hasAttribute('data-media')) { of.push(Math.max(0, rubs.length - 1)); return; }
       if (!rubs.length || rubs[rubs.length - 1].k !== k) rubs.push({ k, i });
       of.push(rubs.length - 1);
     });
@@ -167,18 +167,57 @@ onPage('.screens-host.case', (ctx) => {
 
     // (entrée des images : pilotée par le défilement, avec le texte — voir revealScrub dans motion.ts)
 
-    // ---------- profondeur : pendant le passage d'un écran à l'autre, les images n'avancent pas toutes à la même vitesse ----------
-    const deep = [...document.querySelectorAll<HTMLElement>('[data-depth]')].map((el) => ({ el, k: +el.dataset.depth!, scr: el.closest<HTMLElement>('.scr')! }));
-    let praf = 0, until = 0;
-    const depth = () => {
-      for (const d of deep) {
-        const top = d.scr.getBoundingClientRect().top;
-        d.el.style.translate = Math.abs(top) < innerHeight * 1.2 ? `0 ${(top * d.k).toFixed(1)}px` : '';
-      }
-      praf = performance.now() < until ? ctx.raf(depth) : 0;
-      if (!praf) deep.forEach((d) => { if (Math.abs(d.scr.getBoundingClientRect().top) < 1) d.el.style.translate = ''; });
-    };
-    if (!reduced() && deep.length) host.addEventListener('screens:leave', () => { until = performance.now() + 1500; if (!praf) praf = ctx.raf(depth); });
+    // ---------- captures très hautes (pages web entières) : un plan de showreel qui parcourt la page, en boucle ----------
+    // Un seul mouvement continu, jamais arrêté : de longs ralentis (la page glisse lentement) coupés de traversées rapides, et de
+    // temps en temps un petit retour en arrière ; la vitesse rejoint chaque nouvelle consigne en douceur (lissage exponentiel),
+    // d'où des accélérations et freinages sans à-coup. Près du bas, à la fin d'un ralenti : la page descend jusqu'à son bas, s'y
+    // tient un instant, puis un grand défilement rapide la ramène en haut (accélère puis freine), et le plan reprend. Seulement tant que l'écran est à l'écran ; immobile si « Réduire les animations ».
+    if (!reduced()) document.querySelectorAll<HTMLElement>('[data-shot]').forEach((vp) => {
+      const img = vp.querySelector('img')!;
+      const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+      const TAU = 0.22; // temps de réponse de la vitesse (s)
+      const io = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // ease-in-out (cubique)
+      type Mode = 'slow' | 'fast' | 'back';
+      let y = 0, v = 0, aim = 0, mode: Mode = 'fast', until = 0, last = 0, raf = 0, run = false;
+      // déplacement réglé (descente jusqu'au bas, retour en haut) : de from à to, puis une attente (hold) avant la suite
+      let tw: { from: number; to: number; t0: number; dur: number; hold: number } | null = null;
+      const frame = (now: number) => {
+        raf = 0;
+        if (!run) return;
+        const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+        const H = vp.clientHeight, max = Math.max(0, img.offsetHeight - H);
+        if (max) {
+          if (tw) {
+            const p = Math.min(1, (now - tw.t0) / tw.dur);
+            y = tw.from + (Math.min(tw.to, max) - tw.from) * io(p);
+            if (now >= tw.t0 + tw.dur + tw.hold) {
+              if (tw.to > 0) tw = { from: y, to: 0, t0: now, dur: Math.min(1700, 700 + y * 0.12), hold: 0 }; // le grand retour en haut
+              else { tw = null; v = aim = 0.1 * H; mode = 'slow'; until = now + rnd(900, 1300); }
+            }
+          } else {
+            if (now >= until) {
+              const room = max - y;
+              if (mode !== 'slow') { mode = 'slow'; aim = rnd(0.06, 0.13) * H; until = now + rnd(1100, 1800); }
+              else if (room <= 1.6 * H) { tw = { from: y, to: max, t0: now, dur: 500 + room * 0.35, hold: rnd(700, 1000) }; v = 0; } // jusqu'au bas de la page
+              else if (y > H && Math.random() < 0.22) { mode = 'back'; aim = -rnd(0.5, 0.9) * H; until = now + rnd(320, 460); } // petit retour en arrière
+              else { mode = 'fast'; aim = rnd(2.4, 3.4) * H; until = now + rnd(380, 560); }
+            }
+            if (!tw) {
+              v += (aim - v) * (1 - Math.exp(-dt / TAU));
+              y = Math.min(max, Math.max(0, y + v * dt));
+            }
+          }
+          img.style.transform = `translate3d(0, ${(-y).toFixed(1)}px, 0)`;
+        }
+        raf = ctx.raf(frame);
+      };
+      ctx.observe(new IntersectionObserver(([e]) => {
+        run = e.isIntersecting; last = 0;
+        if (run && tw) tw = { ...tw, from: y, t0: performance.now() }; // reprise : le déplacement repart d'où il en était
+        if (run && !raf) raf = ctx.raf(frame);
+      }, { root: host, threshold: 0.5 })).observe(vp.closest('.scr')!);
+      ctx.cleanup(() => { run = false; });
+    });
 
     // ---------- légende au survol : elle remplace le libellé de l'écran ----------
     document.querySelectorAll<HTMLImageElement>('img[data-cap]').forEach((im) => {

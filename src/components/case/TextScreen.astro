@@ -1,0 +1,16 @@
+---
+// Écran de texte des études à mise en page propre : libellé, gros texte, note grise (écrite comme les apartés).
+interface Props { k: string; big: string; note?: string }
+const { k, big, note } = Astro.props;
+---
+<section class="scr txs">
+  <div class="in g cen">
+    <div class="pin">
+      <h2 class="lab mono mu par">{k}</h2>
+      <div class="tx">
+        <p class="phr t56" data-hola data-fit set:html={big} />
+        {note && <div class="nts mono mu note"><p set:html={note} /></div>}
+      </div>
+    </div>
+  </div>
+</section>

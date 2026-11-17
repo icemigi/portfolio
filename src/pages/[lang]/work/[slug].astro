@@ -8,7 +8,7 @@ import { ui, languages, getLangFromParam, pad } from '../../../data/ui';
 import { projects } from '../../../data/projects';
 import { media, type Img } from '../../../data/media';
 import { captions } from '../../../data/captions';
-import { rich } from '../../../data/text';
+import { rich, first, esc } from '../../../data/text';
 import KernOutdoor from '../../../components/case/KernOutdoor.astro';
 import ObjectShape from '../../../components/ObjectShape.astro';
 
@@ -27,15 +27,12 @@ const nc = next[lang];
 const N = pad(projects.length);
 
 type Para = { t?: string; p: string };
-type Tpl = 'ta' | 'tb' | 'tc';
+// Un écran de texte (au milieu de la grille, ferré à gauche : gros texte puis petit texte), puis un écran de médias en grand,
+// en alternance. Les médias gardent toujours leurs proportions (jamais rognés).
 type Block =
-  | { kind: 'hook'; k: string; p: string; img?: Img }
-  | { kind: 'spread'; tpl: Tpl; k: string; paras: Para[]; img: Img }
-  | { kind: 'rub'; k: string; paras: Para[] }
+  | { kind: 'txt'; k: string; big: string; small: string[] }
+  | { kind: 'media'; imgs: Img[] }
   | { kind: 'list'; k: string; items: { k: string; v: string }[] }
-  | { kind: 'pair'; imgs: Img[] }
-  | { kind: 'stair'; imgs: Img[] }
-  | { kind: 'sheet'; imgs: Img[] }
   | { kind: 'gen'; src: string };
 const M = media[project.slug];
 // grandes images : une version 800 px (public/work/**/<nom>-800.webp) pour les téléphones
@@ -58,38 +55,39 @@ if (S.length === 7) {
 } else S.forEach((s) => groups.push({ k: s.r ? `${s.r} — ${s.h.toLowerCase()}` : s.h.toLowerCase(), paras: s.paras })); // rubrique fixe (r) + titre propre au projet (h)
 groups.forEach((g) => { if (g.paras.length > 1 && g.paras.every((x) => x.t)) g.list = true; });
 
-// visuels : la couverture d'abord, puis la galerie ; chaque double page prend ce qu'il lui faut, le reste finit en planche
+// gros texte / petit texte : la première phrase (ou l'intertitre) en grand, la suite en note mono
+const split = (ps: Para[]) => {
+  const [p0, ...more] = ps;
+  const [big, rest] = p0.t ? [p0.t.replace(/[\s.:]+$/, '') + '.', p0.p] : first(p0.p);
+  return { big: rich(big), small: [...(rest ? [rich(rest, 'note')] : []), ...more.map((x) => (x.t ? `<b>${esc(x.t)}</b> ` : '') + rich(x.p, 'note'))] };
+};
+
+// visuels : la couverture d'abord, puis la galerie, répartis également entre les écrans de médias (un après chaque texte, 4 visuels au plus)
 const pool: Img[] = M ? [M.cover, ...(M.gal ?? []).flat().filter((im) => im.src !== M.cover.src && !vid(im.src))] : [];
-const take = (n: number) => (pool.length >= n ? pool.splice(0, n) : null);
-const blocks: Block[] = [{ kind: 'hook', k: fr ? 'en bref' : 'in short', p: c.lead, img: take(1)?.[0] }];
-const TPL: Tpl[] = ['ta', 'tb', 'tc'];
-let ti = 0, vi = 0;
+const blocks: Block[] = [{ kind: 'txt', k: fr ? 'en bref' : 'in short', big: rich(c.lead), small: c.note ? [rich(c.note, 'note')] : [] }];
 groups.forEach((g, i) => {
   if (g.list) blocks.push({ kind: 'list', k: g.k, items: g.paras.map((x) => ({ k: x.t!.replace(/[\s.:]+$/, ''), v: x.p })) });
-  else {
-    const im = take(1)?.[0];
-    blocks.push(im ? { kind: 'spread', tpl: TPL[ti++ % TPL.length], k: g.k, paras: g.paras, img: im } : { kind: 'rub', k: g.k, paras: g.paras });
-  }
-  // entre deux rubriques, une double page d'images (deux décalées, puis trois en escalier) — deux au plus
-  if (i < groups.length - 1 && vi < 2 && !g.list) {
-    const kind = vi % 2 === 0 ? 'pair' : 'stair', n = kind === 'pair' ? 2 : 3;
-    const imgs = take(n);
-    if (imgs) { blocks.push({ kind, imgs }); vi++; }
-  }
+  else blocks.push({ kind: 'txt', k: g.k, ...split(g.paras) });
   if (project.generator && i === groups.length - 2) blocks.push({ kind: 'gen', src: project.generator });
 });
-if (pool.length >= 3) blocks.push({ kind: 'sheet', imgs: pool.splice(0, 18) });
-else if (pool.length === 2) blocks.push({ kind: 'pair', imgs: pool.splice(0, 2) });
 if (c.blocks?.length) blocks.push({ kind: 'list', k: fr ? 'en bref' : 'in short', items: c.blocks });
+let slots = blocks.filter((b) => b.kind === 'txt').length;
+for (let i = 0; i < blocks.length && pool.length; i++) {
+  if (blocks[i].kind !== 'txt') continue;
+  blocks.splice(i + 1, 0, { kind: 'media', imgs: pool.splice(0, Math.min(4, Math.ceil(pool.length / slots--))) });
+  i++;
+}
+while (pool.length) blocks.push({ kind: 'media', imgs: pool.splice(0, 4) });
+// projets à architecture propre (src/components/case/) : leur milieu remplace les rubriques (l'accroche reste commune)
+const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor | undefined>)[project.slug];
+const shown: Block[] = Own ? [blocks[0]] : blocks;
 
 // textes alternatifs et légendes : celle de captions.ts, sinon « visuel 03/19 »
-const allImgs: Img[] = blocks.flatMap((b) => ('imgs' in b ? b.imgs : 'img' in b && b.img ? [b.img] : []));
+const allImgs: Img[] = shown.flatMap((b) => (b.kind === 'media' ? b.imgs : []));
 const imgTotal = allImgs.length;
 const imgNo = (im: Img) => allImgs.indexOf(im) + 1;
 const capOf = (im: Img) => captions[im.src]?.[lang] || `${fr ? 'visuel' : 'visual'} ${pad(imgNo(im))}/${pad(imgTotal)}`;
-const pic = (im: Img, cls: string, sizes: string, depth = 0) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}`, depth });
-// projets à architecture propre (src/components/case/) : leur milieu remplace les blocs par défaut (l'accroche reste commune)
-const Own = ({ 'kern-outdoor': KernOutdoor } as Record<string, typeof KernOutdoor | undefined>)[project.slug]; // mise en page propre à certaines études
+const pic = (im: Img, cls: string, sizes: string) => ({ cls, src: im.src, srcset: ss(im), sizes, w: im.w, h: im.h, alt: `${c.title} — ${capOf(im)}`, cap: capOf(im), n: `${pad(imgNo(im))}/${pad(imgTotal)}` });
 type Pic = ReturnType<typeof pic>;
 // données structurées : l'étude comme œuvre, signée par la personne décrite dans Base (#me)
 const home = new URL('/', Astro.site ?? 'https://kerningkastle.com').href;
@@ -101,8 +99,6 @@ const workLd = {
   ...(project.years.length ? { dateCreated: String(project.years[0]) } : {}),
   creator: { '@id': `${home}#me` }, isPartOf: { '@id': `${home}#site` },
 };
-// apartés {m:…} : petite note mono entre parenthèses, écrite au fil du texte (comme l'accueil et À propos)
-const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) => { const m = x.match(/^\{m:([^}]+)\}$/); return m ? { n: m[1] } : { t: x }; });
 ---
 <Base lang={lang} title={c.title} description={c.lead.length < 110 ? `${c.lead} ${c.meta.role} · ${c.meta.tools}.` : c.lead} path={`work/${project.slug}/`} active="work">
   <Fragment slot="head">
@@ -129,28 +125,31 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
       </div>
     </section>
 
-    {(Own ? blocks.filter((b) => b.kind === 'hook') : blocks).map((b) =>
-      b.kind === 'hook' ? (
-        <section class="scr">
-          <div class="in g mag hook">
-            <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <p class="bd t56" data-hola data-fit>{parts(b.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>
-            {b.img && ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'sm', '(max-width: 760px) 40vw, 20vw', -0.12))}
+    {shown.map((b, bi) =>
+      b.kind === 'txt' ? (
+        <section class="scr txs">
+          <div class="in g cen">
+            <div class="pin">
+              <h2 class="lab mono mu par">{b.k}</h2>
+              <div class="tx">
+                <p class="phr t56" data-hola data-fit set:html={b.big} />
+                {b.small.length > 0 && <div class="nts mono mu note">{b.small.map((h) => <p set:html={h} />)}</div>}
+              </div>
+            </div>
           </div>
         </section>
-      ) : b.kind === 'spread' ? (
-        <section class="scr">
-          <div class:list={['in g mag spread', b.tpl]}>
-            <h2 class="lab mono mu par" data-caplab>{b.k}</h2>
-            <div class="tx" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
-            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.img, 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
-          </div>
-        </section>
-      ) : b.kind === 'rub' ? (
-        <section class="scr">
-          <div class="in g">
-            <h2 class="lab mono mu par">{b.k}</h2>
-            <div class="bd tx solo" data-hola data-fit>{b.paras.map((p) => <p>{p.t && <b>{p.t} </b>}{parts(p.p).map((x) => x.n ? <span class="note mono mu">({x.n})</span> : x.t)}</p>)}</div>
+      ) : b.kind === 'media' ? (
+        <section class="scr mds" data-media>
+          <div class:list={['in g med', `n${b.imgs.length}`, { flip: bi % 4 === 3 }]}>
+            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
+            {b.imgs.map((im, i) => ((p: Pic) => (
+              <figure class:list={['mi', `m${i}`]} data-par={[70, 150, 110, 190][i]}>
+                {/* capture très haute (page web entière) : elle défile dans un cadre d'écran (views/case.ts) */}
+                {p.h / p.w > 2.5
+                  ? <div class="shot" data-shot><img src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} loading="lazy" decoding="async" /></div>
+                  : <img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} loading="lazy" decoding="async" />}
+              </figure>
+            ))(pic(im, '', b.imgs.length === 1 ? '(max-width: 760px) 100vw, 70vw' : '(max-width: 760px) 100vw, 40vw')))}
           </div>
         </section>
       ) : b.kind === 'list' ? (
@@ -162,28 +161,6 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
                 <li><span class="mono mu n">{pad(i + 1)}</span><h3 class="t28">{it.k}</h3><p class="mono mu dl">{it.v}</p></li>
               ))}
             </ul>
-          </div>
-        </section>
-      ) : b.kind === 'pair' ? (
-        <section class="scr" data-still>
-          <div class="in g mag pair">
-            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
-            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[0], 'big', '(max-width: 760px) 100vw, 55vw', 0.1))}
-            {((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(b.imgs[1], 'sm', '(max-width: 760px) 50vw, 25vw', -0.14))}
-          </div>
-        </section>
-      ) : b.kind === 'stair' ? (
-        <section class="scr" data-still>
-          <div class="in g mag stair">
-            <p class="lab mono mu par" data-caplab>{fr ? 'visuels' : 'visuals'}</p>
-            {b.imgs.map((im, i) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, `s${i}`, '(max-width: 760px) 50vw, 30vw', [0.08, -0.06, -0.16][i])))}
-          </div>
-        </section>
-      ) : b.kind === 'sheet' ? (
-        <section class="scr" data-still>
-          <div class="in g sheet">
-            <p class="lab mono mu par" data-caplab>{fr ? 'planche' : 'contact sheet'}</p>
-            <div class="grid">{b.imgs.map((im) => ((p: Pic) => <img class:list={['md', p.cls]} src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} data-cap={p.cap} data-n={p.n} data-depth={p.depth || undefined} loading="lazy" decoding="async" />)(pic(im, 'th', '(max-width: 760px) 33vw, 15vw')))}</div>
           </div>
         </section>
       ) : (
@@ -231,13 +208,53 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   html.js.case-next .s1-late + .s1-late { animation-delay: 1.27s; }
   @keyframes kk-late { from { opacity: 0; transform: translateY(6px); } }
   @media (prefers-reduced-motion: reduce) { html.js .s1-late { animation: none; } }
+
+  /* ---------- écrans de texte et de médias (partagés avec les études à architecture propre) ---------- */
+  /* texte : au milieu de la grille (colonnes 4 à 9), ferré à gauche comme le reste du site ; libellé au-dessus, gros texte
+     (première phrase) puis petit texte mono */
+  .case .cen { align-content: center; padding-top: calc(var(--head) + 48px); padding-bottom: 96px; }
+  .case .pin { grid-column: 4 / 10; display: grid; justify-items: start; row-gap: 28px; }
+  .case .pin .lab { position: static; margin: 0; }
+  .case .pin .phr { font-size: clamp(30px, 6.2dvh, 56px); }
+  .case .pin .nts { margin-top: 24px; font-size: 12px; line-height: 1.55; text-transform: none; max-width: 52ch; }
+  .case .pin .nts b { font-weight: 500; }
+  .case .pin .nts p + p { margin-top: .6em; }
+  /* médias : jamais rognés (largeur et hauteur plafonnées, proportions d'origine), posés sur les colonnes */
+  .case .mi { margin: 0; display: flex; justify-content: center; min-width: 0; }
+  .case .mi > img { display: block; width: auto; height: auto; max-width: 100%; max-height: var(--mh, 70dvh); }
+  .case .shot { position: relative; overflow: hidden; aspect-ratio: 16 / 10; width: min(100%, var(--mh, 70dvh) * 1.6); background: color-mix(in srgb, var(--fg) 6%, var(--bg)); }
+  .case .shot > img { display: block; width: 100%; height: auto; will-change: transform; }
+  .case .med { height: 100%; grid-template-rows: minmax(0, 1fr); align-items: center; padding-top: calc(var(--head) + 48px); padding-bottom: 96px; }
+  .case .med > .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); margin: 0; }
+
+  /* médias en grand ; un seul sur les colonnes 3 à 10, sinon la grille partagée en parts égales, légèrement décalés en hauteur */
+  .case .med .mi { grid-row: 1; }
+  .case .med.n1 .mi { grid-column: 3 / 11; --mh: 72dvh; }
+  .case .med.n2 .m0 { grid-column: 1 / 7; } .case .med.n2 .m1 { grid-column: 7 / -1; } .case .med.n2 { --mh: 62dvh; }
+  .case .med.n3 .m0 { grid-column: 1 / 5; } .case .med.n3 .m1 { grid-column: 5 / 9; } .case .med.n3 .m2 { grid-column: 9 / -1; } .case .med.n3 { --mh: 52dvh; }
+  .case .med.n4 .m0 { grid-column: 1 / 4; } .case .med.n4 .m1 { grid-column: 4 / 7; } .case .med.n4 .m2 { grid-column: 7 / 10; } .case .med.n4 .m3 { grid-column: 10 / -1; } .case .med.n4 { --mh: 44dvh; }
+  .case .med:not(.n1) .m0, .case .med:not(.n1) .m2 { align-self: start; margin-top: 4dvh; }
+  .case .med:not(.n1) .m1, .case .med:not(.n1) .m3 { align-self: end; margin-bottom: 4dvh; }
+
+  @media (max-width: 760px) {
+    .case .pin { grid-column: 1 / -1; row-gap: 16px; }
+    .case .pin .phr { font-size: min(8.6vw, 4.2dvh); }
+    .case .pin .nts { margin-top: 12px; font-size: 11px; }
+    .case .med { display: flex; flex-direction: column; justify-content: center; gap: 16px; padding-top: calc(var(--head) + 52px); }
+    .case .med .mi { margin: 0 !important; align-self: center !important; }
+    .case .med.n1 .mi { --mh: 64dvh; } .case .med.n2 { --mh: 34dvh; } .case .med.n3 { --mh: 22dvh; } .case .med.n4 { --mh: 16dvh; }
+  }
 </style>
 
 <style>
-  /* registre des rubriques (14/11) : ligne fixe et statique en bas de l'écran, centrée, sur la ligne de la flèche ; rubrique en cours entre parenthèses */
-  :global(.reg) { position: fixed; z-index: 40; left: 50%; bottom: 38px; translate: -50% 0; display: flex; gap: 10px; padding: 5px 12px; background: var(--bg); color: var(--mu); white-space: nowrap; visibility: hidden; }
+  /* registre des rubriques (14/11) : ligne fixe et statique en bas de l'écran, centrée, sur la ligne de la flèche ; rubrique en
+     cours entre parenthèses. Sans fond (16/11) : une bande de flou progressif sur toute la largeur le détache de ce qui passe
+     dessous (image du fil), invisible sur le fond uni. */
+  :global(.reg) { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; gap: 10px; padding: 56px var(--m) 43px; color: var(--mu); white-space: nowrap; visibility: hidden; pointer-events: none; }
+  :global(.reg)::before { content: ''; position: absolute; inset: 0; z-index: -1; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    mask-image: linear-gradient(to top, #000 45%, transparent); -webkit-mask-image: linear-gradient(to top, #000 45%, transparent); }
   :global(.reg.on) { visibility: visible; }
-  :global(.reg a) { position: relative; transition: color .2s; }
+  :global(.reg a) { position: relative; pointer-events: auto; transition: color .2s; }
   :global(.reg a[aria-current]) { color: var(--ac); }
   /* les parenthèses sont toujours là (invisibles) : la ligne garde la même largeur, rien ne bouge quand la rubrique change */
   :global(.reg a)::before { content: '('; color: transparent; } :global(.reg a)::after { content: ')'; color: transparent; }
@@ -247,9 +264,6 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   /* lien du libellé (projet précédent), souligné au survol */
   :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
   @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
-  .note { display: inline-block; font-size: 12px; line-height: 0; letter-spacing: 0; vertical-align: super; margin-left: 2px; }
-  /* Gabarit : libellé entre parenthèses en colonnes 1 à 3, contenu sur la grille de 12 colonnes du site.
-     Doubles pages : la ligne utile va du dessous du menu au bas de l'écran ; chaque élément s'y pose (haut, milieu, bas). */
   .lab { grid-column: 1 / 4; align-self: first baseline; }
   .bd { grid-column: 4 / 11; align-self: first baseline; }
 
@@ -266,51 +280,6 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
   .fiche { grid-column: 1 / -1; grid-row: 4; display: grid; grid-template-columns: subgrid; border-top: 1px solid var(--ln); padding-top: 12px; }
   .fiche > div { grid-column: span 3; }
   .fiche dd { margin-top: 4px; }
-
-  /* texte courant des doubles pages : plus petit que l'affiche, pour laisser la place aux images */
-  .tx { font-size: clamp(16px, 2.5dvh, 21px); line-height: 1.38; letter-spacing: -0.005em; }
-  .tx.solo { font-size: clamp(18px, 3.7dvh, 28px); line-height: 1.286; letter-spacing: -0.01em; }
-  .tx p + p { margin-top: .8em; }
-  .tx b { font-weight: 500; }
-
-  .mag { height: 100%; min-height: 0; align-content: stretch; grid-template-rows: minmax(0, 1fr); padding-top: calc(var(--head) + 24px); padding-bottom: 40px; }
-  .mag > * { grid-row: 1; min-height: 0; }
-  .mag .lab { align-self: start; }
-  :where(.mag) img.md { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .H { --hh: calc(100dvh - var(--head) - 64px); }
-
-  /* accroche : la phrase en grand, une petite image calée en bas à droite */
-  .hook .bd { align-self: center; grid-column: 4 / 12; }
-  .hook .sm { grid-column: 10 / -1; align-self: end; height: 26dvh; width: auto; max-width: 100%; justify-self: end; object-fit: contain; }
-  .hook .bd { font-size: clamp(28px, 7.4dvh, 56px); }
-
-  /* A : texte étroit en bas à gauche, grande image qui file jusqu'au bord droit */
-  .ta .tx { grid-column: 4 / 7; align-self: end; }
-  .ta .big { grid-column: 8 / -1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
-  /* B : grande image à gauche, texte en haut à droite */
-  .tb .lab { grid-column: 9 / -1; }
-  .tb .big { grid-column: 1 / 8; }
-  .tb .tx { grid-column: 9 / -1; align-self: start; margin-top: 40px; }
-  /* C : image large en haut, texte dessous */
-  .tc { grid-template-rows: minmax(0, 1fr) auto; row-gap: 28px; }
-  .tc .big { grid-column: 4 / -1; grid-row: 1; margin-right: calc(-1 * var(--m)); width: calc(100% + var(--m)) !important; }
-  .tc .tx { grid-column: 4 / 10; grid-row: 2; }
-  .tc .lab { grid-row: 2; align-self: first baseline; }
-
-  /* deux images : une grande, une petite décalée vers le bas */
-  .pair .big { grid-column: 1 / 8; height: 100%; }
-  .pair .sm { grid-column: 9 / 12; align-self: end; height: 46% !important; }
-  .pair .lab { grid-column: 9 / -1; }
-  /* trois images en escalier */
-  .stair .lab { grid-column: 1 / 4; }
-  .stair .s0 { grid-column: 1 / 5; align-self: start; height: 52% !important; margin-top: 40px; }
-  .stair .s1 { grid-column: 5 / 9; align-self: center; height: 66% !important; }
-  .stair .s2 { grid-column: 9 / -1; align-self: end; height: 44% !important; }
-
-  /* planche contact : le reste des images en vignettes carrées */
-  .sheet .grid { grid-column: 4 / -1; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: var(--gut); align-self: center; }
-  .sheet .th { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
-  .sheet .grid { max-height: calc(100dvh - var(--head) - 100px); overflow: hidden; }
 
   .idx { display: grid; grid-template-columns: subgrid; row-gap: 20px; }
   .idx > li { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; row-gap: 4px; align-items: baseline; }
@@ -348,24 +317,8 @@ const parts = (t: string) => t.split(/(\{m:[^}]+\})/).filter(Boolean).map((x) =>
     .idx h3 { grid-column: 1; grid-row: 1; }
     .idx .n { grid-column: 2; grid-row: 1; justify-self: end; }
     .idx .dl { grid-column: 1 / -1; grid-row: 2; }
-    /* téléphone : les doubles pages s'empilent (libellé en haut, image, texte), toujours sur un écran */
-    .mag { grid-template-rows: auto minmax(0, 1fr) auto; row-gap: 16px; padding-top: calc(var(--head) + 20px); padding-bottom: min(56px, 7dvh); }
-    .mag > * { grid-row: auto; }
-    .mag .lab { grid-row: 1; grid-column: 1 / -1; margin: 0; position: static; }
-    .hook .bd { grid-row: 2; grid-column: 1 / -1; align-self: end; font-size: min(8.6vw, 4.2dvh); }
-    .hook .sm { grid-row: 3; grid-column: 2 / -1; height: 20dvh; }
-    .spread .big { grid-row: 2; grid-column: 1 / -1 !important; margin: 0 !important; width: 100% !important; }
-    .spread .tx { grid-row: 3; grid-column: 1 / -1 !important; margin: 0; align-self: start; }
-    .tc .lab { grid-row: 1; }
-    .pair .big { grid-row: 2; grid-column: 1 / -1; }
-    .pair .sm { grid-row: 3; grid-column: 2 / -1; height: 22dvh !important; }
-    .stair { grid-template-rows: auto repeat(3, minmax(0, 1fr)); }
-    .stair .s0, .stair .s1, .stair .s2 { height: 100% !important; margin: 0; align-self: stretch; }
-    .stair .s0 { grid-row: 2; grid-column: 1 / 3; } .stair .s1 { grid-row: 3; grid-column: 2 / 5; } .stair .s2 { grid-row: 4; grid-column: 1 / 4; }
-    .sheet .grid { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .nx .in { align-content: start; padding-top: calc(var(--head) + 56px); }
     .nx .lab { position: absolute; top: calc(var(--head) + 20px); left: var(--m); }
     .ring { width: 112px; height: 112px; bottom: min(72px, 9dvh); left: var(--m); right: auto; }
   }
 </style>
-
