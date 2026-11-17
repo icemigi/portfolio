@@ -236,16 +236,17 @@ const workLd = {
   .case .med.n4 .m0 { grid-column: 1 / 4; } .case .med.n4 .m1 { grid-column: 4 / 7; } .case .med.n4 .m2 { grid-column: 7 / 10; } .case .med.n4 .m3 { grid-column: 10 / -1; } .case .med.n4 { --mh: 44dvh; }
   .case .med:not(.n1) .m0, .case .med:not(.n1) .m2 { align-self: start; margin-top: 4dvh; }
   .case .med:not(.n1) .m1, .case .med:not(.n1) .m3 { align-self: end; margin-bottom: 4dvh; }
-  /* grille stricte des études à mise en page propre (.sqg, 17/11) : chaque visuel est un carré qui couvre un nombre entier de
-     colonnes (ses bords sur les lignes de la grille), dans les colonnes 2 à 11 au plus. cN : N visuels ; big / big-r : un grand
-     sur 2k colonnes et deux petits sur k colonnes empilés (2 × petit + gouttière = grand : hauts et bas alignés).
-     Écran large (16/9) : spans modérés ; écran plus haut (16/10 et au-delà) : visuels plus grands. */
+  /* grille stricte des études à mise en page propre (.sqg, 17/11) : chaque visuel garde ses proportions et couvre un nombre
+     entier de colonnes (ses bords sur les lignes de la grille), dans les colonnes 2 à 11 au plus ; entre deux visuels, toujours la
+     gouttière. cN : N visuels ; c4 : 2 × 2 ; big / big-r : un grand sur 2k colonnes et deux petits sur k colonnes empilés.
+     Écran large (16/9) : spans modérés ; écran plus haut (16/10 et au-delà) : visuels plus grands. Un visuel haut peut recevoir
+     sa propre place (style --s, --t sur écran haut, --r pour la rangée) pour ne jamais dépasser de l'écran. */
   .case .med.sqg { grid-template-rows: none; grid-auto-rows: auto; align-content: center; row-gap: var(--gut); }
   .case .med.sqg .mi { grid-row: auto; align-self: start; margin: 0; display: block; }
-  .case .sq { display: block; aspect-ratio: 1; width: 100%; overflow: hidden; }
-  .case .sq:not(.ph) { background: color-mix(in srgb, var(--fg) 6%, var(--bg)); }
-  .case .sq > img { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .case .shot.sq { aspect-ratio: 1; }
+  .case .mf { display: block; width: 100%; }
+  .case .mf > img { display: block; width: 100%; height: auto; }
+  .case .mf.ph { aspect-ratio: 1; }
+  .case .mf.shot { aspect-ratio: 16 / 10; overflow: hidden; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); }
   .case .sqg.c1 .m0 { grid-column: 5 / 9; }
   .case .sqg.c2 .m0 { grid-column: 3 / 7; } .case .sqg.c2 .m1 { grid-column: 7 / 11; }
   .case .sqg.c3 .m0 { grid-column: 2 / 5; } .case .sqg.c3 .m1 { grid-column: 5 / 8; } .case .sqg.c3 .m2 { grid-column: 8 / 11; }
@@ -253,12 +254,14 @@ const workLd = {
   .case .sqg.c4 .m2 { grid-column: 5 / 7; grid-row: 2; } .case .sqg.c4 .m3 { grid-column: 7 / 9; grid-row: 2; }
   .case .sqg.big .m0 { grid-column: 3 / 7; grid-row: 1 / 3; } .case .sqg.big .m1 { grid-column: 7 / 9; grid-row: 1; } .case .sqg.big .m2 { grid-column: 7 / 9; grid-row: 2; }
   .case .sqg.big-r .m0 { grid-column: 7 / 11; grid-row: 1 / 3; } .case .sqg.big-r .m1 { grid-column: 5 / 7; grid-row: 1; } .case .sqg.big-r .m2 { grid-column: 5 / 7; grid-row: 2; }
+  .case .sqg .mi[style] { grid-column: var(--s); grid-row: var(--r, auto); }
   @media (min-width: 761px) and (max-aspect-ratio: 8 / 5) {
     .case .sqg.c1 .m0 { grid-column: 4 / 10; }
     .case .sqg.c2 .m0 { grid-column: 2 / 7; } .case .sqg.c2 .m1 { grid-column: 7 / 12; }
     .case .sqg.c4 .m0 { grid-column: 4 / 7; } .case .sqg.c4 .m1 { grid-column: 7 / 10; } .case .sqg.c4 .m2 { grid-column: 4 / 7; } .case .sqg.c4 .m3 { grid-column: 7 / 10; }
     .case .sqg.big .m0 { grid-column: 2 / 8; } .case .sqg.big .m1, .case .sqg.big .m2 { grid-column: 8 / 11; }
     .case .sqg.big-r .m0 { grid-column: 6 / 12; } .case .sqg.big-r .m1, .case .sqg.big-r .m2 { grid-column: 3 / 6; }
+    .case .sqg .mi[style] { grid-column: var(--t, var(--s)); }
   }
 
   @media (max-width: 760px) {

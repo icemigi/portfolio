@@ -13,9 +13,10 @@ const fr = lang === 'fr';
 const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
 const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
 const all = [M.cover, ...(M.gal ?? []).flat()];
-// visuels d'un écran : numéro de fichier, ce qu'il montre (texte alternatif) ; 'contain' : entier dans son carré (affiche verticale)
-const imgs = (list: ([string, string] | [string, string, 'contain'])[], sizes = '(max-width: 760px) 100vw, 30vw') =>
-  list.map(([n, alt, fit]) => ({ ...pic(all.find((x) => x.src.endsWith(`/${n}.webp`))!, sizes), alt: `${c.title} — ${alt}`, fit }));
+// visuels d'un écran : numéro de fichier, ce qu'il montre (texte alternatif), place sur mesure éventuelle (MediaScreen)
+type Place = { at?: string; atTall?: string; row?: string };
+const imgs = (list: ([string, string] | [string, string, Place])[], sizes = '(max-width: 760px) 100vw, 30vw') =>
+  list.map(([n, alt, place]) => ({ ...pic(all.find((x) => x.src.endsWith(`/${n}.webp`))!, sizes), alt: `${c.title} — ${alt}`, ...place }));
 const todo = fr ? 'à fournir' : 'to come';
 ---
 <TextScreen {...T[0]} />
@@ -37,10 +38,10 @@ const todo = fr ? 'à fournir' : 'to come';
 ], '(max-width: 760px) 100vw, 40vw')} />
 
 <TextScreen {...T[3]} />
-<MediaScreen label="oblivion" layout="big-r" items={imgs([
+<MediaScreen label="oblivion" items={imgs([
   ['14', fr ? 'détail du château' : 'castle detail'],
   ['12', fr ? 'variante de la pochette' : 'cover variant'],
-  ['13', fr ? "l'affiche vendue aux concerts" : 'the poster sold at the shows', 'contain'],
+  ['13', fr ? "l'affiche vendue aux concerts" : 'the poster sold at the shows'],
 ], '(max-width: 760px) 100vw, 40vw')} />
 
 <TextScreen {...T[4]} />

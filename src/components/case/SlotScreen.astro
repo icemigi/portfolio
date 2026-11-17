@@ -1,5 +1,6 @@
 ---
-// Médias à fournir : un écran d'emplacements gris, carrés et posés sur la grille comme les visuels, chacun à son nom.
+// Médias à fournir : un écran d'emplacements gris, carrés (le format du média n'est pas encore connu), posés sur la grille
+// comme les visuels, chacun à son nom.
 // Retiré à la livraison du média, remplacé par le média lui-même.
 interface Props { label: string; slots: string[] }
 const { label, slots } = Astro.props;
@@ -7,6 +8,6 @@ const { label, slots } = Astro.props;
 <section class="scr mds" data-media>
   <div class:list={['in g med sqg', `c${slots.length}`]}>
     <p class="lab mono mu par">{label}</p>
-    {slots.map((name, k) => <figure class:list={['mi', `m${k}`]}><span class="ph sq"><i>{name}</i></span></figure>)}
+    {slots.map((name, k) => <figure class:list={['mi', `m${k}`]}><span class="ph mf"><i>{name}</i></span></figure>)}
   </div>
 </section>

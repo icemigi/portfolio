@@ -1,16 +1,18 @@
 ---
-// Écran de médias des études à mise en page propre : un libellé, puis 1 à 4 visuels carrés posés sur les colonnes de la grille
-// (placements .sqg.cN / .big / .big-r dans [slug].astro). Recadrage minimal : un visuel déjà carré remplit son carré, tout autre
-// visuel y est entier, sur fond neutre. layout (3 visuels) : 'big' : un grand et deux petits empilés à sa droite ; 'big-r' : en miroir.
+// Écran de médias des études à mise en page propre : un libellé, puis 1 à 4 visuels posés sur les colonnes de la grille, dans
+// leurs proportions, jamais recadrés ; entre deux visuels, la gouttière (placements .sqg.cN / .big / .big-r dans [slug].astro).
+// layout (3 visuels) : 'big' : un grand et deux petits empilés à sa droite ; 'big-r' : en miroir.
+// at / atTall / row : place sur mesure d'un visuel (colonnes « début / fin », sur écran large / plus haut ; rangée), pour un
+// visuel haut qui dépasserait de l'écran à la place par défaut.
 // items : sorties de pic() ([slug].astro) avec leur texte alternatif.
-interface Item { src: string; srcset?: string; sizes: string; w: number; h: number; alt: string; fit?: 'contain' }
+interface Item { src: string; srcset?: string; sizes: string; w: number; h: number; alt: string; at?: string; atTall?: string; row?: string }
 interface Props { label: string; items: Item[]; layout?: 'big' | 'big-r' }
 const { label, items, layout } = Astro.props;
-const fit = (p: Item) => p.fit ?? (Math.abs(p.w / p.h - 1) > 0.02 ? 'contain' : undefined);
+const place = (p: Item) => (p.at ? `--s:${p.at};${p.atTall ? `--t:${p.atTall};` : ''}${p.row ? `--r:${p.row};` : ''}` : undefined);
 ---
 <section class="scr mds" data-media>
   <div class:list={['in g med sqg', layout ?? `c${items.length}`]}>
     <p class="lab mono mu par">{label}</p>
-    {items.map((p, k) => <figure class:list={['mi', `m${k}`]}><span class="sq"><img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} style={fit(p) && `object-fit:${fit(p)}`} loading="lazy" decoding="async" /></span></figure>)}
+    {items.map((p, k) => <figure class:list={['mi', `m${k}`]} style={place(p)}><span class="mf"><img class="md" src={p.src} srcset={p.srcset} sizes={p.sizes} width={p.w} height={p.h} alt={p.alt} loading="lazy" decoding="async" /></span></figure>)}
   </div>
 </section>

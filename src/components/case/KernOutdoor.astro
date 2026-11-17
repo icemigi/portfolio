@@ -44,7 +44,7 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
           <p class="lab mono mu par">{fr ? 'la palette et les typos' : 'palette and typefaces'}</p>
           {PAL.map(([col, nm], k) => (
             <figure class:list={['mi', `m${k}`]}>
-              <span class:list={['sq sw', { lt: k > 1 }]} style={`--c:${col}`}>
+              <span class:list={['mf sw', { lt: k > 1 }]} style={`--c:${col}`}>
                 {k === 2 && <span class="fonts"><img src="/work/kern-outdoor/font-instrument.webp" width="1302" height="176" alt="Instrument Serif" /></span>}
                 {k === 3 && <span class="fonts"><img src="/work/kern-outdoor/font-helvetica.webp" width="1545" height="169" alt="Helvetica Neue" /></span>}
                 <i class="mono">{nm} <span>{col}</span></i>
@@ -61,7 +61,7 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
           <p class="lab mono mu par">{fr ? 'les formats — trois des cinq' : 'the formats — three of five'}</p>
           {CAR.map((car, k) => (
             <figure class:list={['mi kp car', `m${k}`]} data-car>
-              <button type="button" class="vp sq" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
+              <button type="button" class="vp mf" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
                 <span class="track">{Array.from({ length: car.n }, (_, j) => <img src={`/work/kern-outdoor/car/p${k + 1}-${j + 1}.webp`} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${j + 1}/${car.n}`} loading={j ? 'lazy' : 'eager'} decoding="async" />)}</span>
               </button>
               <figcaption class="mono mu">{car.t}</figcaption>
@@ -96,15 +96,15 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
 
   /* la charte : les quatre couleurs en carrés 2 × 2 sur la grille, nom et code en bas à gauche ; les deux typos dans les carrés
      clairs (crème : Instrument Serif, citron : Helvetica Neue) */
-  .sw { position: relative; background: var(--c) !important; color: #fff3cc; }
+  .sw { position: relative; aspect-ratio: 1; background: var(--c); color: #fff3cc; }
   .sw.lt { color: #1c1c1c; }
   .sw i { position: absolute; left: 12px; bottom: 10px; font-size: 11px; font-style: normal; text-transform: none; }
   .sw i span { opacity: .6; }
   .fonts { position: absolute; inset: 0 12%; display: flex; align-items: center; }
   .fonts img { display: block; width: 100%; height: auto; }
-  /* les formats : trois carrousels, dans des cadres carrés (grille stricte) ; les slides (3:4) y sont entières, jamais rognées */
+  /* les formats : trois carrousels dans leur format (3:4), chacun sur ses colonnes */
   .car { flex-direction: column; }
-  .car .vp { padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
+  .car .vp { aspect-ratio: 3 / 4; overflow: hidden; padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
   .track { display: flex; height: 100%; will-change: transform; transition: none; }
   .track img { flex: none; width: 100%; height: 100%; object-fit: contain; display: block; }
   .car figcaption { margin-top: 12px; font-size: 11px; text-transform: none; }
