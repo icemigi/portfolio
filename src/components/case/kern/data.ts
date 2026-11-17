@@ -49,16 +49,16 @@ export function kernData(fr: boolean) {
     end: [['915\u00a0K', fr ? 'vues sur douze mois' : 'views over twelve months'], [fr ? '87\u00a0%' : '87%', fr ? "de l'audience a 18 à 34 ans" : 'of the audience is aged 18 to 34'], [fr ? '60\u00a0%' : '60%', fr ? 'des vues viennent de la recherche' : 'of views come from search']],
     src: fr ? 'TikTok, novembre 2026' : 'TikTok, November 2026',
   };
-  // médias à fournir : emplacements gris à leur place dans l'étude (libellé, proportions largeur / hauteur), retirés à la livraison
-  const SLOT = {
-    grid: [fr ? 'la grille du profil TikTok qui défile' : 'the scrolling TikTok profile grid', 9 / 16],
-    before: [fr ? 'le fil avant février 2026' : 'the feed before February 2026', 9 / 16],
-    after: [fr ? 'le fil après' : 'the feed after', 9 / 16],
-    formats: [fr ? 'les 5 formats côte à côte' : 'the 5 formats side by side', 16 / 9],
-    anatomy: [fr ? "l'anatomie d'un carrousel" : 'anatomy of a carousel', 4 / 5],
-    reel: [fr ? 'le showreel vidéo, 15 à 20 s' : 'the video reel, 15 to 20 s', 9 / 16],
-    overlay: [fr ? "le kit d'habillage animé" : 'the animated overlay kit', 9 / 16],
-  } as Record<string, [string, number]>;
+  // médias à fournir : emplacements gris (carrés, grille stricte) à leur place dans l'étude, retirés à la livraison
+  const SLOT: Record<string, string> = {
+    grid: fr ? 'la grille du profil TikTok qui défile' : 'the scrolling TikTok profile grid',
+    before: fr ? 'le fil avant février 2026' : 'the feed before February 2026',
+    after: fr ? 'le fil après' : 'the feed after',
+    formats: fr ? 'les 5 formats côte à côte' : 'the 5 formats side by side',
+    anatomy: fr ? "l'anatomie d'un carrousel" : 'anatomy of a carousel',
+    reel: fr ? 'le showreel vidéo, 15 à 20 s' : 'the video reel, 15 to 20 s',
+    overlay: fr ? "le kit d'habillage animé" : 'the animated overlay kit',
+  };
   const todo = fr ? 'à fournir' : 'to come';
   return { D, PAL, CAR, ticks, tick, LH, FIG, SLOT, todo };
 }

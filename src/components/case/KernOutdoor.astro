@@ -40,26 +40,28 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
 
     {i === 0 && (
       <section class="scr mds" data-media data-k="charte">
-        <div class="in g med n1">
+        <div class="in g med sqg c4">
           <p class="lab mono mu par">{fr ? 'la palette et les typos' : 'palette and typefaces'}</p>
-          <figure class="mi m0 kp ch-v" data-par="70">
-            <ul class="pal">{PAL.map(([col, nm]) => <li style={`--c:${col}`}><span class="sw"></span><span class="mono">{nm}</span><span class="mono mu">{col}</span></li>)}</ul>
-            <div class="fonts">
-              <img src="/work/kern-outdoor/font-instrument.webp" width="1302" height="176" alt="Instrument Serif" />
-              <img src="/work/kern-outdoor/font-helvetica.webp" width="1545" height="169" alt="Helvetica Neue" />
-            </div>
-          </figure>
+          {PAL.map(([col, nm], k) => (
+            <figure class:list={['mi', `m${k}`]}>
+              <span class:list={['sq sw', { lt: k > 1 }]} style={`--c:${col}`}>
+                {k === 2 && <span class="fonts"><img src="/work/kern-outdoor/font-instrument.webp" width="1302" height="176" alt="Instrument Serif" /></span>}
+                {k === 3 && <span class="fonts"><img src="/work/kern-outdoor/font-helvetica.webp" width="1545" height="169" alt="Helvetica Neue" /></span>}
+                <i class="mono">{nm} <span>{col}</span></i>
+              </span>
+            </figure>
+          ))}
         </div>
       </section>
     )}
 
     {i === 1 && (
       <section class="scr mds" data-media data-k="serie">
-        <div class="in g med n3 flip">
+        <div class="in g med sqg c3">
           <p class="lab mono mu par">{fr ? 'les formats — trois des cinq' : 'the formats — three of five'}</p>
           {CAR.map((car, k) => (
-            <figure class:list={['mi kp car', `m${k}`]} data-car data-par={[70, 150, 110][k]}>
-              <button type="button" class="vp" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
+            <figure class:list={['mi kp car', `m${k}`]} data-car>
+              <button type="button" class="vp sq" data-card aria-label={fr ? `Carrousel ${k + 1} : slide suivante` : `Carousel ${k + 1}: next slide`}>
                 <span class="track">{Array.from({ length: car.n }, (_, j) => <img src={`/work/kern-outdoor/car/p${k + 1}-${j + 1}.webp`} width="720" height="960" alt={`kern.outdoor — ${car.t}, ${j + 1}/${car.n}`} loading={j ? 'lazy' : 'eager'} decoding="async" />)}</span>
               </button>
               <figcaption class="mono mu">{car.t}</figcaption>
@@ -92,29 +94,23 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
 
   .fig .mono, .src { font-size: 11px; text-transform: none; }
 
-  /* la charte : quatre couleurs en colonnes, puis les typos */
-  .ch-v { display: grid !important; row-gap: 28px; width: min(100%, calc(var(--mh, 70dvh) * 1.3)); }
-  .pal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-  .pal li { display: grid; row-gap: 6px; }
-  .pal .sw { height: calc(var(--mh, 70dvh) * .55); background: var(--c); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 8%, transparent); }
-  .pal .mono { font-size: 11px; text-transform: none; }
-  .fonts { display: grid; row-gap: 12px; }
-  .fonts img { display: block; height: min(4.4dvh, 38px); width: auto; max-width: 100%; }
-  :global(html[data-theme="nuit"]) .fonts img { filter: invert(1); }
-
-  /* les formats : trois carrousels (3:4) */
+  /* la charte : les quatre couleurs en carrés 2 × 2 sur la grille, nom et code en bas à gauche ; les deux typos dans les carrés
+     clairs (crème : Instrument Serif, citron : Helvetica Neue) */
+  .sw { position: relative; background: var(--c) !important; color: #fff3cc; }
+  .sw.lt { color: #1c1c1c; }
+  .sw i { position: absolute; left: 12px; bottom: 10px; font-size: 11px; font-style: normal; text-transform: none; }
+  .sw i span { opacity: .6; }
+  .fonts { position: absolute; inset: 0 12%; display: flex; align-items: center; }
+  .fonts img { display: block; width: 100%; height: auto; }
+  /* les formats : trois carrousels, dans des cadres carrés (grille stricte) ; les slides (3:4) y sont entières, jamais rognées */
   .car { flex-direction: column; }
-  .car .vp { display: block; width: min(100%, var(--mh, 52dvh) * .75); aspect-ratio: 3 / 4; overflow: hidden; padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
+  .car .vp { padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }
   .track { display: flex; height: 100%; will-change: transform; transition: none; }
   .track img { flex: none; width: 100%; height: 100%; object-fit: contain; display: block; }
   .car figcaption { margin-top: 12px; font-size: 11px; text-transform: none; }
 
   @media (max-width: 760px) {
     .fig { grid-template-columns: 1fr; row-gap: 14px; }
-    .ch-v { width: 100%; row-gap: 12px; }
-    .pal .sw { height: 14dvh; }
-    .fonts img { height: 3dvh; }
-    .car .vp { width: 15dvh; }
     .car figcaption { display: none; }
   }
 </style>

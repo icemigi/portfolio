@@ -1,0 +1,70 @@
+---
+// Identités musicales : le milieu de l'étude (après la page de garde et l'accroche communes), cadré pour un recruteur ou un
+// artiste : le rôle, le lettrage, puis une identité par écran (texte : l'idée et la fabrication, puis ses visuels), le temps
+// réel et la fidélité des artistes. Aucun nom d'artiste dans les textes ni les textes alternatifs.
+// Textes : projects.ts (sections dans l'ordre des écrans). Médias à venir : emplacements gris (SlotScreen).
+import type { Img } from '../../data/media';
+import TextScreen from './TextScreen.astro';
+import SlotScreen from './SlotScreen.astro';
+import MediaScreen from './MediaScreen.astro';
+interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
+const { lang, c, M, pic, rich } = Astro.props;
+const fr = lang === 'fr';
+const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
+const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
+const all = [M.cover, ...(M.gal ?? []).flat()];
+// visuels d'un écran : numéro de fichier, ce qu'il montre (texte alternatif) ; 'contain' : entier dans son carré (affiche verticale)
+const imgs = (list: ([string, string] | [string, string, 'contain'])[], sizes = '(max-width: 760px) 100vw, 30vw') =>
+  list.map(([n, alt, fit]) => ({ ...pic(all.find((x) => x.src.endsWith(`/${n}.webp`))!, sizes), alt: `${c.title} — ${alt}`, fit }));
+const todo = fr ? 'à fournir' : 'to come';
+---
+<TextScreen {...T[0]} />
+<MediaScreen label={fr ? 'les pochettes' : 'the covers'} items={imgs([
+  ['07', fr ? 'pochette « 200 », trame de points sur fond noir' : '“200” cover, point cloud on black'],
+  ['11', fr ? 'pochette « Oblivion », château en 3D' : '“Oblivion” cover, 3D castle'],
+  ['05', fr ? 'pochette « VON », lettrage peint sur un visage modélisé' : '“VON” cover, lettering painted over a modelled face'],
+  ['15', fr ? 'pochette « Somebody Else », image de clip en bichromie' : '“Somebody Else” cover, duotone video still'],
+], '(max-width: 760px) 100vw, 22vw')} />
+
+<TextScreen {...T[1]} />
+<SlotScreen label={todo} slots={[fr ? 'les titres en vectoriel (je les anime trait par trait)' : 'the titles as vectors (animated stroke by stroke)']} />
+
+<TextScreen {...T[2]} />
+<MediaScreen label="200" layout="big" items={imgs([
+  ['08', fr ? 'dos de pochette et liste des titres' : 'back cover and tracklist'],
+  ['09', fr ? 'le disque et sa pochette' : 'the record and its sleeve'],
+  ['10', fr ? 'le t-shirt' : 'the T-shirt'],
+], '(max-width: 760px) 100vw, 40vw')} />
+
+<TextScreen {...T[3]} />
+<MediaScreen label="oblivion" layout="big-r" items={imgs([
+  ['14', fr ? 'détail du château' : 'castle detail'],
+  ['12', fr ? 'variante de la pochette' : 'cover variant'],
+  ['13', fr ? "l'affiche vendue aux concerts" : 'the poster sold at the shows', 'contain'],
+], '(max-width: 760px) 100vw, 40vw')} />
+
+<TextScreen {...T[4]} />
+<MediaScreen label="von" items={imgs([
+  ['06', fr ? "l'écran cathodique, déclinaison de la pochette" : 'the CRT screen, a cover variant'],
+  ['cover', fr ? 'les vinyles' : 'the vinyls'],
+], '(max-width: 760px) 100vw, 40vw')} />
+
+<TextScreen {...T[5]} />
+<MediaScreen label="somebody else" layout="big" items={imgs([
+  ['16', fr ? 'image du clip, retravaillée' : 'reworked video still'],
+  ['17', fr ? 'déclinaison avec le titre dessiné' : 'variant with the drawn title'],
+  ['18', fr ? 'déclinaison, le personnage répété' : 'variant, the figure repeated'],
+], '(max-width: 760px) 100vw, 40vw')} />
+
+<TextScreen {...T[6]} />
+<MediaScreen label={fr ? 'le relief' : 'relief'} items={imgs([
+  ['01', fr ? 'le titre en relief' : 'the embossed title'],
+  ['02', fr ? 'relief et constellation' : 'relief and constellation'],
+  ['03', fr ? 'la constellation en rouge' : 'the constellation in red'],
+  ['04', fr ? 'le château en relief' : 'the embossed castle'],
+], '(max-width: 760px) 100vw, 22vw')} />
+
+<TextScreen {...T[7]} />
+<SlotScreen label={todo} slots={[fr ? 'la démo TouchDesigner : un visuel qui réagit au son' : 'the TouchDesigner demo: a visual reacting to sound']} />
+
+<TextScreen {...T[8]} />

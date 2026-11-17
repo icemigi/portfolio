@@ -136,6 +136,14 @@ input, textarea, [contenteditable] { cursor: text; }
   .site-header nav .count { font-size: 11px; color: var(--ac); font-variant-numeric: tabular-nums; }
   .site-header nav a[aria-current='page']::before, .site-header nav a[aria-current='page']::after { top: 13px; }
 }
+/* grand écran (17/11) : la barre se cale sur la grille du site : cavalier en colonne 1, rubriques à partir du début de la
+   colonne 5 (même espacement qu'avant), son / nuit / langue finissant au bord de la colonne 12. En dessous de 1024 px, la
+   colonne 5 est trop proche du bloc de droite : la barre reste répartie comme au-dessus */
+@media (min-width: 1024px) {
+  .site-header { display: grid; }
+  .site-header nav { grid-column: 5 / 10; margin-inline: 0; }
+  .site-header .r { grid-column: 10 / 13; }
+}
 .snd { font: inherit; text-transform: inherit; color: var(--mu); display: inline-flex; align-items: center; justify-content: center; }
 .snd svg { display: block; }
 .snd[aria-pressed='true'] { color: var(--fg); }
