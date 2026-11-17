@@ -217,7 +217,7 @@ const all: Project[] = [
     tags: ['I', 'E'],
     yearLabel: '2023 —',
     object: 'backpack',
-    draft: true,
+    draft: false,
     fr: {
       title: 'kern.outdoor',
       short: "Direction artistique d'un média outdoor",
