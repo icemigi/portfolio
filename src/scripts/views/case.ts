@@ -257,6 +257,42 @@ onPage('.screens-host.case', (ctx) => {
       ctx.cleanup(() => { run = false; });
     });
 
+    // ---------- palette et typos (components/case/Palette.astro) : à chaque arrivée sur l'écran, les couleurs montent de bas en
+    // haut l'une après l'autre, puis les typos s'écrivent de gauche à droite ; rien de tout cela si « Réduire les animations »
+    if (!reduced()) document.querySelectorAll<HTMLElement>('[data-k="charte"]').forEach((scr) => {
+      const sws = [...scr.querySelectorAll<HTMLElement>('.sw')], type = [...scr.querySelectorAll<HTMLElement>('.tt, .abc')];
+      const ease = 'cubic-bezier(.8, 0, .1, 1)';
+      ctx.observe(new IntersectionObserver(([e]) => {
+        if (!e.isIntersecting) return;
+        sws.forEach((s, i) => s.animate([{ clipPath: 'inset(100% 0 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 560, delay: 60 + i * 80, easing: ease, fill: 'backwards' }));
+        type.forEach((t, i) => t.animate([{ clipPath: 'inset(0 100% 0 0)' }, { clipPath: 'inset(0 0 0 0)' }], { duration: 520, delay: 420 + i * 120, easing: ease, fill: 'backwards' }));
+      }, { root: host, threshold: 0.5 })).observe(scr);
+      // au survol (souris), chaque lettre des typos se remélange comme le titre de l'accueil (views/home.ts) : quelques signes
+      // de la même typo, centrés sur la lettre, puis elle revient ; une lettre en cours ne se relance pas
+      if (!matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+      // chasse de chaque signe, par style de police (Palette.astro : <script data-adv="style">)
+      const ADV = Object.fromEntries([...scr.querySelectorAll<HTMLElement>('[data-adv]')].map((el) => [el.dataset.adv!, JSON.parse(el.textContent!) as Record<string, number>]));
+      scr.querySelectorAll<HTMLElement>('.ty').forEach((ty) => {
+        const busy = new WeakSet<Element>();
+        ty.addEventListener('pointerover', (e) => {
+          const g = (e.target as Element).closest('.gl'), use = g?.querySelector('use');
+          if (!g || !use || busy.has(g)) return;
+          const c = (g as SVGGElement).dataset.c!, x = +(g as SVGGElement).dataset.x!, href = use.getAttribute('href')!, font = g.closest<SVGElement>('svg')!.dataset.font!;
+          const adv = ADV[font], pool = Object.keys(adv);
+          busy.add(g);
+          dispatchEvent(new CustomEvent('kk:sound', { detail: 'key' }));
+          let t = 0, last = '';
+          const tick = () => {
+            if (t >= 300) { use.setAttribute('href', href); use.setAttribute('x', String(x)); ctx.timeout(() => busy.delete(g), 120); return; }
+            let r; do r = pool[(Math.random() * pool.length) | 0]; while (r === last || r === c); last = r;
+            use.setAttribute('href', `#g-${font}-${r.codePointAt(0)}`); use.setAttribute('x', String(x + (adv[c] - adv[r]) / 2));
+            const gap = 40 + 55 * (t / 300) ** 2; t += gap; ctx.timeout(tick, gap);
+          };
+          tick();
+        }, { signal: ctx.signal });
+      });
+    });
+
     // ---------- avant / après à volet (components/case/Compare.astro) : le curseur déplace le volet ----------
     document.querySelectorAll<HTMLElement>('[data-cmp]').forEach((box) => {
       const input = box.querySelector('input')!;

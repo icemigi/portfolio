@@ -11,7 +11,7 @@ export const homeServices = {
 // Anneau d'images autour du texte des services (accueil) : fichiers de /public/ring/ (16/9, écrits par tools/ring.mjs
 // depuis assets/roue ; .mp4 : boucles du Lab écrites par tools/lab-reel.mjs). null = emplacement à remplir (gris, numéroté).
 // Autant d'emplacements que d'entrées.
-export const homeRing: (string | null)[] = ['anim-simple.webp', null, 'bms.webp', 'lab-matrice.mp4', null, 'music.webp', null, 'sa.webp', null, 'lab-lettres.mp4', 'bms2.webp', null];
+export const homeRing: (string | null)[] = ['anim-simple.webp', null, 'bms.webp', 'lab-matrice.mp4', null, 'music.webp', null, 'sa.mp4', null, 'lab-lettres.mp4', 'bms2.webp', null];
 
 // À propos — 4 écrans
 export const aboutIntro = {

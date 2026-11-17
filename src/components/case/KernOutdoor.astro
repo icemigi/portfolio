@@ -6,19 +6,21 @@
 //   le système          : puis les carrousels, qui défilent seuls, décalés (jamais deux à la fois) ; un clic fait avancer.
 //   la vidéo, la ligne éditoriale : écrans de texte.
 //   chiffres            : en fin d'étude, le détail (datés).
-// Textes : projects.ts (r : libellé, h : gros texte, p : note) ; chiffres, charte, carrousels : kern/data.ts.
+// Textes : projects.ts (r : libellé, h : gros texte, p : note) ; chiffres, carrousels : kern/data.ts ; charte : data/palettes.ts (Palette.astro).
 // Les écrans des pièces portent data-k : views/kern.ts n'anime une pièce que tant que son écran est à l'écran.
 import type { Img } from '../../data/media';
 import { kernData } from './kern/data';
 import TextScreen from './TextScreen.astro';
 import SlotScreen from './SlotScreen.astro';
 import FeedPair from './FeedPair.astro';
+import Palette from './Palette.astro';
+import { palettes } from '../../data/palettes';
 import { av, avSet } from '../../data/avif';
 interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
 const { lang, c, rich } = Astro.props;
 const fr = lang === 'fr';
 const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
-const { PAL, CAR, FIG, SLOT, todo } = kernData(fr);
+const { CAR, FIG, SLOT, todo } = kernData(fr);
 // médias à fournir, par écran (emplacements gris) : après les chiffres, puis après la pièce de chaque écran de texte
 // (la grille du profil qui défile : c'est l'écran du fil avant / après, FeedPair ; plus d'emplacement à part)
 const TODO = { top: [] as string[], after: [[], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
@@ -53,22 +55,7 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
   <>
     <TextScreen {...t} />
 
-    {i === 0 && (
-      <section class="scr mds" data-media data-k="charte">
-        <div class="in g med sqg c4">
-          <p class="lab mono mu par">{fr ? 'la palette et les typos' : 'palette and typefaces'}</p>
-          {PAL.map(([col, nm], k) => (
-            <figure class:list={['mi', `m${k}`]}>
-              <span class:list={['mf sw', { lt: k > 1 }]} style={`--c:${col}`}>
-                {k === 2 && <span class="fonts"><img src={av('/work/kern-outdoor/font-instrument.webp')} width="1302" height="176" alt="Instrument Serif" /></span>}
-                {k === 3 && <span class="fonts"><img src={av('/work/kern-outdoor/font-helvetica.webp')} width="1545" height="169" alt="Helvetica Neue" /></span>}
-                <i class="mono">{nm} <span>{col}</span></i>
-              </span>
-            </figure>
-          ))}
-        </div>
-      </section>
-    )}
+    {i === 0 && <Palette label={fr ? 'la palette et les typos' : 'palette and typefaces'} palette={palettes['kern-outdoor']} lang={lang} />}
 
     {i === 1 && (
       <section class="scr mds" data-media data-k="serie">
@@ -112,14 +99,6 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
 
   .fig .mono, .src { font-size: 11px; text-transform: none; }
 
-  /* la charte : les quatre couleurs en carrés 2 × 2 sur la grille, nom et code en bas à gauche ; les deux typos dans les carrés
-     clairs (crème : Instrument Serif, citron : Helvetica Neue) */
-  .sw { position: relative; aspect-ratio: 1; background: var(--c); color: #fff3cc; }
-  .sw.lt { color: #1c1c1c; }
-  .sw i { position: absolute; left: 12px; bottom: 10px; font-size: 11px; font-style: normal; text-transform: none; }
-  .sw i span { opacity: .6; }
-  .fonts { position: absolute; inset: 0 12%; display: flex; align-items: center; }
-  .fonts img { display: block; width: 100%; height: auto; }
   /* les formats : trois carrousels dans leur format (3:4), chacun sur ses colonnes */
   .car { flex-direction: column; }
   .car .vp { aspect-ratio: 3 / 4; overflow: hidden; padding: 0; border: 0; background: color-mix(in srgb, var(--fg) 6%, var(--bg)); cursor: e-resize; }

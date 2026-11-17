@@ -20,7 +20,7 @@ export type Project = {
   preview?: string;   // image ou vidéo (.mp4) d'aperçu au survol, dans /public/previews/
   tags: Tag[];        // I identité · T type · G génératif · W web · E édition · P print
   yearLabel: string;  // année affichée dans les listes
-  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack'; // objet de la page Projets
+  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack' | 'crest'; // objet de la page Projets
   generator?: string; // générateur jouable intégré à l'étude
   en: Content;
   fr: Content;
@@ -253,7 +253,7 @@ const all: Project[] = [
     years: [2023],
     tags: ['W', 'I'],
     yearLabel: '2023',
-    object: 'stick',
+    object: 'crest',
     fr: {
       title: 'BMS E-Sport',
       short: 'Site web et boutique',

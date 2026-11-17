@@ -14,6 +14,8 @@ import TextScreen from './TextScreen.astro';
 import SlotScreen from './SlotScreen.astro';
 import MediaScreen from './MediaScreen.astro';
 import Compare from './Compare.astro';
+import Palette from './Palette.astro';
+import { palettes } from '../../data/palettes';
 interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
 const { lang, c, M, pic, rich } = Astro.props;
 const fr = lang === 'fr';
@@ -26,7 +28,6 @@ const A = {
   cover: img('cover', fr ? "l'écran d'accueil de la refonte" : 'the redesign hero', '(max-width: 760px) 100vw, 70vw'),
   hero2: img('03', fr ? "l'écran d'accueil, variante randonnée" : 'hero variant, hiking'),
   hero3: img('05', fr ? "l'écran d'accueil, variante surf" : 'hero variant, surf'),
-  palette: img('02', fr ? 'la palette et les typos' : 'palette and typefaces'),
   logo: img('01', fr ? 'le logo, ses déclinaisons et l\'enseigne' : 'the logo, its variants and the shop sign'),
   mockups: img('06', fr ? 'les déclinaisons : sacs, affichage, signalétique' : 'roll-outs: bags, billboard, signage', '(max-width: 760px) 100vw, 30vw', { at: '6 / 8', atTall: '5 / 8' }), // planche haute (2:1)
   home: img('04', fr ? 'la page d\'accueil, en entier' : 'the full homepage', '(max-width: 760px) 100vw, 70vw'),
@@ -39,7 +40,8 @@ const todo = fr ? 'à fournir' : 'to come', mine = fr ? 'en préparation' : 'in 
 <SlotScreen label={mine} slots={[fr ? "l'ancien site, annoté" : 'the old website, annotated']} />
 
 <TextScreen {...T[1]} />
-<MediaScreen label={fr ? "l'identité" : 'identity'} items={[A.palette, A.logo]} />
+<Palette label={fr ? 'la palette et les typos' : 'palette and typefaces'} palette={palettes['sports-aventure']} lang={lang} />
+<MediaScreen label={fr ? 'le logo' : 'the logo'} items={[A.logo]} />
 <MediaScreen label={fr ? 'les déclinaisons' : 'roll-outs'} items={[A.mockups]} />
 <SlotScreen label={todo} slots={[fr ? 'le logo aux petites tailles (favicon, étiquette, tampon)' : 'the logo at small sizes (favicon, tag, stamp)']} />
 

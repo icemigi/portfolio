@@ -1,0 +1,76 @@
+---
+// Écran « palette et typos » d'une étude (17/11) : les couleurs en carrés 2 × 2 (nom et code en bas à gauche, en clair sur
+// une couleur foncée), et à droite chaque typo sur la hauteur d'une rangée : son nom en grand, dans la typo, puis l'alphabet.
+// Couleurs : cartes discrètes (data-card, card.ts). Typos : lettres en tracés SVG (tools/specimen.mjs → src/data/specimens.json),
+// une <use> par lettre : au survol, chaque lettre se remélange comme le titre de l'accueil, avec des signes de la même typo
+// (views/case.ts). Entrée : les couleurs montent l'une après l'autre, puis les typos s'écrivent (views/case.ts).
+// Données : src/data/palettes.ts.
+import specimens from '../../data/specimens.json';
+import type { Palette } from '../../data/palettes';
+interface Props { label: string; palette: Palette; lang: 'fr' | 'en' }
+const { label, palette, lang } = Astro.props;
+type Set = { face: string; letters: { c: string; x: number; y: number }[]; w: number; top: number; h: number };
+const { faces: FACES, specimens: S } = specimens as { faces: Record<string, { cap: number; xh: number; glyphs: Record<string, { d: string; a: number }> }>; specimens: Record<string, { name: string; title: Set; abc: Set }> };
+// styles de police de cet écran (un même style peut servir à deux typos : ses tracés ne sont posés qu'une fois)
+const faces = [...new Set(palette.fonts.flatMap((k) => [S[k].title.face, S[k].abc.face]))];
+// texte clair sur une couleur foncée (luminance relative)
+const dark = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+};
+const gid = (key: string, ch: string) => `g-${key}-${ch.codePointAt(0)}`;
+// places sur la grille (début / fin de colonnes ; écran large, puis écran plus haut) : couleurs à gauche, typos à droite
+const SW = [['3 / 5', '2 / 5'], ['5 / 7', '5 / 8']], TY = ['7 / 11', '8 / 12'];
+---
+<section class="scr mds" data-media data-k="charte">
+  <div class="in g med sqg pal">
+    <p class="lab mono mu par">{label}</p>
+    {palette.colors.map(([hex, name], k) => (
+      <figure class:list={['mi', `m${k}`]} style={`--s:${SW[k % 2][0]};--t:${SW[k % 2][1]};--r:${Math.floor(k / 2) + 1};`}>
+        <span class:list={['mf sw', { dk: dark(hex) }]} style={`--c:${hex}`} data-card="0.4"><i class="mono">{name[lang]} <span>{hex}</span></i></span>
+      </figure>
+    ))}
+    {palette.fonts.map((key, k) => (
+      <figure class:list={['mi ty', `m${palette.colors.length + k}`]} style={`--s:${TY[0]};--t:${TY[1]};--r:${k + 1};`} role="img" aria-label={S[key].name}>
+        {[S[key].title, S[key].abc].map((P, j) => {
+          const F = FACES[P.face];
+          return (
+            <svg class:list={['spec', j ? 'abc' : 'tt']} viewBox={`0 ${-P.top} ${P.w} ${P.h}`} preserveAspectRatio="xMinYMin meet" aria-hidden="true" data-font={P.face} style={`--h:${(P.h / (j ? F.xh : F.cap)).toFixed(3)};`}>
+              {P.letters.map(({ c: ch, x, y }) => (
+                <g class="gl" data-c={ch} data-x={x}>
+                  <rect x={x} y={y - P.top} width={F.glyphs[ch].a} height={P.top} fill="transparent" />
+                  <use href={`#${gid(P.face, ch)}`} x={x} y={y} />
+                </g>
+              ))}
+            </svg>
+          );
+        })}
+      </figure>
+    ))}
+    {faces.map((face) => (
+      <Fragment>
+      <svg class="defs" aria-hidden="true"><defs>{Object.entries(FACES[face].glyphs).map(([ch, { d }]) => <path id={gid(face, ch)} d={d} />)}</defs></svg>
+      <script type="application/json" data-adv={face} set:html={JSON.stringify(Object.fromEntries(Object.entries(FACES[face].glyphs).map(([ch, { a }]) => [ch, a])))} />
+      </Fragment>
+    ))}
+  </div>
+</section>
+
+<style>
+  .sw { position: relative; display: block; aspect-ratio: 1; background: var(--c); color: #1c1c1c; }
+  .sw.dk { color: #f3f3f3; }
+  .sw i { position: absolute; left: 12px; bottom: 10px; font-size: 11px; font-style: normal; text-transform: none; }
+  .sw i span { opacity: .6; }
+  /* une typo par rangée, de la hauteur d'un carré : le nom en haut, l'alphabet en bas (sélecteur plus fort que les règles
+     communes des écrans de média, .case .med.sqg .mi, dans [slug].astro) */
+  .med.pal .mi.ty { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; color: var(--fg); container-type: size; }
+  .defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+  /* même présence pour toutes les typos : le titre a des capitales de 19 % de la hauteur de la case, l'alphabet des minuscules
+     de 5,5 % (--h : hauteur de la boîte, en capitales ou en minuscules) ; une ligne trop longue se réduit pour tenir */
+  .spec { display: block; width: auto; max-width: 100%; overflow: visible; fill: currentColor; }
+  .tt { height: calc(var(--h) * 19cqh); }
+  .abc { height: calc(var(--h) * 5.5cqh); }
+  @media (max-width: 760px) {
+    .med.pal .mi.ty { width: 100%; aspect-ratio: 2; }
+  }
+</style>

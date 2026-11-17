@@ -9,10 +9,12 @@ import { projects } from '../data/projects';
 interface Props { lang: Lang; title: string; id?: string; heading?: 'h1' | 'h2' }
 const { lang, title, id = 'pj-t', heading = 'h1' } = Astro.props;
 const H = heading;
-// centre de l'objet en % de la scène, taille en % de la largeur, rotation, profondeur (parallaxe). 7 projets (17/11) : 4 en
-// haut à pas égal (23 %), 3 en bas posés entre eux, marges égales à gauche et à droite ; tailles rapprochées (11 à 17 %) pour
-// des poids visuels voisins ; dans chaque rangée, les hauteurs alternent pour que deux libellés voisins ne se touchent jamais (écran étroit)
-const POS = [[17, 38, 11, -6, 0.6], [40, 29, 16, 5, 1], [63, 39, 17, -3, 0.5], [86, 31, 13, 8, 0.9], [28.5, 75, 15, -4, 0.7], [51.5, 69, 14, 4, 0.8], [74.5, 75, 14, -5, 0.45]];
+// centre de l'objet en % de la scène, taille (côté du carré de même surface, en % de la largeur : Scene.astro), rotation,
+// profondeur (parallaxe). 7 projets (17/11) : 4 en haut à pas égal (23 %), 3 en bas posés entre eux, marges égales à gauche
+// et à droite ; tailles réglées (12 à 17 %) pour des poids visuels voisins (surface égale, un peu plus pour les objets
+// dessinés, plus maigres dans leur carré) ; dans chaque rangée, les hauteurs alternent pour que deux libellés voisins ne se
+// touchent jamais (écran étroit)
+const POS = [[17, 38, 12, -6, 0.6], [40, 29, 17, 5, 1], [63, 39, 13, -3, 0.5], [86, 31, 13.5, 8, 0.9], [28.5, 75, 12.5, -4, 0.7], [51.5, 69, 12.5, 4, 0.8], [74.5, 75, 15, -5, 0.45]];
 ---
 <div class="page">
   <H class="ttl mono mu par" id={id}>{`${title} ${pad(projects.length)}`}</H>

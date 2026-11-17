@@ -6,8 +6,12 @@
 //   cercle qui s'ouvre, ouverture depuis le centre). WebP animé sans perte plutôt que GIF (256 couleurs) : couleurs exactes ; chaque vue n'est
 //   faite que de deux images nettes, l'encodeur ne garde que ce qui change (un fondu, qui change tous les pixels, pesait
 //   1,9 Mo sans perte et laissait des traces avec perte).
+// - chaque sous-dossier nommé <nom>.mp4 (photos) → même enchaînement, mais en vidéo H.264 <nom>.mp4 (un WebP animé sans perte de
+//   photos pèserait plusieurs Mo) et sa première image <nom>.webp, affichée en attendant la vidéo (Ring.astro).
 // Les noms de fichiers sont mis en minuscules, espaces → tirets.
 import sharp from 'sharp';
+import ffmpeg from 'ffmpeg-static';
+import { spawn } from 'node:child_process';
 import { readdirSync, mkdirSync } from 'node:fs';
 import { join, parse } from 'node:path';
 
@@ -15,6 +19,7 @@ const SRC = new URL('../../assets/roue/', import.meta.url).pathname;
 const OUT = new URL('../public/ring/', import.meta.url).pathname;
 const W = 960, H = 540, Q = 82;
 const HOLD = 900, WIPE = 240, STEP = 40; // ms
+const CRF = 28; // qualité des vidéos (plus bas = plus net et plus lourd)
 // découpes : vrai si le pixel (x, y) montre déjà l'image suivante, à l'avancement s (0 → 1)
 const R0 = Math.hypot(W, H) / 2;
 const CUTS = [
@@ -25,7 +30,9 @@ const CUTS = [
 ];
 const IMG = /\.(png|jpe?g|webp|tiff?)$/i;
 const slug = (n) => n.toLowerCase().replace(/\s+/g, '-');
-const fit = (file) => sharp(file).resize(W, H, { fit: 'cover' }).removeAlpha();
+// captures de site : recadrées en haut (la barre de navigation reste entière), les autres au centre
+const TOP = new Set(['sa.mp4']);
+const fit = (file, top = false) => sharp(file).resize(W, H, { fit: 'cover', position: top ? 'top' : 'centre' }).removeAlpha();
 
 mkdirSync(OUT, { recursive: true });
 for (const e of readdirSync(SRC, { withFileTypes: true })) {
@@ -36,7 +43,7 @@ for (const e of readdirSync(SRC, { withFileTypes: true })) {
   } else if (e.isDirectory()) {
     const dir = join(SRC, e.name);
     const files = readdirSync(dir).filter((n) => IMG.test(n)).sort((a, b) => a.localeCompare(b, 'fr', { numeric: true }));
-    const raw = await Promise.all(files.map((n) => fit(join(dir, n)).raw().toBuffer()));
+    const raw = await Promise.all(files.map((n) => fit(join(dir, n), TOP.has(e.name)).raw().toBuffer()));
     const frames = [], delay = [], steps = Math.round(WIPE / STEP);
     raw.forEach((a, i) => {
       const b = raw[(i + 1) % raw.length];
@@ -47,6 +54,19 @@ for (const e of readdirSync(SRC, { withFileTypes: true })) {
         frames.push(m); delay.push(STEP);
       }
     });
+    if (e.name.endsWith('.mp4')) { // vidéo : chaque vue répétée selon sa durée (une image toutes les STEP ms)
+      const out = join(OUT, slug(e.name));
+      await new Promise((ok, ko) => {
+        const p = spawn(ffmpeg, ['-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-s', `${W}x${H}`, '-framerate', String(1000 / STEP), '-i', '-',
+          '-an', '-c:v', 'libx264', '-preset', 'veryslow', '-crf', String(CRF), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: ['pipe', 'inherit', 'inherit'] });
+        p.on('error', ko); p.on('close', (c) => (c ? ko(new Error(`ffmpeg : code ${c}`)) : ok()));
+        frames.forEach((f, i) => { for (let n = Math.round(delay[i] / STEP); n > 0; n--) p.stdin.write(f); });
+        p.stdin.end();
+      });
+      await sharp(frames[0], { raw: { width: W, height: H, channels: 3 } }).webp({ quality: Q }).toFile(out.replace(/\.mp4$/, '.webp'));
+      console.log(out, `${files.length} images`);
+      continue;
+    }
     const png = await Promise.all(frames.map((f) => sharp(f, { raw: { width: W, height: H, channels: 3 } }).png().toBuffer()));
     const out = join(OUT, `${slug(e.name)}.webp`);
     await sharp(png, { join: { animated: true } }).webp({ lossless: true, effort: 6, loop: 0, delay }).toFile(out);

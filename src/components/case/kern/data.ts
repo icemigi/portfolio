@@ -1,4 +1,4 @@
-// kern.outdoor : données communes aux versions de l'étude de cas (tracés du showreel, charte, carrousels, cases de la check-list).
+// kern.outdoor : données communes aux versions de l'étude de cas (tracés du showreel, carrousels, cases de la check-list).
 // logos vectoriels (exports Figma, dossier motion) : chaque tracé reçoit un nom pour être animé séparément
 import montagne from './montagne.svg?raw';
 import bonhomme from './bonhomme.svg?raw';
@@ -28,8 +28,6 @@ export const kernD = D;
 export type KernD = typeof D;
 
 export function kernData(fr: boolean) {
-  // charte (fichiers de la charte graphique)
-  const PAL = [['#1C1C1C', fr ? 'noir' : 'black'], ['#353C15', 'olive'], ['#FFF3CC', fr ? 'crème' : 'cream'], ['#DEDE1F', fr ? 'citron' : 'lime']];
   // carrousels : dossiers post 1, 2, 3 (public/work/kern-outdoor/car/p<n>-<i>.webp, 720 × 960)
   const CAR = [
     { n: 9, t: fr ? 'prépare ton premier bivouac' : 'your first bivouac' },
@@ -60,5 +58,5 @@ export function kernData(fr: boolean) {
     overlay: fr ? "le kit d'habillage animé" : 'the animated overlay kit',
   };
   const todo = fr ? 'à fournir' : 'to come';
-  return { D, PAL, CAR, ticks, tick, LH, FIG, SLOT, todo };
+  return { D, CAR, ticks, tick, LH, FIG, SLOT, todo };
 }
