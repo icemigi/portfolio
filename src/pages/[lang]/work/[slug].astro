@@ -17,6 +17,7 @@ import Asaphr from '../../../components/case/Asaphr.astro';
 import BmsEsport from '../../../components/case/BmsEsport.astro';
 import ChateauStudio from '../../../components/case/ChateauStudio.astro';
 import ObjectShape from '../../../components/ObjectShape.astro';
+import { aspect } from '../../../data/objects';
 import { av, avSet } from '../../../data/avif';
 
 export function getStaticPaths() {
@@ -58,9 +59,9 @@ const workLd = {
   <div class="screens-host case" data-screens>
     <section class="scr s1" aria-labelledby="case-title">
       <div class="head g">
-        <p class="lab mono mu par s1-late" data-cl><a class="cr" href={`/${lang}/work/${prev.slug}/`} data-prev aria-label={`${fr ? 'Projet précédent' : 'Previous project'} : ${prev[lang].title}`}>←</a> <span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></p>
+        <p class="lab mono mu par s1-late" data-cl><a class="cr" href={`/${lang}/work/${prev.slug}/`} data-prev aria-label={`${fr ? 'Projet précédent' : 'Previous project'} : ${prev[lang].title}`}>← <span class="vl">{fr ? 'projet' : 'project'} {pad(index + 1)}/{N}</span></a></p>
         <h1 class="case-h1" id="case-title"><span class="vt">{c.title}</span></h1>
-        <div class="cobj" data-cobj data-slug={project.slug} aria-hidden="true"><span class="cfl"><ObjectShape kind={project.object} /></span></div>
+        <div class="cobj" data-cobj data-slug={project.slug} aria-hidden="true" style={`--a:${Math.sqrt(aspect(project.object)).toFixed(3)}`}><span class="cfl"><ObjectShape kind={project.object} /></span></div>
         <dl class="fiche mono s1-late">
           <div><dt class="mu">{t.meta.year}</dt><dd>{c.meta.year}</dd></div>
           <div><dt class="mu">{t.meta.context}</dt><dd>{c.meta.context}</dd></div>
@@ -182,8 +183,9 @@ const workLd = {
   :global(.reg a[aria-current])::before, :global(.reg a[aria-current])::after { color: var(--ac); }
   @media (hover: hover) { :global(.reg a:hover) { color: var(--fg); } }
   @media (max-width: 760px) { :global(.reg) { display: none; } }
-  /* lien du libellé (projet précédent), souligné au survol */
-  :global(.case .lab .cr) { text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
+  /* lien du libellé (projet précédent) : tout le libellé, parenthèses comprises (la zone déborde d'un signe de chaque côté et de
+     8 px en hauteur, sans rien déplacer ; au-dessus de la parenthèse fermante, dessinée après lui), souligné au survol */
+  :global(.case .lab .cr) { position: relative; z-index: 1; display: inline-block; padding: 8px 1ch; margin: -8px -1ch; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 3px; transition: text-decoration-color .2s; }
   @media (hover: hover) { :global(.case .lab .cr:hover) { text-decoration-color: currentColor; } }
   .lab { grid-column: 1 / 4; align-self: first baseline; }
 
@@ -191,8 +193,9 @@ const workLd = {
   .s1 .head { height: 100%; align-content: stretch; grid-template-rows: auto 1fr auto auto; row-gap: 24px; padding-top: calc(var(--head) + 24px); padding-bottom: 32px; }
   .s1 .lab { grid-row: 1; }
   .case-h1 { grid-column: 1 / -1; grid-row: 3; font-weight: 500; font-size: min(10.5vw, 17dvh); line-height: .86; letter-spacing: -0.05em; margin-left: -.05em; }
-  /* l'objet du projet (le même que sur la page Projets), à droite du titre ; il flotte doucement */
-  .cobj { grid-column: 7 / 12; grid-row: 1 / 3; align-self: center; justify-self: center; width: min(26vw, 44dvh); transform-origin: 50% 50%; will-change: transform; pointer-events: none; }
+  /* l'objet du projet (le même que sur la page Projets), centré dans la moitié droite, au-dessus du titre ; il flotte
+     doucement. Même surface pour tous (comme sur la scène) : la largeur suit ses proportions (--a : racine de largeur / hauteur) */
+  .cobj { grid-column: 7 / 13; grid-row: 1 / 3; align-self: center; justify-self: center; width: calc(min(32vw, 42dvh) * var(--a, 1)); transform-origin: 50% 50%; will-change: transform; pointer-events: none; }
   .cobj .cfl { display: block; animation: kk-float 6.5s ease-in-out infinite; }
   .cobj :global(.shape) { display: block; width: 100%; height: auto; rotate: -4deg; filter: drop-shadow(0 30px 26px rgba(0, 0, 0, .22)); }
   @keyframes kk-float { 0%, 100% { translate: 0 -7px; } 50% { translate: 0 7px; } }
@@ -221,7 +224,7 @@ const workLd = {
     .case-h1 { font-size: min(15vw, 12dvh); }
     .next-title { font-size: min(11vw, 8dvh); grid-column: 1 / -1; }
     .nfoot { grid-column: 1 / -1; }
-    .cobj { grid-column: 1 / -1; grid-row: 2; width: min(52vw, 30dvh); }
+    .cobj { grid-column: 1 / -1; grid-row: 2; width: calc(min(52vw, 30dvh) * var(--a, 1)); }
     .fiche { grid-template-columns: 1fr 1fr; gap: 12px var(--gut); border-top: 0; padding-top: 0; }
     .fiche > div { grid-column: auto; }
     .nxb { min-height: 30dvh; }

@@ -1,6 +1,6 @@
 ---
 // Objets de la page Projets (un par étude), dessinés en SVG : volumes en niveaux de gris, lumière venant d'en haut à gauche.
-// book : Algorithmic Heraldry (le livre de 500 pages) · rook : (ChâteauStudio)™ · vinyl : Identités musicales
+// book : Algorithmic Heraldry (le livre de 500 pages) · rook : (ChâteauStudio)™ · vinyl : Musique
 // rock : ASAPHR (écriture gravée) · backpack : kern.outdoor · crest : BMS E-Sport (l'écusson brodé du club) · compass : Sports Aventure
 // (controller, stick, bottle et feather : anciens objets, gardés pour compatibilité)
 import { av } from '../data/avif';
@@ -10,7 +10,7 @@ interface Props { kind: ObjectKind }
 const { kind } = Astro.props;
 const u = (n: string) => `${kind}-${n}`; // identifiants uniques par objet (plusieurs objets par page)
 const f = (n: string) => `url(#${u(n)})`;
-// essai : photos détourées à la place des objets dessinés (vinyle : identités musicales ; sac : prise d'escalade kern.outdoor)
+// essai : photos détourées à la place des objets dessinés (vinyle : Musique ; sac : prise d'escalade kern.outdoor)
 const photo = photos[kind]; // photo détourée (src/data/objects.ts), sinon l'objet dessiné
 ---
 {photo ? (

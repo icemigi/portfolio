@@ -1,4 +1,4 @@
-// Études de cas, dans l'ordre choisi le 08/11 : Heraldry, (ChâteauStudio)™, Identités musicales, ASAPHR, kern.outdoor, BMS, Sports Aventure.
+// Études de cas, dans l'ordre choisi le 08/11 : Heraldry, (ChâteauStudio)™, Musique (ex-Identités musicales), ASAPHR, kern.outdoor, BMS, Sports Aventure.
 // Chacune : en-tête (meta) · accroche (lead, note) · sections dans l'ordre des écrans de sa mise en page propre (src/components/case/).
 
 type Para = { t?: string; p: string };
@@ -122,7 +122,7 @@ const all: Project[] = [
     yearLabel: '2020–26',
     object: 'vinyl',
     fr: {
-      title: 'Identités musicales',
+      title: 'Musique',
       short: 'Du lettrage au vinyle',
       meta: { year: 'Depuis 2020', context: "Collectif d'artistes, puis artistes indépendants", role: 'Direction artistique, identité, lettrage, print, merch', tools: 'Illustrator, Photoshop, Procreate, TouchDesigner' },
       lead: "Identités visuelles de sorties hip-hop et électro underground, de la pochette au merch.",
@@ -140,7 +140,7 @@ const all: Project[] = [
       ],
     },
     en: {
-      title: 'Music identities',
+      title: 'Music',
       short: 'From lettering to vinyl',
       meta: { year: 'Since 2020', context: 'Artist collective, then independent artists', role: 'Art direction, identity, lettering, print, merch', tools: 'Illustrator, Photoshop, Procreate, TouchDesigner' },
       lead: "Visual identities for underground hip-hop and electronic releases, from cover to merch.",
