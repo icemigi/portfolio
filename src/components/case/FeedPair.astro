@@ -1,0 +1,34 @@
+---
+// Avant / après d'un fil : deux écrans de téléphone, deux cartes (data-card discrète). En haut, l'en-tête du profil reste fixe ;
+// dessous, la grille est parcourue comme un plan de showreel (data-shot, views/case.ts), les deux grilles dans un seul mouvement
+// (même groupe). Légende en gris au-dessus de chaque écran. Immobile si « Réduire les animations ».
+interface Item { src: string; srcset?: string; sizes: string; w: number; h: number; alt: string }
+interface Props { label: string; frame: { w: number; h: number }; head: Item; items: { img: Item; tag: string }[]; at?: [string, string]; atTall?: [string, string] }
+const { label, frame, head, items, at = ['4 / 7', '7 / 10'], atTall = ['3 / 7', '7 / 11'] } = Astro.props;
+const top = ((head.h * frame.w) / head.w / frame.h) * 100; // hauteur de l'en-tête, en % de l'écran
+---
+<section class="scr mds" data-media>
+  <div class="in g med sqg c2">
+    <p class="lab mono mu par">{label}</p>
+    {items.map((it, k) => (
+      <figure class:list={['mi', `m${k}`]} style={`--s:${at[k]};--t:${atTall[k]};`}>
+        <figcaption class="cap mono mu">{it.tag}</figcaption>
+        <div class="phone mf" data-card="0.4" style={`aspect-ratio:${frame.w} / ${frame.h};--ar:${frame.w / frame.h};--top:${top}%;`}>
+          <div class="feed" data-shot="fil" data-pace="0.5"><img src={it.img.src} srcset={it.img.srcset} sizes={it.img.sizes} width={it.img.w} height={it.img.h} alt={it.img.alt} loading="lazy" decoding="async" /></div>
+          <img class="fx" src={head.src} srcset={head.srcset} sizes={head.sizes} width={head.w} height={head.h} alt={k ? '' : head.alt} loading="lazy" decoding="async" />
+        </div>
+      </figure>
+    ))}
+  </div>
+</section>
+
+<style>
+  .mi { display: flex; flex-direction: column; }
+  .cap { font-size: 11px; margin-bottom: 8px; }
+  .phone, .cap { width: 100%; max-width: calc(70dvh * var(--ar, .46)); }
+  .m0 > * { margin-left: auto; } .m1 > * { margin-right: auto; } /* les deux écrans se rapprochent : la gouttière les sépare */
+  .phone { position: relative; overflow: hidden; background: #000; }
+  .feed { position: absolute; left: 0; right: 0; bottom: 0; top: var(--top); overflow: hidden; }
+  .feed > img { display: block; width: 100%; height: auto; will-change: transform; }
+  .fx { position: absolute; top: 0; left: 0; display: block; width: 100%; height: auto; }
+</style>

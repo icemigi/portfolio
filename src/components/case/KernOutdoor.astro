@@ -12,13 +12,21 @@ import type { Img } from '../../data/media';
 import { kernData } from './kern/data';
 import TextScreen from './TextScreen.astro';
 import SlotScreen from './SlotScreen.astro';
+import FeedPair from './FeedPair.astro';
 interface Props { lang: 'fr' | 'en'; c: any; M: { cover: Img; gal?: Img[][] }; pic: (im: Img, sizes: string) => any; rich: (t: string, cls?: string) => string }
 const { lang, c, rich } = Astro.props;
 const fr = lang === 'fr';
 const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
 const { PAL, CAR, FIG, SLOT, todo } = kernData(fr);
 // médias à fournir, par écran (emplacements gris) : après les chiffres, puis après la pièce de chaque écran de texte
-const TODO = { top: ['grid'], after: [['before', 'after'], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
+const TODO = { top: ['grid'], after: [[], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
+// le fil avant / après la DA de février 2026 : deux écrans, en-tête fixe, grilles qui défilent ensemble (exports Figma, 392 px)
+const feed = (n: string, h: number, alt: string) => ({ src: `/work/kern-outdoor/fil-${n}.webp`, sizes: '(max-width: 760px) 50vw, 35vw', w: 392, h, alt: `kern.outdoor — ${alt}` });
+const FEED = {
+  before: feed('avant', 1391, fr ? 'la grille du profil avant la direction artistique de février 2026' : 'the profile grid before the February 2026 art direction'),
+  after: feed('apres', 1391, fr ? 'la grille du profil après la direction artistique' : 'the profile grid after the art direction'),
+  head: feed('entete', 402, fr ? "l'en-tête du profil TikTok" : 'the TikTok profile header'),
+};
 const slots = (keys: string[]) => keys.map((key) => SLOT[key]);
 const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
 ---
@@ -70,6 +78,9 @@ const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p,
         </div>
       </section>
     )}
+
+    {i === 0 && <FeedPair label={fr ? 'le fil, avant et après' : 'the feed, before and after'} frame={{ w: 392, h: 844 }} head={FEED.head}
+      items={[{ img: FEED.before, tag: fr ? 'avant février 2026' : 'before Feb. 2026' }, { img: FEED.after, tag: fr ? 'après' : 'after' }]} />}
 
     {TODO.after[i].length > 0 && <SlotScreen label={todo} slots={slots(TODO.after[i])} />}
   </>

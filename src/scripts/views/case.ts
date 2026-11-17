@@ -185,48 +185,55 @@ onPage('.screens-host.case', (ctx) => {
     // temps en temps un petit retour en arrière ; la vitesse rejoint chaque nouvelle consigne en douceur (lissage exponentiel),
     // d'où des accélérations et freinages sans à-coup. Près du bas, à la fin d'un ralenti : la page descend jusqu'à son bas, s'y
     // tient un instant, puis un grand défilement rapide la ramène en haut (accélère puis freine), et le plan reprend. Seulement tant que l'écran est à l'écran ; immobile si « Réduire les animations ».
+    // data-shot="groupe" : les captures d'un même groupe partagent un seul mouvement (la première le mène, les autres la suivent)
+    const shotGroups = new Map<string, HTMLElement[]>();
     if (!reduced()) document.querySelectorAll<HTMLElement>('[data-shot]').forEach((vp) => {
-      const img = vp.querySelector('img')!;
+      const key = vp.dataset.shot;
+      if (key) { const g = shotGroups.get(key); if (g) { g.push(vp); return; } shotGroups.set(key, [vp]); }
+      const img = vp.firstElementChild as HTMLElement; // ce qui défile
+      const movers = () => (key ? shotGroups.get(key)!.map((v) => v.firstElementChild as HTMLElement) : [img]);
       const rnd = (a: number, b: number) => a + Math.random() * (b - a);
       const TAU = 0.22; // temps de réponse de la vitesse (s)
       const io = (p: number) => (p < 0.5 ? 4 * p * p * p : 1 - (-2 * p + 2) ** 3 / 2); // ease-in-out (cubique)
       type Mode = 'slow' | 'fast' | 'back';
-      let y = 0, v = 0, aim = 0, mode: Mode = 'fast', until = 0, last = 0, raf = 0, run = false;
+      let y = 0, v = 0, aim = 0, mode: Mode = 'fast', until = 0, last = 0, raf = 0, run = false, vt = 0;
+      const pace = parseFloat(vp.dataset.pace || '') || 1;
       // déplacement réglé (descente jusqu'au bas, retour en haut) : de from à to, puis une attente (hold) avant la suite
       let tw: { from: number; to: number; t0: number; dur: number; hold: number } | null = null;
       const frame = (now: number) => {
         raf = 0;
         if (!run) return;
-        const dt = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+        const real = Math.min(0.05, (now - (last || now)) / 1000); last = now;
+        const dt = real * pace; vt += dt * 1000; // horloge du plan : data-pace="0.5" le joue deux fois plus lentement
         const H = vp.clientHeight, max = Math.max(0, img.offsetHeight - H);
         if (max) {
           if (tw) {
-            const p = Math.min(1, (now - tw.t0) / tw.dur);
+            const p = Math.min(1, (vt - tw.t0) / tw.dur);
             y = tw.from + (Math.min(tw.to, max) - tw.from) * io(p);
-            if (now >= tw.t0 + tw.dur + tw.hold) {
-              if (tw.to > 0) tw = { from: y, to: 0, t0: now, dur: Math.min(1700, 700 + y * 0.12), hold: 0 }; // le grand retour en haut
-              else { tw = null; v = aim = 0.1 * H; mode = 'slow'; until = now + rnd(900, 1300); }
+            if (vt >= tw.t0 + tw.dur + tw.hold) {
+              if (tw.to > 0) tw = { from: y, to: 0, t0: vt, dur: Math.min(1700, 700 + y * 0.12), hold: 0 }; // le grand retour en haut
+              else { tw = null; v = aim = 0.1 * H; mode = 'slow'; until = vt + rnd(900, 1300); }
             }
           } else {
-            if (now >= until) {
+            if (vt >= until) {
               const room = max - y;
-              if (mode !== 'slow') { mode = 'slow'; aim = rnd(0.06, 0.13) * H; until = now + rnd(1100, 1800); }
-              else if (room <= 1.6 * H) { tw = { from: y, to: max, t0: now, dur: 500 + room * 0.35, hold: rnd(700, 1000) }; v = 0; } // jusqu'au bas de la page
-              else if (y > H && Math.random() < 0.22) { mode = 'back'; aim = -rnd(0.5, 0.9) * H; until = now + rnd(320, 460); } // petit retour en arrière
-              else { mode = 'fast'; aim = rnd(2.4, 3.4) * H; until = now + rnd(380, 560); }
+              if (mode !== 'slow') { mode = 'slow'; aim = rnd(0.06, 0.13) * H; until = vt + rnd(1100, 1800); }
+              else if (room <= 1.6 * H) { tw = { from: y, to: max, t0: vt, dur: 500 + room * 0.35, hold: rnd(700, 1000) }; v = 0; } // jusqu'au bas de la page
+              else if (y > H && Math.random() < 0.22) { mode = 'back'; aim = -rnd(0.5, 0.9) * H; until = vt + rnd(320, 460); } // petit retour en arrière
+              else { mode = 'fast'; aim = rnd(2.4, 3.4) * H; until = vt + rnd(380, 560); }
             }
             if (!tw) {
               v += (aim - v) * (1 - Math.exp(-dt / TAU));
               y = Math.min(max, Math.max(0, y + v * dt));
             }
           }
-          img.style.transform = `translate3d(0, ${(-y).toFixed(1)}px, 0)`;
+          for (const m of movers()) m.style.transform = `translate3d(0, ${(-y).toFixed(1)}px, 0)`;
         }
         raf = ctx.raf(frame);
       };
       ctx.observe(new IntersectionObserver(([e]) => {
         run = e.isIntersecting; last = 0;
-        if (run && tw) tw = { ...tw, from: y, t0: performance.now() }; // reprise : le déplacement repart d'où il en était
+        if (run && tw) tw = { ...tw, from: y, t0: vt }; // reprise : le déplacement repart d'où il en était
         if (run && !raf) raf = ctx.raf(frame);
       }, { root: host, threshold: 0.5 })).observe(vp.closest('.scr')!);
       ctx.cleanup(() => { run = false; });
