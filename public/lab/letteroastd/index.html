@@ -394,8 +394,8 @@
     <style>
         /* ---------- v11 : l'affiche finale ----------
            l'écran tient sans défiler ; la fiche devient l'affiche du film de ton profil, au format story (9:16) :
-           le mur de tes films les mieux notés, ton rang en titre, le score en pastille, tes phrases en citations de critiques,
-           les six axes, et le pavé de crédits de l'affiche avec tes chiffres. Composée à 540 × 960, réduite à l'écran. */
+           le mur de tes films les mieux notés, ton rang en titre, le score, une seule phrase de verdict et trois chiffres
+           (le pavé de crédits et les axes ont quitté l'affiche : trop d'informations). Composée à 540 × 960, réduite à l'écran. */
         #final-stage { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; padding: 64px var(--m) var(--m); flex-direction: row; align-items: center; justify-content: center; gap: clamp(32px, 5vw, 96px); }
         .fp-fit { position: relative; flex: none; }
         .fp { position: absolute; left: 0; top: 0; width: 540px; height: 960px; transform-origin: 0 0; overflow: hidden; background: #16120e; color: #f3e7d0; font-family: Geist, system-ui, sans-serif; box-shadow: 0 30px 80px -20px rgba(0, 0, 0, .7), 0 0 0 1px rgba(243, 231, 208, .1); }
@@ -417,20 +417,8 @@
         .fp-sc b { font-size: 184px; font-weight: 700; line-height: .73; letter-spacing: -0.075em; color: #f3e7d0; } /* chasse proportionnelle : les bandes collent au chiffre, même un « 1 » */
         .fp-scb { flex: 1; height: 131px; display: flex; flex-direction: column; gap: 7px; }
         .fp-scb em { font-style: normal; font-size: 34px; font-weight: 700; line-height: .8; letter-spacing: -0.04em; color: var(--or); }
+        .fp-sc.sm b { font-size: 132px; } .fp-sc.sm .fp-scb { height: 94px; } .fp-sc.sm .fp-scb em { font-size: 26px; } /* texte trop long : score réduit */
         .fp-scb i { flex: 1; } .fp-scb i:nth-of-type(1) { background: var(--or); } .fp-scb i:nth-of-type(2) { background: var(--gr); } .fp-scb i:nth-of-type(3) { background: var(--bl); }
-        .fp-quotes { margin: 18px 0 0; padding: 0; list-style: none; }
-        .fp-quotes li { font-size: 18px; font-weight: 500; line-height: 1.2; letter-spacing: -0.015em; color: #f3e7d0; padding: 2px 0; }
-        .fp-quotes li::before { content: '★ '; color: var(--gr); font-size: .8em; }
-        .fp-rev { margin: 14px 0 0; font-size: 14px; line-height: 1.35; color: #b8a88f; }
-        .fp-rev b { display: block; margin-bottom: 3px; font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--or); }
-        .fp-ax { margin: auto 0 0; padding: 14px 0 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px 18px; border-top: 1px solid rgba(243, 231, 208, .18); }
-        .fp-ax li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 6px 4px; font-size: 10px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: #b8a88f; }
-        .fp-ax li b { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; color: #f3e7d0; font-variant-numeric: tabular-nums; }
-        .fp-ax li i { grid-column: 1 / -1; height: 3px; background: rgba(243, 231, 208, .12); }
-        .fp-ax li i::after { content: ''; display: block; height: 100%; width: var(--v); background: var(--or); }
-        /* le pavé de crédits, comme au bas d'une affiche */
-        .fp-credits { margin: 12px 0 0; font-size: 10px; font-weight: 500; line-height: 1.35; letter-spacing: .02em; text-transform: uppercase; text-align: center; color: #b8a88f; transform: scaleY(1.25); transform-origin: 50% 100%; }
-        .fp-credits b { font-weight: 700; color: #f3e7d0; }
         /* l'adresse, lisible et complète : ceux qui voient l'affiche peuvent faire la leur */
         .fp-url { margin: 10px 0 0; padding: 8px 12px; display: flex; justify-content: space-between; align-items: baseline; background: #f3e7d0; color: #16120e; font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; }
         .fp-url b { font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: none; }
@@ -454,6 +442,17 @@
             .fp-acts { justify-content: center; gap: 10px 24px; }
             .fp-acts button { font-size: 15px; }
         }
+
+        /* ---------- l'affiche, épurée : beaucoup d'image, peu de mots, une marge intérieure de 44 px ---------- */
+        .fp-head { left: 44px; right: 44px; top: 40px; }
+        .fp-body { left: 44px; right: 44px; top: 268px; bottom: 56px; }
+        .fp-punch { margin: 26px 0 0; font-size: 25px; font-weight: 600; line-height: 1.15; letter-spacing: -0.025em; color: #f3e7d0; text-wrap: balance; }
+        .fp-punch.sm { font-size: 20px; }
+        .fp-stats { margin: auto 0 0; padding: 18px 0 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; border-top: 1px solid rgba(243, 231, 208, .18); }
+        .fp-stats li { font-size: 10px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: #b8a88f; }
+        .fp-stats b { display: block; margin-bottom: 4px; font-size: 40px; font-weight: 700; line-height: .9; letter-spacing: -0.045em; text-transform: none; color: #f3e7d0; }
+        .fp-stats b small { margin-left: 2px; font-size: .5em; color: var(--or); vertical-align: .55em; }
+        .fp-url { margin: 22px 0 0; padding: 12px 14px; }
     </style>
 </head>
 <body>
@@ -505,7 +504,7 @@
     </div>
 
     <div id="final-stage">
-        <!-- l'affiche : composée à 540 × 960, réduite à l'écran ; l'export (1080 × 1920) la pose au centre d'un cadre story, hors des zones qu'Instagram recouvre -->
+        <!-- l'affiche : composée à 540 × 960, réduite à l'écran ; exportée telle quelle en 1080 × 1920 (story) -->
         <div class="fp-fit" data-fp-fit><div class="fp" id="capture-target" data-fp></div></div>
         <div class="fp-side">
             <p class="billing" data-t="ready"></p>
@@ -648,7 +647,10 @@
         const esc = (x) => String(x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
         // un seul rendu à la fois, partagé : deux captures simultanées se gênent (html2canvas perd son élément)
         let fpReady = Promise.resolve(), fpBlob = null, fpJob = null;
-        const blob = () => (fpJob ??= fpReady.then(render).then((b) => (fpBlob = b), (e) => { fpJob = null; throw e; }));
+        const blob = () => (fpJob ??= fpReady.then(() => render()).then((b) => (fpBlob = b), (e) => { fpJob = null; throw e; }));
+        // l'affiche est gardée dans le navigateur : un rechargement la remontre (« Recommencer » l'efface)
+        const KEEP = 'letteroastd:affiche:2'; // :2 : l'affiche épurée (une affiche gardée de l'ancienne version n'est pas remontrée)
+        let file = 'letteroastd.png';
         function finish() {
             stage.style.display = 'none';
             const R = LR.score(F, A, lang), V = LR.verdict(F, A, lang), L = (fr, en) => (lang === 'en' ? en : fr);
@@ -659,24 +661,15 @@
             const top = [...F.shelf].sort((a, b) => b.rating - a.rating).slice(0, 8);
             const wall = top.length ? Array.from({ length: 8 }, (_, i) => top[i % top.length]) : [];
             const cols = ['var(--or)', 'var(--gr)', 'var(--bl)'];
-            const cut = (x, n) => (x.length > n ? x.slice(0, n - 1).replace(/\s+\S*$/, '') + '…' : x);
             const q = lang === 'en' ? ['“', '”'] : ['« ', ' »'];
-            // le pavé de crédits : tes chiffres, écrits comme au bas d'une affiche
-            const credits = [
-                `${t('by')} <b>${esc(who)}</b>`,
-                L(`avec <b>${nf(F.total)} films</b> vus`, `starring <b>${nf(F.total)} films</b> seen`),
-                F.avg != null ? L(`noté en moyenne <b>${nf(F.avg, 1)} ★</b>`, `rated <b>${nf(F.avg, 1)} ★</b> on average`) : '',
-                F.decs.length ? L(`tourné sur <b>${F.decs.length} décennies</b>`, `shot across <b>${F.decs.length} decades</b>`) : '',
-                F.watchlist ? L(`et <b>${nf(F.watchlist)} films</b> qui attendent leur tour`, `and <b>${nf(F.watchlist)} films</b> still waiting their turn`) : '',
-            ].filter(Boolean).join(' · ');
-            // tes critiques écrites (deux au plus) ; sans critique, tes films à 5 étoiles ; sinon, tes mieux notés
-            const revs = (F.revs || []).slice(0, 2);
-            const notes = revs.length
-                ? revs.map((r) => `<p class="fp-rev"><b>${t('critic')} · ${esc(r.title)}${r.rating != null ? ' ' + LR.stars(r.rating) : ''}</b>${q[0]}${esc(cut(r.text, revs.length > 1 ? 110 : 200))}${q[1]}</p>`).join('')
-                : `<p class="fp-rev"><b>${F.fives?.length ? L('Mes 5 étoiles', 'My 5 stars') : L('Mes mieux notés', 'My top rated')}</b>${esc((F.fives?.length ? F.fives : top.map((f) => f.title)).slice(0, 5).join(' · '))}</p>`;
+            // une seule phrase, la plus piquante (l'hérésie ou le duel perdu passent avant « mate ses films sur le canapé »)
+            const punch = V.find((l) => /osé|Dared|lâché|ditched|toujours pas|Still hasn't/.test(l)) || V[0] || '';
+            // trois chiffres en grand, presque sans mots
+            const stats = [[nf(F.total), L('films vus', 'films seen')], F.avg != null ? [`${nf(F.avg, 1)}<small>★</small>`, L('de moyenne', 'average')] : null,
+                [F.decs.length, L('décennies', 'decades')]].filter(Boolean);
             const card = $('[data-fp]');
             card.innerHTML = `
-                <div class="fp-wall">${wall.map((f, i) => `<div class="tile" style="background:${cols[i % 3]}">${esc(f.title)}</div>`).join('')}</div>
+                <div class="fp-wall">${wall.map((f, i) => `<div class="tile" data-pt="${esc(f.title)}" data-py="${esc(f.year)}" style="background:${cols[i % 3]}">${esc(f.title)}</div>`).join('')}</div>
                 <div class="fp-shade"></div>
                 <div class="fp-bands"><i></i><i></i><i></i></div>
                 <p class="fp-head"><span>${t('present')}</span><span>n° ${String(num).padStart(4, '0')}</span></p>
@@ -684,29 +677,46 @@
                     <p class="fp-in"><b>${esc(who)}</b> ${t('in')}</p>
                     <h2 class="fp-title" data-fp-title>${esc(R.rank)}</h2>
                     <div class="fp-sc"><b>${R.total}</b><span class="fp-scb"><em>/100</em><i></i><i></i><i></i></span></div>
-                    <ul class="fp-quotes">${V.map((l) => `<li>${l}</li>`).join('')}</ul>
-                    ${notes}
-                    <ul class="fp-ax">${R.axes.map((a) => `<li>${a.name}<b>${a.v}</b><i style="--v:${a.v}%"></i></li>`).join('')}</ul>
-                    <p class="fp-credits">${credits}</p>
+                    ${punch ? `<p class="fp-punch">${punch}</p>` : ''}
+                    <ul class="fp-stats">${stats.map(([v, l]) => `<li><b>${v}</b>${l}</li>`).join('')}</ul>
                     <p class="fp-url"><span>${t('yours')}</span><b>→ kerningkastle.com/lab/letteroastd</b></p>
                 </div>`;
             // à côté de l'affiche : ce que mesure chaque axe
-            $('[data-fp-axes]').innerHTML = R.axes.map((a) => `<li><span>${a.name} · ${a.v}</span>${a.line} <em>${a.stat}</em></li>`).join('');
+            const axes = R.axes.map((a) => `<li><span>${a.name} · ${a.v}</span>${a.line} <em>${a.stat}</em></li>`).join('');
+            show({ card: card.innerHTML, axes, file: `letteroastd-${demo ? 'exemple' : F.username || 'affiche'}.png` }, true);
+        }
+        function show(st, fresh) {
+            const card = $('[data-fp]'); file = st.file;
+            card.innerHTML = st.card; $('[data-fp-axes]').innerHTML = st.axes;
+            $('#stage-home').style.display = 'none';
             const fs = $('#final-stage'); fs.style.display = 'flex'; fs.classList.add('fade-in-up');
-            // titre : le plus grand possible sur deux lignes au plus
-            const tt = card.querySelector('[data-fp-title]');
-            const fitTitle = () => { let z = 70; tt.style.fontSize = z + 'px'; while (tt.offsetHeight > z * 0.88 * 2 + 4 && z > 36) { z -= 2; tt.style.fontSize = z + 'px'; } };
-            fitTitle(); document.fonts.ready.then(fitTitle);
             fitPoster(); addEventListener('resize', fitPoster);
-            // les affiches remplacent les tuiles une fois chargées (CORS : l'image doit pouvoir être exportée)
-            const tiles = card.querySelectorAll('.fp-wall > *');
-            fpReady = Promise.all(wall.map((f, i) => LR.poster(f.title, f.year).then((u) => u && new Promise((ok) => {
+            // les affiches remplacent les tuiles une fois chargées. CORS : l'image doit pouvoir être exportée ; l'adresse est
+            // marquée pour ne pas reprendre la copie sans CORS déjà en cache (affiches vues pendant le jeu) ; 8 s au plus
+            const tiles = [...card.querySelectorAll('.fp-wall .tile')];
+            const posters = Promise.all(tiles.map((el) => LR.poster(el.dataset.pt, el.dataset.py).then((u) => u && new Promise((ok) => {
                 const img = new Image(); img.crossOrigin = 'anonymous'; img.alt = ''; img.decoding = 'async';
-                img.onload = () => { tiles[i].className = ''; tiles[i].style.background = ''; tiles[i].replaceChildren(img); ok(); };
-                img.onerror = () => ok(); img.src = u;
-            })))).then(() => document.fonts.ready);
+                img.onload = () => { el.className = ''; el.style.background = ''; el.replaceChildren(img); ok(); };
+                img.onerror = () => ok(); img.src = u + (u.includes('?') ? '&' : '?') + 'cors=1';
+            })).catch(() => {})));
+            fpReady = Promise.race([posters, new Promise((ok) => setTimeout(ok, 8000))]).then(() => document.fonts.ready).then(() => { fitTitle(); fitBody(); });
+            fitTitle();
+            // gardée une fois complète (affiches comprises)
+            if (fresh) fpReady.then(() => { try { localStorage.setItem(KEEP, JSON.stringify({ card: card.innerHTML, axes: st.axes, file })); } catch { /* stockage plein ou bloqué */ } });
             // l'image est prête d'avance : « Partager » ouvre la feuille de partage tout de suite (Safari exige un geste récent)
             fpBlob = null; fpJob = null; blob().catch(() => {});
+        }
+        // titre : le plus grand possible sur deux lignes au plus
+        function fitTitle() {
+            const tt = $('[data-fp-title]'); if (!tt) return;
+            let z = 70; tt.style.fontSize = z + 'px'; while (tt.offsetHeight > z * 0.88 * 2 + 4 && z > 36) { z -= 2; tt.style.fontSize = z + 'px'; }
+        }
+        // rien ne dépasse du bas de l'affiche (le bandeau de l'adresse reste visible) : si c'est trop long, la phrase puis le score rétrécissent
+        function fitBody() {
+            const card = $('[data-fp]'), body = card.querySelector('.fp-body'); if (!body) return;
+            const over = () => body.scrollHeight > body.clientHeight + 1;
+            const steps = [() => card.querySelector('.fp-punch')?.classList.add('sm'), () => card.querySelector('.fp-sc')?.classList.add('sm')];
+            for (const step of steps) { if (!over()) break; step(); }
         }
         // l'affiche (540 × 960) réduite pour tenir dans l'écran, sans défilement
         function fitPoster() {
@@ -718,32 +728,28 @@
             const k = Math.max(0.2, Math.min(h / 960, w / 540, 1));
             fit.style.width = `${540 * k}px`; fit.style.height = `${960 * k}px`; card.style.transform = `scale(${k})`;
         }
-        // export : une copie à taille réelle, hors écran, rendue ×2 (1080 × 1920, le format story)
-        function render() {
+        // export : une copie à taille réelle, hors écran, rendue ×2 (1080 × 1920, le format story) ; les marges intérieures
+        // de l'affiche gardent le texte hors des zones qu'Instagram recouvre
+        function render(bare) {
             const box = document.createElement('div'); box.className = 'fp-out';
             const c = $('[data-fp]').cloneNode(true); c.style.transform = ''; box.appendChild(c); document.body.appendChild(box);
-            return html2canvas(c, { backgroundColor: '#16120e', scale: 2, width: 540, height: 960, useCORS: true }).then((poster) => {
-                // le cadre story : l'affiche réduite à 74 % au centre, hors des zones qu'Instagram recouvre (haut : progression
-                // et profil ; bas : réponse), coins arrondis, ombre portée
-                const W = 1080, H = 1920, k = 0.74, w = W * k, h = H * k, x = (W - w) / 2, y = (H - h) / 2;
-                const out = document.createElement('canvas'); out.width = W; out.height = H;
-                const g = out.getContext('2d');
-                g.fillStyle = '#0e0b08'; g.fillRect(0, 0, W, H);
-                g.save(); g.shadowColor = 'rgba(0, 0, 0, .6)'; g.shadowBlur = 60; g.shadowOffsetY = 24;
-                g.beginPath(); g.roundRect(x, y, w, h, 12); g.fillStyle = '#16120e'; g.fill(); g.restore();
-                g.save(); g.beginPath(); g.roundRect(x, y, w, h, 12); g.clip(); g.drawImage(poster, x, y, w, h); g.restore();
-                return new Promise((ok) => out.toBlob(ok, 'image/png'));
-            }).finally(() => box.remove());
+            if (bare) c.querySelectorAll('.fp-wall img').forEach((im) => { im.parentElement.style.background = 'var(--or)'; im.remove(); });
+            return html2canvas(c, { backgroundColor: '#16120e', scale: 2, width: 540, height: 960, useCORS: true })
+                .then((cv) => new Promise((ok, ko) => cv.toBlob((b) => (b ? ok(b) : ko(new Error('toBlob'))), 'image/png')))
+                .finally(() => box.remove())
+                .catch((e) => { if (bare) throw e; console.warn('Letteroastd : export sans les affiches', e); return render(true); }); // image refusée (CORS) : l'affiche sans le mur d'images
         }
         const SITE = 'https://kerningkastle.com/lab/letteroastd/';
         // copier le lien : pour le sticker « lien » d'une story Instagram
         { const cb = $('[data-copy]'); cb.onclick = () => navigator.clipboard?.writeText(SITE).then(() => { cb.textContent = t('copied'); setTimeout(() => (cb.textContent = t('copy')), 2000); }); }
-        const fname = () => `letteroastd-${demo ? 'exemple' : F.username || 'affiche'}.png`;
-        const save = (blob) => { const a = document.createElement('a'); a.download = fname(); a.href = URL.createObjectURL(blob); a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
+        const fname = () => file;
+        // le lien est posé dans la page le temps du clic (Firefox ne télécharge pas toujours depuis un lien détaché)
+        const save = (blob) => { const a = document.createElement('a'); a.download = fname(); a.href = URL.createObjectURL(blob); document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
         const shot = (node) => html2canvas(node, { backgroundColor: '#16120e', scale: 2, useCORS: true }).then((c) => c.toBlob(save, 'image/png'));
         document.querySelectorAll('[data-dl]').forEach((b) => (b.onclick = () => {
             if (b.dataset.dl === 'duo') return shot($('#duo-target'));
-            blob().then(save);
+            const label = b.textContent;
+            blob().then(save, (e) => { console.error(e); b.textContent = lang === 'en' ? 'Export failed, try again' : 'Export raté, réessaie'; setTimeout(() => (b.textContent = label), 3000); });
         }));
         // partager : seulement là où le navigateur sait partager une image (téléphones surtout)
         {
@@ -756,7 +762,9 @@
                 catch (e) { if (e.name !== 'AbortError') save(b); } // geste expiré ou refus : on télécharge
             };
         }
-        document.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => location.reload()));
+        document.querySelectorAll('[data-restart]').forEach((b) => (b.onclick = () => { try { localStorage.removeItem(KEEP); } catch { /* */ } location.reload(); }));
+        // au rechargement : l'affiche gardée revient directement
+        { let kept = null; try { kept = JSON.parse(localStorage.getItem(KEEP) || 'null'); } catch { /* */ } if (kept?.card) show(kept, false); }
 
         // ---------- fiche duo ----------
         function showDuo(A, B, isDemo) {
