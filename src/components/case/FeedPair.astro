@@ -1,21 +1,35 @@
 ---
-// Avant / après d'un fil : deux écrans de téléphone, deux cartes (data-card discrète). En haut, l'en-tête du profil reste fixe ;
-// dessous, la grille est parcourue comme un plan de showreel (data-shot, views/case.ts), les deux grilles dans un seul mouvement
-// (même groupe). Légende en gris au-dessus de chaque écran. Immobile si « Réduire les animations ».
+// Avant / après d'un fil : deux iPhone, deux cartes très discrètes (data-card="0.2" : grandes, elles bougeraient trop et
+// couvriraient les légendes). Chaque téléphone est rogné en haut (crop, part de sa hauteur) pour s'afficher plus grand : on garde le bas de l'écran et un morceau de l'en-tête du profil, qui reste fixe ; dessous,
+// la grille est parcourue comme un plan de showreel (data-shot, views/case.ts), les deux grilles dans un seul mouvement (même
+// groupe). Légende en gris au-dessus de chaque téléphone. Immobile si « Réduire les animations ».
 interface Item { src: string; srcset?: string; sizes: string; w: number; h: number; alt: string }
-interface Props { label: string; frame: { w: number; h: number }; head: Item; items: { img: Item; tag: string }[]; at?: [string, string]; atTall?: [string, string] }
-const { label, frame, head, items, at = ['4 / 7', '7 / 10'], atTall = ['3 / 7', '7 / 11'] } = Astro.props;
-const top = ((head.h * frame.w) / head.w / frame.h) * 100; // hauteur de l'en-tête, en % de l'écran
+interface Props { label: string; frame: { w: number; h: number }; head: Item; items: { img: Item; tag: string }[]; crop?: number; at?: [string, string]; atTall?: [string, string] }
+const { label, frame, head, items, crop = 0.28, at = ['3 / 7', '7 / 11'], atTall = ['2 / 7', '7 / 12'] } = Astro.props;
+// le boîtier, à l'échelle de l'écran (frame, en px CSS) : bordure noire et rayons d'un iPhone récent
+const B = 14, R = 55;
+const W = frame.w + 2 * B, H = frame.h + 2 * B, vis = H * (1 - crop);
+const pc = (a: number, b: number) => `${((a / b) * 100).toFixed(3)}%`;
+const top = pc((head.h * frame.w) / head.w, frame.h); // hauteur de l'en-tête, en part de l'écran
+const vars = [
+  `--ar:${(W / vis).toFixed(4)}`, `--crop:${W} / ${vis.toFixed(1)}`, `--rc:0 0 ${pc(R, W)} ${pc(R, W)} / 0 0 ${pc(R, vis)} ${pc(R, vis)}`,
+  `--body:${W} / ${H}`, `--b:${pc(B, W)}`, `--rb:${pc(R, W)} / ${pc(R, H)}`,
+  `--screen:${frame.w} / ${frame.h}`, `--rs:${pc(R - B, frame.w)} / ${pc(R - B, frame.h)}`, `--top:${top}`,
+].join(';');
 ---
 <section class="scr mds" data-media>
   <div class="in g med sqg c2">
     <p class="lab mono mu par">{label}</p>
     {items.map((it, k) => (
-      <figure class:list={['mi', `m${k}`]} style={`--s:${at[k]};--t:${atTall[k]};`}>
+      <figure class:list={['mi', `m${k}`]} style={`--s:${at[k]};--t:${atTall[k]};${vars}`}>
         <figcaption class="cap mono mu">{it.tag}</figcaption>
-        <div class="phone mf" data-card="0.4" style={`aspect-ratio:${frame.w} / ${frame.h};--ar:${frame.w / frame.h};--top:${top}%;`}>
-          <div class="feed" data-shot="fil" data-pace="0.5"><img src={it.img.src} srcset={it.img.srcset} sizes={it.img.sizes} width={it.img.w} height={it.img.h} alt={it.img.alt} loading="lazy" decoding="async" /></div>
-          <img class="fx" src={head.src} srcset={head.srcset} sizes={head.sizes} width={head.w} height={head.h} alt={k ? '' : head.alt} loading="lazy" decoding="async" />
+        <div class="crop mf" data-card="0.2">
+          <div class="body">
+            <div class="screen">
+              <div class="feed" data-shot="fil" data-pace="0.5"><img src={it.img.src} srcset={it.img.srcset} sizes={it.img.sizes} width={it.img.w} height={it.img.h} alt={it.img.alt} loading="lazy" decoding="async" /></div>
+              <img class="fx" src={head.src} srcset={head.srcset} sizes={head.sizes} width={head.w} height={head.h} alt={k ? '' : head.alt} loading="lazy" decoding="async" />
+            </div>
+          </div>
         </div>
       </figure>
     ))}
@@ -25,9 +39,13 @@ const top = ((head.h * frame.w) / head.w / frame.h) * 100; // hauteur de l'en-t�
 <style>
   .mi { display: flex; flex-direction: column; }
   .cap { font-size: 11px; margin-bottom: 8px; }
-  .phone, .cap { width: 100%; max-width: calc(70dvh * var(--ar, .46)); }
-  .m0 > * { margin-left: auto; } .m1 > * { margin-right: auto; } /* les deux écrans se rapprochent : la gouttière les sépare */
-  .phone { position: relative; overflow: hidden; background: #000; }
+  /* largeur : la colonne, ou ce que permet la hauteur de l'écran (sous la barre, la légende et les marges de .med) */
+  .crop, .cap { width: 100%; max-width: calc((100dvh - var(--head) - 184px) * var(--ar)); }
+  .m0 > * { margin-left: auto; } .m1 > * { margin-right: auto; } /* les deux téléphones se rapprochent : la gouttière les sépare */
+  .crop { aspect-ratio: var(--crop); overflow: hidden; border-radius: var(--rc); }
+  .body { position: absolute; left: 0; right: 0; bottom: 0; aspect-ratio: var(--body); padding: var(--b); border-radius: var(--rb);
+    background: #111; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .14); }
+  .screen { position: relative; aspect-ratio: var(--screen); overflow: hidden; border-radius: var(--rs); background: #000; }
   .feed { position: absolute; left: 0; right: 0; bottom: 0; top: var(--top); overflow: hidden; }
   .feed > img { display: block; width: 100%; height: auto; will-change: transform; }
   .fx { position: absolute; top: 0; left: 0; display: block; width: 100%; height: auto; }

@@ -14,7 +14,7 @@ type Card = { el: HTMLElement; amp: number; tx: number; ty: number; x: number; y
 export function initCards(ctx: Ctx, root: ParentNode = document) {
   if (reduced()) return;
   const cards: Card[] = [...root.querySelectorAll<HTMLElement>('[data-card]')].map((el, i) => ({
-    el, amp: parseFloat(el.dataset.card || '') || 1, tx: 0, ty: 0, // data-card="0.4" : carte plus discrète (part de l'inclinaison)
+    el, amp: parseFloat(el.dataset.card || '') || 1, tx: 0, ty: 0, // data-card="0.4" : carte plus discrète (part de l'inclinaison et du zoom)
      x: 0, y: 0, lift: 0, tl: 0, ph: i * 1.9 + Math.random() * 2, sp: 0.35 + Math.random() * 0.2, vis: false, hov: false,
   }));
   if (!cards.length) return;
@@ -29,7 +29,7 @@ export function initCards(ctx: Ctx, root: ParentNode = document) {
       const k = c.hov ? 0.14 : 0.06;
       c.x += (c.tx - c.x) * k; c.y += (c.ty - c.y) * k; c.lift += (c.tl - c.lift) * 0.14;
       const el = c.el;
-      el.style.transform = `perspective(900px) rotateX(${(-c.y * MAX * c.amp).toFixed(2)}deg) rotateY(${(c.x * MAX * c.amp).toFixed(2)}deg) scale(${(1 + c.lift * 0.035).toFixed(4)})`;
+      el.style.transform = `perspective(900px) rotateX(${(-c.y * MAX * c.amp).toFixed(2)}deg) rotateY(${(c.x * MAX * c.amp).toFixed(2)}deg) scale(${(1 + c.lift * 0.035 * c.amp).toFixed(4)})`;
       el.style.boxShadow = c.lift > 0.01 ? `${(-c.x * 18).toFixed(1)}px ${(14 + c.y * 10).toFixed(1)}px ${(36 * c.lift).toFixed(1)}px rgba(0, 0, 0, ${(0.22 * c.lift).toFixed(3)})` : '';
       el.style.setProperty('--gx', `${(50 + c.x * 50).toFixed(1)}%`); el.style.setProperty('--gy', `${(50 + c.y * 50).toFixed(1)}%`);
       el.style.setProperty('--go', (c.lift * 0.9).toFixed(3));

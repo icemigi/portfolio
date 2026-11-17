@@ -20,12 +20,17 @@ const S = c.sections as { r: string; h: string; paras: { p: string }[] }[];
 const { PAL, CAR, FIG, SLOT, todo } = kernData(fr);
 // médias à fournir, par écran (emplacements gris) : après les chiffres, puis après la pièce de chaque écran de texte
 const TODO = { top: ['grid'], after: [[], ['formats', 'anatomy'], ['reel', 'overlay'], []] };
-// le fil avant / après la DA de février 2026 : deux écrans, en-tête fixe, grilles qui défilent ensemble (exports Figma, 392 px)
-const feed = (n: string, h: number, alt: string) => ({ src: `/work/kern-outdoor/fil-${n}.webp`, sizes: '(max-width: 760px) 50vw, 35vw', w: 392, h, alt: `kern.outdoor — ${alt}` });
+// le fil avant / après la DA de février 2026 : deux écrans, en-tête fixe, grilles qui défilent ensemble (exports Figma pour un
+// écran de 392 px, déclinés en plusieurs largeurs : fil-<nom>-<largeur>.webp ; l'avant reste en 392 en attendant son export complet)
+const feed = (n: string, ws: number[], h: number, alt: string) => {
+  const one = ws.length === 1, file = (w: number) => `/work/kern-outdoor/fil-${n}${one ? '' : `-${w}`}.webp`;
+  return { src: file(ws[0]), srcset: one ? undefined : ws.map((w) => `${file(w)} ${w}w`).join(', '), sizes: '(max-width: 760px) 50vw, 35vw',
+    w: ws[0], h: Math.round((h * ws[0]) / 392), alt: `kern.outdoor — ${alt}` };
+};
 const FEED = {
-  before: feed('avant', 1391, fr ? 'la grille du profil avant la direction artistique de février 2026' : 'the profile grid before the February 2026 art direction'),
-  after: feed('apres', 1391, fr ? 'la grille du profil après la direction artistique' : 'the profile grid after the art direction'),
-  head: feed('entete', 402, fr ? "l'en-tête du profil TikTok" : 'the TikTok profile header'),
+  before: feed('avant', [392], 1391, fr ? 'la grille du profil avant la direction artistique de février 2026' : 'the profile grid before the February 2026 art direction'),
+  after: feed('apres', [784, 1176], 1391, fr ? 'la grille du profil après la direction artistique' : 'the profile grid after the art direction'),
+  head: feed('entete', [784, 1176], 402, fr ? "l'en-tête du profil TikTok" : 'the TikTok profile header'),
 };
 const slots = (keys: string[]) => keys.map((key) => SLOT[key]);
 const T = S.map((s) => ({ k: s.r, big: rich(`${s.h}.`), note: rich(s.paras[0].p, 'note') }));
