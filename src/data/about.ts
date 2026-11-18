@@ -5,8 +5,8 @@ export type Vig = { src: string; label: { en: string; fr: string }; logo?: boole
 
 // Accueil, écran 2 : la phrase des services, sans vignette.
 export const homeServices = {
-  fr: 'Je dessine des lettres{m:beaucoup}, des identités et des images, à\u00a0la\u00a0main ou en code{m:les deux ont ruiné mon sommeil}, pour des artistes, des marques et des studios{m:et pour moi, le dimanche}.',
-  en: 'I draw letters{m:a lot}, identities and images, by\u00a0hand or in code{m:both have ruined my sleep}, for artists, brands and studios{m:and myself, on Sundays}.',
+  fr: 'Je dessine des lettres{m:beaucoup}, des\u00a0identités\u00a0et\u00a0des\u00a0visuels, et\u00a0je\u00a0code\u00a0le\u00a0reste{m:ce site, par exemple}, pour\u00a0des\u00a0artistes, des\u00a0marques et\u00a0des\u00a0studios{m:et pour moi, le dimanche}.',
+  en: 'I draw letters{m:a lot}, identities\u00a0and\u00a0visuals, and\u00a0I\u00a0code\u00a0the\u00a0rest{m:this site, for example}, for\u00a0artists, brands and\u00a0studios{m:and myself, on Sundays}.',
 };
 // Anneau d'images autour du texte des services (accueil) : fichiers de /public/ring/ (16/9, écrits par tools/ring.mjs
 // depuis assets/roue ; .mp4 : boucles du Lab écrites par tools/lab-reel.mjs). null = emplacement à remplir (gris, numéroté).
@@ -15,8 +15,8 @@ export const homeRing: (string | null)[] = ['anim-simple.webp', null, 'bms.webp'
 
 // À propos — 4 écrans
 export const aboutIntro = {
-  fr: "Designer et directeur artistique à Paris{m:et à distance}, obsédé par des détails que personne ne remarque{m:sauf moi}. Le reste vient des choses {door} que j'aime{m:vas-y, ouvre}.",
-  en: "Designer and art director in Paris{m:and remote}, obsessed with details nobody notices{m:except me}. The rest comes from the things {door} I love{m:go on, open it}.",
+  fr: "Designer et directeur\u00a0artistique à\u00a0Paris{m:et à distance}. Je\u00a0passe\u00a0mes\u00a0journées devant\u00a0un\u00a0écran{m:et quelques nuits}, mais\u00a0les\u00a0bonnes\u00a0idées viennent\u00a0d'ailleurs, des choses {door} que j'aime{m:vas-y, ouvre}.",
+  en: "Designer and art\u00a0director in\u00a0Paris{m:and remote}, I\u00a0spend\u00a0my\u00a0days in\u00a0front\u00a0of\u00a0a\u00a0screen{m:coffee helps}, and\u00a0the\u00a0good\u00a0ideas come\u00a0from\u00a0elsewhere: the things {door} I love{m:go on, open it}.",
 };
 
 export const services = {
