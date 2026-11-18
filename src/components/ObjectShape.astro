@@ -1,11 +1,11 @@
 ---
 // Objets de la page Projets (un par étude), dessinés en SVG : volumes en niveaux de gris, lumière venant d'en haut à gauche.
-// book : Algorithmic Heraldry (le livre de 500 pages) · rook : (ChâteauStudio)™ · vinyl : Musique
+// book : Algorithmic Heraldry (le livre de 500 pages) · castle : (ChâteauStudio)™ (le château noir) · vinyl : Musique
 // rock : ASAPHR (écriture gravée) · backpack : kern.outdoor · crest : BMS E-Sport (l'écusson brodé du club) · compass : Sports Aventure
-// (controller, stick, bottle et feather : anciens objets, gardés pour compatibilité)
+// (rook, controller, stick, bottle et feather : anciens objets, gardés pour compatibilité)
 import { av } from '../data/avif';
 import { photos } from '../data/objects';
-export type ObjectKind = 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack' | 'crest';
+export type ObjectKind = 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack' | 'crest' | 'castle';
 interface Props { kind: ObjectKind }
 const { kind } = Astro.props;
 const u = (n: string) => `${kind}-${n}`; // identifiants uniques par objet (plusieurs objets par page)

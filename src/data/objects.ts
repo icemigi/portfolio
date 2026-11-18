@@ -7,5 +7,6 @@ export const photos: Partial<Record<string, [string, number, number]>> = {
   backpack: ['/work/kern-outdoor/object.webp', 1200, 907],
   crest: ['/work/bms-esport/object.webp', 1000, 1241],
   compass: ['/work/sports-aventure/object.webp', 1200, 876],
+  castle: ['/work/chateau-studio/object.webp', 1000, 1332],
 };
 export const aspect = (kind: string) => { const p = photos[kind]; return p ? p[1] / p[2] : 1; }; // largeur / hauteur

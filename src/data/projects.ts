@@ -20,7 +20,7 @@ export type Project = {
   preview?: string;   // image ou vidéo (.mp4) d'aperçu au survol, dans /public/previews/
   tags: Tag[];        // I identité · T type · G génératif · W web · E édition · P print
   yearLabel: string;  // année affichée dans les listes
-  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack' | 'crest'; // objet de la page Projets
+  object: 'book' | 'rock' | 'vinyl' | 'rook' | 'controller' | 'stick' | 'bottle' | 'compass' | 'feather' | 'backpack' | 'crest' | 'castle'; // objet de la page Projets
   generator?: string; // générateur jouable intégré à l'étude
   en: Content;
   fr: Content;
@@ -81,7 +81,7 @@ const all: Project[] = [
     years: [2026],
     tags: ['I'],
     yearLabel: '2026',
-    object: 'rook',
+    object: 'castle',
     fr: {
       title: '(ChâteauStudio)™',
       short: "Identité d'un studio",
